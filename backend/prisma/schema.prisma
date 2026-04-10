@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. NHÓM QUẢN LÝ NGƯỜI DÙNG (USERS & ROLES)
+// ==========================================
+
+model Role {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique @db.VarChar(50) // admin, instructor, student
+  description String?    @db.Text
+  user_roles  UserRole[]
+
+  @@map("roles")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  password_hash String    @db.VarChar(255)
+  full_name     String?   @db.VarChar(255)
+  avatar        String?   @db.VarChar(255)
+  bio           String?   @db.Text
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime? // Soft Delete
+
+  user_roles       UserRole[]
+  instructed_courses Course[]     @relation("Instructor")
+  enrollments      Enrollment[]
+  orders           Order[]
+  reviews          Review[]
+  wishlists        Wishlist[]
+  completed_lessons LessonCompleted[]
+
+  @@map("users")
+}
+
+model UserRole {
+  user_id Int
+  role_id Int
+  user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role    Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, role_id])
+  @@map("user_roles")
+}
+
+// ==========================================
+// 2. NHÓM NỘI DUNG KHÓA HỌC (CONTENT)
+// ==========================================
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  courses     Course[]
+
+  @@map("categories")
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Course {
+  id            Int          @id @default(autoincrement())
+  category_id   Int?
+  instructor_id Int
+  title         String       @db.VarChar(255)
+  description   String?      @db.Text
+  price         Decimal      @default(0) @db.Decimal(10, 2)
+  level         String?      @db.VarChar(50) // Căn bản, Trung cấp, Nâng cao
+  thumbnail     String?      @db.VarChar(255)
+  status        CourseStatus @default(DRAFT)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+  deleted_at    DateTime?
+
+  category    Category?    @relation(fields: [category_id], references: [id])
+  instructor  User         @relation("Instructor", fields: [instructor_id], references: [id])
+  sections    Section[]
+  enrollments Enrollment[]
+  order_items OrderItem[]
+  reviews     Review[]
+  wishlists   Wishlist[]
+
+  @@map("courses")
+}
+
+model Section {
+  id        Int      @id @default(autoincrement())
+  course_id Int
+  title     String   @db.VarChar(255)
+  order     Int      @default(0)
+  course    Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+
+  @@map("sections")
+}
+
+enum LessonType {
+  VIDEO
+  DOCUMENT
+  QUIZ
+}
+
+model Lesson {
+  id          Int        @id @default(autoincrement())
+  section_id  Int
+  title       String     @db.VarChar(255)
+  type        LessonType @default(VIDEO)
+  video_url   String?    @db.VarChar(255) // manifest_url cũ
+  content     String?    @db.Text         // Dùng cho loại DOCUMENT
+  duration    Int?       @default(0)      // Tính theo giây
+  order       Int        @default(0)
+  is_free     Boolean    @default(false)
+  
+  // Các field cho HLS bảo mật tối thượng
+  hls_key     Bytes?   // Lưu trực tiếp Binary Key
+  hls_iv      String?  @db.VarChar(50)
+
+  section     Section           @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  completions LessonCompleted[]
+
+  @@map("lessons")
+}
+
+// ==========================================
+// 3. NHÓM BÁN HÀNG & THANH TOÁN (PAYMENTS)
+// ==========================================
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  user_id      Int
+  coupon_id    Int?
+  total_price  Decimal     @db.Decimal(10, 2)
+  status       OrderStatus @default(PENDING)
+  created_at   DateTime    @default(now())
+
+  user        User        @relation(fields: [user_id], references: [id])
+  coupon      Coupon?     @relation(fields: [coupon_id], references: [id])
+  items       OrderItem[]
+  payments    Payment[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order_id  Int
+  course_id Int
+  price     Decimal @db.Decimal(10, 2)
+
+  order  Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [course_id], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id             Int      @id @default(autoincrement())
+  order_id       Int
+  method         String   @db.VarChar(50) // Momo, Stripe, Bank Transfer
+  transaction_id String?  @unique @db.VarChar(255)
+  amount         Decimal  @db.Decimal(10, 2)
+  status         String   @default("SUCCESS")
+  created_at     DateTime @default(now())
+
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Coupon {
+  id               Int      @id @default(autoincrement())
+  code             String   @unique @db.VarChar(50)
+  discount_percent Int
+  expiry_date      DateTime
+  orders           Order[]
+
+  @@map("coupons")
+}
+
+// ==========================================
+// 4. TIẾN ĐỘ & TƯƠNG TÁC (PROGRESS)
+// ==========================================
+
+model Enrollment {
+  user_id     Int
+  course_id   Int
+  enrolled_at DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, course_id])
+  @@map("enrollments")
+}
+
+model LessonCompleted {
+  user_id      Int
+  lesson_id    Int
+  completed_at DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, lesson_id])
+  @@map("lesson_completed")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  course_id  Int
+  rating     Int      @default(5) // 1-5 sao
+  comment    String?  @db.Text
+  created_at DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id])
+  course Course @relation(fields: [course_id], references: [id])
+
+  @@map("reviews")
+}
+
+model Wishlist {
+  user_id    Int
+  course_id  Int
+  created_at DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, course_id])
+  @@map("wishlists")
+}
