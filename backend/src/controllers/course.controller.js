@@ -37,6 +37,16 @@ exports.getCourseDetail = async (req, res) => {
 
         if (!course) return res.status(404).json({ error: 'Không tìm thấy khóa học' });
 
+        // Lấy danh sách các bài học đã hoàn thành của người dùng này
+        let completedLessonIds = [];
+        if (userId) {
+            const completions = await prisma.lessonCompleted.findMany({
+                where: { user_id: userId, lesson_id: { in: course.sections.flatMap(s => s.lessons.map(l => l.id)) } },
+                select: { lesson_id: true }
+            });
+            completedLessonIds = completions.map(c => c.lesson_id);
+        }
+
         // Kiểm tra quyền truy cập (Enrollment)
         let hasAccess = false;
         if (userId) {
@@ -56,10 +66,11 @@ exports.getCourseDetail = async (req, res) => {
             sections: course.sections.map(s => ({
                 ...s,
                 lessons: s.lessons.map(l => {
+                    const isCompleted = completedLessonIds.includes(l.id);
                     if (!hasAccess && !l.is_free) {
-                        return { ...l, video_url: null, content: 'Nội dung này đã bị khóa. Vui lòng mua khóa học.' };
+                        return { ...l, video_url: null, content: 'Nội dung này đã bị khóa. Vui lòng mua khóa học.', isCompleted };
                     }
-                    return l;
+                    return { ...l, isCompleted };
                 })
             }))
         };

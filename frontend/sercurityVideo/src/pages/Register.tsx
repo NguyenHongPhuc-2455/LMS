@@ -1,43 +1,116 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
+import { UserAddOutlined, MailOutlined, LockOutlined, RocketOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { App, Form, Input, Button, Typography, Card } from 'antd';
+
+const { Title, Text } = Typography;
 
 export default function Register() {
-    const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+    const { message } = App.useApp();
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onFinish = async (values: any) => {
+        setLoading(true);
         try {
-            await api.post('/auth/register', formData);
-            alert('Tạo tài khoản thành công! Mời đăng nhập');
+            await api.post('/auth/register', values);
+            message.success('Ghi danh thành công! Mời bạn đăng nhập');
             navigate('/login');
         } catch (error: any) {
-            alert(error.response?.data?.error || 'Lỗi đăng ký');
+            message.error(error.response?.data?.error || 'Lỗi đăng ký tài khoản');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="auth-container">
-            <div className="auth-card">
-                <h2 className="title">Ghi danh Khoá Học</h2>
-                <form onSubmit={handleRegister}>
-                    <div className="form-group">
-                        <label>Tên đăng nhập mới</label>
-                        <input type="text" className="form-input" onChange={e => setFormData({ ...formData, username: e.target.value })} required />
+            <Card className="auth-card" variant="borderless">
+                <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                    <div style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '20px',
+                        background: 'var(--primary-gradient)',
+                        display: 'inline-flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 20,
+                        boxShadow: '0 8px 16px rgba(168, 85, 247, 0.3)',
+                        animation: 'float 3s ease-in-out infinite'
+                    }}>
+                        <UserAddOutlined style={{ fontSize: 32, color: 'white' }} />
                     </div>
-                    <div className="form-group">
-                        <label>Địa chỉ Email</label>
-                        <input type="email" className="form-input" onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+                    <Title level={2} className="premium-title" style={{ margin: 0, fontSize: 32 }}>Ghi danh mới</Title>
+                    <Text type="secondary" style={{ fontSize: 16 }}>Bắt đầu hành trình chinh phục kiến thức ngay hôm nay</Text>
+                </div>
+
+                <Form
+                    layout="vertical"
+                    onFinish={onFinish}
+                    requiredMark={false}
+                    size="large"
+                >
+                    <Form.Item
+                        label="Tên đăng nhập"
+                        name="username"
+                        rules={[{ required: true, message: 'Vui lòng nhập tên tài khoản!' }]}
+                    >
+                        <Input
+                            prefix={<UserAddOutlined style={{ color: '#94a3b8' }} />}
+                            placeholder="Chọn tên đăng nhập"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Địa chỉ Email"
+                        name="email"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập Email!' },
+                            { type: 'email', message: 'Email không đúng định dạng!' }
+                        ]}
+                    >
+                        <Input
+                            prefix={<MailOutlined style={{ color: '#94a3b8' }} />}
+                            placeholder="example@gmail.com"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Mật khẩu"
+                        name="password"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                            { min: 6, message: 'Mật khẩu phải từ 6 ký tự!' }
+                        ]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                            placeholder="Tối thiểu 6 ký tự"
+                        />
+                    </Form.Item>
+
+                    <Form.Item style={{ marginTop: 12 }}>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            className="btn-primary"
+                            loading={loading}
+                            icon={<RocketOutlined />}
+                        >
+                            Kích hoạt tài khoản
+                        </Button>
+                    </Form.Item>
+
+                    <div style={{ textAlign: 'center', marginTop: 24 }}>
+                        <Link to="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-muted)' }}>
+                            <ArrowLeftOutlined style={{ fontSize: 12 }} />
+                            <span>Đã có tài khoản? Quay về Đăng nhập</span>
+                        </Link>
                     </div>
-                    <div className="form-group">
-                        <label>Mật khẩu bảo vệ</label>
-                        <input type="password" className="form-input" onChange={e => setFormData({ ...formData, password: e.target.value })} required />
-                    </div>
-                    <button type="submit" className="btn-primary">Kích hoạt tài khoản</button>
-                    <Link to="/login" className="link-text">Đã có tài khoản? Quay về Đăng nhập</Link>
-                </form>
-            </div>
+                </Form>
+            </Card>
         </div>
     );
 }

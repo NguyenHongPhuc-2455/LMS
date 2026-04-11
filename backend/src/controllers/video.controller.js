@@ -84,7 +84,7 @@ const processVideoToHLS = (lessonId, inputPath) => {
             try {
                 if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
                 if (fs.existsSync(keyInfoPath)) fs.unlinkSync(keyInfoPath);
-            } catch (e) {}
+            } catch (e) { }
         });
 
         ffmpeg.on('close', async (code) => {
@@ -93,17 +93,23 @@ const processVideoToHLS = (lessonId, inputPath) => {
             try {
                 if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
                 if (fs.existsSync(keyInfoPath)) fs.unlinkSync(keyInfoPath);
-                console.log(`🗑️ Hệ thống đã dọn dẹp file gốc tại uploads cho Lesson ${lessonId}`);
+                if (fs.existsSync(keyPath)) fs.unlinkSync(keyPath); // Xóa file key vật lý sau khi đã có key trong memory
+                console.log(`🗑️ Hệ thống đã dọn dẹp file gốc và key tạm cho Lesson ${lessonId}`);
             } catch (err) {
                 console.error('Lỗi khi dọn dẹp file tạm:', err);
             }
 
             if (code === 0) {
+                // LƯU KEY VÀO DATABASE ĐỂ BẢO MẬT TỐI THƯỢNG
                 await prisma.lesson.update({
                     where: { id: lessonId },
-                    data: { video_url: `/public/hls/${lessonId}/master.m3u8` }
+                    data: {
+                        video_url: `/public/hls/${lessonId}/master.m3u8`,
+                        hls_key: key,
+                        hls_iv: iv
+                    }
                 });
-                console.log(`🚀 [OPTIMIZED-HLS] Video ${lessonId} đã được tối ưu và sẵn sàng!`);
+                console.log(`🚀 [OPTIMIZED-HLS] Video ${lessonId} đã được bảo mật vào DB và sẵn sàng!`);
             } else {
                 console.error(`❌ FFmpeg lỗi với mã thoát: ${code}. Video gốc đã bị xóa để bảo mật.`);
             }
@@ -116,17 +122,23 @@ const processVideoToHLS = (lessonId, inputPath) => {
 exports.getVideoKey = async (req, res) => {
     try {
         const { lessonId } = req.params;
-        const keyPath = path.join(HLS_OUTPUT_DIR, lessonId.toString(), 'enc.key');
 
-        if (!fs.existsSync(keyPath)) {
-            return res.status(404).send('Key not found');
+        // Truy vấn Key trực tiếp từ Database
+        const lesson = await prisma.lesson.findUnique({
+            where: { id: parseInt(lessonId) },
+            select: { hls_key: true }
+        });
+
+        if (!lesson || !lesson.hls_key) {
+            return res.status(404).send('Encryption key not found in Database');
         }
 
-        // Kiểm tra quyền (Token Authorization)
-        if (!req.user) return res.status(401).send('Unauthorized');
+        // Kiểm tra quyền (Token Authorization đã được middleware xử lý)
+        if (!req.user) return res.status(401).send('Unauthorized access');
 
         res.set('Content-Type', 'application/octet-stream');
-        res.send(fs.readFileSync(keyPath));
+        res.set('Cache-Control', 'no-store'); // Không cho trình duyệt cache key
+        res.send(lesson.hls_key);
     } catch (error) {
         res.status(500).send(error.message);
     }

@@ -82,7 +82,7 @@ export default function Navbar() {
                 <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'linear-gradient(135deg, #0061ff 0%, #d11b22 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <CrownOutlined style={{ color: 'white', fontSize: '20px' }} />
                 </div>
-                <Title level={4} style={{ margin: 0, color: '#1e293b', letterSpacing: '1px', fontWeight: 700 }}>PhucNguyen <span style={{ fontWeight: 400, fontSize: '14px', color: '#64748b' }}>LMS</span></Title>
+                <Title level={4} style={{ margin: 0, color: '#1e293b', letterSpacing: '1px', fontWeight: 700 }}>RitaVo <span style={{ fontWeight: 400, fontSize: '14px', color: '#64748b' }}>LMS</span></Title>
             </div>
 
             <Menu
