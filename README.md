@@ -83,15 +83,29 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
 
 ---
 
-## 📂 Cấu trúc thư mục
+## 📂 Cấu trúc thư mục (Enterprise Standard)
 
-- `/backend`: Mã nguồn server, API và cấu hình Database.
-- `/frontend/sercurityVideo`: Mã nguồn giao diện người dùng.
-- `docker-compose.yml`: Cấu hình Docker cho PostgreSQL.
-- `ModelDB.md`: Tài liệu thiết kế cơ sở dữ liệu.
+Dự án được tổ chức theo mô hình **Separation of Concerns (SoC)** giúp dễ bảo trì và mở rộng:
+
+### Backend (`/backend`)
+- `src/controllers/`: Tiếp nhận request, điều hướng và trả về response.
+- `src/services/`: **(Gốc rễ logic)** Nơi xử lý nghiệp vụ chính (FFmpeg, Database logic).
+- `src/middlewares/`: Các bộ lọc trung gian (Auth, Error Handler, Upload).
+- `src/utils/`: Công cụ dùng chung (`ApiError`, `catchAsync` wrapper).
+- `src/routes/`: Định nghĩa các Endpoint của hệ thống.
+- `prisma/`: Schema database và các file Migrations.
+
+### Frontend (`/frontend/sercurityVideo`)
+- `src/pages/`: Các màn hình chính của ứng dụng.
+- `src/components/`: Các thành phần giao diện dùng lại (Navbar, VideoPlayer).
+- `src/services/`: Quản lý các lệnh gọi API tập trung.
+- `src/assets/`: Hình ảnh, Icons và Styles.
 
 ---
 
-## 🔐 Bảo mật Video
-Hệ thống sử dụng cơ chế bảo mật HLS với AES-128 Encryption. Key giải mã được lưu trực tiếp trong Database (`hls_key`) và chỉ được cấp qua API có xác thực JWT, giúp ngăn chặn việc tải lậu video trái phép. Video được tối ưu hóa dung lượng (CRF 26) nhưng vẫn giữ được độ nét cao.
+## � Quy trình phát triển chuyên nghiệp
+
+1.  **Centralized Error Handling**: Không dùng try-catch bừa bãi, mọi lỗi được đẩy về `error.middleware.js` để trả về JSON chuẩn.
+2.  **Service Layer Pattern**: Controllers không chứa logic phức tạp, giúp Unit Test dễ dàng hơn.
+3.  **HLS Optimization**: Video được băm nhỏ và mã hóa bằng AES-128 trực tiếp trên server, bảo mật đường dẫn và nội dung.
 

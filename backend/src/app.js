@@ -36,10 +36,15 @@ app.use('/public', express.static(path.join(__dirname, '../public'), {
     }
 }));
 
+const errorMiddleware = require('./middlewares/error.middleware');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+
+// Centralized Error Handling
+app.use(errorMiddleware);
 
 module.exports = app;
