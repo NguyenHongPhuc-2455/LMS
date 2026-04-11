@@ -1,6 +1,6 @@
 # Security Video LMS - RitaVo Learning Management System
 
-Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật video, tích hợp Bunny.net Stream và HLS transcoding.
+Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật video, tích hợp quy trình tối ưu hóa video HLS cục bộ.
 
 ## 🚀 Hướng dẫn chạy dự án
 
@@ -26,7 +26,7 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
      ```bash
      cp .env.example .env
      ```
-   - Cấu hình lại `DATABASE_URL` và các thông tin `BUNNY_...` nếu cần.
+   - Cấu hình lại `DATABASE_URL` trong file `.env`.
 4. Chạy cơ sở dữ liệu (sử dụng Docker):
    ```bash
    docker-compose up -d
@@ -44,7 +44,7 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
    ```bash
    npm run dev
    ```
-   Server sẽ chạy tại: `http://localhost:3000` (mặc định)
+   Server sẽ chạy tại: `http://localhost:5000`
 
 ---
 
@@ -72,11 +72,11 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
 - **Framework**: Node.js (Express)
 - **ORM**: Prisma
 - **Database**: PostgreSQL
-- **Video Processing**: Fluent-ffmpeg (Local) & Bunny.net Stream (Cloud)
+- **Video Processing**: Fluent-ffmpeg (Local Optimization - H.264, CRF 26)
 - **Auth**: JSON Web Token (JWT)
 
 ### Frontend
-- **Framework**: React.js con Vite & TypeScript
+- **Framework**: React.js với Vite & TypeScript
 - **UI Library**: Ant Design (v6)
 - **Video Player**: Video.js, Shaka Player (hỗ trợ HLS/DASH)
 - **State Management**: React Router
@@ -93,4 +93,5 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
 ---
 
 ## 🔐 Bảo mật Video
-Hệ thống sử dụng cơ chế bảo mật HLS với Tokenized URL từ Bunny.net và quản lý Key decryption để ngăn chặn việc tải lậu video trái phép.
+Hệ thống sử dụng cơ chế bảo mật HLS với AES-128 Encryption. Key giải mã được lưu trực tiếp trong Database (`hls_key`) và chỉ được cấp qua API có xác thực JWT, giúp ngăn chặn việc tải lậu video trái phép. Video được tối ưu hóa dung lượng (CRF 26) nhưng vẫn giữ được độ nét cao.
+
