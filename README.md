@@ -1,111 +1,87 @@
 # Security Video LMS - RitaVo Learning Management System
 
-Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật video, tích hợp quy trình tối ưu hóa video HLS cục bộ.
+Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật video, tích hợp quy trình mã hóa video HLS chuyên nghiệp và cổng thanh toán VNPay.
 
 ## 🚀 Hướng dẫn chạy dự án
 
 ### 1. Yêu cầu hệ thống
 - **Node.js**: Phiên bản 18+
-- **Docker**: (Tùy chọn) Để chạy nhanh cơ sở dữ liệu PostgreSQL.
-- **PostgreSQL**: Nếu không dùng Docker.
+- **PostgreSQL**: Khuyên dùng **pgAdmin 4** để quản lý cơ sở dữ liệu.
+- **FFmpeg**: Cài đặt FFmpeg trên hệ thống để xử lý video.
 
 ---
 
 ### 2. Cài đặt Backend
 
-1. Di chuyển vào thư mục backend:
-   ```bash
-   cd backend
-   ```
-2. Cài đặt dependencies:
-   ```bash
-   npm install
-   ```
-3. Thiết lập biến môi trường:
-   - Copy file `.env.example` thành `.env`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Cấu hình lại `DATABASE_URL` trong file `.env`.
-4. Chạy cơ sở dữ liệu (sử dụng Docker):
-   ```bash
-   docker-compose up -d
-   ```
-   *(File docker-compose.yml nằm ở thư mục gốc của dự án)*
-5. Khởi tạo Prisma và Database:
-   ```bash
-   # Tạo các bảng trong database
-   npx prisma migrate dev --name init
-   
-   # Gieo dữ liệu mẫu (optional)
-   node seed.js
-   ```
-6. Chạy backend ở chế độ phát triển:
-   ```bash
-   npm run dev
-   ```
-   Server sẽ chạy tại: `http://localhost:5000`
+1.  **Di chuyển vào thư mục backend**:
+    ```bash
+    cd backend
+    ```
+2.  **Cài đặt dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Thiết lập biến môi trường**:
+    - Mở file `.env` và cấu hình các thông số sau:
+      - `DATABASE_URL`: Đường dẫn đến PostgreSQL (Ví dụ: `postgresql://postgres:user@localhost:5432/db_name?schema=public`)
+4.  **Khởi tạo Database (Sử dụng pgAdmin)**:
+    - Tạo một database mới trong pgAdmin.
+    - Chạy lệnh migration để tạo cấu trúc bảng:
+      ```bash
+      npx prisma migrate dev --name init
+      ```
+5.  **Chạy backend**:
+    ```bash
+    npm run dev
+    ```
+    Server sẽ chạy tại: `http://localhost:5000`
 
 ---
 
 ### 3. Cài đặt Frontend
 
-1. Mở một terminal mới và di chuyển vào thư mục frontend:
-   ```bash
-   cd frontend/sercurityVideo
-   ```
-2. Cài đặt dependencies:
-   ```bash
-   npm install
-   ```
-3. Chạy frontend:
-   ```bash
-   npm run dev
-   ```
-   Ứng dụng sẽ chạy tại: `http://localhost:5173`
+1.  **Di chuyển vào thư mục frontend**:
+    ```bash
+    cd frontend/sercurityVideo
+    ```
+2.  **Cài đặt dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Chạy frontend**:
+    ```bash
+    npm run dev
+    # Hoặc nếu ưu tiên port 5174:
+    npx vite --port 5174
+    ```
 
 ---
 
-## 🛠 Công nghệ sử dụng
+## 🛠 Tính năng nổi bật
 
-### Backend
-- **Framework**: Node.js (Express)
-- **ORM**: Prisma
-- **Database**: PostgreSQL
-- **Video Processing**: Fluent-ffmpeg (Local Optimization - H.264, CRF 26)
-- **Auth**: JSON Web Token (JWT)
+### 1. Bảo mật Video HLS
+- Video được chuyển đổi sang định dạng HLS (.m3u8).
+- Hỗ trợ mã hóa AES-128 để ngăn chặn tải video lậu.
+- Tự động tạo Thumbnail từ video.
 
-### Frontend
-- **Framework**: React.js với Vite & TypeScript
-- **UI Library**: Ant Design (v6)
-- **Video Player**: Video.js, Shaka Player (hỗ trợ HLS/DASH)
-- **State Management**: React Router
+### 2. Cổng thanh toán VNPay
+- Tích hợp thanh toán khóa học trực tiếp qua VNPay.
+- Tự động kích hoạt khóa học sau khi thanh toán thành công.
+- Xử lý chữ ký bảo mật (Hash) theo chuẩn 2.1.0 mới nhất.
 
----
-
-## 📂 Cấu trúc thư mục (Enterprise Standard)
-
-Dự án được tổ chức theo mô hình **Separation of Concerns (SoC)** giúp dễ bảo trì và mở rộng:
-
-### Backend (`/backend`)
-- `src/controllers/`: Tiếp nhận request, điều hướng và trả về response.
-- `src/services/`: **(Gốc rễ logic)** Nơi xử lý nghiệp vụ chính (FFmpeg, Database logic).
-- `src/middlewares/`: Các bộ lọc trung gian (Auth, Error Handler, Upload).
-- `src/utils/`: Công cụ dùng chung (`ApiError`, `catchAsync` wrapper).
-- `src/routes/`: Định nghĩa các Endpoint của hệ thống.
-- `prisma/`: Schema database và các file Migrations.
-
-### Frontend (`/frontend/sercurityVideo`)
-- `src/pages/`: Các màn hình chính của ứng dụng.
-- `src/components/`: Các thành phần giao diện dùng lại (Navbar, VideoPlayer).
-- `src/services/`: Quản lý các lệnh gọi API tập trung.
-- `src/assets/`: Hình ảnh, Icons và Styles.
+### 3. Quản trị Chronological
+- Sắp xếp chương mục (Chapters) theo thứ tự tùy chỉnh (Order field).
+- Giao diện Admin chuyên nghiệp với Ant Design 6.
 
 ---
 
-## � Quy trình phát triển chuyên nghiệp
+## 📂 Công nghệ sử dụng
+- **Backend**: Node.js, Express, Prisma ORM, PostgreSQL.
+- **Frontend**: React (Vite), TypeScript, Ant Design.
+- **Xử lý Video**: FFmpeg cục bộ.
+- **Thanh toán**: VNPay SDK.
 
-1.  **Centralized Error Handling**: Không dùng try-catch bừa bãi, mọi lỗi được đẩy về `error.middleware.js` để trả về JSON chuẩn.
-2.  **Service Layer Pattern**: Controllers không chứa logic phức tạp, giúp Unit Test dễ dàng hơn.
-3.  **HLS Optimization**: Video được băm nhỏ và mã hóa bằng AES-128 trực tiếp trên server, bảo mật đường dẫn và nội dung.
+---
 
+## 👥 Tác giả
+- Phát triển bởi Đội ngũ kỹ thuật RitaVõ Education.
