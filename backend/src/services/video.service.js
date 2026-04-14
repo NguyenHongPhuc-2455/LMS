@@ -2,9 +2,14 @@ const prisma = require('../configs/prisma');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
 const crypto = require('crypto');
 const ApiError = require('../utils/ApiError');
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 const HLS_OUTPUT_DIR = path.join(__dirname, '../../public/hls');
 if (!fs.existsSync(HLS_OUTPUT_DIR)) fs.mkdirSync(HLS_OUTPUT_DIR, { recursive: true });
@@ -14,6 +19,19 @@ if (!fs.existsSync(HLS_OUTPUT_DIR)) fs.mkdirSync(HLS_OUTPUT_DIR, { recursive: tr
  */
 const processVideoToHLS = async (lessonId, inputPath) => {
     try {
+        // 0. Lấy thông tin thời lượng video
+        let duration = 0;
+        try {
+            const metadata = await new Promise((resolve, reject) => {
+                ffmpeg.ffprobe(inputPath, (err, data) => {
+                    if (err) reject(err);
+                    else resolve(data);
+                });
+            });
+            duration = Math.round(metadata.format.duration || 0);
+        } catch (err) {
+            console.error('Lỗi lấy metadata video:', err);
+        }
         const lessonDir = path.join(HLS_OUTPUT_DIR, lessonId.toString());
         if (!fs.existsSync(lessonDir)) fs.mkdirSync(lessonDir, { recursive: true });
 
@@ -50,9 +68,9 @@ const processVideoToHLS = async (lessonId, inputPath) => {
         ];
 
         console.log(`🎬 Processing Video: Lesson ${lessonId}`);
-        const ffmpeg = spawn(ffmpegPath, ffmpegArgs);
+        const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
-        ffmpeg.stderr.on('data', (data) => {
+        ffmpegProcess.stderr.on('data', (data) => {
             const output = data.toString();
             if (output.includes('frame=')) {
                 const progress = output.substring(output.lastIndexOf('frame=')).split('\n')[0];
@@ -60,7 +78,7 @@ const processVideoToHLS = async (lessonId, inputPath) => {
             }
         });
 
-        ffmpeg.on('close', async (code) => {
+        ffmpegProcess.on('close', async (code) => {
             process.stdout.write('\n');
             // Cleanup temporary files
             [inputPath, keyInfoPath, keyPath].forEach(p => {
@@ -73,7 +91,8 @@ const processVideoToHLS = async (lessonId, inputPath) => {
                     data: {
                         video_url: `/public/hls/${lessonId}/master.m3u8`,
                         hls_key: key,
-                        hls_iv: iv
+                        hls_iv: iv,
+                        duration: duration
                     }
                 });
                 console.log(`✅ Video ${lessonId} optimized and secured.`);
@@ -109,8 +128,20 @@ const getVideoKey = async (lessonId) => {
     return lesson.hls_key;
 };
 
+/**
+ * Xóa folder video HLS vật lý
+ */
+const deleteVideoFiles = async (lessonId) => {
+    const lessonDir = path.join(HLS_OUTPUT_DIR, lessonId.toString());
+    if (fs.existsSync(lessonDir)) {
+        fs.rmSync(lessonDir, { recursive: true, force: true });
+        console.log(`🗑️ Deleted HLS folder for lesson ${lessonId}`);
+    }
+};
+
 module.exports = {
     processVideoToHLS,
     getVideos,
-    getVideoKey
+    getVideoKey,
+    deleteVideoFiles
 };

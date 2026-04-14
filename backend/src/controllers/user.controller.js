@@ -9,6 +9,11 @@ exports.getUsers = async (req, res) => {
             where: { deleted_at: null },
             include: {
                 user_roles: { include: { role: true } },
+                enrollments: {
+                    include: {
+                        course: { select: { title: true } }
+                    }
+                },
                 _count: { select: { enrollments: true } }
             },
             orderBy: { id: 'desc' }
@@ -16,11 +21,12 @@ exports.getUsers = async (req, res) => {
 
         // Flatten roles for easier frontend consumption
         const safeUsers = users.map(u => {
-            const { password_hash, user_roles, ...data } = u;
+            const { password_hash, user_roles, enrollments, ...data } = u;
             return {
                 ...data,
                 roles: user_roles.map(ur => ur.role),
-                enrollments_count: u._count.enrollments
+                enrollments_count: u._count.enrollments,
+                enrolled_courses: enrollments.map(e => e.course.title)
             };
         });
 
@@ -62,6 +68,53 @@ exports.updateUser = async (req, res) => {
         }
 
         res.json({ message: 'Cập nhật thành công' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getProfile = async (req, res) => {
+    try {
+        const id = req.user.id;
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                user_roles: { include: { role: true } }
+            }
+        });
+
+        const { password_hash, user_roles, ...safeUser } = user;
+        const finalUser = {
+            ...safeUser,
+            roles: user_roles.map(ur => ur.role.name)
+        };
+
+        res.json(finalUser);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const id = req.user.id; // Lấy ID từ token đã verify
+        const { full_name, avatar, phone, dob, gender, bio, email } = req.body;
+
+        const updatedUser = await prisma.user.update({
+            where: { id },
+            data: { full_name, avatar, phone, dob, gender, bio, email },
+            include: {
+                user_roles: { include: { role: true } }
+            }
+        });
+
+        const { password_hash, user_roles, ...safeUser } = updatedUser;
+        const finalUser = {
+            ...safeUser,
+            roles: user_roles.map(ur => ur.role.name)
+        };
+
+        res.json({ message: 'Cập nhật hồ sơ thành công', user: finalUser });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

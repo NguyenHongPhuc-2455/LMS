@@ -55,7 +55,10 @@ export default function Register() {
                     <Form.Item
                         label="Tên đăng nhập"
                         name="username"
-                        rules={[{ required: true, message: 'Vui lòng nhập tên tài khoản!' }]}
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập tên tài khoản!' },
+                            { pattern: /^[a-zA-Z0-9_]{3,20}$/, message: 'Username từ 3-20 ký tự, không chứa ký tự đặc biệt!' }
+                        ]}
                     >
                         <Input
                             prefix={<UserAddOutlined style={{ color: '#94a3b8' }} />}
@@ -81,8 +84,8 @@ export default function Register() {
                         label="Mật khẩu"
                         name="password"
                         rules={[
-                            { required: true, message: 'Vui lòng nhập mật khẩu!' },
-                            { min: 6, message: 'Mật khẩu phải từ 6 ký tự!' }
+                            { required: true, message: 'Bắt buộc nhập!' },
+                            { min: 6, message: 'Tối thiểu 6 ký tự' }
                         ]}
                     >
                         <Input.Password

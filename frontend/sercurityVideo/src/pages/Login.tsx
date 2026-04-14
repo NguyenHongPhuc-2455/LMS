@@ -21,7 +21,7 @@ export default function Login() {
             message.success('Chào mừng bạn quay trở lại!');
 
             if (res.data.user.roles?.includes('admin')) {
-                navigate('/');
+                navigate('/admin');
             } else {
                 navigate('/course');
             }

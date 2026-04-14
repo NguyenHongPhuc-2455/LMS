@@ -1,16 +1,20 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Layout, Menu, Space, Typography, Avatar, Dropdown
+    Layout, Menu, Space, Typography, Avatar, Dropdown, Button, Badge
 } from 'antd';
 import {
     DashboardOutlined, BookOutlined, UserOutlined,
-    LogoutOutlined, SettingOutlined, CrownOutlined
+    LogoutOutlined, SettingOutlined, CrownOutlined,
+    BellOutlined
 } from '@ant-design/icons';
 
 const { Header } = Layout;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
+/**
+ * Premium Header Component cho SPA
+ */
 export default function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -20,7 +24,6 @@ export default function Navbar() {
         const userStr = localStorage.getItem('user');
         user = userStr ? JSON.parse(userStr) : null;
     } catch (e) {
-        console.error('Lỗi parse user data');
         localStorage.removeItem('user');
     }
 
@@ -35,29 +38,33 @@ export default function Navbar() {
     const menuItems = [
         {
             key: '/course',
-            icon: <BookOutlined />,
             label: 'Khóa học',
             onClick: () => navigate('/course')
         },
+        // {
+        //     key: '/',
+        //     icon: <DashboardOutlined />,
+        //     label: isAdmin ? 'Admin Panel' : 'Bảng điều khiển',
+        //     onClick: () => navigate('/')
+        // },
         isAdmin && {
-            key: '/',
+            key: '/admin',
             icon: <DashboardOutlined />,
-            label: 'Admin Panel',
-            onClick: () => navigate('/')
+            label: 'Quản trị hệ thống',
+            onClick: () => navigate('/admin')
         },
         isAdmin && {
             key: '/admin/users',
             icon: <CrownOutlined />,
-            label: 'Hệ thống User',
+            label: 'Quản lý thành viên',
             onClick: () => navigate('/admin/users')
         }
     ].filter(Boolean) as any[];
 
-    if (location.pathname === '/login' || location.pathname === '/register') return null;
-
     const userMenu = {
         items: [
-            { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined /> },
+            isAdmin && { key: 'admin', label: 'Trang quản trị', icon: <DashboardOutlined />, onClick: () => navigate('/admin') },
+            { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, onClick: () => navigate('/profile') },
             { key: 'settings', label: 'Cài đặt', icon: <SettingOutlined /> },
             { type: 'divider' as const },
             { key: 'logout', label: 'Đăng xuất', icon: <LogoutOutlined />, danger: true, onClick: handleLogout },
@@ -66,51 +73,109 @@ export default function Navbar() {
 
     return (
         <Header style={{
-            background: '#ffffff',
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
             padding: '0 40px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            height: '70px',
+            height: '72px',
             position: 'sticky',
             top: 0,
             zIndex: 1000,
-            borderBottom: '1px solid #f0f0f0'
+            borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/')}>
-                <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'linear-gradient(135deg, #0061ff 0%, #d11b22 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <CrownOutlined style={{ color: 'white', fontSize: '20px' }} />
+            {/* Logo Section */}
+            <div
+                style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+                onClick={() => navigate('/')}
+            >
+                {/* <div style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    boxShadow: '0 8px 16px rgba(99, 102, 241, 0.25)'
+                }}>
+                    <CrownOutlined style={{ color: 'white', fontSize: '22px' }} />
+                </div> */}
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                    <div style={{
+                        margin: 0,
+                        color: '#C82020',
+                        fontSize: '24px',
+                        fontWeight: 900,
+                        letterSpacing: '-1px',
+                        textTransform: 'uppercase',
+                        fontFamily: "'Inter', sans-serif"
+                    }}>
+                        RITA VÕ<span style={{ fontSize: '10px', verticalAlign: 'top', marginLeft: '2px' }}>®</span>
+                    </div>
+                    <Text style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Education Cloud
+                    </Text>
                 </div>
-                <Title level={4} style={{ margin: 0, color: '#1e293b', letterSpacing: '1px', fontWeight: 700 }}>RitaVo <span style={{ fontWeight: 400, fontSize: '14px', color: '#64748b' }}>LMS</span></Title>
             </div>
 
+            {/* Navigation Menu */}
             <Menu
                 mode="horizontal"
                 selectedKeys={[location.pathname]}
                 style={{
                     flex: 1,
-                    justifyContent: 'center',
                     borderBottom: 'none',
                     background: 'transparent',
-                    fontWeight: 500
+                    fontWeight: 600,
+                    fontSize: '15px'
                 }}
                 items={menuItems}
             />
-            <Space size={20}>
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-                    <Text strong style={{ color: '#1e293b' }}>{user?.username || 'Guest'}</Text>
-                    <Text style={{ color: '#64748b', fontSize: '11px' }}>{isAdmin ? 'Quản trị viên' : 'Học viên'}</Text>
-                </div>
-                <Dropdown menu={userMenu} placement="bottomRight" arrow>
-                    <Avatar
-                        src={user?.avatar}
-                        size={42}
-                        icon={<UserOutlined />}
-                        style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', border: '2px solid rgba(255, 255, 255, 0.2)' }}
+
+            {/* Right Actions */}
+            <Space size={24}>
+                <Badge dot color="#6366f1" offset={[-4, 4]}>
+                    <Button
+                        type="text"
+                        icon={<BellOutlined style={{ fontSize: '20px', color: '#64748b' }} />}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     />
+                </Badge>
+
+                <div style={{ height: '32px', width: '1px', background: '#e2e8f0' }} />
+
+                <Dropdown menu={userMenu} placement="bottomRight" arrow={{ pointAtCenter: true }} trigger={['click']}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                        <div style={{ textAlign: 'right', display: 'none', flexDirection: 'column', lineHeight: '1.2' }} className="user-info-text">
+                            <Text strong style={{ color: '#1e293b', fontSize: '14px' }}>{user?.full_name || user?.username}</Text>
+                            <Text style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>{isAdmin ? 'Quản trị viên' : 'Học viên'}</Text>
+                        </div>
+                        <Avatar
+                            src={user?.avatar}
+                            size={44}
+                            icon={<UserOutlined />}
+                            style={{
+                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                border: '2px solid white',
+                                boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)'
+                            }}
+                        />
+                    </div>
                 </Dropdown>
             </Space>
+
+            <style>{`
+                @media (min-width: 768px) {
+                    .user-info-text { display: flex !important; }
+                }
+                .ant-menu-horizontal > .ant-menu-item::after {
+                    border-bottom-width: 3px !important;
+                    border-radius: 4px;
+                }
+            `}</style>
         </Header>
     );
 }

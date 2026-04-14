@@ -58,9 +58,36 @@ exports.getVideoKey = catchAsync(async (req, res) => {
  */
 exports.deleteVideo = catchAsync(async (req, res) => {
     const { id } = req.params;
+
+    // 1. Xóa folder video vật lý
+    await videoService.deleteVideoFiles(id);
+
+    // 2. Xóa trong database
     await prisma.lesson.delete({ where: { id: parseInt(id) } });
+
     res.json({
         status: 'success',
         message: 'Video deleted'
+    });
+});
+
+/**
+ * Cập nhật thông tin bài học
+ */
+exports.updateLesson = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { title, section_id } = req.body;
+
+    const lesson = await prisma.lesson.update({
+        where: { id: parseInt(id) },
+        data: {
+            title,
+            section_id: section_id ? parseInt(section_id) : undefined
+        }
+    });
+
+    res.json({
+        status: 'success',
+        data: lesson
     });
 });

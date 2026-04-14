@@ -32,6 +32,7 @@ router.post('/complete/:lessonId', authMiddleware.verifyToken, async (req, res) 
     }
 });
 
+router.put('/:id', authMiddleware.verifyToken, videoController.updateLesson);
 router.delete('/:id', authMiddleware.verifyToken, videoController.deleteVideo);
 
 module.exports = router;

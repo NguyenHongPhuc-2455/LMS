@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
     Table, Button, Space, Input, Tag, Popconfirm,
     message, Typography, Card, Badge, Modal, Form,
-    Select, Row, Col, Statistic, Avatar
+    Select, Row, Col, Statistic, Avatar, Popover, List
 } from 'antd';
 import {
     SearchOutlined, DeleteOutlined, UserOutlined,
@@ -14,7 +14,7 @@ import type { InputRef, TableColumnsType, TableColumnType } from 'antd';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
 import Highlighter from 'react-highlight-words';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api from '../../api';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -33,6 +33,7 @@ interface UserData {
     roles: RoleData[];
     created_at: string;
     enrollments_count: number;
+    enrolled_courses: string[];
 }
 
 type DataIndex = keyof UserData;
@@ -182,7 +183,24 @@ export default function UserManagement() {
             dataIndex: 'enrollments_count',
             key: 'enrollments',
             sorter: (a, b) => a.enrollments_count - b.enrollments_count,
-            render: (count) => <Badge count={count} showZero color={count > 0 ? '#52c41a' : '#d9d9d9'} />
+            render: (count, record) => (
+                <Popover
+                    title="Danh sách khóa học"
+                    content={
+                        record.enrolled_courses.length > 0 ? (
+                            <List
+                                size="small"
+                                dataSource={record.enrolled_courses}
+                                renderItem={(item) => <List.Item><Text style={{ fontSize: '12px' }}>- {item}</Text></List.Item>}
+                                style={{ maxWidth: 250 }}
+                            />
+                        ) : "Chưa mua khóa học nào"
+                    }
+                    trigger="hover"
+                >
+                    <Badge count={count} showZero color={count > 0 ? '#52c41a' : '#d9d9d9'} style={{ cursor: 'pointer' }} />
+                </Popover>
+            )
         },
         {
             title: 'Hành động',
@@ -202,11 +220,10 @@ export default function UserManagement() {
         <div style={{ padding: '40px', background: 'var(--bg-color)', minHeight: '100vh' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
                 <div>
-                    <Title level={2} className="premium-title" style={{ margin: 0 }}>Trung tâm Quản trị</Title>
+                    <Title level={2} className="premium-title" style={{ margin: 0 }}>Quản lý người dùng</Title>
                     <Text style={{ color: 'var(--text-muted)' }}>Quản lý người dùng, giảng viên và phân quyền toàn hệ thống</Text>
                 </div>
                 <Space>
-                    <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/')}>Về Dashboard</Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()} className="btn-primary" style={{ width: 'auto', padding: '0 24px' }}>
                         Thêm thành viên
                     </Button>
@@ -262,14 +279,35 @@ export default function UserManagement() {
                     <Form.Item name="full_name" label="Họ và tên">
                         <Input placeholder="Nguyễn Văn A" />
                     </Form.Item>
-                    <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true }]}>
+                    <Form.Item
+                        name="username"
+                        label="Tên đăng nhập"
+                        rules={[
+                            { required: true, message: 'Bắt buộc nhập!' },
+                            { pattern: /^[a-zA-Z0-9_]{3,20}$/, message: '3-20 ký tự, không gạch chéo/dấu' }
+                        ]}
+                    >
                         <Input />
                     </Form.Item>
-                    <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+                    <Form.Item
+                        name="email"
+                        label="Email"
+                        rules={[
+                            { required: true, message: 'Bắt buộc nhập!' },
+                            { type: 'email', message: 'Email không hợp lệ!' }
+                        ]}
+                    >
                         <Input />
                     </Form.Item>
                     {!editingUser && (
-                        <Form.Item name="password" label="Mật khẩu" rules={[{ required: true }]}>
+                        <Form.Item
+                            name="password"
+                            label="Mật khẩu"
+                            rules={[
+                                { required: true, message: 'Bắt buộc nhập!' },
+                                { min: 6, message: 'Tối thiểu 6 ký tự' }
+                            ]}
+                        >
                             <Input.Password />
                         </Form.Item>
                     )}

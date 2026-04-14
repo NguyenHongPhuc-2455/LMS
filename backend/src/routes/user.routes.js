@@ -3,6 +3,10 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
+// Tuyến đường cho mọi người dùng đã đăng nhập
+router.get('/profile', authMiddleware.verifyToken, userController.getProfile);
+router.put('/profile', authMiddleware.verifyToken, userController.updateProfile);
+
 // Tuyến đường chỉ dành cho ADMIN
 router.get('/', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.getUsers);
 router.get('/roles', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.getRoles);

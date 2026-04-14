@@ -4,7 +4,8 @@ const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
 exports.getCourses = catchAsync(async (req, res) => {
-    const courses = await courseService.getAllCourses();
+    const { search } = req.query;
+    const courses = await courseService.getAllCourses(search);
     res.json(courses);
 });
 
@@ -54,16 +55,41 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
 });
 
 exports.createCourse = catchAsync(async (req, res) => {
-    const { title, description, category_id, price, level } = req.body;
+    const { title, description, category_id, price, level, thumbnail, intro_video_url, learning_outcomes, requirements } = req.body;
     const course = await courseService.createCourse({
         title,
         description,
         category_id: category_id ? parseInt(category_id) : null,
         instructor_id: req.user.id,
         price: parseFloat(price) || 0,
-        level
+        level,
+        thumbnail,
+        intro_video_url,
+        learning_outcomes,
+        requirements
     });
     res.status(201).json(course);
+});
+
+exports.updateCourse = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { title, description, category_id, price, level, thumbnail, intro_video_url, learning_outcomes, requirements } = req.body;
+    const course = await prisma.course.update({
+        where: { id: parseInt(id) },
+        data: {
+            title,
+            description,
+            category_id: category_id ? parseInt(category_id) : undefined,
+            price: price !== undefined ? parseFloat(price) : undefined,
+            level,
+            thumbnail,
+            intro_video_url,
+            learning_outcomes,
+            requirements,
+            updated_at: new Date()
+        }
+    });
+    res.json(course);
 });
 
 exports.deleteCourse = catchAsync(async (req, res) => {
@@ -76,11 +102,22 @@ exports.deleteCourse = catchAsync(async (req, res) => {
 });
 
 exports.createSection = catchAsync(async (req, res) => {
+    const { course_id, title, order } = req.body;
+
+    // Nếu không có order, tự động lấy số lượng hiện tại + 1 để đẩy xuống cuối
+    let finalOrder = parseInt(order);
+    if (isNaN(finalOrder)) {
+        const count = await prisma.section.count({
+            where: { course_id: parseInt(course_id) }
+        });
+        finalOrder = count + 1;
+    }
+
     const section = await prisma.section.create({
         data: {
-            ...req.body,
-            course_id: parseInt(req.body.course_id),
-            order: parseInt(req.body.order) || 0
+            title,
+            course_id: parseInt(course_id),
+            order: finalOrder
         }
     });
     res.status(201).json(section);
@@ -90,4 +127,43 @@ exports.deleteSection = catchAsync(async (req, res) => {
     const { id } = req.params;
     await prisma.section.delete({ where: { id: parseInt(id) } });
     res.json({ message: 'Đã xóa chương' });
+});
+
+exports.updateSection = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { title, order } = req.body;
+    const section = await prisma.section.update({
+        where: { id: parseInt(id) },
+        data: {
+            title,
+            order: order !== undefined ? parseInt(order) : undefined
+        }
+    });
+    res.json(section);
+});
+
+exports.getMyCourses = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    const enrollments = await prisma.enrollment.findMany({
+        where: { user_id: userId },
+        include: {
+            course: {
+                include: {
+                    instructor: {
+                        select: { full_name: true }
+                    },
+                    _count: {
+                        select: { sections: true }
+                    }
+                }
+            }
+        }
+    });
+
+    const courses = enrollments.map(e => ({
+        ...e.course,
+        enrolled_at: e.enrolled_at
+    })).filter(c => !c.deleted_at);
+
+    res.json(courses);
 });

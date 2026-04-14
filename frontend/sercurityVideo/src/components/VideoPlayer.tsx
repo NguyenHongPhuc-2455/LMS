@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import shaka from 'shaka-player';
 import api from '../api';
+import { message, Modal } from 'antd';
 
 interface VideoPlayerProps {
     src: string;
@@ -12,6 +13,9 @@ export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
+
+    // Cơ chế chống tua (Anti-Seek) ổn định
+    const lastTimeRef = useRef(0);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -30,12 +34,10 @@ export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps
                 request.headers['Authorization'] = `Bearer ${token}`;
             }
 
-            // Chống cache manifest và key để đảm bảo quyền truy cập mới nhất
             if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST || request.uris[0].includes('/key/')) {
                 request.uris[0] += (request.uris[0].includes('?') ? '&' : '?') + 't=' + Date.now();
             }
 
-            // Hỗ trợ CORS Credentials cho Key Request
             request.allowCrossSiteCredentials = true;
         });
 
@@ -47,11 +49,11 @@ export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps
     useEffect(() => {
         let isStillMounted = true;
         hasTriggeredEndRef.current = false;
+        lastTimeRef.current = 0; // Reset khi đổi video
 
         const loadVideo = async () => {
             if (playerRef.current && src) {
                 try {
-                    console.log('🎬 Loading source:', src);
                     await playerRef.current.load(src);
                     if (isStillMounted && videoRef.current) {
                         videoRef.current.play().catch(e => console.warn('Autoplay blocked:', e));
@@ -59,7 +61,6 @@ export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps
                 } catch (e: any) {
                     if (isStillMounted && e.code !== shaka.util.Error.Code.LOAD_INTERRUPTED) {
                         console.error('❌ Shaka Player Error:', e);
-                        // message.error(`Lỗi trình phát (${e.code}): Không thể giải mã hoặc tải video bảo mật.`);
                     }
                 }
             }
@@ -82,6 +83,23 @@ export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps
         const video = videoRef.current;
         if (!video || hasTriggeredEndRef.current) return;
 
+        // Logic chống tua siêu ổn định dùng Delta
+        const delta = video.currentTime - lastTimeRef.current;
+
+        // Nếu nhảy vọt hơn 1.2 giây (tua nhanh)
+        if (delta > 1.2) {
+            video.currentTime = lastTimeRef.current;
+            message.warning({
+                content: 'Vui lòng không tua nhanh video!',
+                key: 'anti-seek',
+                duration: 2
+            });
+        } else {
+            // Xem bình thường hoặc tua lùi
+            lastTimeRef.current = video.currentTime;
+        }
+
+        // Báo cáo hoàn thành khi đạt 95%
         if (video.duration > 0 && video.currentTime / video.duration >= 0.95) {
             hasTriggeredEndRef.current = true;
             reportProgress();

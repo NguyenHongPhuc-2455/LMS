@@ -7,7 +7,20 @@ const hashPassword = (password) => crypto.createHash('sha256').update(password).
 exports.register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
+
+        // Validation cơ bản
         if (!username || !email || !password) return res.status(400).json({ error: 'Vui lòng nhập đủ thông tin' });
+
+        // Validate Email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return res.status(400).json({ error: 'Email không hợp lệ' });
+
+        // Validate Username
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        if (!usernameRegex.test(username)) return res.status(400).json({ error: 'Username phải từ 3-20 ký tự và không có ký tự đặc biệt' });
+
+        // Validate Password
+        if (password.length < 6) return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 6 ký tự' });
 
         const existingUser = await prisma.user.findFirst({
             where: { OR: [{ username }, { email }] }

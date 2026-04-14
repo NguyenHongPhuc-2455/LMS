@@ -8,10 +8,20 @@ const courseRoutes = require('./routes/course.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
 
+const uploadRoutes = require('./routes/upload.routes');
+
 const app = express();
 
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -20,8 +30,11 @@ app.use(express.json());
 
 // Ép cấu hình chèn Headers cho luồng HLS m3u8/ts để chống lại bảo mật khắt khe của trình duyệt
 app.use('/public', express.static(path.join(__dirname, '../public'), {
-    setHeaders: (res, path) => {
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+    setHeaders: (res, path, stat) => {
+        const origin = res.req.headers.origin;
+        if (allowedOrigins.includes(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+        }
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
         // Tắt hoàn toàn Cache để tránh Chrome trả mã ảo 304 làm kẹt luồng HLS gây lỗi 7002
@@ -43,6 +56,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Centralized Error Handling
 app.use(errorMiddleware);
