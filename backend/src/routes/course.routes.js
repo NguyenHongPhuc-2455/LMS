@@ -8,6 +8,7 @@ router.get('/my-courses', authMiddleware.verifyToken, courseController.getMyCour
 router.get('/:id', authMiddleware.verifyToken, courseController.getCourseDetail);
 router.post('/', authMiddleware.verifyToken, courseController.createCourse);
 router.put('/:id', authMiddleware.verifyToken, courseController.updateCourse);
+router.get('/sections/:id', authMiddleware.verifyToken, courseController.getSectionDetail);
 router.post('/sections', authMiddleware.verifyToken, courseController.createSection);
 router.put('/sections/:id', authMiddleware.verifyToken, courseController.updateSection);
 router.delete('/sections/:id', authMiddleware.verifyToken, courseController.deleteSection);

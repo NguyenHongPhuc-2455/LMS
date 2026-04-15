@@ -1,6 +1,7 @@
 const prisma = require('../configs/prisma');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
+const notificationService = require('../services/notification.service');
 
 /**
  * Gửi yêu cầu tham gia khóa học private
@@ -136,6 +137,19 @@ exports.approveRequest = catchAsync(async (req, res) => {
         }
     });
 
+    // 3. Thông báo cho người dùng
+    const course = await prisma.course.findUnique({
+        where: { id: request.course_id },
+        select: { title: true }
+    });
+
+    await notificationService.createNotification({
+        userId: request.user_id,
+        title: 'Yêu cầu được phê duyệt',
+        message: `Yêu cầu tham gia khóa học "${course.title}" của bạn đã được phê duyệt.`,
+        type: 'COURSE_APPROVAL'
+    });
+
     res.json({ message: 'Đã phê duyệt và cấp quyền truy cập khóa học', data: updatedRequest });
 });
 
@@ -157,6 +171,19 @@ exports.rejectRequest = catchAsync(async (req, res) => {
     const updatedRequest = await prisma.courseRequest.update({
         where: { id: parseInt(id) },
         data: { status: 'REJECTED' }
+    });
+
+    // Thông báo cho người dùng
+    const course = await prisma.course.findUnique({
+        where: { id: request.course_id },
+        select: { title: true }
+    });
+
+    await notificationService.createNotification({
+        userId: request.user_id,
+        title: 'Yêu cầu bị từ chối',
+        message: `Yêu cầu tham gia khóa học "${course.title}" của bạn đã bị từ chối.`,
+        type: 'COURSE_REJECTION'
     });
 
     res.json({ message: 'Đã từ chối yêu cầu truy cập', data: updatedRequest });

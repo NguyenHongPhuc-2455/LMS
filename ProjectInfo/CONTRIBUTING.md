@@ -59,3 +59,36 @@ exports.getDetail = catchAsync(async (req, res) => {
 ## 🧹 5. Linting & Formatting
 - Dự án ưu tiên sử dụng **Prettier** để format code.
 - Luôn kiểm tra lỗi TypeScript (`npm run build`) trước khi push code lên repo.
+
+---
+
+## 🔌 6. Socket.io & Realtime (Quy ước)
+
+### Backend
+- File quản lý socket: `backend/src/utils/socket.js`.
+- Đăng ký user vào room riêng khi connect: `socket.join(userId.toString())`.
+- Emit event tới user cụ thể: `socketUtils.emitToUser(userId, 'eventName', data)`.
+- Tên event: sử dụng `camelCase` (VD: `newNotification`).
+
+### Frontend
+- Socket client singleton: `frontend/src/services/socket.ts`.
+- Lắng nghe event trong `useEffect` với cleanup (`socket.off()`).
+- Hook chuyên biệt: `useNotifications.ts` quản lý state + socket listener.
+
+---
+
+## 💬 7. Comment System (Quy ước kiến trúc)
+
+### Cấu trúc 2 cấp cố định (Facebook-style)
+- **Level 1**: Bình luận gốc (`parent_id = null`).
+- **Level 2**: Phản hồi (`parent_id = id của Level 1`).
+- **Reply vào Level 2**: Backend tự gộp `parent_id` về Level 1.
+
+### Notification tự động
+- Khi tạo reply, `CommentService` tự gọi `notificationService.createNotification()`.
+- Notification kèm trường `link` chứa URL: `/course/{courseId}/learning?lessonId={lessonId}#comment-{commentId}`.
+- Frontend scroll + highlight bình luận khi navigate từ notification.
+
+### CommentSection Component
+- Mỗi bình luận có `id="comment-{id}"` cho scroll targeting.
+- Render đệ quy qua `renderCommentItem(item, level)`.

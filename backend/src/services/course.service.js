@@ -12,7 +12,7 @@ const getAllCourses = async (search = '') => {
         include: {
             category: true,
             instructor: { select: { id: true, username: true, full_name: true } },
-            _count: { select: { sections: true } }
+            _count: { select: { sections: true, enrollments: true } }
         }
     });
 };

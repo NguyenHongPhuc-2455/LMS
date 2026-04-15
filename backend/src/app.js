@@ -8,7 +8,10 @@ const courseRoutes = require('./routes/course.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
 const courseRequestRoutes = require('./routes/courseRequest.routes');
+const notificationRoutes = require('./routes/notification.routes');
+const statsRoutes = require('./routes/stats.routes');
 
+const commentRoutes = require('./routes/comment.routes');
 const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
@@ -58,6 +61,9 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/course-requests', courseRequestRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/comments', commentRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Centralized Error Handling

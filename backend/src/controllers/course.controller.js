@@ -151,6 +151,24 @@ exports.updateSection = catchAsync(async (req, res) => {
     res.json(section);
 });
 
+exports.getSectionDetail = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const section = await prisma.section.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+            lessons: {
+                orderBy: [
+                    { order: 'asc' },
+                    { id: 'asc' }
+                ]
+            }
+        }
+    });
+
+    if (!section) throw new ApiError(404, 'Không tìm thấy chương học');
+    res.json(section);
+});
+
 exports.getMyCourses = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const enrollments = await prisma.enrollment.findMany({
@@ -161,20 +179,55 @@ exports.getMyCourses = catchAsync(async (req, res) => {
                     instructor: {
                         select: { full_name: true }
                     },
-                    _count: {
-                        select: { sections: true }
+                    sections: {
+                        include: {
+                            lessons: {
+                                select: { id: true }
+                            }
+                        }
                     }
                 }
             }
         }
     });
 
-    const courses = enrollments.map(e => ({
-        ...e.course,
-        enrolled_at: e.enrolled_at
-    })).filter(c => !c.deleted_at);
+    const coursesWithProgress = await Promise.all(enrollments.map(async (e) => {
+        const course = e.course;
+        const allLessons = course.sections.flatMap(s => s.lessons);
+        const totalLessons = allLessons.length;
 
-    res.json(courses);
+        const completedLessonsData = await prisma.lessonCompleted.findMany({
+            where: {
+                user_id: userId,
+                lesson_id: { in: allLessons.map(l => l.id) }
+            },
+            select: { lesson_id: true }
+        });
+        const completedIdsItems = completedLessonsData.map(c => c.lesson_id);
+        const completedLessons = completedIdsItems.length;
+
+        // Tìm bài học đầu tiên chưa hoàn thành
+        const nextLesson = allLessons.find(l => !completedIdsItems.includes(l.id));
+
+        const progressPercent = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+
+        return {
+            id: course.id,
+            title: course.title,
+            thumbnail: course.thumbnail,
+            instructor: course.instructor.full_name,
+            totalLessons,
+            completedLessons,
+            progressPercent,
+            nextLessonId: nextLesson ? nextLesson.id : null,
+            enrolledAt: e.enrolled_at
+        };
+    }));
+
+    // Sắp xếp theo ngày tham gia mới nhất
+    coursesWithProgress.sort((a, b) => new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime());
+
+    res.json(coursesWithProgress);
 });
 
 exports.enrollCourse = catchAsync(async (req, res) => {

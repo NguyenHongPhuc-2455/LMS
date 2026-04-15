@@ -43,6 +43,8 @@ model User {
   wishlists        Wishlist[]
   completed_lessons LessonCompleted[]
   course_requests  CourseRequest[]
+  notifications    Notification[]
+  comments         Comment[]
 
   @@map("users")
 }
@@ -149,7 +151,12 @@ model Lesson {
   title       String     @db.VarChar(255)
   type        LessonType @default(VIDEO)
   video_url   String?    @db.VarChar(255) // manifest_url cũ
-  content     String?    @db.Text         // Dùng cho loại DOCUMENT
+  content     String?    @db.Text         // Nội dung bài học (Markdown/Text)
+  
+  // Tài liệu đính kèm (PDF)
+  attachment_url  String? @db.VarChar(255)
+  attachment_name String? @db.VarChar(255)
+
   duration    Int?       @default(0)      // Tính theo giây
   order       Int        @default(0)
   is_free     Boolean    @default(false)
@@ -160,6 +167,7 @@ model Lesson {
 
   section     Section           @relation(fields: [section_id], references: [id], onDelete: Cascade)
   completions LessonCompleted[]
+  comments    Comment[]
 
   @@map("lessons")
 }
@@ -278,4 +286,36 @@ model Wishlist {
 
   @@id([user_id, course_id])
   @@map("wishlists")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  title      String   @db.VarChar(255)
+  message    String   @db.Text
+  type       String?  @db.VarChar(50) // e.g., 'COURSE_APPROVAL', 'COURSE_REJECTION'
+  link       String?  @db.VarChar(500) // Link điều hướng khi click thông báo
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  lesson_id  Int
+  user_id    Int
+  parent_id  Int?     // Cho cấp độ 2 (Phản hồi)
+  content    String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  lesson  Lesson    @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  user    User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@map("comments")
 }

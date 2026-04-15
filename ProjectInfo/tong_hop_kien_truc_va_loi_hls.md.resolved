@@ -74,3 +74,20 @@ Dưới đây là 4 bài học sát máu nhất trong lịch sử làm Video Str
 > **Cách Fix:** Chia Player làm 2 luồng Hook (`useEffect`) cách ly:
 > 1. Trụ Cột: `shaka.Player().attach(video)` (Không gọi source, xây đúng 1 lần khi lên sóng).
 > 2. Người Thay Đạn: Cứ hễ biến `[src]` thay đổi, chạy lệnh `player.load(src)`. Vừa êm mượt luân chuyển luồng, mà lại có thể cài lệnh Auto-Play mượt mà nhất.
+### 🐞 Lỗi 5: Cổng kết nối bị Treo (EADDRINUSE) & Crash Server cục bộ
+> **Khảo bệnh:** Sau khi ứng dụng bị sập do lỗi Code, dù đã sửa xong Code nhưng chạy `npm run dev` vẫn báo lỗi `Error: listen EADDRINUSE: address already in use :::5000`.
+> 
+> **Thủ phạm:** Khi ứng dụng Node.js bị crash hoặc treo, tiến trình (Process) cũ đôi khi không tự thoát hẳn mà vẫn lén lút chiếm giữ cổng mạng. Nodemon hoặc Server mới nhảy vào đòi cổng sẽ bị hệ điều hành từ chối.
+> 
+> **Cách Fix:** 
+> 1. Dùng lệnh `netstat -ano | findstr :5000` để tìm ID của kẻ chiếm đóng (PID).
+> 2. Dùng `taskkill /F /PID <số_PID>` hoặc `taskkill /F /IM node.exe` để cưỡng chế giải tán mọi tiến trình Node đang treo.
+> 
+> ---
+> 
+> ### 🐞 Lỗi 6: Trắng trang hoặc "No Data" sau khi Tách mã nguồn (Refactor)
+> **Khảo bệnh:** Màn hình Bài giảng (Lesson Management) sau khi tách ra trang riêng báo "No data" dù trong Database vẫn có bài giảng.
+> 
+> **Thủ phạm:** Quên chưa khai báo Route tương ứng ở Backend (`GET /sections/:id`). Frontend gửi yêu cầu đi nhưng Backend không hiểu nên trả về mã 404 hoặc rỗng, dẫn đến bảng hiển thị không có dữ liệu.
+> 
+> **Cách Fix:** Luôn đảm bảo nguyên tắc: **Cập nhật Frontend phải đi đôi với Cập nhật Route/Controller ở Backend**. Triển khai thêm controller `getSectionDetail` để trả về đúng mảng `lessons` tương ứng với chương đang chọn.

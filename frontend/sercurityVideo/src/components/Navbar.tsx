@@ -1,13 +1,18 @@
-import React from 'react';
+// Removed unused React import
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Layout, Menu, Space, Typography, Avatar, Dropdown, Button, Badge
+    Layout, Menu, Space, Typography, Avatar, Dropdown, Button, Badge, Popover, List, Empty
 } from 'antd';
 import {
-    DashboardOutlined, BookOutlined, UserOutlined,
+    DashboardOutlined, UserOutlined,
     LogoutOutlined, SettingOutlined, CrownOutlined,
-    BellOutlined
+    BellOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined
 } from '@ant-design/icons';
+import { useNotifications } from '../hooks/useNotifications';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -35,11 +40,108 @@ export default function Navbar() {
         navigate('/login');
     };
 
+    const {
+        notifications,
+        unreadCount,
+        loading,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        deleteAllNotifications
+    } = useNotifications(user?.id);
+
+    const notificationContent = (
+        <div style={{ width: '310px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 4px' }}>
+                <Text strong style={{ fontSize: '14px' }}>Thông báo</Text>
+                <Space size={8}>
+                    {unreadCount > 0 && (
+                        <Button type="link" size="small" onClick={markAllAsRead} style={{ padding: 0, fontSize: '11px' }}>
+                            Đọc hết
+                        </Button>
+                    )}
+                    {notifications.length > 0 && (
+                        <Button type="link" danger size="small" onClick={deleteAllNotifications} style={{ padding: 0, fontSize: '11px' }}>
+                            Xóa hết
+                        </Button>
+                    )}
+                </Space>
+            </div>
+            <List
+                loading={loading}
+                itemLayout="horizontal"
+                dataSource={notifications}
+                locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có thông báo nào" /> }}
+                renderItem={(item) => (
+                    <List.Item
+                        style={{
+                            padding: '8px 10px',
+                            cursor: 'pointer',
+                            background: item.is_read ? 'transparent' : '#f0f7ff',
+                            borderRadius: '8px',
+                            marginBottom: '4px',
+                            transition: 'all 0.2s',
+                            border: 'none'
+                        }}
+                        onClick={() => !item.is_read && markAsRead(item.id)}
+                        actions={[
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={<DeleteOutlined style={{ color: '#ff4d4f', fontSize: '12px' }} />}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(item.id);
+                                }}
+                                style={{ width: '24px', height: '24px', padding: 0 }}
+                            />
+                        ]}
+                    >
+                        <List.Item.Meta
+                            avatar={
+                                <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: item.type === 'COURSE_APPROVAL' ? '#f6ffed' : '#fff1f0',
+                                    color: item.type === 'COURSE_APPROVAL' ? '#52c41a' : '#ff4d4f',
+                                    fontSize: '14px'
+                                }}>
+                                    {item.type === 'COURSE_APPROVAL' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                                </div>
+                            }
+                            title={
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                    <Text strong={!item.is_read} style={{ fontSize: '12px', lineHeight: '1.4', flex: 1 }}>{item.title}</Text>
+                                    <Text type="secondary" style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>{dayjs(item.created_at).fromNow()}</Text>
+                                </div>
+                            }
+                            description={
+                                <Text type={item.is_read ? 'secondary' : undefined} style={{ fontSize: '11px', lineHeight: '1.4', display: 'block', marginTop: '2px' }}>
+                                    {item.message}
+                                </Text>
+                            }
+                        />
+                    </List.Item>
+                )}
+                style={{ maxHeight: '400px', overflowY: 'auto' }}
+            />
+        </div>
+    );
+
     const menuItems = [
         {
             key: '/course',
             label: 'Khóa học',
             onClick: () => navigate('/course')
+        },
+        {
+            key: '/my-courses',
+            label: 'Khóa học của tôi',
+            onClick: () => navigate('/my-courses')
         },
         // {
         //     key: '/',
@@ -64,6 +166,7 @@ export default function Navbar() {
     const userMenu = {
         items: [
             isAdmin && { key: 'admin', label: 'Trang quản trị', icon: <DashboardOutlined />, onClick: () => navigate('/admin') },
+            { key: 'my-courses', label: 'Khóa học của tôi', icon: <CrownOutlined />, onClick: () => navigate('/my-courses') },
             { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, onClick: () => navigate('/profile') },
             { key: 'settings', label: 'Cài đặt', icon: <SettingOutlined /> },
             { type: 'divider' as const },
@@ -137,13 +240,20 @@ export default function Navbar() {
 
             {/* Right Actions */}
             <Space size={24}>
-                <Badge dot color="#6366f1" offset={[-4, 4]}>
-                    <Button
-                        type="text"
-                        icon={<BellOutlined style={{ fontSize: '20px', color: '#64748b' }} />}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    />
-                </Badge>
+                <Popover
+                    content={notificationContent}
+                    trigger="click"
+                    placement="bottomRight"
+                    overlayClassName="notification-popover"
+                >
+                    <Badge dot={unreadCount > 0} offset={[-4, 4]}>
+                        <Button
+                            type="text"
+                            icon={<BellOutlined style={{ fontSize: '20px', color: '#64748b' }} />}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        />
+                    </Badge>
+                </Popover>
 
                 <div style={{ height: '32px', width: '1px', background: '#e2e8f0' }} />
 

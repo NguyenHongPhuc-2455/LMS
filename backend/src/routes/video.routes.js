@@ -11,6 +11,9 @@ router.get('/', authMiddleware.verifyToken, videoController.getVideos);
 // Upload video cho một Lesson cụ thể
 router.post('/upload', authMiddleware.verifyToken, upload.single('video'), videoController.uploadVideo);
 
+// Upload tài liệu (PDF) đính kèm cho bài học
+router.post('/upload-attachment/:lessonId', authMiddleware.verifyToken, upload.single('attachment'), videoController.uploadAttachment);
+
 // Lấy chìa khóa giải mã (Lesson-based)
 router.get('/key/:lessonId', authMiddleware.verifyToken, videoController.getVideoKey);
 

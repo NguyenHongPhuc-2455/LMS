@@ -1,19 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
+import dayjs from 'dayjs';
 import {
-    Table, Button, Space, Input, Tag, Popconfirm,
+    Table, Button, Space, Input, Tag,
     message, Typography, Card, Badge, Modal, Form,
-    Select, Row, Col, Statistic, Avatar, Popover, List
+    Select, Row, Col, Statistic, Avatar, Popover, List, Skeleton, DatePicker
 } from 'antd';
 import {
     SearchOutlined, DeleteOutlined, UserOutlined,
-    ArrowLeftOutlined, BookOutlined,
-    PlusOutlined, EditOutlined, TeamOutlined,
+    BookOutlined, SaveOutlined, CloseOutlined,
+    PlusOutlined, TeamOutlined,
     CrownOutlined, UsergroupAddOutlined, IdcardOutlined
 } from '@ant-design/icons';
 import type { InputRef, TableColumnsType, TableColumnType } from 'antd';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
 import Highlighter from 'react-highlight-words';
-import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 
 const { Title, Text } = Typography;
@@ -30,8 +30,14 @@ interface UserData {
     username: string;
     email: string;
     full_name: string;
+    avatar?: string;
+    phone?: string;
+    dob?: string;
+    gender?: string;
+    bio?: string;
     roles: RoleData[];
     created_at: string;
+    updated_at: string;
     enrollments_count: number;
     enrolled_courses: string[];
 }
@@ -42,10 +48,16 @@ export default function UserManagement() {
     const [users, setUsers] = useState<UserData[]>([]);
     const [roles, setRoles] = useState<RoleData[]>([]);
     const [loading, setLoading] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingUser, setEditingUser] = useState<UserData | null>(null);
-    const [form] = Form.useForm();
-    const navigate = useNavigate();
+
+    // Batch & Edit State
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [editingKey, setEditingKey] = useState<number | null>(null);
+    const [editingField, setEditingField] = useState<string | null>(null);
+    const [editData, setEditData] = useState<any>({});
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
+
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [createForm] = Form.useForm();
 
     const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
@@ -71,44 +83,59 @@ export default function UserManagement() {
         fetchData();
     }, []);
 
-    const showModal = (user: UserData | null = null) => {
-        setEditingUser(user);
-        if (user) {
-            form.setFieldsValue({
-                username: user.username,
-                email: user.email,
-                full_name: user.full_name,
-                role_id: user.roles[0]?.id // Tạm thời lấy role chính
-            });
-        } else {
-            form.resetFields();
+    const handleBatchSave = async () => {
+        setLoading(true);
+        try {
+            // 1. Handle Deletions if any
+            if (selectedRowKeys.length > 0) {
+                // Confirm before batch delete
+                Modal.confirm({
+                    title: `Xác nhận xóa ${selectedRowKeys.length} thành viên?`,
+                    content: 'Hành động này không thể hoàn tác.',
+                    onOk: async () => {
+                        try {
+                            for (const id of selectedRowKeys) {
+                                await api.delete(`/users/${id}`);
+                            }
+                            message.success(`Đã xóa thành công`);
+                            setSelectedRowKeys([]);
+                            setIsDeleteMode(false);
+                            await fetchData();
+                        } catch (e: any) {
+                            message.error('Lỗi khi xóa một số thành viên');
+                        }
+                    }
+                });
+            }
+
+            // 2. Handle Inline Edits if any
+            if (editingKey && Object.keys(editData).length > 0) {
+                await api.put(`/users/${editingKey}`, editData);
+                message.success('Đã cập nhật thay đổi thành công');
+                setEditingKey(null);
+                setEditData({});
+                await fetchData();
+            }
+
+            if (selectedRowKeys.length === 0) {
+                // Only stop loading here if no deletion modal was shown
+                setLoading(false);
+            }
+        } catch (error: any) {
+            message.error(error.response?.data?.error || 'Lỗi lưu thay đổi');
+            setLoading(false);
         }
-        setIsModalOpen(true);
     };
 
-    const handleFinish = async (values: any) => {
+    const handleCreateFinish = async (values: any) => {
         try {
-            if (editingUser) {
-                await api.put(`/users/${editingUser.id}`, values);
-                message.success('Cập nhật người dùng thành công');
-            } else {
-                await api.post('/users', values);
-                message.success('Tạo người dùng mới thành công');
-            }
-            setIsModalOpen(false);
+            await api.post('/users', values);
+            message.success('Tạo người dùng mới thành công');
+            setIsCreateModalOpen(false);
+            createForm.resetFields();
             fetchData();
         } catch (error: any) {
             message.error(error.response?.data?.error || 'Lỗi lưu dữ liệu');
-        }
-    };
-
-    const handleDelete = async (userId: number) => {
-        try {
-            await api.delete(`/users/${userId}`);
-            message.success('Đã xóa người dùng');
-            fetchData();
-        } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi khi xóa');
         }
     };
 
@@ -142,46 +169,185 @@ export default function UserManagement() {
         ) : (text),
     });
 
+    const startEditing = (record: UserData, field: string) => {
+        if (isDeleteMode) return;
+        setEditingKey(record.id);
+        setEditingField(field);
+        const { roles, ...rest } = record;
+        setEditData({ ...rest, role_id: roles[0]?.id });
+    };
+
+    const renderEditableCell = (record: UserData, field: keyof UserData, currentText: any) => {
+        const isEditing = editingKey === record.id;
+
+        if (isEditing) {
+            if (field === 'roles') {
+                return (
+                    <Select
+                        defaultValue={record.roles[0]?.id}
+                        style={{ width: '100%' }}
+                        size="small"
+                        onChange={(val) => setEditData({ ...editData, role_id: val })}
+                    >
+                        {roles.map(r => <Option key={r.id} value={r.id}>{r.name.toUpperCase()}</Option>)}
+                    </Select>
+                );
+            }
+            if (field === 'gender') {
+                return (
+                    <Select
+                        defaultValue={currentText}
+                        style={{ width: '100%' }}
+                        size="small"
+                        onChange={(val) => setEditData({ ...editData, gender: val })}
+                    >
+                        <Option value="Nam">Nam</Option>
+                        <Option value="Nữ">Nữ</Option>
+                        <Option value="Khác">Khác</Option>
+                    </Select>
+                );
+            }
+            if (field === 'dob') {
+                return (
+                    <DatePicker
+                        defaultValue={currentText ? dayjs(currentText) : undefined}
+                        style={{ width: '100%' }}
+                        size="small"
+                        format="DD/MM/YYYY"
+                        onChange={(date) => setEditData({ ...editData, dob: date ? date.toISOString() : null })}
+                        autoFocus
+                    />
+                );
+            }
+            return (
+                <Input
+                    defaultValue={currentText}
+                    size="small"
+                    onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
+                    autoFocus={editingField === field}
+                />
+            );
+        }
+
+        return (
+            <div
+                onClick={() => startEditing(record, field as string)}
+                style={{ cursor: 'pointer', minHeight: '32px', width: '100%', display: 'flex', alignItems: 'center' }}
+                className="editable-cell-value"
+            >
+                {field === 'roles' ? (
+                    <Space wrap>
+                        {record.roles.map(role => (
+                            <Tag key={role.id} color={role.name === 'admin' ? 'gold' : (role.name === 'instructor' ? 'purple' : 'blue')} icon={role.name === 'admin' ? <CrownOutlined /> : <IdcardOutlined />}>
+                                {role.name.toUpperCase()}
+                            </Tag>
+                        ))}
+                    </Space>
+                ) : field === 'dob' ? (
+                    currentText ? new Date(currentText).toLocaleDateString() : <Text type="secondary">-</Text>
+                ) : field === 'updated_at' || field === 'created_at' ? (
+                    new Date(currentText).toLocaleString()
+                ) : (
+                    currentText || <Text type="secondary">-</Text>
+                )}
+            </div>
+        );
+    };
+
     const columns: TableColumnsType<UserData> = [
-        { title: 'ID', dataIndex: 'id', key: 'id', width: 70, sorter: (a, b) => a.id - b.id },
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+            width: 70,
+            sorter: (a, b) => a.id - b.id,
+            fixed: 'left',
+        },
         {
             title: 'Người dùng',
             key: 'user_info',
+            width: 250,
+            fixed: 'left',
             ...getColumnSearchProps('username'),
             render: (_, record) => (
-                <Space>
-                    <Avatar icon={<UserOutlined />} style={{ background: 'var(--primary-hover)' }} />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <Text strong style={{ color: 'var(--text-main)' }}>{record.full_name || record.username}</Text>
+                <Space onClick={() => startEditing(record, 'full_name')}>
+                    <Avatar
+                        src={record.avatar}
+                        icon={!record.avatar && <UserOutlined />}
+                        style={{ background: 'var(--primary-hover)' }}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', minWidth: '150px' }}>
+                        {editingKey === record.id ? (
+                            <Input
+                                defaultValue={record.full_name}
+                                size="small"
+                                onChange={e => setEditData({ ...editData, full_name: e.target.value })}
+                                autoFocus={editingField === 'full_name'}
+                            />
+                        ) : (
+                            <Text strong style={{ color: 'var(--text-main)' }}>{record.full_name || record.username}</Text>
+                        )}
                         <Text type="secondary" style={{ fontSize: '12px' }}>@{record.username}</Text>
                     </div>
                 </Space>
             )
         },
         {
+            title: 'Vai trò',
+            key: 'roles',
+            width: 150,
+            render: (_, record) => renderEditableCell(record, 'roles', record.roles)
+        },
+        {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
+            width: 200,
             ...getColumnSearchProps('email'),
-            render: (text) => <Text style={{ color: 'var(--text-muted)' }}>{text}</Text>
+            render: (text, record) => renderEditableCell(record, 'email', text)
         },
         {
-            title: 'Vai trò',
-            key: 'roles',
-            render: (_, record) => (
-                <Space wrap>
-                    {record.roles.map(role => (
-                        <Tag key={role.id} color={role.name === 'admin' ? 'gold' : (role.name === 'instructor' ? 'purple' : 'blue')} icon={role.name === 'admin' ? <CrownOutlined /> : <IdcardOutlined />}>
-                            {role.name.toUpperCase()}
-                        </Tag>
-                    ))}
-                </Space>
-            )
+            title: 'Số điện thoại',
+            dataIndex: 'phone',
+            key: 'phone',
+            width: 150,
+            render: (text, record) => renderEditableCell(record, 'phone', text)
+        },
+        {
+            title: 'Ngày sinh',
+            dataIndex: 'dob',
+            key: 'dob',
+            width: 150,
+            render: (text, record) => renderEditableCell(record, 'dob', text)
+        },
+        {
+            title: 'Giới tính',
+            dataIndex: 'gender',
+            key: 'gender',
+            width: 120,
+            render: (text, record) => renderEditableCell(record, 'gender', text)
+        },
+        {
+            title: 'Tiểu sử',
+            dataIndex: 'bio',
+            key: 'bio',
+            width: 250,
+            ellipsis: true,
+            render: (text, record) => renderEditableCell(record, 'bio', text)
+        },
+        {
+            title: 'Ngày tạo',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            width: 180,
+            sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+            render: (text) => new Date(text).toLocaleString()
         },
         {
             title: 'Sở hữu',
             dataIndex: 'enrollments_count',
             key: 'enrollments',
+            width: 100,
             sorter: (a, b) => a.enrollments_count - b.enrollments_count,
             render: (count, record) => (
                 <Popover
@@ -203,162 +369,201 @@ export default function UserManagement() {
             )
         },
         {
-            title: 'Hành động',
-            key: 'action',
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button type="text" icon={<EditOutlined style={{ color: '#1890ff' }} />} onClick={() => showModal(record)} />
-                    <Popconfirm title="Xóa người dùng?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
-                        <Button type="text" danger icon={<DeleteOutlined />} />
-                    </Popconfirm>
-                </Space>
-            ),
-        },
+            title: 'Cập nhật cuối',
+            dataIndex: 'updated_at',
+            key: 'updated_at',
+            width: 180,
+            render: (text) => new Date(text).toLocaleString()
+        }
     ];
 
+    const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
+        setSelectedRowKeys(newSelectedRowKeys);
+    };
+
+    const rowSelection = isDeleteMode ? {
+        selectedRowKeys,
+        onChange: onSelectChange,
+        columnWidth: 50,
+    } : undefined;
+
     return (
-        <div style={{ padding: '40px', background: 'var(--bg-color)', minHeight: '100vh' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ padding: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
-                    <Title level={2} className="premium-title" style={{ margin: 0 }}>Quản lý người dùng</Title>
-                    <Text style={{ color: 'var(--text-muted)' }}>Quản lý người dùng, giảng viên và phân quyền toàn hệ thống</Text>
+                    <Title level={4} style={{ margin: 0 }}>Quản lý người dùng</Title>
+                    <Text type="secondary">Quản lý người dùng, giảng viên và phân quyền toàn hệ thống</Text>
                 </div>
                 <Space>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()} className="btn-primary" style={{ width: 'auto', padding: '0 24px' }}>
-                        Thêm thành viên
-                    </Button>
+                    {/* Top actions moved to card header */}
                 </Space>
             </div>
 
-            <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
-                <Col xs={24} sm={12} md={6}>
-                    <Card className="glass-card">
-                        <Statistic title={<Text style={{ color: 'var(--text-muted)' }}>Học viên</Text>} value={users.length} prefix={<TeamOutlined style={{ color: '#3b82f6' }} />} styles={{ content: { color: 'var(--text-main)' } }} />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card className="glass-card">
-                        <Statistic title={<Text style={{ color: 'var(--text-muted)' }}>Giảng viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'instructor')).length} prefix={<IdcardOutlined style={{ color: '#a855f7' }} />} styles={{ content: { color: 'var(--text-main)' } }} />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card className="glass-card">
-                        <Statistic title={<Text style={{ color: 'var(--text-muted)' }}>Quản trị viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'admin')).length} prefix={<CrownOutlined style={{ color: '#f59e0b' }} />} styles={{ content: { color: 'var(--text-main)' } }} />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card className="glass-card">
-                        <Statistic title={<Text style={{ color: 'var(--text-muted)' }}>Khóa học đã bán</Text>} value={users.reduce((a, b) => a + b.enrollments_count, 0)} prefix={<BookOutlined style={{ color: '#10b981' }} />} styles={{ content: { color: 'var(--text-main)' } }} />
-                    </Card>
-                </Col>
+            <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+                {[1, 2, 3, 4].map(i => (
+                    <Col key={i} xs={24} sm={12} md={6}>
+                        <Card className="glass-card" style={{ padding: '12px' }}>
+                            {loading && users.length === 0 ? (
+                                <Skeleton active avatar title={false} paragraph={{ rows: 1 }} />
+                            ) : (
+                                i === 1 ? <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Học viên</Text>} value={users.length} valueStyle={{ fontSize: '20px' }} prefix={<TeamOutlined style={{ color: '#3b82f6', fontSize: '16px' }} />} /> :
+                                    i === 2 ? <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Giảng viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'instructor')).length} valueStyle={{ fontSize: '20px' }} prefix={<IdcardOutlined style={{ color: '#a855f7', fontSize: '16px' }} />} /> :
+                                        i === 3 ? <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Quản trị viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'admin')).length} valueStyle={{ fontSize: '20px' }} prefix={<CrownOutlined style={{ color: '#f59e0b', fontSize: '16px' }} />} /> :
+                                            <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Khóa học bán</Text>} value={users.reduce((a, b) => a + b.enrollments_count, 0)} valueStyle={{ fontSize: '20px' }} prefix={<BookOutlined style={{ color: '#10b981', fontSize: '16px' }} />} />
+                            )}
+                        </Card>
+                    </Col>
+                ))}
             </Row>
 
             <Card className="glass-card" style={{ padding: 0 }}>
-                <Title level={4} style={{ padding: '24px 24px 0 24px', color: 'var(--text-main)' }}>
-                    <UsergroupAddOutlined /> Danh sách thành viên
-                </Title>
-                <Table
-                    columns={columns}
-                    dataSource={users}
-                    rowKey="id"
-                    loading={loading}
-                    pagination={{ pageSize: 10 }}
-                    rowClassName={() => 'premium-row'}
-                    style={{ padding: '0 12px 12px 12px' }}
-                />
+                <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Title level={4} style={{ margin: 0, color: 'var(--text-main)' }}>
+                            <UsergroupAddOutlined /> Danh sách thành viên
+                        </Title>
+                        {isDeleteMode && (
+                            <Tag color="error" style={{ borderRadius: '12px', padding: '0 12px' }}>
+                                Đang chọn {selectedRowKeys.length} người dùng
+                            </Tag>
+                        )}
+                    </div>
+
+                    <Space>
+                        {(editingKey || selectedRowKeys.length > 0) ? (
+                            <Space>
+                                <Button
+                                    type="primary"
+                                    icon={<SaveOutlined />}
+                                    onClick={handleBatchSave}
+                                    loading={loading}
+                                    style={{ background: '#10b981', borderColor: '#10b981' }}
+                                >
+                                    Lưu thay đổi
+                                </Button>
+                                <Button
+                                    icon={<CloseOutlined />}
+                                    onClick={() => {
+                                        setEditingKey(null);
+                                        setEditingField(null);
+                                        setEditData({});
+                                        setSelectedRowKeys([]);
+                                        setIsDeleteMode(false);
+                                    }}
+                                >
+                                    Hủy
+                                </Button>
+                            </Space>
+                        ) : (
+                            <Space>
+                                <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => setIsDeleteMode(!isDeleteMode)}
+                                    type={isDeleteMode ? "primary" : "default"}
+                                    size="middle"
+                                >
+                                    {isDeleteMode ? "Hủy chọn" : "Xóa (Chọn)"}
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    size="middle"
+                                >
+                                    Thêm thành viên
+                                </Button>
+                            </Space>
+                        )}
+                    </Space>
+                </div>
+                <div style={{ padding: '0 12px 12px 12px' }}>
+                    {loading && users.length === 0 ? (
+                        <div style={{ padding: '24px' }}>
+                            <Skeleton active paragraph={{ rows: 8 }} />
+                        </div>
+                    ) : (
+                        <Table
+                            columns={columns}
+                            dataSource={users}
+                            rowKey="id"
+                            loading={loading}
+                            rowSelection={rowSelection}
+                            pagination={{ pageSize: 10 }}
+                            rowClassName={(record) => record.id === editingKey ? 'editable-row active' : 'premium-row'}
+                            scroll={{ x: 1800 }}
+                        />
+                    )}
+                </div>
             </Card>
 
-            <Modal
-                title={editingUser ? 'Cập nhật thành viên' : 'Tạo thành viên mới'}
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                footer={null}
-                className="premium-modal"
-            >
-                <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={{ role_id: 3 }}>
-                    <Form.Item name="full_name" label="Họ và tên">
-                        <Input placeholder="Nguyễn Văn A" />
-                    </Form.Item>
-                    <Form.Item
-                        name="username"
-                        label="Tên đăng nhập"
-                        rules={[
-                            { required: true, message: 'Bắt buộc nhập!' },
-                            { pattern: /^[a-zA-Z0-9_]{3,20}$/, message: '3-20 ký tự, không gạch chéo/dấu' }
-                        ]}
-                    >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item
-                        name="email"
-                        label="Email"
-                        rules={[
-                            { required: true, message: 'Bắt buộc nhập!' },
-                            { type: 'email', message: 'Email không hợp lệ!' }
-                        ]}
-                    >
-                        <Input />
-                    </Form.Item>
-                    {!editingUser && (
-                        <Form.Item
-                            name="password"
-                            label="Mật khẩu"
-                            rules={[
-                                { required: true, message: 'Bắt buộc nhập!' },
-                                { min: 6, message: 'Tối thiểu 6 ký tự' }
-                            ]}
-                        >
-                            <Input.Password />
-                        </Form.Item>
-                    )}
+            <Modal title="Tạo thành viên mới" open={isCreateModalOpen} onCancel={() => setIsCreateModalOpen(false)} footer={null} className="premium-modal">
+                <Form form={createForm} layout="vertical" onFinish={handleCreateFinish} initialValues={{ role_id: 3 }}>
+                    <Form.Item name="full_name" label="Họ và tên"><Input /></Form.Item>
+                    <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true }]}><Input /></Form.Item>
+                    <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item>
+                    <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, min: 6 }]}><Input.Password /></Form.Item>
                     <Form.Item name="role_id" label="Vai trò chính" rules={[{ required: true }]}>
-                        <Select placeholder="Chọn quyền">
-                            {roles.map(r => (
-                                <Option key={r.id} value={r.id}>{r.name.toUpperCase()}</Option>
-                            ))}
-                        </Select>
+                        <Select>{roles.map(r => (<Option key={r.id} value={r.id}>{r.name.toUpperCase()}</Option>))}</Select>
                     </Form.Item>
-                    <Form.Item style={{ marginTop: 24 }}>
-                        <Button type="primary" htmlType="submit" className="btn-primary">
-                            {editingUser ? 'Lưu thay đổi' : 'Tạo ngay'}
-                        </Button>
-                    </Form.Item>
+                    <Button type="primary" htmlType="submit" block className="btn-primary">Tạo ngay</Button>
                 </Form>
             </Modal>
 
             <style>{`
-                .ant-table {
-                    background: transparent !important;
-                    color: var(--text-main) !important;
+                .editable-cell-value:hover {
+                    background: rgba(24, 144, 255, 0.08);
+                    border-radius: 4px;
+                    transition: all 0.2s;
                 }
-                .ant-table-thead > tr > th {
-                    background: rgba(255, 255, 255, 0.02) !important;
-                    color: var(--text-muted) !important;
-                    border-bottom: 1px solid var(--border-color) !important;
+                .editable-row.active {
+                    background: rgba(99, 102, 241, 0.08) !important;
                 }
-                .ant-table-tbody > tr > td {
-                    border-bottom: 1px solid var(--border-color) !important;
+                .ant-table-selection-column { width: 50px !important; }
+                .ant-table { 
+                    background: #ffffff !important; 
+                    color: var(--text-main) !important; 
                 }
-                .ant-table-tbody > tr:hover > td {
-                    background: rgba(255, 255, 255, 0.05) !important;
+                .ant-table-thead > tr > th { 
+                    background: #fafafa !important; 
+                    color: var(--text-muted) !important; 
+                    border-bottom: 1px solid var(--border-color) !important; 
                 }
-                .ant-pagination-item, .ant-pagination-item-link {
-                    background: transparent !important;
-                    border-color: var(--border-color) !important;
+                .ant-table-tbody > tr > td { 
+                    background: #ffffff !important;
+                    border-bottom: 1px solid var(--border-color) !important; 
                 }
-                .ant-pagination-item a { color: var(--text-muted) !important; }
-                .ant-modal-content {
-                    background: var(--surface-color) !important;
-                    color: var(--text-main) !important;
-                    border: 1px solid var(--border-color);
-                    border-radius: 20px;
+                .ant-table-tbody > tr:hover > td { background: #fafafa !important; }
+                .ant-input { background: #fff !important; border-color: #d9d9d9 !important; color: rgba(0, 0, 0, 0.88) !important; }
+                .ant-select-selector { background: #fff !important; border-color: #d9d9d9 !important; color: rgba(0, 0, 0, 0.88) !important; }
+                
+                /* Đảm bảo cột được ghim (fixed) hoàn toàn đặc và màu đồng nhất khi edit */
+                .ant-table-cell-fix-left, 
+                .ant-table-cell-fix-right,
+                .editable-row.active td.ant-table-cell-fix-left,
+                .editable-row.active td.ant-table-cell-fix-right {
+                    background: #ffffff !important; 
+                    z-index: 100 !important;
                 }
-                .ant-modal-header {
-                    background: transparent !important;
-                    border-bottom: 1px solid var(--border-color) !important;
+                
+                .ant-table-thead > tr > th.ant-table-cell-fix-left,
+                .ant-table-thead > tr > th.ant-table-cell-fix-right {
+                    background: #fafafa !important; /* Đồng bộ màu với header khác */
                 }
-                .ant-modal-title { color: white !important; }
-                .ant-form-item-label > label { color: var(--text-muted) !important; }
+
+                /* Khi hover hàng hoặc hàng đang active edit, cột cố định cũng phải đổi màu mờ để đồng bộ */
+                .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-fix-left,
+                .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-fix-right,
+                .editable-row.active > td.ant-table-cell-fix-left,
+                .editable-row.active > td.ant-table-cell-fix-right {
+                    background: #f5f5f5 !important;
+                }
+
+                /* Thêm đường kẻ dọc tinh tế để phân tách cột cố định */
+                .ant-table-cell-fix-left-last::after {
+                    box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.05) !important;
+                    border-right: 1px solid var(--border-color) !important;
+                }
             `}</style>
         </div>
     );

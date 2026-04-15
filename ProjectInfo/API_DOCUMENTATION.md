@@ -25,6 +25,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | POST | `/` | Tạo khóa học mới | ✅ |
 | PUT | `/:id` | Cập nhật thông tin khóa học | ✅ |
 | POST | `/sections` | Tạo chương học mới | ✅ |
+| GET | `/sections/:id` | Chi tiết chương (kèm bài học) | ✅ |
 | PUT | `/sections/:id` | Sửa tiêu đề/thứ tự chương | ✅ |
 | DELETE | `/sections/:id` | Xóa chương học | ✅ |
 | DELETE | `/:id` | Xóa khóa học | ✅ |
@@ -37,6 +38,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | :--- | :--- | :--- | :--- |
 | POST | `/upload` | Upload & Tối ưu video HLS | ✅ (Multer: video) |
 | PUT | `/:id` | Cập nhật Metadata bài học | ✅ |
+| POST | `/upload-attachment/:lessonId` | Upload tài liệu đính kèm (PDF) | ✅ (Multer) |
 | GET | `/key/:lessonId` | Lấy Key giải mã AES-128 | ✅ |
 | POST | `/complete/:id` | Đánh dấu hoàn thành bài học | ✅ |
 | DELETE | `/:id` | Xóa video & Dọn dẹp HLS Folder | ✅ |
@@ -58,6 +60,32 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | :--- | :--- | :--- | :--- |
 | POST | `/create` | Khởi tạo đơn hàng thanh toán | ✅ |
 | GET | `/my-orders` | Xem lịch sử mua hàng | ✅ |
+
+---
+
+## 💬 6. Comments (`/comments`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/lesson/:lessonId` | Lấy danh sách bình luận theo bài học (dạng cây 2 cấp) | ✅ |
+| POST | `/` | Tạo bình luận mới (hỗ trợ parent_id cho reply) | ✅ |
+| DELETE | `/:id` | Xóa bình luận (chủ sở hữu hoặc Admin) | ✅ |
+
+> **Lưu ý**: Khi reply vào bình luận cấp 2, backend tự động gộp `parent_id` về cấp 1 (Facebook-style). Đồng thời tự động tạo thông báo Realtime cho chủ bình luận cha.
+
+---
+
+## 🔔 7. Notifications (`/notifications`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/` | Lấy danh sách thông báo của user (tối đa 50) | ✅ |
+| PUT | `/:id/read` | Đánh dấu đã đọc | ✅ |
+| PUT | `/read-all` | Đánh dấu tất cả đã đọc | ✅ |
+| DELETE | `/:id` | Xóa một thông báo | ✅ |
+| DELETE | `/all` | Xóa tất cả thông báo | ✅ |
+
+> **Realtime**: Thông báo mới được phát qua Socket.io event `newNotification`. Mỗi thông báo COMMENT_REPLY có trường `link` chứa URL điều hướng tới bình luận cụ thể.
 
 ---
 

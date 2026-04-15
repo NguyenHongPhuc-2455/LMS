@@ -19,6 +19,9 @@ interface Lesson {
     id: number;
     title: string;
     video_url: string;
+    attachment_url?: string;
+    attachment_name?: string;
+    content?: string;
 }
 
 interface Section {
@@ -48,6 +51,7 @@ export default function Dashboard() {
     const [editingLessonId, setEditingLessonId] = useState<number | null>(null);
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
     const [thumbFile, setThumbFile] = useState<any>(null);
     const [thumbUrl, setThumbUrl] = useState<string>('');
 
@@ -155,11 +159,13 @@ export default function Dashboard() {
 
     const handleSaveLesson = async (values: any) => {
         try {
+            let lessonId = editingLessonId;
             if (editingLessonId) {
-                // Nếu đang edit, chỉ cập nhật title và section_id
+                // Nếu đang edit, cập nhật title, section_id và content
                 await api.put(`/videos/${editingLessonId}`, {
                     title: values.title,
-                    section_id: values.section_id
+                    section_id: values.section_id,
+                    content: values.content
                 });
                 message.success('Đã cập nhật bài giảng!');
             } else {
@@ -172,14 +178,27 @@ export default function Dashboard() {
                 formData.append('video', selectedFile);
 
                 message.loading({ content: 'Đang khởi tạo băm bảo mật HLS...', key: 'hls-upload' });
-                await api.post('/videos/upload', formData, {
+                const res = await api.post('/videos/upload', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
+                lessonId = res.data.data.lessonId;
                 message.success({ content: 'Bài giảng đã được đưa vào hàng chờ xử lý!', key: 'hls-upload' });
             }
+
+            // Nếu có tệp đính kèm, thực hiện upload
+            if (attachmentFile && lessonId) {
+                const attachData = new FormData();
+                attachData.append('attachment', attachmentFile);
+                await api.post(`/videos/upload-attachment/${lessonId}`, attachData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                message.success('Đã tải lên tài liệu đính kèm!');
+            }
+
             setIsLessonModalOpen(false);
             setEditingLessonId(null);
             setSelectedFile(null);
+            setAttachmentFile(null);
             lessonForm.resetFields();
             setTimeout(fetchData, 1500);
         } catch (e: any) {
@@ -191,7 +210,8 @@ export default function Dashboard() {
         setEditingLessonId(lesson.id);
         lessonForm.setFieldsValue({
             title: lesson.title,
-            section_id: sectionId
+            section_id: sectionId,
+            content: lesson.content
         });
         setIsLessonModalOpen(true);
     };
@@ -495,9 +515,30 @@ export default function Dashboard() {
                     <Form.Item name="title" label="Tiêu đề bài giảng" rules={[{ required: true, message: 'Nhập tiêu đề' }]}>
                         <Input />
                     </Form.Item>
+                    <Form.Item name="content" label="Nội dung bài học (Dưới dạng văn bản)">
+                        <Input.TextArea rows={4} placeholder="Nhập nội dung giảng dạy, hướng dẫn..." />
+                    </Form.Item>
+                    <div style={{ marginBottom: 20 }}>
+                        <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Tài liệu đính kèm (PDF - Tùy chọn)</label>
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                            style={{
+                                width: '100%',
+                                padding: '10px',
+                                background: 'rgba(0,0,0,0.2)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '8px',
+                                color: 'var(--text-main)'
+                            }}
+                        />
+                        {attachmentFile && <Text style={{ fontSize: '12px', color: '#10b981' }}>✓ {attachmentFile.name}</Text>}
+                    </div>
+
                     {!editingLessonId && (
                         <div style={{ marginBottom: 20 }}>
-                            <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Tệp Video (MP4)</label>
+                            <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Tệp Video (MP4 - Bắt buộc khi tạo mới)</label>
                             <input
                                 type="file"
                                 accept="video/mp4"
