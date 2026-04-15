@@ -2,22 +2,22 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     BookOutlined, ClockCircleOutlined,
-    RocketOutlined, FilterOutlined, TagOutlined
+    RocketOutlined
 } from '@ant-design/icons';
-import { Card, Badge, Typography, Button, Space, message, Skeleton, Empty } from 'antd';
+import { Card, Badge, Typography, Space, message, Skeleton, Empty } from 'antd';
 import api from '../../api';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 interface Course {
     id: number;
     title: string;
     description: string;
-    price: string;
     level: string;
     thumbnail: string;
     category?: { name: string };
     instructor?: { full_name: string; username: string };
+    is_private: boolean;
     _count?: { sections: number };
 }
 
@@ -51,38 +51,38 @@ export default function CourseList() {
         );
     }
 
-    const freeCourses = courses.filter(c => parseFloat(c.price) === 0);
-    const proCourses = courses.filter(c => parseFloat(c.price) > 0);
+    const publicCourses = courses.filter(c => !c.is_private);
+    const privateCourses = courses.filter(c => c.is_private);
 
     return (
         <div style={{ padding: '10px 3%', minHeight: '100vh' }}>
-            {/* Mục Khóa học Pro */}
-            {proCourses.length > 0 && (
+            {/* Mục Khóa học Riêng tư */}
+            {privateCourses.length > 0 && (
                 <div style={{ marginBottom: 48 }}>
                     <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <Title level={2} style={{ margin: 0, fontSize: '24px', color: '#1e293b' }}>
-                            Khóa học Pro
+                            Khóa học Riêng tư (Cần phê duyệt)
                         </Title>
-                        <Badge count="Mới" style={{ backgroundColor: '#f59e0b' }} />
+                        <Badge count="Yêu cầu" style={{ backgroundColor: '#7064f9' }} />
                     </div>
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(4, 1fr)',
                         gap: '20px'
                     }}>
-                        {proCourses.map(course => (
+                        {privateCourses.map(course => (
                             <CourseCard key={course.id} course={course} navigate={navigate} />
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* Mục Khóa học Miễn phí */}
-            {freeCourses.length > 0 && (
+            {/* Mục Khóa học Công khai */}
+            {publicCourses.length > 0 && (
                 <div style={{ marginBottom: 48 }}>
                     <div style={{ marginBottom: 24 }}>
                         <Title level={2} style={{ margin: 0, fontSize: '24px', color: '#1e293b' }}>
-                            Khóa học miễn phí
+                            Khóa học cộng đồng (Tự động)
                         </Title>
                     </div>
                     <div style={{
@@ -90,7 +90,7 @@ export default function CourseList() {
                         gridTemplateColumns: 'repeat(4, 1fr)',
                         gap: '20px'
                     }}>
-                        {freeCourses.map(course => (
+                        {publicCourses.map(course => (
                             <CourseCard key={course.id} course={course} navigate={navigate} />
                         ))}
                     </div>
@@ -136,9 +136,10 @@ function CourseCard({ course, navigate }: { course: Course, navigate: any }) {
                     <Text strong style={{ color: '#64748b', fontSize: '13px' }}>{course.instructor?.full_name || 'Hệ thống'}</Text>
                 </Space>
                 <div style={{ textAlign: 'right' }}>
-                    <Text style={{ fontSize: '15px', fontWeight: 800, color: parseFloat(course.price) === 0 ? '#28a745' : '#1e293b' }}>
-                        {parseFloat(course.price) === 0 ? 'MIỄN PHÍ' : `${Number(course.price).toLocaleString()}đ`}
-                    </Text>
+                    <Badge
+                        count={course.is_private ? "RIÊNG TƯ" : "CÔNG KHAI"}
+                        style={{ backgroundColor: course.is_private ? '#7064f9' : '#28a745', fontSize: '10px' }}
+                    />
                 </div>
             </div>
 

@@ -42,6 +42,7 @@ model User {
   reviews          Review[]
   wishlists        Wishlist[]
   completed_lessons LessonCompleted[]
+  course_requests  CourseRequest[]
 
   @@map("users")
 }
@@ -81,13 +82,13 @@ model Course {
   instructor_id Int
   title         String       @db.VarChar(255)
   description   String?      @db.Text
-  price         Decimal      @default(0) @db.Decimal(10, 2)
   level         String?      @db.VarChar(50) // Căn bản, Trung cấp, Nâng cao
   thumbnail     String?      @db.VarChar(255)
   intro_video_url String?    @db.VarChar(255)
   learning_outcomes String?    @db.Text
   requirements    String?      @db.Text
   status        CourseStatus @default(DRAFT)
+  is_private    Boolean      @default(false)
   created_at    DateTime     @default(now())
   updated_at    DateTime     @updatedAt
   deleted_at    DateTime?
@@ -99,8 +100,30 @@ model Course {
   order_items OrderItem[]
   reviews     Review[]
   wishlists   Wishlist[]
+  requests    CourseRequest[]
 
   @@map("courses")
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CourseRequest {
+  id          Int           @id @default(autoincrement())
+  user_id     Int
+  course_id   Int
+  status      RequestStatus @default(PENDING)
+  reason      String?       @db.Text
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  
+  user        User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course      Course        @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@map("course_requests")
 }
 
 model Section {

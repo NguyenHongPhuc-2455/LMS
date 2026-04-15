@@ -11,6 +11,7 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Profile from './pages/client/Profile';
 import MyCourses from './pages/client/MyCourses';
+import CourseRequests from './pages/admin/CourseRequests';
 import PaymentResult from './pages/client/PaymentResult';
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
 
@@ -51,6 +52,7 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="courses" element={<Dashboard />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="requests" element={<CourseRequests />} />
               <Route path="profile" element={<Profile />} />
             </Route>
 

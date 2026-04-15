@@ -12,5 +12,6 @@ router.post('/sections', authMiddleware.verifyToken, courseController.createSect
 router.put('/sections/:id', authMiddleware.verifyToken, courseController.updateSection);
 router.delete('/sections/:id', authMiddleware.verifyToken, courseController.deleteSection);
 router.delete('/:id', authMiddleware.verifyToken, courseController.deleteCourse);
+router.post('/:id/enroll', authMiddleware.verifyToken, courseController.enrollCourse);
 
 module.exports = router;
