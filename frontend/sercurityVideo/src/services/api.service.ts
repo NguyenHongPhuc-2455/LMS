@@ -45,3 +45,41 @@ export const courseRequestService = {
         return response.data;
     }
 };
+
+export const notificationService = {
+    getAll: async () => {
+        const response = await api.get('/notifications');
+        return response.data;
+    },
+    markAsRead: async (id: number) => {
+        const response = await api.patch(`/notifications/${id}/read`);
+        return response.data;
+    },
+    markAllAsRead: async () => {
+        const response = await api.patch('/notifications/read-all');
+        return response.data;
+    },
+    delete: async (id: number) => {
+        const response = await api.delete(`/notifications/${id}`);
+        return response.data;
+    },
+    deleteAll: async () => {
+        const response = await api.delete('/notifications');
+        return response.data;
+    }
+};
+
+export const commentService = {
+    getByLesson: async (lessonId: number) => {
+        const response = await api.get(`/comments/lesson/${lessonId}`);
+        return response.data;
+    },
+    create: async (data: { lesson_id: number; content: string; parent_id?: number }) => {
+        const response = await api.post('/comments', data);
+        return response.data;
+    },
+    delete: async (id: number) => {
+        const response = await api.delete(`/comments/${id}`);
+        return response.data;
+    }
+};

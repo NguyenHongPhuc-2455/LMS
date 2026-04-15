@@ -1,34 +1,22 @@
 import { useEffect, useState } from 'react';
+import { Card, Row, Col, Progress, Typography, Button, Empty, Skeleton, Tag, Space } from 'antd';
+import { PlayCircleOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { Card, Typography, Empty, Badge, Space, App } from 'antd';
-import { BookOutlined, ClockCircleOutlined, RocketOutlined } from '@ant-design/icons';
 import api from '../../api';
 
 const { Title, Text } = Typography;
 
-interface Course {
-    id: number;
-    title: string;
-    description: string;
-    thumbnail: string;
-    price: string;
-    level: string;
-    instructor: { full_name: string };
-    _count?: { sections: number };
-}
-
 export default function MyCourses() {
-    const { message } = App.useApp();
-    const navigate = useNavigate();
-    const [courses, setCourses] = useState<Course[]>([]);
+    const [courses, setCourses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     const fetchMyCourses = async () => {
         try {
             const res = await api.get('/courses/my-courses');
             setCourses(res.data);
         } catch (error) {
-            message.error('Lỗi khi tải danh sách khóa học của bạn');
+            console.error('Lỗi fetch khóa học:', error);
         } finally {
             setLoading(false);
         }
@@ -38,75 +26,122 @@ export default function MyCourses() {
         fetchMyCourses();
     }, []);
 
+    if (loading) {
+        return (
+            <div style={{ padding: '40px' }}>
+                <Skeleton active paragraph={{ rows: 10 }} />
+            </div>
+        );
+    }
+
     return (
-        <div style={{ padding: '20px 0' }}>
-            <Title level={2} style={{ marginBottom: 8, color: '#0f172a' }}>Khóa học của tôi</Title>
-            <Text style={{ color: '#64748b', display: 'block', marginBottom: 32 }}>
-                Bạn đã đăng ký {courses.length} khóa học. Chúc bạn học tập tốt!
-            </Text>
+        <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', minHeight: '80vh' }}>
+            <div style={{ marginBottom: '40px' }}>
+                <Title level={2} style={{ color: '#0f172a', marginBottom: '8px' }}>Khóa học của tôi</Title>
+                <Text type="secondary">Quản lý tiến độ và tiếp tục hành trình rèn luyện kỹ năng của bạn.</Text>
+            </div>
 
-            {loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-                    {[1, 2, 3, 4].map(i => <Card key={i} loading={true} />)}
-                </div>
-            ) : courses.length === 0 ? (
-                <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Bạn chưa đăng ký khóa học nào"
-                    style={{ marginTop: 60 }}
-                />
+            {courses.length === 0 ? (
+                <Card style={{ textAlign: 'center', padding: '60px 0', borderRadius: '20px' }} bordered={false} className="glass-card">
+                    <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                            <Space direction="vertical">
+                                <Text type="secondary">Bạn chưa tham gia khóa học nào.</Text>
+                                <Button type="primary" onClick={() => navigate('/all-courses')}>Khám phá khóa học ngay</Button>
+                            </Space>
+                        }
+                    />
+                </Card>
             ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: '24px'
-                }}>
+                <Row gutter={[24, 24]}>
                     {courses.map(course => (
-                        <Card
-                            key={course.id}
-                            hoverable
-                            className="glass-card"
-                            style={{ overflow: 'hidden', border: 'none', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}
-                            styles={{ body: { padding: '16px' } }}
-                            cover={
-                                <div style={{ height: 160, background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', position: 'relative' }}>
-                                    {course.thumbnail ? (
-                                        <img src={course.thumbnail} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'white', fontSize: '48px' }}>
-                                            <BookOutlined />
+                        <Col xs={24} sm={12} lg={8} xl={6} key={course.id}>
+                            <Card
+                                hoverable
+                                cover={
+                                    <div style={{ height: '160px', overflow: 'hidden', position: 'relative' }}>
+                                        <img
+                                            alt={course.title}
+                                            src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                        <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                                            <Tag color={course.progressPercent === 100 ? 'success' : 'processing'} style={{ borderRadius: '6px', fontWeight: 600 }}>
+                                                {course.progressPercent === 100 ? 'HOÀN THÀNH' : 'ĐANG HỌC'}
+                                            </Tag>
                                         </div>
-                                    )}
+                                    </div>
+                                }
+                                bodyStyle={{ padding: '20px' }}
+                                style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #f1f5f9' }}
+                                className="progress-course-card"
+                                onClick={() => navigate(`/course/${course.id}/learning${course.nextLessonId ? `?lessonId=${course.nextLessonId}` : ''}`)}
+                            >
+                                <div style={{ height: '48px', overflow: 'hidden', marginBottom: '12px' }}>
+                                    <Title level={5} style={{ margin: 0, lineHeight: 1.4 }} className="line-clamp-2">
+                                        {course.title}
+                                    </Title>
                                 </div>
-                            }
-                            onClick={() => navigate(`/course/${course.id}/learning`)}
-                        >
-                            <div style={{ marginBottom: 16 }}>
-                                <Badge
-                                    status="processing"
-                                    color="#6366f1"
-                                    text={<Text style={{ color: '#6366f1', fontWeight: 700, fontSize: '11px' }}>{course.level?.toUpperCase() || 'OFFICIAL'}</Text>}
-                                />
-                                <Title level={5} style={{ marginTop: 8, marginBottom: 0, color: '#1e293b', fontSize: '16px', lineHeight: 1.4 }}>
-                                    {course.title}
-                                </Title>
-                            </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                <Space direction="vertical" size={2}>
-                                    <Text style={{ color: '#94a3b8', fontSize: '11px' }}>Người tạo</Text>
-                                    <Text strong style={{ color: '#475569', fontSize: '13px' }}>{course.instructor?.full_name || 'Hệ thống'}</Text>
-                                </Space>
-                            </div>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <Text style={{ fontSize: '13px', color: '#64748b' }}>Tiến độ</Text>
+                                        <Text strong style={{ fontSize: '13px', color: '#6366f1' }}>{course.progressPercent}%</Text>
+                                    </div>
+                                    <Progress
+                                        percent={course.progressPercent}
+                                        showInfo={false}
+                                        strokeColor={{ '0%': '#6366f1', '100%': '#a855f7' }}
+                                        trailColor="#f1f5f9"
+                                        strokeWidth={6}
+                                    />
+                                </div>
 
-                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '12px' }}>
-                                <Space size={6}><ClockCircleOutlined style={{ fontSize: '14px' }} /> Tiếp tục học</Space>
-                                <Space size={6}><RocketOutlined style={{ fontSize: '14px' }} /> {course._count?.sections || 0} chương</Space>
-                            </div>
-                        </Card>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <Space size={12} style={{ color: '#64748b', fontSize: '12px' }}>
+                                        <span><BookOutlined /> {course.completedLessons}/{course.totalLessons} bài</span>
+                                    </Space>
+                                    <Text type="secondary" style={{ fontSize: '11px' }}>
+                                        <ClockCircleOutlined /> {new Date(course.enrolledAt).toLocaleDateString('vi-VN')}
+                                    </Text>
+                                </div>
+
+                                <Button
+                                    type="primary"
+                                    block
+                                    icon={<PlayCircleOutlined />}
+                                    style={{
+                                        borderRadius: '10px',
+                                        height: '40px',
+                                        fontWeight: 600,
+                                        background: course.progressPercent === 100 ? '#10b981' : '#6366f1',
+                                        borderColor: course.progressPercent === 100 ? '#10b981' : '#6366f1'
+                                    }}
+                                >
+                                    {course.progressPercent === 100 ? 'Xem lại bài học' : 'Tiếp tục học'}
+                                </Button>
+                            </Card>
+                        </Col>
                     ))}
-                </div>
+                </Row>
             )}
+
+            <style>{`
+                .line-clamp-2 {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+                .progress-course-card {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .progress-course-card:hover {
+                    transform: translateY(-8px);
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+                }
+            `}</style>
         </div>
     );
 }

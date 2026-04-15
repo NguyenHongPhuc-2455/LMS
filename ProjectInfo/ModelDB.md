@@ -16,7 +16,7 @@ courses: Thông tin tổng quan khóa học (tiêu đề, mô tả, giá tiền,
 
 sections: Các chương trong một khóa học (ví dụ: Chương 1: Căn bản).
 
-lessons: Các bài học chi tiết (video URL, tài liệu đính kèm, thời lượng, loại bài học: video/văn bản/quiz).
+lessons: Các bài học chi tiết (video URL ẩn, HLS, nội dung văn bản Markdown, tệp đính kèm PDF, thời lượng, thứ tự bài học).
 
 3. Nhóm bán hàng & Thanh toán (Orders & Payments)
 Phần này đảm bảo việc kinh doanh diễn ra trơn tru và bảo mật.
@@ -40,6 +40,24 @@ reviews: Đánh giá khóa học (rating 1-5 sao, bình luận).
 
 wishlists: Khóa học yêu thích mà người dùng lưu lại.
 
+5. Nhóm Bình luận & Thông báo (Comments & Notifications)
+Hệ thống tương tác xã hội giữa học viên.
+
+comments: Bình luận theo bài học. Cấu trúc Facebook-style 2 cấp:
+- `lesson_id`: Liên kết tới bài học.
+- `user_id`: Người bình luận.
+- `parent_id` (nullable): Nếu null = bình luận gốc (Level 1), nếu có giá trị = phản hồi (Level 2).
+- Quan hệ tự tham chiếu (self-relation): `parent` / `replies` qua relation `CommentReplies`.
+- Backend tự động gộp reply sâu hơn cấp 2 về cấp 1 (giống Facebook).
+
+notifications: Thông báo cho người dùng:
+- `user_id`: Người nhận thông báo.
+- `title`, `message`: Nội dung thông báo.
+- `type`: Loại thông báo (VD: `COURSE_APPROVAL`, `COMMENT_REPLY`).
+- `link` (nullable): URL điều hướng khi click (VD: `/course/2/learning?lessonId=5#comment-42`).
+- `is_read`: Trạng thái đã đọc.
+- Phát realtime qua Socket.io event `newNotification`.
+
 
 Một số lưu ý "chuẩn chỉ" khi thiết kế:
 1. Soft Delete: Không nên xóa cứng (Hard Delete) dữ liệu. Hãy dùng cột deleted_at để có thể khôi phục khi cần.
@@ -49,3 +67,5 @@ Một số lưu ý "chuẩn chỉ" khi thiết kế:
 3. Lưu trữ Video: Tuyệt đối không lưu file video trực tiếp vào database. Hãy lưu URL/ID của video từ các dịch vụ như AWS S3, Vimeo hoặc Cloudinary.
 
 4. Tính toàn vẹn: Sử dụng Foreign Keys (Khóa ngoại) để đảm bảo không có bài học nào "mồ côi" không thuộc về khóa học nào.
+
+5. Self-relation (Comment): Sử dụng quan hệ tự tham chiếu với `onDelete: Cascade` để khi xóa bình luận cha, tất cả reply con cũng bị xóa theo.

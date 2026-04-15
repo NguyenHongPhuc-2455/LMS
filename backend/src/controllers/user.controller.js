@@ -48,15 +48,24 @@ exports.getRoles = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { username, email, full_name, role_id } = req.body;
+        const { username, email, full_name, role_id, phone, dob, gender, bio, avatar } = req.body;
 
         // Cập nhật thông tin cơ bản
         await prisma.user.update({
             where: { id: parseInt(id) },
-            data: { username, email, full_name }
+            data: {
+                username,
+                email,
+                full_name,
+                phone,
+                dob: dob ? new Date(dob) : null,
+                gender,
+                bio,
+                avatar
+            }
         });
 
-        // Nếu có thay đổi role (ở đây ta giả định 1 user có 1 chính, nếu m-n thực thụ thì cần logic khác)
+        // Nếu có thay đổi role
         if (role_id) {
             await prisma.userRole.deleteMany({ where: { user_id: parseInt(id) } });
             await prisma.userRole.create({

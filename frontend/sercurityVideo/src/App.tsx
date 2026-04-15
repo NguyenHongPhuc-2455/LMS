@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/admin/Dashboard';
+import CourseManagement from './pages/admin/CourseManagement';
+import SectionManagement from './pages/admin/SectionManagement';
+import LessonManagement from './pages/admin/LessonManagement';
 import CourseList from './pages/client/CourseList';
 import CourseLearning from './pages/client/CourseLearning';
 import CourseDetail from './pages/client/CourseDetail';
@@ -50,7 +52,9 @@ function App() {
             {/* Admin Routes with DashStack Layout */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
-              <Route path="courses" element={<Dashboard />} />
+              <Route path="courses" element={<CourseManagement />} />
+              <Route path="sections" element={<SectionManagement />} />
+              <Route path="lessons" element={<LessonManagement />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="requests" element={<CourseRequests />} />
               <Route path="profile" element={<Profile />} />

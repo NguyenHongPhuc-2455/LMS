@@ -10,9 +10,10 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 ---
 
 ## 🛠 Tech Stack
-- **Backend**: Node.js, Express, Prisma (ORM), PostgreSQL, FFmpeg (Xử lý video).
-- **Frontend**: React (Vite), TypeScript, Ant Design (UI), React Router (Routing).
+- **Backend**: Node.js, Express, Prisma (ORM), PostgreSQL, FFmpeg (Xử lý video), Socket.io (Realtime).
+- **Frontend**: React (Vite), TypeScript, Ant Design (UI), React Router (Routing), dayjs (Date formatting).
 - **Security**: JWT (Auth), AES-128 Encryption (HLS Video Key).
+- **Realtime**: Socket.io cho thông báo push (Notification) và tương tác trực tiếp.
 
 ---
 
@@ -25,22 +26,36 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   ├── src/
 │   │   ├── configs/               # Cấu hình hệ thống (Prisma, DB)
 │   │   ├── controllers/           # Nhận Request & Trả Response
+│   │   │   ├── comment.controller.js  # CRUD bình luận
+│   │   │   └── notification.controller.js # Quản lý thông báo
 │   │   ├── services/              # (Core) Logic nghiệp vụ chính
+│   │   │   ├── comment.service.js     # Logic bình luận (Facebook-style 2 cấp)
+│   │   │   └── notification.service.js # Tạo & phát thông báo Realtime
 │   │   ├── routes/                # Luồng API
+│   │   │   ├── comment.routes.js      # /api/comments/*
+│   │   │   └── notification.routes.js # /api/notifications/*
 │   │   ├── middlewares/           # Auth, Upload, Error Handler
-│   │   ├── utils/                 # ApiError, catchAsync wrapper
+│   │   ├── utils/                 # ApiError, catchAsync, socket.js
 │   │   └── app.js                 # Cấu hình Express
-│   └── server.js                  # Entry point (Port 5000)
+│   └── server.js                  # Entry point (Port 5000, Socket.io)
 │
 ├── frontend/sercurityVideo/       # React SPA
 │   ├── src/
 │   │   ├── assets/                # Styles, Images
 │   │   ├── components/            # MainLayout, AdminLayout, Navbar, VideoPlayer
+│   │   │   ├── AppHeader.tsx          # Header với Search, Notification Bell, User Menu
+│   │   │   ├── CommentSection.tsx     # Hệ thống bình luận Facebook-style (2 cấp)
+│   │   │   └── VideoPlayer.tsx        # HLS Video Player bảo mật
+│   │   ├── hooks/                 # Custom React Hooks
+│   │   │   ├── useNotifications.ts    # Quản lý state thông báo + Socket.io
+│   │   │   └── useTabFocusWarning.ts  # Cảnh báo chuyển tab khi xem video
 │   │   ├── pages/                 # Phân chia theo vai trò
-│   │   │   ├── admin/             # Dashboard, UserManagement, AdminDashboard
-│   │   │   ├── client/            # CourseList, Detail, Learning, Profile, MyCourses
+│   │   │   ├── admin/             # CourseManagement, SectionManagement, LessonManagement, UserManagement
+│   │   │   ├── client/            # CourseList, Detail, Learning (with Comments), Profile, MyCourses
 │   │   │   └── Login, Register    # Các trang Public
 │   │   ├── services/              # API Client (axios instances)
+│   │   │   ├── api.service.ts         # commentService, notificationService, ...
+│   │   │   └── socket.ts              # Socket.io client
 │   │   ├── App.tsx                # SPA Routing & ConfigProvider
 │   │   └── main.tsx               # Entry point (Vite)
 │
@@ -67,7 +82,20 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 - `AuthMiddleware` kiểm tra Token & Quyền sở hữu khóa học.
 - Trả về Key Binary để giải mã luồng video tại chỗ.
 
-### 3. Mô hình Error Handling (Professional)
+### 3. Luồng Bình luận (Facebook-style, 2 cấp)
+`CourseLearning` -> `CommentSection` -> `commentService` -> Backend:
+- Cấp 1: Parent Comment (bình luận gốc).
+- Cấp 2: Reply (phản hồi). Mọi phản hồi lồng sâu hơn đều được **gộp về cấp 2** (giống Facebook).
+- Backend tự resolve `parent_id` để đảm bảo cấu trúc tối đa 2 cấp.
+
+### 4. Luồng Thông báo Realtime (Socket.io)
+`Comment Reply` -> `notificationService.createNotification()` -> `Socket.io emit`:
+- Khi tạo reply, backend tìm chủ bình luận cha và tạo thông báo.
+- Thông báo kèm `link` điều hướng (VD: `/course/2/learning?lessonId=5#comment-42`).
+- Frontend lắng nghe event `newNotification` qua Socket.io và hiện toast.
+- Khi click thông báo, navigate tới bài học đúng và scroll tới bình luận cụ thể (highlight vàng 2.5s).
+
+### 5. Mô hình Error Handling (Professional)
 - Mọi lỗi được đóng gói qua `ApiError`.
 - `catchAsync` tự động bắt lỗi từ block Async/Await.
 - `error.middleware.js` chuyển đổi mọi lỗi thành JSON chuẩn cho Frontend.
@@ -76,6 +104,9 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 
 ## 📑 Các file quan trọng cần đọc trước
 1. `backend/src/services/video.service.js`: Chứa logic tối ưu hóa FFmpeg.
-2. `backend/prisma/schema.prisma`: Thiết kế DB.
-3. `frontend/src/App.tsx`: Cấu hình Router & Layout SPA.
-4. `frontend/src/components/MainLayout.tsx`: Khung xương Layout SPA.
+2. `backend/prisma/schema.prisma`: Thiết kế DB (bao gồm Comment, Notification).
+3. `backend/src/services/comment.service.js`: Logic bình luận Facebook-style.
+4. `backend/src/services/notification.service.js`: Logic thông báo Realtime.
+5. `frontend/src/App.tsx`: Cấu hình Router & Layout SPA.
+6. `frontend/src/components/CommentSection.tsx`: Giao diện bình luận.
+7. `frontend/src/components/AppHeader.tsx`: Header với Notification Bell.

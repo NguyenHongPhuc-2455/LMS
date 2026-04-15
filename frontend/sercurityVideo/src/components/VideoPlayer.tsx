@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import shaka from 'shaka-player';
 import api from '../api';
-import { message, Modal } from 'antd';
+import { message } from 'antd';
 
 interface VideoPlayerProps {
     src: string;
@@ -9,13 +9,28 @@ interface VideoPlayerProps {
     onEnded?: () => void;
 }
 
-export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps) {
+export interface VideoPlayerRef {
+    reset: () => void;
+}
+
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, onEnded }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
 
     // Cơ chế chống tua (Anti-Seek) ổn định
     const lastTimeRef = useRef(0);
+
+    // Expose methods to parent
+    useImperativeHandle(ref, () => ({
+        reset: () => {
+            if (videoRef.current) {
+                videoRef.current.currentTime = 0;
+                lastTimeRef.current = 0;
+                videoRef.current.play().catch(() => { });
+            }
+        }
+    }));
 
     useEffect(() => {
         const video = videoRef.current;
@@ -126,4 +141,6 @@ export default function VideoPlayer({ src, lessonId, onEnded }: VideoPlayerProps
             ></video>
         </div>
     );
-}
+});
+
+export default VideoPlayer;

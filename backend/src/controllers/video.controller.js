@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const prisma = require('../configs/prisma');
 const videoService = require('../services/video.service');
 const catchAsync = require('../utils/catchAsync');
@@ -76,18 +78,50 @@ exports.deleteVideo = catchAsync(async (req, res) => {
  */
 exports.updateLesson = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { title, section_id } = req.body;
+    const { title, section_id, content } = req.body;
 
     const lesson = await prisma.lesson.update({
         where: { id: parseInt(id) },
         data: {
             title,
-            section_id: section_id ? parseInt(section_id) : undefined
+            section_id: section_id ? parseInt(section_id) : undefined,
+            content
         }
     });
 
     res.json({
         status: 'success',
+        data: lesson
+    });
+});
+
+/**
+ * Upload tài liệu đính kèm cho bài học
+ */
+exports.uploadAttachment = catchAsync(async (req, res) => {
+    const { lessonId } = req.params;
+
+    if (!req.file) throw new ApiError(400, 'Vui lòng chọn tệp đính kèm');
+
+    const fileName = `${Date.now()}-${req.file.originalname}`;
+    const destinationPath = path.join(__dirname, '../../public/attachments', fileName);
+
+    // Di chuyển file từ temp upload sang thư mục chính
+    fs.renameSync(req.file.path, destinationPath);
+
+    const attachmentUrl = `/public/attachments/${fileName}`;
+
+    const lesson = await prisma.lesson.update({
+        where: { id: parseInt(lessonId) },
+        data: {
+            attachment_url: attachmentUrl,
+            attachment_name: req.file.originalname
+        }
+    });
+
+    res.json({
+        status: 'success',
+        message: 'Tài liệu đã được tải lên thành công',
         data: lesson
     });
 });

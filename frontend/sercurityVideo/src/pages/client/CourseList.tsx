@@ -4,7 +4,7 @@ import {
     BookOutlined, ClockCircleOutlined,
     RocketOutlined
 } from '@ant-design/icons';
-import { Card, Badge, Typography, Space, message, Skeleton, Empty } from 'antd';
+import { Card, Badge, Typography, Space, message, Skeleton, Empty, Pagination } from 'antd';
 import api from '../../api';
 
 const { Title, Text } = Typography;
@@ -27,6 +27,17 @@ export default function CourseList() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const searchQuery = searchParams.get('search') || '';
+
+    // Phân trang
+    const [currentPagePrivate, setCurrentPagePrivate] = useState(1);
+    const [currentPagePublic, setCurrentPagePublic] = useState(1);
+    const pageSize = 4; // 1 dòng * 4 cột = 4
+
+    useEffect(() => {
+        // Reset về trang 1 khi tìm kiếm
+        setCurrentPagePrivate(1);
+        setCurrentPagePublic(1);
+    }, [searchQuery]);
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -54,6 +65,16 @@ export default function CourseList() {
     const publicCourses = courses.filter(c => !c.is_private);
     const privateCourses = courses.filter(c => c.is_private);
 
+    // Dữ liệu hiển thị sau khi phân trang
+    const displayedPrivateCourses = privateCourses.slice(
+        (currentPagePrivate - 1) * pageSize,
+        currentPagePrivate * pageSize
+    );
+    const displayedPublicCourses = publicCourses.slice(
+        (currentPagePublic - 1) * pageSize,
+        currentPagePublic * pageSize
+    );
+
     return (
         <div style={{ padding: '10px 3%', minHeight: '100vh' }}>
             {/* Mục Khóa học Riêng tư */}
@@ -68,12 +89,24 @@ export default function CourseList() {
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: '20px'
+                        gap: '20px',
+                        marginBottom: '24px'
                     }}>
-                        {privateCourses.map(course => (
+                        {displayedPrivateCourses.map(course => (
                             <CourseCard key={course.id} course={course} navigate={navigate} />
                         ))}
                     </div>
+                    {privateCourses.length > pageSize && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                            <Pagination
+                                current={currentPagePrivate}
+                                pageSize={pageSize}
+                                total={privateCourses.length}
+                                onChange={(page) => setCurrentPagePrivate(page)}
+                                showSizeChanger={false}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -88,12 +121,24 @@ export default function CourseList() {
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: '20px'
+                        gap: '20px',
+                        marginBottom: '24px'
                     }}>
-                        {publicCourses.map(course => (
+                        {displayedPublicCourses.map(course => (
                             <CourseCard key={course.id} course={course} navigate={navigate} />
                         ))}
                     </div>
+                    {publicCourses.length > pageSize && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                            <Pagination
+                                current={currentPagePublic}
+                                pageSize={pageSize}
+                                total={publicCourses.length}
+                                onChange={(page) => setCurrentPagePublic(page)}
+                                showSizeChanger={false}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 
