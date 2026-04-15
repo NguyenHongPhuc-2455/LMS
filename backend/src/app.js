@@ -7,6 +7,7 @@ const videoRoutes = require('./routes/video.routes');
 const courseRoutes = require('./routes/course.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
+const courseRequestRoutes = require('./routes/courseRequest.routes');
 
 const uploadRoutes = require('./routes/upload.routes');
 
@@ -22,7 +23,7 @@ app.use(cors({
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
@@ -35,7 +36,7 @@ app.use('/public', express.static(path.join(__dirname, '../public'), {
         if (allowedOrigins.includes(origin)) {
             res.setHeader('Access-Control-Allow-Origin', origin);
         }
-        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST, PUT, DELETE, PATCH');
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
         // Tắt hoàn toàn Cache để tránh Chrome trả mã ảo 304 làm kẹt luồng HLS gây lỗi 7002
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -56,6 +57,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/course-requests', courseRequestRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Centralized Error Handling

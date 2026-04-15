@@ -13,7 +13,8 @@ import {
     SearchOutlined,
     GlobalOutlined,
     DownOutlined,
-    LogoutOutlined
+    LogoutOutlined,
+    CheckOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -126,6 +127,11 @@ const AdminLayout: React.FC = () => {
                             key: '/admin/users',
                             icon: <UserOutlined />,
                             label: 'Học viên',
+                        },
+                        {
+                            key: '/admin/requests',
+                            icon: <CheckOutlined />,
+                            label: 'Duyệt yêu cầu',
                         },
                         {
                             key: '/admin/orders',

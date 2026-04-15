@@ -37,6 +37,15 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
         if (enrollment || isAdmin || isOwner) hasAccess = true;
     }
 
+    let requestStatus = null;
+    if (userId) {
+        const reqAccess = await prisma.courseRequest.findFirst({
+            where: { user_id: userId, course_id: parseInt(id) },
+            orderBy: { created_at: 'desc' }
+        });
+        if (reqAccess) requestStatus = reqAccess.status;
+    }
+
     // Transform lessons based on access
     course.sections = course.sections.map(s => ({
         ...s,
@@ -46,22 +55,22 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
             // Hide secure content if no access and not free
             ...(!hasAccess && !l.is_free && {
                 video_url: null,
-                content: 'Vui lòng mua khóa học để xem nội dung này.'
+                content: course.is_private ? 'Khóa học này là riêng tư. Vui lòng gửi yêu cầu tham gia để xem nội dung.' : 'Vui lòng mua khóa học để xem nội dung này.'
             })
         }))
     }));
 
-    res.json({ ...course, hasAccess });
+    res.json({ ...course, hasAccess, requestStatus });
 });
 
 exports.createCourse = catchAsync(async (req, res) => {
-    const { title, description, category_id, price, level, thumbnail, intro_video_url, learning_outcomes, requirements } = req.body;
+    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
     const course = await courseService.createCourse({
         title,
         description,
+        is_private: is_private === true || is_private === 'true',
         category_id: category_id ? parseInt(category_id) : null,
         instructor_id: req.user.id,
-        price: parseFloat(price) || 0,
         level,
         thumbnail,
         intro_video_url,
@@ -73,14 +82,14 @@ exports.createCourse = catchAsync(async (req, res) => {
 
 exports.updateCourse = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, price, level, thumbnail, intro_video_url, learning_outcomes, requirements } = req.body;
+    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
     const course = await prisma.course.update({
         where: { id: parseInt(id) },
         data: {
             title,
             description,
+            is_private: is_private !== undefined ? (is_private === true || is_private === 'true') : undefined,
             category_id: category_id ? parseInt(category_id) : undefined,
-            price: price !== undefined ? parseFloat(price) : undefined,
             level,
             thumbnail,
             intro_video_url,
@@ -166,4 +175,18 @@ exports.getMyCourses = catchAsync(async (req, res) => {
     })).filter(c => !c.deleted_at);
 
     res.json(courses);
+});
+
+exports.enrollCourse = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const course = await prisma.course.findUnique({ where: { id: parseInt(id) } });
+    if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
+    if (course.is_private) throw new ApiError(400, 'Khóa học này là riêng tư');
+    const enrollment = await prisma.enrollment.upsert({
+        where: { user_id_course_id: { user_id: userId, course_id: parseInt(id) } },
+        update: {},
+        create: { user_id: userId, course_id: parseInt(id) }
+    });
+    res.json({ message: 'Tham gia thành công', data: enrollment });
 });

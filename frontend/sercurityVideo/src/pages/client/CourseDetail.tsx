@@ -7,7 +7,7 @@ import {
 } from '@ant-design/icons';
 import {
     Row, Col, Typography, Button,
-    Collapse, Space, Skeleton, App, List
+    Collapse, Space, Skeleton, App, List, Badge
 } from 'antd';
 import api from '../../api';
 
@@ -17,13 +17,14 @@ interface Course {
     id: number;
     title: string;
     description: string;
-    price: string | number;
     thumbnail: string;
     intro_video_url: string;
     learning_outcomes: string;
     requirements: string;
     level: string;
     hasAccess: boolean;
+    is_private: boolean;
+    requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
     sections: any[];
     instructor: { full_name: string };
 }
@@ -34,30 +35,46 @@ export default function CourseDetail() {
     const { message } = App.useApp();
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
+    const fetchDetail = async () => {
+        try {
+            const res = await api.get(`/courses/${id}`);
+            setCourse(res.data);
+        } catch (error) {
+            message.error('Lỗi khi tải thông tin khóa học');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchDetail = async () => {
-            try {
-                const res = await api.get(`/courses/${id}`);
-                setCourse(res.data);
-            } catch (error) {
-                message.error('Lỗi khi tải thông tin khóa học');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchDetail();
     }, [id]);
 
-    const handleBuy = async () => {
+    const handleJoinPublicCourse = async () => {
         try {
-            message.loading({ content: 'Đang kết nối tới cổng thanh toán VNPay...', key: 'payment' });
-            const res = await api.post('/payments/create-vnpay-url', { courseId: id });
-            if (res.data.payUrl) {
-                window.location.href = res.data.payUrl;
-            }
+            setSubmitting(true);
+            const res = await api.post(`/courses/${id}/enroll`);
+            message.success(res.data.message);
+            fetchDetail();
         } catch (error: any) {
-            message.error({ content: error.response?.data?.error || 'Lỗi khởi tạo thanh toán', key: 'payment' });
+            message.error(error.response?.data?.message || 'Lỗi tham gia khóa học');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleRequestAccess = async () => {
+        try {
+            setSubmitting(true);
+            const res = await api.post('/course-requests', { courseId: id });
+            message.success(res.data.message);
+            fetchDetail(); // Refresh to update status
+        } catch (error: any) {
+            message.error(error.response?.data?.message || 'Lỗi gửi yêu cầu');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -65,6 +82,115 @@ export default function CourseDetail() {
     if (!course) return <div>Không tìm thấy khóa học</div>;
 
     const totalLessons = course.sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
+
+    const renderActionButton = () => {
+        if (course.hasAccess) {
+            return (
+                <Button
+                    type="primary"
+                    size="large"
+                    block
+                    style={{
+                        height: '50px',
+                        borderRadius: '25px',
+                        background: '#26ac51',
+                        border: 'none',
+                        fontWeight: 700,
+                        fontSize: '16px',
+                        marginBottom: '24px'
+                    }}
+                    onClick={() => navigate(`/course/${course.id}/learning`)}
+                >
+                    VÀO HỌC NGAY
+                </Button>
+            );
+        }
+
+        if (course.is_private) {
+            if (course.requestStatus === 'PENDING') {
+                return (
+                    <Button
+                        size="large"
+                        block
+                        disabled
+                        style={{
+                            height: '50px',
+                            borderRadius: '25px',
+                            fontWeight: 700,
+                            fontSize: '16px',
+                            marginBottom: '24px'
+                        }}
+                    >
+                        ĐANG CHỜ PHÊ DUYỆT
+                    </Button>
+                );
+            }
+
+            if (course.requestStatus === 'REJECTED') {
+                return (
+                    <Button
+                        type="primary"
+                        danger
+                        size="large"
+                        block
+                        style={{
+                            height: '50px',
+                            borderRadius: '25px',
+                            fontWeight: 700,
+                            fontSize: '16px',
+                            marginBottom: '24px'
+                        }}
+                        onClick={handleRequestAccess}
+                        loading={submitting}
+                    >
+                        YÊU CẦU LẠI
+                    </Button>
+                );
+            }
+
+            return (
+                <Button
+                    type="primary"
+                    size="large"
+                    block
+                    style={{
+                        height: '50px',
+                        borderRadius: '25px',
+                        background: '#7064f9ff',
+                        border: 'none',
+                        fontWeight: 700,
+                        fontSize: '16px',
+                        marginBottom: '24px'
+                    }}
+                    onClick={handleRequestAccess}
+                    loading={submitting}
+                >
+                    GỬI YÊU CẦU TRUY CẬP
+                </Button>
+            );
+        }
+
+        return (
+            <Button
+                type="primary"
+                size="large"
+                block
+                style={{
+                    height: '50px',
+                    borderRadius: '25px',
+                    background: '#6366f1',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '16px',
+                    marginBottom: '24px'
+                }}
+                onClick={handleJoinPublicCourse}
+                loading={submitting}
+            >
+                THAM GIA KHÓA HỌC
+            </Button>
+        );
+    };
 
     return (
         <div style={{ padding: '20px 4%', maxWidth: '1200px', margin: '0 auto' }}>
@@ -189,33 +315,14 @@ export default function CourseDetail() {
                         </div>
 
                         <div style={{ padding: '0 20px 20px' }}>
-                            <Title level={2} style={{ color: '#26ac51ff', margin: '16px 0' }}>
-                                {Number(course.price) === 0 ? 'Miễn phí' : `${Number(course.price).toLocaleString()}đ`}
-                            </Title>
+                            <div style={{ marginBottom: '24px' }}>
+                                <Badge
+                                    count={course.is_private ? "KHÓA HỌC RIÊNG TƯ" : "KHÓA HỌC CÔNG KHAI"}
+                                    style={{ backgroundColor: course.is_private ? '#7064f9' : '#26ac51', padding: '0 12px', height: '24px', lineHeight: '24px' }}
+                                />
+                            </div>
 
-                            <Button
-                                type="primary"
-                                size="large"
-                                block
-                                style={{
-                                    height: '50px',
-                                    borderRadius: '25px',
-                                    background: '#7064f9ff',
-                                    border: 'none',
-                                    fontWeight: 700,
-                                    fontSize: '16px',
-                                    marginBottom: '24px'
-                                }}
-                                onClick={() => {
-                                    if (course.hasAccess) {
-                                        navigate(`/course/${course.id}/learning`);
-                                    } else {
-                                        handleBuy();
-                                    }
-                                }}
-                            >
-                                {course.hasAccess ? "VÀO HỌC NGAY" : "ĐĂNG KÝ HỌC"}
-                            </Button>
+                            {renderActionButton()}
 
                             <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, margin: 0 }}>
                                 {[

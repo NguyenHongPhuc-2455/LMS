@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import {
-    Trash2, UploadCloud, GraduationCap,
-    Plus, ShieldCheck, BookOpen, Users,
+    Trash2, UploadCloud,
+    Plus, ShieldCheck, BookOpen,
     FolderOpen, PlayCircle, Edit
 } from 'lucide-react';
 import {
@@ -33,14 +32,13 @@ interface Course {
     id: number;
     title: string;
     sections: Section[];
-    price: string | number;
+    is_private: boolean;
 }
 
 export default function Dashboard() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
 
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
     const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
@@ -118,7 +116,7 @@ export default function Dashboard() {
         courseForm.setFieldsValue({
             title: course.title,
             description: course.description,
-            price: course.price,
+            is_private: course.is_private,
             thumbnail: course.thumbnail,
             intro_video_url: course.intro_video_url,
             learning_outcomes: course.learning_outcomes,
@@ -224,11 +222,6 @@ export default function Dashboard() {
         } catch (e) { message.error('Lỗi khi xóa khóa học'); }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-    };
 
     const [searchText, setSearchText] = useState('');
     const [filterLevel, setFilterLevel] = useState('All');
@@ -310,9 +303,10 @@ export default function Dashboard() {
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.sections.length} chương nội dung</div>
-                                        <Text style={{ fontSize: '11px', fontWeight: 700, color: '#28a745' }}>
-                                            {Number(c.price) === 0 ? 'MIỄN PHÍ' : `${Number(c.price).toLocaleString()}đ`}
-                                        </Text>
+                                        <Badge
+                                            count={c.is_private ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
+                                            style={{ backgroundColor: c.is_private ? '#7064f9' : '#28a745', fontSize: '10px' }}
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -419,13 +413,11 @@ export default function Dashboard() {
                     <Form.Item name="description" label="Mô tả">
                         <Input.TextArea rows={3} />
                     </Form.Item>
-                    <Form.Item name="price" label="Giá khóa học (VNĐ)" initialValue={0} rules={[{ required: true }]}>
-                        <Input
-                            type="number"
-                            prefix="₫"
-                            placeholder="0 = Miễn phí"
-                            style={{ borderRadius: '10px', height: '40px' }}
-                        />
+                    <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false} rules={[{ required: true }]}>
+                        <Select>
+                            <Option value={false}>Công khai (Tự động cấp quyền)</Option>
+                            <Option value={true}>Riêng tư (Cần phê duyệt)</Option>
+                        </Select>
                     </Form.Item>
                     <Form.Item name="thumbnail" label="Hình ảnh khóa học (Thumbnail)">
                         <Space direction="vertical" style={{ width: '100%' }}>
