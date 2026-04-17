@@ -37,6 +37,13 @@ const AppHeader: React.FC = () => {
                     message: newNotif.title,
                     description: newNotif.message,
                     placement: 'bottomRight',
+                    onClick: () => {
+                        if (newNotif.link) {
+                            navigate(newNotif.link);
+                            antdNotification.destroy();
+                        }
+                    },
+                    style: { cursor: newNotif.link ? 'pointer' : 'default' },
                     icon: newNotif.type === 'COURSE_APPROVAL' ?
                         <CheckCircleOutlined style={{ color: '#52c41a' }} /> :
                         newNotif.type === 'COMMENT_REPLY' ?
@@ -187,21 +194,7 @@ const AppHeader: React.FC = () => {
                 setSearchTerm('');
                 navigate('/course');
             }}>
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                    <div style={{
-                        margin: 0,
-                        color: '#C82020',
-                        fontSize: '22px',
-                        fontWeight: 900,
-                        letterSpacing: '-1px',
-                        textTransform: 'uppercase'
-                    }}>
-                        RITA VÕ<span style={{ fontSize: '10px', verticalAlign: 'top' }}>®</span>
-                    </div>
-                    <Text style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Education Cloud
-                    </Text>
-                </div>
+                <img src="/logo/logo.png" alt="Logo" style={{ height: '50px', objectFit: 'contain' }} />
             </div>
 
             {/* Middle: Search */}

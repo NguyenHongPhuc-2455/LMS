@@ -13,10 +13,11 @@ const statsRoutes = require('./routes/stats.routes');
 
 const commentRoutes = require('./routes/comment.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const quizRoutes = require('./routes/quiz.routes');
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -58,6 +59,7 @@ const errorMiddleware = require('./middlewares/error.middleware');
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/quizzes', quizRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/course-requests', courseRequestRoutes);

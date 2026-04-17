@@ -42,6 +42,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
     const [content, setContent] = useState('');
     const [replyTo, setReplyTo] = useState<number | null>(null);
     const [replyContent, setReplyContent] = useState('');
+    const [expandedComments, setExpandedComments] = useState<number[]>([]);
+
+    const toggleExpand = (id: number) => {
+        setExpandedComments(prev =>
+            prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
+        );
+    };
 
     const fetchComments = useCallback(async () => {
         setLoading(true);
@@ -61,8 +68,50 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
             fetchComments();
             setReplyTo(null);
             setContent('');
+            setExpandedComments([]); // Reset expansion when lesson changes
         }
     }, [lessonId, fetchComments]);
+
+    // Xử lý tự động bung comment khi có hash (từ thông báo)
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash.startsWith('#comment-') && comments.length > 0) {
+            const targetId = parseInt(hash.replace('#comment-', ''));
+            if (!isNaN(targetId)) {
+                const parentIds: number[] = [];
+                const findParents = (list: Comment[], id: number): boolean => {
+                    for (const item of list) {
+                        if (item.id === id) return true;
+                        if (item.replies && findParents(item.replies, id)) {
+                            parentIds.push(item.id);
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+
+                if (findParents(comments, targetId)) {
+                    if (parentIds.length > 0) {
+                        setExpandedComments(prev => [...new Set([...prev, ...parentIds])]);
+                    }
+                    // Đợi DOM render xong các comment con mới scroll
+                    setTimeout(() => {
+                        const el = document.getElementById(`comment-${targetId}`);
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Highlight hiệu ứng nhẹ
+                            const originalBg = el.style.background;
+                            el.style.transition = 'background 0.5s';
+                            el.style.background = '#fef9c3'; // Vàng nhạt highlight
+                            setTimeout(() => {
+                                el.style.background = originalBg;
+                            }, 2000);
+                        }
+                    }, 300);
+                }
+            }
+        }
+    }, [comments]);
 
     const handleSubmit = async (parentId?: number) => {
         const text = parentId ? replyContent : content;
@@ -84,6 +133,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
             if (parentId) {
                 setReplyTo(null);
                 setReplyContent('');
+                // Tự động mở rộng nếu đang bị ẩn
+                if (parentId && !expandedComments.includes(parentId)) {
+                    setExpandedComments(prev => [...prev, parentId]);
+                }
             } else {
                 setContent('');
             }
@@ -108,6 +161,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
     const renderCommentItem = (item: Comment, level = 0) => {
         const isAdmin = currentUser?.roles?.includes('admin');
         const isOwner = currentUser?.id === item.user_id;
+        const isExpanded = expandedComments.includes(item.id);
 
         return (
             <div key={item.id} id={`comment-${item.id}`} style={{
@@ -158,7 +212,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                         setReplyContent('');
                                     }
                                 }}
-                                style={{ padding: 0, color: '#6366f1', fontSize: '12px' }}
+                                style={{ padding: 0, color: '#6366f1', fontSize: '12px', fontWeight: 600 }}
                             >
                                 Phản hồi
                             </Button>
@@ -194,7 +248,43 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                 borderLeft: level < 1 ? '2px solid #e2e8f0' : 'none',
                                 paddingLeft: level < 1 ? '16px' : '0'
                             }}>
-                                {item.replies.map(reply => renderCommentItem(reply, level + 1))}
+                                {!isExpanded ? (
+                                    <Button
+                                        type="text"
+                                        onClick={() => toggleExpand(item.id)}
+                                        style={{
+                                            color: '#64748b',
+                                            fontSize: '13px',
+                                            fontWeight: 600,
+                                            padding: 0,
+                                            height: 'auto',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <div style={{ width: '20px', height: '1px', background: '#e2e8f0' }}></div>
+                                        Xem {item.replies.length} phản hồi...
+                                    </Button>
+                                ) : (
+                                    <>
+                                        {item.replies.map(reply => renderCommentItem(reply, level + 1))}
+                                        <Button
+                                            type="text"
+                                            onClick={() => toggleExpand(item.id)}
+                                            style={{
+                                                color: '#64748b',
+                                                fontSize: '13px',
+                                                fontWeight: 600,
+                                                padding: 0,
+                                                marginTop: '8px',
+                                                height: 'auto'
+                                            }}
+                                        >
+                                            Ẩn phản hồi
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

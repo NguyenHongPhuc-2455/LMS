@@ -13,6 +13,7 @@ import {
 } from 'antd';
 import VideoPlayer from '../../components/VideoPlayer';
 import CommentSection from '../../components/CommentSection';
+import QuizPlayer from '../../components/QuizPlayer';
 import type { VideoPlayerRef } from '../../components/VideoPlayer';
 import api from '../../api';
 import { useTabFocusWarning } from '../../hooks/useTabFocusWarning';
@@ -229,7 +230,14 @@ export default function Course() {
                         </div>
 
                         <div className="glass-card" style={{ padding: '0', overflow: 'hidden', marginBottom: 24, background: '#000', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-                            {activeLesson && activeLesson.type === 'VIDEO' && (course.hasAccess || activeLesson.is_free) ? (
+                            {activeLesson && activeLesson.type === 'QUIZ' ? (
+                                <QuizPlayer
+                                    lessonId={activeLesson.id}
+                                    onCompleted={() => {
+                                        fetchDetail(); // Refresh progress
+                                    }}
+                                />
+                            ) : activeLesson && activeLesson.type === 'VIDEO' && (course.hasAccess || activeLesson.is_free) ? (
                                 activeLesson.video_url ? (
                                     <VideoPlayer
                                         ref={videoPlayerRef}

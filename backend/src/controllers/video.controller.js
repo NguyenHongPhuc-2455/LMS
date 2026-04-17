@@ -9,7 +9,7 @@ const ApiError = require('../utils/ApiError');
  * Upload và bắt đầu xử lý Video
  */
 exports.uploadVideo = catchAsync(async (req, res) => {
-    const { title, section_id } = req.body;
+    const { title, section_id, order } = req.body;
 
     if (!req.file) throw new ApiError(400, 'Please upload a video file');
     if (!section_id) throw new ApiError(400, 'Section ID is required');
@@ -18,7 +18,8 @@ exports.uploadVideo = catchAsync(async (req, res) => {
         data: {
             title,
             section_id: parseInt(section_id),
-            type: 'VIDEO'
+            type: 'VIDEO',
+            order: order ? parseInt(order) : 0
         }
     });
 
@@ -78,14 +79,15 @@ exports.deleteVideo = catchAsync(async (req, res) => {
  */
 exports.updateLesson = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { title, section_id, content } = req.body;
+    const { title, section_id, content, order } = req.body;
 
     const lesson = await prisma.lesson.update({
         where: { id: parseInt(id) },
         data: {
             title,
             section_id: section_id ? parseInt(section_id) : undefined,
-            content
+            content,
+            order: order !== undefined ? parseInt(order) : undefined
         }
     });
 

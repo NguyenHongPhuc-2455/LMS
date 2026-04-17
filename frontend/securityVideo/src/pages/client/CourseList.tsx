@@ -4,7 +4,8 @@ import {
     BookOutlined, ClockCircleOutlined,
     RocketOutlined
 } from '@ant-design/icons';
-import { Card, Badge, Typography, Space, message, Skeleton, Empty, Pagination } from 'antd';
+import { Card, Badge, Typography, Space, message, Skeleton, Empty, Pagination, Select } from 'antd';
+const { Option } = Select;
 import api from '../../api';
 
 const { Title, Text } = Typography;
@@ -18,6 +19,7 @@ interface Course {
     category?: { name: string };
     instructor?: { full_name: string; username: string };
     is_private: boolean;
+    created_at: string;
     _count?: { sections: number };
 }
 
@@ -31,7 +33,8 @@ export default function CourseList() {
     // Phân trang
     const [currentPagePrivate, setCurrentPagePrivate] = useState(1);
     const [currentPagePublic, setCurrentPagePublic] = useState(1);
-    const pageSize = 4; // 1 dòng * 4 cột = 4
+    const [sortBy, setSortBy] = useState('newest');
+    const pageSize = 4;
 
     useEffect(() => {
         // Reset về trang 1 khi tìm kiếm
@@ -62,8 +65,31 @@ export default function CourseList() {
         );
     }
 
-    const publicCourses = courses.filter(c => !c.is_private);
-    const privateCourses = courses.filter(c => c.is_private);
+    const sortCourses = (list: Course[]) => {
+        const sorted = [...list];
+        switch (sortBy) {
+            case 'newest':
+                sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                break;
+            case 'oldest':
+                sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                break;
+            case 'az':
+                sorted.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'za':
+                sorted.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+            case 'level':
+                const levels: Record<string, number> = { 'Cơ bản': 1, 'Trung cấp': 2, 'Nâng cao': 3 };
+                sorted.sort((a, b) => (levels[a.level] || 99) - (levels[b.level] || 99));
+                break;
+        }
+        return sorted;
+    };
+
+    const publicCourses = sortCourses(courses.filter(c => !c.is_private));
+    const privateCourses = sortCourses(courses.filter(c => c.is_private));
 
     // Dữ liệu hiển thị sau khi phân trang
     const displayedPrivateCourses = privateCourses.slice(
@@ -77,6 +103,23 @@ export default function CourseList() {
 
     return (
         <div style={{ padding: '10px 3%', minHeight: '100vh' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                <Space>
+                    <span style={{ color: '#64748b' }}>Sắp xếp theo:</span>
+                    <Select
+                        defaultValue="newest"
+                        style={{ width: 180 }}
+                        onChange={(val) => setSortBy(val)}
+                        popupClassName="sort-select-dropdown"
+                    >
+                        <Option value="newest">Ngày tạo (Mới nhất)</Option>
+                        <Option value="oldest">Ngày tạo (Cũ nhất)</Option>
+                        <Option value="az">Tên khóa học (A-Z)</Option>
+                        <Option value="za">Tên khóa học (Z-A)</Option>
+                        <Option value="level">Trình độ (Tăng dần)</Option>
+                    </Select>
+                </Space>
+            </div>
             {/* Mục Khóa học Riêng tư */}
             {privateCourses.length > 0 && (
                 <div style={{ marginBottom: 48 }}>
@@ -104,6 +147,30 @@ export default function CourseList() {
                                 total={privateCourses.length}
                                 onChange={(page) => setCurrentPagePrivate(page)}
                                 showSizeChanger={false}
+                                itemRender={(page, type, originalElement) => {
+                                    const totalPages = Math.ceil(privateCourses.length / pageSize);
+                                    if (type === 'prev') {
+                                        return (
+                                            <div
+                                                onClick={() => currentPagePrivate === 1 && setCurrentPagePrivate(totalPages)}
+                                                style={{ display: 'flex', alignItems: 'center', height: '100%' }}
+                                            >
+                                                {originalElement}
+                                            </div>
+                                        );
+                                    }
+                                    if (type === 'next') {
+                                        return (
+                                            <div
+                                                onClick={() => currentPagePrivate === totalPages && setCurrentPagePrivate(1)}
+                                                style={{ display: 'flex', alignItems: 'center', height: '100%' }}
+                                            >
+                                                {originalElement}
+                                            </div>
+                                        );
+                                    }
+                                    return originalElement;
+                                }}
                             />
                         </div>
                     )}
@@ -136,6 +203,30 @@ export default function CourseList() {
                                 total={publicCourses.length}
                                 onChange={(page) => setCurrentPagePublic(page)}
                                 showSizeChanger={false}
+                                itemRender={(page, type, originalElement) => {
+                                    const totalPages = Math.ceil(publicCourses.length / pageSize);
+                                    if (type === 'prev') {
+                                        return (
+                                            <div
+                                                onClick={() => currentPagePublic === 1 && setCurrentPagePublic(totalPages)}
+                                                style={{ display: 'flex', alignItems: 'center', height: '100%' }}
+                                            >
+                                                {originalElement}
+                                            </div>
+                                        );
+                                    }
+                                    if (type === 'next') {
+                                        return (
+                                            <div
+                                                onClick={() => currentPagePublic === totalPages && setCurrentPagePublic(1)}
+                                                style={{ display: 'flex', alignItems: 'center', height: '100%' }}
+                                            >
+                                                {originalElement}
+                                            </div>
+                                        );
+                                    }
+                                    return originalElement;
+                                }}
                             />
                         </div>
                     )}
@@ -145,6 +236,24 @@ export default function CourseList() {
             {courses.length === 0 && (
                 <Empty description="Chưa có khóa học nào được đăng tải" />
             )}
+
+            <style>{`
+                /* Ghi đè để nút phân trang luôn sáng và bấm được cho vòng lặp vô hạn */
+                .ant-pagination-prev.ant-pagination-disabled, 
+                .ant-pagination-next.ant-pagination-disabled {
+                    cursor: pointer !important;
+                    opacity: 1 !important;
+                }
+                .ant-pagination-prev.ant-pagination-disabled .ant-pagination-item-link,
+                .ant-pagination-next.ant-pagination-disabled .ant-pagination-item-link {
+                    color: rgba(0, 0, 0, 0.88) !important;
+                    cursor: pointer !important;
+                }
+                .ant-pagination-prev.ant-pagination-disabled:hover .ant-pagination-item-link,
+                .ant-pagination-next.ant-pagination-disabled:hover .ant-pagination-item-link {
+                    background-color: rgba(0, 0, 0, 0.04);
+                }
+            `}</style>
         </div>
     );
 }

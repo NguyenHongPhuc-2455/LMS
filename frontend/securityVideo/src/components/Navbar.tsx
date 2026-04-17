@@ -206,22 +206,7 @@ export default function Navbar() {
                 }}>
                     <CrownOutlined style={{ color: 'white', fontSize: '22px' }} />
                 </div> */}
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                    <div style={{
-                        margin: 0,
-                        color: '#C82020',
-                        fontSize: '24px',
-                        fontWeight: 900,
-                        letterSpacing: '-1px',
-                        textTransform: 'uppercase',
-                        fontFamily: "'Inter', sans-serif"
-                    }}>
-                        RITA VÕ<span style={{ fontSize: '10px', verticalAlign: 'top', marginLeft: '2px' }}>®</span>
-                    </div>
-                    <Text style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        Education Cloud
-                    </Text>
-                </div>
+                <img src="/logo/logo.png" alt="Logo" style={{ height: '50px', objectFit: 'contain' }} />
             </div>
 
             {/* Navigation Menu */}

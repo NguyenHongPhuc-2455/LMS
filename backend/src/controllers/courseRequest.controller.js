@@ -147,7 +147,8 @@ exports.approveRequest = catchAsync(async (req, res) => {
         userId: request.user_id,
         title: 'Yêu cầu được phê duyệt',
         message: `Yêu cầu tham gia khóa học "${course.title}" của bạn đã được phê duyệt.`,
-        type: 'COURSE_APPROVAL'
+        type: 'COURSE_APPROVAL',
+        link: `/course/${request.course_id}`
     });
 
     res.json({ message: 'Đã phê duyệt và cấp quyền truy cập khóa học', data: updatedRequest });
@@ -183,7 +184,8 @@ exports.rejectRequest = catchAsync(async (req, res) => {
         userId: request.user_id,
         title: 'Yêu cầu bị từ chối',
         message: `Yêu cầu tham gia khóa học "${course.title}" của bạn đã bị từ chối.`,
-        type: 'COURSE_REJECTION'
+        type: 'COURSE_REJECTION',
+        link: `/course/${request.course_id}`
     });
 
     res.json({ message: 'Đã từ chối yêu cầu truy cập', data: updatedRequest });

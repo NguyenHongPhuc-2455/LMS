@@ -39,7 +39,7 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   └── app.js                 # Cấu hình Express
 │   └── server.js                  # Entry point (Port 5000, Socket.io)
 │
-├── frontend/sercurityVideo/       # React SPA
+├── frontend/securityVideo/       # React SPA
 │   ├── src/
 │   │   ├── assets/                # Styles, Images
 │   │   ├── components/            # MainLayout, AdminLayout, Navbar, VideoPlayer

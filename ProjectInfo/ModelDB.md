@@ -58,13 +58,49 @@ notifications: Thông báo cho người dùng:
 - `is_read`: Trạng thái đã đọc.
 - Phát realtime qua Socket.io event `newNotification`.
 
+6. Nhóm bảng nội dung (Lưu đề bài)
+quizzes: Quản lý thông tin chung của bài trắc nghiệm.
+- id: Primary Key.
+- section_id: Foreign Key (nối với bảng sections hiện có của bạn).
+- title: Tên bài quiz.
+- description: Mô tả.
+- pass_score: Điểm để qua môn (ví dụ: 80/100).
+- time_limit: Thời gian làm bài (giây).
+
+questions: Lưu các câu hỏi.
+- id: Primary Key.
+- quiz_id: Foreign Key (nối với bảng quizzes).
+- content: Nội dung câu hỏi.
+- image_url: Hình ảnh minh họa (nếu có).
+- explanation: Giải thích đáp án sau khi làm xong.
+
+options: Các lựa chọn trả lời (A, B, C, D).
+- id: Primary Key.
+- question_id: Foreign Key (nối với bảng questions).
+- content: Nội dung câu trả lời.
+- is_correct: Kiểu Boolean (đúng hay sai).
+
+7. Nhóm bảng kết quả (Lưu vết học viên)
+quiz_attempts: Lưu mỗi lần học viên thực hiện bài test.
+- id: Primary Key.
+- user_id: Foreign Key (nối với bảng users).
+- quiz_id: Foreign Key.
+- score: Điểm đạt được.
+- status: Trạng thái (đang làm, đã nộp, đạt, không đạt).
+- started_at / completed_at: Thời gian bắt đầu và kết thúc.
+
+student_answers (Tùy chọn nhưng nên có): Nếu bạn muốn học viên xem lại họ đã chọn sai câu nào.
+- id: Primary Key.
+- attempt_id: Foreign Key (nối với bảng quiz_attempts).
+- question_id: Foreign Key.
+- option_id: ID câu trả lời mà học viên đã chọn.
 
 Một số lưu ý "chuẩn chỉ" khi thiết kế:
 1. Soft Delete: Không nên xóa cứng (Hard Delete) dữ liệu. Hãy dùng cột deleted_at để có thể khôi phục khi cần.
 
 2. Trạng thái (Status): Các cột như status nên dùng kiểu dữ liệu ENUM hoặc TINYINT để tối ưu hiệu suất (ví dụ: 0: Draft, 1: Published).
 
-3. Lưu trữ Video: Tuyệt đối không lưu file video trực tiếp vào database. Hãy lưu URL/ID của video từ các dịch vụ như AWS S3, Vimeo hoặc Cloudinary.
+3. Lưu trữ Video: Tuyệt đối không lưu file video trực tiếp (.mp4) thành một khối lớn tải về được. Hệ thống hiện tại ép buộc luồng xử lý: Video upload lên -> Băm thành định dạng HLS (.m3u8 và nhiều đoạn .ts nhỏ) có mã hóa AES-128 -> Lưu path HLS vào database. Không sử dụng và không hỗ trợ video ngoại tuyến từ YouTube/Vimeo/S3 để đảm bảo kiểm soát bảo mật và chống tua tuyệt đối.
 
 4. Tính toàn vẹn: Sử dụng Foreign Keys (Khóa ngoại) để đảm bảo không có bài học nào "mồ côi" không thuộc về khóa học nào.
 
