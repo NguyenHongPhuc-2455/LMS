@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { HomeOutlined, BookOutlined, FileTextOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { HomeOutlined, BookOutlined, FileTextOutlined, PlusCircleOutlined, MessageOutlined } from '@ant-design/icons';
 
 const Sidebar: React.FC = () => {
     const navigate = useNavigate();
@@ -8,8 +8,9 @@ const Sidebar: React.FC = () => {
 
     const menuItems = [
         { key: '/course', icon: <HomeOutlined />, label: 'Trang chủ' },
-        { key: '/roadmap', icon: <BookOutlined />, label: 'Lộ trình' },
-        { key: '/posts', icon: <FileTextOutlined />, label: 'Bài viết' },
+        { key: '/contact', icon: <MessageOutlined />, label: 'Liên hệ' },
+        // { key: '/roadmap', icon: <BookOutlined />, label: 'Lộ trình' },
+        // { key: '/posts', icon: <FileTextOutlined />, label: 'Bài viết' },
     ];
 
     return (

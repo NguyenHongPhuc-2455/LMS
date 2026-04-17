@@ -7,12 +7,14 @@ import {
 } from 'lucide-react';
 import {
     Card, Button, Input, Select, Space, Typography,
-    Table, Badge, Modal, Form, message, Popconfirm, Upload, Row, Col
+    Table, Badge, Modal, Form, message, Popconfirm, Upload, Row, Col, DatePicker
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 interface Course {
     id: number;
@@ -132,12 +134,23 @@ export default function CourseManagement() {
                         <Text type="secondary" style={{ fontSize: '12px' }}>{c.level}</Text>
                     </div>
                 </Space>
-            )
+            ),
+            filters: [
+                { text: 'Cơ bản', value: 'Cơ bản' },
+                { text: 'Trung cấp', value: 'Trung cấp' },
+                { text: 'Nâng cao', value: 'Nâng cao' },
+            ],
+            onFilter: (value: any, record: Course) => record.level === value,
         },
         {
             title: 'Trạng thái',
             dataIndex: 'is_private',
             width: 120,
+            filters: [
+                { text: 'RIÊNG TƯ', value: true },
+                { text: 'CÔNG KHAI', value: false },
+            ],
+            onFilter: (value: any, record: Course) => record.is_private === value,
             render: (isPrivate: boolean) => (
                 <Badge
                     count={isPrivate ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
@@ -160,7 +173,48 @@ export default function CourseManagement() {
         {
             title: 'Ngày tạo',
             dataIndex: 'created_at',
+            key: 'created_at',
             width: 150,
+            filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+                <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                    <RangePicker
+                        value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
+                        onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
+                        style={{ marginBottom: 8, display: 'flex' }}
+                        size="small"
+                    />
+                    <Space>
+                        <Button
+                            type="primary"
+                            onClick={() => confirm()}
+                            size="small"
+                            style={{ width: 90 }}
+                        >
+                            Lọc
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                clearFilters();
+                                confirm();
+                            }}
+                            size="small"
+                            style={{ width: 90 }}
+                        >
+                            Xóa
+                        </Button>
+                    </Space>
+                </div>
+            ),
+            filterIcon: (filtered: boolean) => (
+                <CalendarOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+            ),
+            onFilter: (value: any, record: Course) => {
+                if (!value || value.length === 0) return true;
+                const start = dayjs(value[0][0]).startOf('day');
+                const end = dayjs(value[0][1]).endOf('day');
+                const recordDate = dayjs(record.created_at);
+                return recordDate.isAfter(start) && recordDate.isBefore(end);
+            },
             render: (date: string) => new Date(date).toLocaleDateString()
         },
         {

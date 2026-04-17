@@ -9,7 +9,7 @@ Tài liệu này tổng hợp toàn bộ quy trình thiết kế mã nguồn, c�
 ### 1.1 Luồng Xử Lý Upload Video
 1. **Tiếp nhận:** Người dùng tải file `.mp4` tại màn hình Quản trị. Node.js (dùng `multer`) hứng file và cất tạm vào thư mục `uploads/`. 
 2. **Cập nhật Trạng thái:** Ghi nhanh một dòng vào Database mang thông điệp "Đang băm video", kèm theo trả về Frontend mã `202 Accepted` để giao diện không bị giật lag chờ đợi.
-3. **Kích hoạt FFmpeg ngầm:** Kích hoạt thuật toán máy nghiền để cắt rời file MP4 thành format truyền phát thời gian thực [.m3u8](file:///d:/SercurityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) & hàng chục file [.ts](file:///d:/SercurityVideo/backend/prisma.config.ts).
+3. **Kích hoạt FFmpeg ngầm:** Kích hoạt thuật toán máy nghiền để cắt rời file MP4 thành format truyền phát thời gian thực [.m3u8](file:///d:/securityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) & hàng chục file [.ts](file:///d:/SecurityVideo/backend/prisma.config.ts).
 
 ### 1.2 "Gọt giũa" mọi loại Video tạp nham
 Nhiều học viên tự thu màn hình bằng điện thoại, OBS... sinh ra các format video siêu "dị" khiến trình duyệt không đọc được. Backend của chúng ta đã được cài bộ bùa chú FFMPEG siêu cấp như sau:
@@ -32,7 +32,7 @@ Nhiều học viên tự thu màn hình bằng điện thoại, OBS... sinh ra c
 ## PHẦN 2: CƠ CHẾ CHỐNG TẢI LẬU KÉP (FRONTEND)
 
 Ngay khi Frontend nạp luồng, rào chắn bảo vệ bắt đầu được dựng lên:
-1. **Mù mắt Tool Download (Cốc Cốc, IDM):** IDM chỉ "ăn" cắp được thẻ `<video src="...mp4">`. Với công nghệ của chúng ta, Thẻ Video không cắm link phim tĩnh. Nó được MediaSource Extension tiêm từng tệp rác [.ts](file:///d:/SercurityVideo/backend/prisma.config.ts) một vào qua JavaScript. Nếu IDM dùng sức mạnh "bắt dính", chúng chỉ giật về được 1 cục giấy lộn [playlist.m3u8](file:///d:/SercurityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) nặng 1KB (và chả xem được gì).
+1. **Mù mắt Tool Download (Cốc Cốc, IDM):** IDM chỉ "ăn" cắp được thẻ `<video src="...mp4">`. Với công nghệ của chúng ta, Thẻ Video không cắm link phim tĩnh. Nó được MediaSource Extension tiêm từng tệp rác [.ts](file:///d:/securityVideo/backend/prisma.config.ts) một vào qua JavaScript. Nếu IDM dùng sức mạnh "bắt dính", chúng chỉ giật về được 1 cục giấy lộn [playlist.m3u8](file:///d:/securityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) nặng 1KB (và chả xem được gì).
 2. **Đập vỡ UI Mặc định:** 
    - Mã khóa `controlsList="nodownload"` bẻ gãy nút [Save Video As...] của HTML5.
    - Thẻ `contextmenu.preventDefault()` gỡ bỏ triệt để hành vi click chuột phải trên màn hình.
@@ -54,7 +54,7 @@ Dưới đây là 4 bài học sát máu nhất trong lịch sử làm Video Str
 ### 🐞 Lỗi 2: Trình duyệt F5 bị Lỗi 7002, Console Đỏ lòm
 > **Khảo bệnh:** Mở trang Dashboard có khi lỗi, ấn F5 vẫn lỗi mã HLS `7002 HTTP_ERROR` nhưng ở tab Mạng toàn Status 304.
 > 
-> **Thủ phạm:** 304 là mã "Not Modified" của trạm đệm (Cache) trên trình duyệt. Chrome rất tham kỷ lục tiết kiệm mạng nên nó hay tự ý bứng các file [.ts](file:///d:/SercurityVideo/backend/prisma.config.ts) từ SSD ném vào Video. Nhung khốn khổ thay cái "Cache" rởm của máy tính tự tiện gỡ mất thẻ bài "Chứng chỉ phân luồng chéo" (CORS). Thế là luồng Javascript rống lên "File này nguy hiểm không an toàn" rồi tự chặn đứng 7002.
+> **Thủ phạm:** 304 là mã "Not Modified" của trạm đệm (Cache) trên trình duyệt. Chrome rất tham kỷ lục tiết kiệm mạng nên nó hay tự ý bứng các file [.ts](file:///d:/securityVideo/backend/prisma.config.ts) từ SSD ném vào Video. Nhung khốn khổ thay cái "Cache" rởm của máy tính tự tiện gỡ mất thẻ bài "Chứng chỉ phân luồng chéo" (CORS). Thế là luồng Javascript rống lên "File này nguy hiểm không an toàn" rồi tự chặn đứng 7002.
 > 
 > **Cách Fix:** Gắn thần chú Phản Đòn Cache vào thư mục Express ở BE `app.use('/public')`:
 > `res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');`
@@ -62,14 +62,14 @@ Dưới đây là 4 bài học sát máu nhất trong lịch sử làm Video Str
 ### 🐞 Lỗi 3: Ngộp Thở Số Lượng Kết Nối (Connection Timeout)
 > **Khảo bệnh:** Trong màn Quản trị (Dashboard), bày ra cùng lúc 3, 4 cái Video thì cái thằng thứ 3, 4 sẽ phun ra Lỗi không load được 7002.
 > 
-> **Thủ phạm:** Trình duyệt áp trần băng thông *TCP Limit* (Tối đa 6 Request đi cùng lúc tới 1 server). 3 ông VideoPlayer kia ồ ạt spam lấy hàng chục cái hạt [.ts](file:///d:/SercurityVideo/backend/prisma.config.ts) gây ra sập hầm cục bộ, Server quay cuồng và timeout.
+> **Thủ phạm:** Trình duyệt áp trần băng thông *TCP Limit* (Tối đa 6 Request đi cùng lúc tới 1 server). 3 ông VideoPlayer kia ồ ạt spam lấy hàng chục cái hạt [.ts](file:///d:/securityVideo/backend/prisma.config.ts) gây ra sập hầm cục bộ, Server quay cuồng và timeout.
 > 
 > **Cách Fix:** Thay vì khởi tạo cả làng, làm Cơ Chế Tải Lười (Lazy Load). Ai cũng giấu mặt đằng sau bức ảnh "Click để Xem Demo". Khi User ấn chuột, Player lúc đó mới được khai sinh để hút mạng.
 
 ### 🐞 Lỗi 4: Xung Đột React 18 & Destroy (Có Mạng tải 200 nhưng Vẫn Đen Xì)
-> **Khảo bệnh:** Mạng F12 Tải [m3u8](file:///d:/SercurityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) chuẩn Xanh 200 OK. Nhưng Shaka cảnh báo vàng và video tịt thui `0:00`.
+> **Khảo bệnh:** Mạng F12 Tải [m3u8](file:///d:/securityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) chuẩn Xanh 200 OK. Nhưng Shaka cảnh báo vàng và video tịt thui `0:00`.
 > 
-> **Thủ phạm:** Trong React StrictMode (bản môi trường Dev), Màn hình [Course.tsx](file:///d:/SercurityVideo/frontend/sercurityVideo/src/pages/Course.tsx) nhấp nháy 2 lần. Hook Lifecycle cũ thiết lập gộp chung việc "Xây Engine" và "Móc Ruột Load Source". Khi đó React gọi lệnh dọn dẹp bộ nhớ `player.destroy()` Đúng lúc cái Engine đang gắn vào `<video>`. Kết cục: Khung Video bị giết chết, Mạng cứ tải [.ts](file:///d:/SercurityVideo/backend/prisma.config.ts) về đổ vào cái Xác rỗng hệt như cái động không đáy.
+> **Thủ phạm:** Trong React StrictMode (bản môi trường Dev), Màn hình [Course.tsx](file:///d:/securityVideo/frontend/securityVideo/src/pages/Course.tsx) nhấp nháy 2 lần. Hook Lifecycle cũ thiết lập gộp chung việc "Xây Engine" và "Móc Ruột Load Source". Khi đó React gọi lệnh dọn dẹp bộ nhớ `player.destroy()` Đúng lúc cái Engine đang gắn vào `<video>`. Kết cục: Khung Video bị giết chết, Mạng cứ tải [.ts](file:///d:/securityVideo/backend/prisma.config.ts) về đổ vào cái Xác rỗng hệt như cái động không đáy.
 > 
 > **Cách Fix:** Chia Player làm 2 luồng Hook (`useEffect`) cách ly:
 > 1. Trụ Cột: `shaka.Player().attach(video)` (Không gọi source, xây đúng 1 lần khi lên sóng).
@@ -91,3 +91,14 @@ Dưới đây là 4 bài học sát máu nhất trong lịch sử làm Video Str
 > **Thủ phạm:** Quên chưa khai báo Route tương ứng ở Backend (`GET /sections/:id`). Frontend gửi yêu cầu đi nhưng Backend không hiểu nên trả về mã 404 hoặc rỗng, dẫn đến bảng hiển thị không có dữ liệu.
 > 
 > **Cách Fix:** Luôn đảm bảo nguyên tắc: **Cập nhật Frontend phải đi đôi với Cập nhật Route/Controller ở Backend**. Triển khai thêm controller `getSectionDetail` để trả về đúng mảng `lessons` tương ứng với chương đang chọn.
+>
+> ---
+>
+> ### 🐞 Lỗi 7: Video Ngoại Tuyến (YouTube/MP4 ngoài) thiếu ổn định & Lỗ hổng Tua Video
+> **Khảo bệnh:** Trình phát `react-player` hoặc Iframe của YouTube thường xuyên lỗi không bắt được sự kiện `onStateChange` hoặc tiến độ `onProgress`. Học viên có thể kéo thanh tiến trình (tua video) để qua bài lập tức mà không học.
+> 
+> **Thủ phạm:** Các iframe và luồng video ngoài nằm ngoài tầm kiểm soát của ứng dụng React. Đồng thời, việc chặn tua bằng cách so sánh `currentTime` thông thường dễ bị lỗi kẹt video nếu mạng chậm.
+> 
+> **Cách Fix Triệt Để (Kiến trúc hiện tại):** 
+> 1. **Khai tử Video Ngoại tuyến**, ép buộc toàn bộ hệ thống chuyển sang **100% cơ chế băm HLS** nội bộ. Không sử dụng thư viện bên thứ 3 (như react-player hay youtube) để phát video nữa. Mọi video đều do hệ thống nắm chuôi giải mã bằng `shaka-player`.
+> 2. **Chống tua vĩnh viễn bằng Delta:** Không khóa thanh trượt (tránh ảnh hưởng UI), mà đo khoảnh khắc thời gian nhảy vọt (delta). Trong event `onTimeUpdate` của thẻ `<video>`, nếu `video.currentTime - lastTime.current > 1.2` (giây), hệ thống ép `video.currentTime = lastTime` và hiện thông báo cấm tua. Điều này bảo vệ 100% thời gian thực xem của học viên.

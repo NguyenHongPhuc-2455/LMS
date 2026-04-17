@@ -9,7 +9,7 @@ const userSockets = new Map(); // Lưu trữ mapping giữa userId và socketId
 exports.init = (server) => {
     io = new Server(server, {
         cors: {
-            origin: ['http://localhost:5173', 'http://localhost:5174'],
+            origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
             methods: ['GET', 'POST']
         }
     });

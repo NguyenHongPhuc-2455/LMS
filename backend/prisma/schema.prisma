@@ -45,6 +45,7 @@ model User {
   course_requests  CourseRequest[]
   notifications    Notification[]
   comments         Comment[]
+  quizAttempts     QuizAttempt[]
 
   @@map("users")
 }
@@ -168,6 +169,7 @@ model Lesson {
   section     Section           @relation(fields: [section_id], references: [id], onDelete: Cascade)
   completions LessonCompleted[]
   comments    Comment[]
+  quiz        Quiz?
 
   @@map("lessons")
 }
@@ -319,3 +321,73 @@ model Comment {
 
   @@map("comments")
 }
+
+// ==========================================
+// 5. NHÓM TRẮC NGHIỆM (QUIZ)
+// ==========================================
+
+model Quiz {
+  id          Int      @id @default(autoincrement())
+  lesson_id   Int      @unique          // 1 lesson QUIZ = 1 quiz
+  description String?  @db.Text
+  pass_score  Int      @default(80)     // Điểm đạt (0-100)
+  time_limit  Int?                      // Giới hạn (giây), null = không hạn
+
+  lesson    Lesson     @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+  @@map("quizzes")
+}
+
+model Question {
+  id          Int      @id @default(autoincrement())
+  quiz_id     Int
+  content     String   @db.Text
+  image_url   String?  @db.VarChar(255)
+  explanation String?  @db.Text
+  order       Int      @default(0)
+
+  quiz    Quiz     @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  options Option[]
+  answers StudentAnswer[]
+  @@map("questions")
+}
+
+model Option {
+  id          Int     @id @default(autoincrement())
+  question_id Int
+  content     String  @db.Text
+  is_correct  Boolean @default(false)
+
+  question Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  answers  StudentAnswer[]
+  @@map("options")
+}
+
+model QuizAttempt {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  quiz_id      Int
+  score        Int       @default(0)
+  status       String    @default("IN_PROGRESS") @db.VarChar(20)
+  started_at   DateTime  @default(now())
+  completed_at DateTime?
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  quiz    Quiz    @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  answers StudentAnswer[]
+  @@map("quiz_attempts")
+}
+
+model StudentAnswer {
+  id          Int @id @default(autoincrement())
+  attempt_id  Int
+  question_id Int
+  option_id   Int
+
+  attempt  QuizAttempt @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  option   Option      @relation(fields: [option_id], references: [id], onDelete: Cascade)
+  @@map("student_answers")
+}
+

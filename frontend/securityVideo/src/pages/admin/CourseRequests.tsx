@@ -45,6 +45,9 @@ export default function CourseRequests() {
         }
     };
 
+    const courseFilters = Array.from(new Set(requests.map((r: any) => r.course.title)))
+        .map(title => ({ text: title, value: title }));
+
     const columns = [
         {
             title: 'Học viên',
@@ -64,6 +67,8 @@ export default function CourseRequests() {
             title: 'Khóa học',
             dataIndex: 'course',
             key: 'course',
+            filters: courseFilters,
+            onFilter: (value: any, record: any) => record.course.title === value,
             render: (course: any) => (
                 <Space>
                     <BookOutlined />

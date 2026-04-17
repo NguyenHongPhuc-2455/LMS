@@ -93,15 +93,7 @@ const AdminLayout: React.FC = () => {
                         onClick={() => setCollapsed(!collapsed)}
                     />
                     {!collapsed && (
-                        <div style={{
-                            color: '#C82020',
-                            fontSize: '20px',
-                            fontWeight: 900,
-                            textTransform: 'uppercase',
-                            letterSpacing: '-0.5px'
-                        }}>
-                            RITA VÕ<span style={{ fontSize: '12px', verticalAlign: 'top', fontWeight: 700 }}>®</span>
-                        </div>
+                        <img src="/logo/logo.png" alt="Logo" style={{ height: '40px', objectFit: 'contain' }} />
                     )}
                 </div>
 
@@ -145,21 +137,21 @@ const AdminLayout: React.FC = () => {
                             icon: <CheckOutlined />,
                             label: 'Duyệt yêu cầu',
                         },
-                        {
-                            key: '/admin/orders',
-                            icon: <ShoppingCartOutlined />,
-                            label: 'Đơn hàng',
-                        },
-                        {
-                            key: '/admin/payments',
-                            icon: <CreditCardOutlined />,
-                            label: 'Thanh toán',
-                        },
-                        {
-                            key: '/admin/reviews',
-                            icon: <MessageOutlined />,
-                            label: 'Thảo luận',
-                        },
+                        // {
+                        //     key: '/admin/orders',
+                        //     icon: <ShoppingCartOutlined />,
+                        //     label: 'Đơn hàng',
+                        // },
+                        // {
+                        //     key: '/admin/payments',
+                        //     icon: <CreditCardOutlined />,
+                        //     label: 'Thanh toán',
+                        // },
+                        // {
+                        //     key: '/admin/reviews',
+                        //     icon: <MessageOutlined />,
+                        //     label: 'Thảo luận',
+                        // },
                     ]}
                 />
             </Sider>

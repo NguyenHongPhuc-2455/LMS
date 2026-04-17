@@ -15,26 +15,12 @@ const AppFooter: React.FC = () => {
         }}>
             <Row gutter={[32, 32]}>
                 <Col lg={6} md={12} span={24}>
-                    <Space direction="vertical" size={16}>
+                    <Space orientation="vertical" size={16}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             {/* <img src="https://fullstack.edu.vn/static/media/f8-icon.18def059.png" alt="RitaVo Logo" style={{ height: '32px' }} /> */}
-                            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                                <div style={{
-                                    margin: 0,
-                                    color: '#C82020',
-                                    fontSize: '22px',
-                                    fontWeight: 900,
-                                    letterSpacing: '-1px',
-                                    textTransform: 'uppercase'
-                                }}>
-                                    RITA VÕ<span style={{ fontSize: '10px', verticalAlign: 'top' }}>®</span>
-                                </div>
-                                <Text style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    Education Cloud
-                                </Text>
-                            </div>
+                            <img src="/logo/logo.png" alt="Logo" style={{ height: '50px', objectFit: 'contain' }} />
                         </div>
-                        <Space direction="vertical" size={8}>
+                        <Space orientation="vertical" size={8}>
                             <Text style={{ color: '#9ca3af', fontSize: '14px' }}>Điện thoại: 0246.329.1102</Text>
                             <Text style={{ color: '#9ca3af', fontSize: '14px' }}>Email: contact@ritavo.com</Text>
                             <Text style={{ color: '#9ca3af', fontSize: '14px' }}>Địa chỉ: Số 26 Ngõ 102, Trần Phú, Hà Đông, Hà Nội</Text>
@@ -48,7 +34,7 @@ const AppFooter: React.FC = () => {
 
                 <Col lg={4} md={12} span={24}>
                     <Title level={5} style={{ color: '#fff', marginBottom: '20px', fontSize: '16px' }}>VỀ RITAVO</Title>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Giới thiệu</Link>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Liên hệ</Link>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Điều khoản & Quy định</Link>
@@ -58,7 +44,7 @@ const AppFooter: React.FC = () => {
 
                 <Col lg={4} md={12} span={24}>
                     <Title level={5} style={{ color: '#fff', marginBottom: '20px', fontSize: '16px' }}>HỖ TRỢ</Title>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Chính sách thanh toán</Link>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Chính sách vận chuyển</Link>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Chính sách kiểm hàng</Link>
@@ -68,7 +54,7 @@ const AppFooter: React.FC = () => {
 
                 <Col lg={4} md={12} span={24}>
                     <Title level={5} style={{ color: '#fff', marginBottom: '20px', fontSize: '16px' }}>CÔNG CỤ</Title>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Tạo CV xin việc</Link>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Rút gọn liên kết</Link>
                         <Link href="#" style={{ color: '#9ca3af', fontSize: '14px' }}>Clip-path maker</Link>
@@ -99,7 +85,7 @@ const AppFooter: React.FC = () => {
                     <Text style={{ color: '#6b7280', fontSize: '12px' }}>© 2026 RitaVo LMS. Nền tảng học lập trình hàng đầu Việt Nam.</Text>
                 </Col>
                 <Col>
-                    <Space split={<Divider type="vertical" style={{ borderColor: '#374151' }} />}>
+                    <Space separator={<Divider type="vertical" style={{ borderColor: '#374151' }} />}>
                         <Text style={{ color: '#6b7280', fontSize: '12px' }}>Made with ❤️ in Vietnam</Text>
                     </Space>
                 </Col>

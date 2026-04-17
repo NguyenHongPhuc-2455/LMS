@@ -42,7 +42,7 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
 
 1.  **Di chuyển vào thư mục frontend**:
     ```bash
-    cd frontend/sercurityVideo
+    cd frontend/securityVideo
     ```
 2.  **Cài đặt dependencies**:
     ```bash

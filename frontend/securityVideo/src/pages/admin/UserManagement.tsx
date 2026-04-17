@@ -296,6 +296,12 @@ export default function UserManagement() {
             title: 'Vai trò',
             key: 'roles',
             width: 150,
+            filters: [
+                { text: 'ADMIN', value: 'admin' },
+                { text: 'INSTRUCTOR', value: 'instructor' },
+                { text: 'USER', value: 'user' },
+            ],
+            onFilter: (value: any, record: UserData) => record.roles.some(role => role.name === value),
             render: (_, record) => renderEditableCell(record, 'roles', record.roles)
         },
         {
@@ -325,6 +331,12 @@ export default function UserManagement() {
             dataIndex: 'gender',
             key: 'gender',
             width: 120,
+            filters: [
+                { text: 'Nam', value: 'Nam' },
+                { text: 'Nữ', value: 'Nữ' },
+                { text: 'Khác', value: 'Khác' },
+            ],
+            onFilter: (value: any, record: UserData) => record.gender === value,
             render: (text, record) => renderEditableCell(record, 'gender', text)
         },
         {
@@ -341,6 +353,27 @@ export default function UserManagement() {
             key: 'created_at',
             width: 180,
             sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+            filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+                <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                    <DatePicker.RangePicker
+                        value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
+                        onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
+                        style={{ marginBottom: 8, display: 'flex' }}
+                        size="small"
+                    />
+                    <Space>
+                        <Button type="primary" onClick={() => confirm()} size="small" style={{ width: 90 }}>Lọc</Button>
+                        <Button onClick={() => { clearFilters(); confirm(); }} size="small" style={{ width: 90 }}>Xóa</Button>
+                    </Space>
+                </div>
+            ),
+            onFilter: (value: any, record: UserData) => {
+                if (!value || value.length === 0) return true;
+                const start = dayjs(value[0][0]).startOf('day');
+                const end = dayjs(value[0][1]).endOf('day');
+                const recordDate = dayjs(record.created_at);
+                return recordDate.isAfter(start) && recordDate.isBefore(end);
+            },
             render: (text) => new Date(text).toLocaleString()
         },
         {
