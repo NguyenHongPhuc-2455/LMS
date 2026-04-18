@@ -98,21 +98,6 @@ export default function Navbar() {
                         ]}
                     >
                         <List.Item.Meta
-                            avatar={
-                                <div style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: item.type === 'COURSE_APPROVAL' ? '#f6ffed' : '#fff1f0',
-                                    color: item.type === 'COURSE_APPROVAL' ? '#52c41a' : '#ff4d4f',
-                                    fontSize: '14px'
-                                }}>
-                                    {item.type === 'COURSE_APPROVAL' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                                </div>
-                            }
                             title={
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                                     <Text strong={!item.is_read} style={{ fontSize: '12px', lineHeight: '1.4', flex: 1 }}>{item.title}</Text>

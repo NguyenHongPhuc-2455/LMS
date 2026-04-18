@@ -70,9 +70,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
             if (playerRef.current && src) {
                 try {
                     await playerRef.current.load(src);
-                    if (isStillMounted && videoRef.current) {
-                        videoRef.current.play().catch(e => console.warn('Autoplay blocked:', e));
-                    }
+                    // if (isStillMounted && videoRef.current) {
+                    //     videoRef.current.play().catch(e => console.warn('Autoplay blocked:', e));
+                    // }
                 } catch (e: any) {
                     if (isStillMounted && e.code !== shaka.util.Error.Code.LOAD_INTERRUPTED) {
                         console.error('❌ Shaka Player Error:', e);

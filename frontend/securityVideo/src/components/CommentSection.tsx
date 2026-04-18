@@ -105,6 +105,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                             el.style.background = '#fef9c3'; // Vàng nhạt highlight
                             setTimeout(() => {
                                 el.style.background = originalBg;
+                                // Xóa hash khỏi URL để không bị highlight lại nếu quay lại bài học này
+                                if (window.location.hash === hash) {
+                                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                                }
                             }, 2000);
                         }
                     }, 300);
