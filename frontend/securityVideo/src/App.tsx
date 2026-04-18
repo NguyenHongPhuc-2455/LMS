@@ -1,27 +1,31 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import CourseManagement from './pages/admin/CourseManagement';
-import SectionManagement from './pages/admin/SectionManagement';
-import LessonManagement from './pages/admin/LessonManagement';
-import CourseList from './pages/client/CourseList';
-import CourseLearning from './pages/client/CourseLearning';
-import CourseDetail from './pages/client/CourseDetail';
-import UserManagement from './pages/admin/UserManagement';
-import MainLayout from './components/MainLayout';
-import AdminLayout from './components/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Profile from './pages/client/Profile';
-import MyCourses from './pages/client/MyCourses';
-import CourseRequests from './pages/admin/CourseRequests';
-import PaymentResult from './pages/client/PaymentResult';
-import ProgramManagement from './pages/admin/ProgramManagement';
-import ProgramList from './pages/client/ProgramList';
-import ProgramDetail from './pages/client/ProgramDetail';
-import MyPrograms from './pages/client/MyPrograms';
+import { Login, Register } from './pages';
+import {
+  AdminDashboard, CourseManagement, CourseRequests,
+  LessonManagement, ProgramManagement, SectionManagement,
+  UserManagement
+} from './pages/admin';
+import {
+  CourseDetail, CourseLearning, CourseList,
+  MyCourses, MyPrograms, PaymentResult,
+  Profile, ProgramDetail, ProgramList
+} from './pages/client';
+import { MainLayout, AdminLayout } from './components';
+
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 function App() {
+
   return (
     <ConfigProvider
       theme={{
@@ -37,7 +41,9 @@ function App() {
     >
       <AntdApp>
         <Router>
+          <ScrollToTop />
           <Routes>
+
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

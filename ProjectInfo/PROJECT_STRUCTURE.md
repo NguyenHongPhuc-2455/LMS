@@ -41,23 +41,24 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │
 ├── frontend/securityVideo/       # React SPA
 │   ├── src/
-│   │   ├── assets/                # Styles, Images
-│   │   ├── components/            # MainLayout, AdminLayout, Navbar, VideoPlayer
-│   │   │   ├── AppHeader.tsx          # Header với Search, Notification Bell, User Menu
-│   │   │   ├── CommentSection.tsx     # Hệ thống bình luận Facebook-style (2 cấp)
-│   │   │   └── VideoPlayer.tsx        # HLS Video Player bảo mật
+│   │   ├── styles/                # Global Style System (Variables, Mixins, Global SCSS)
+│   │   │   ├── _variables.scss    # Quản lý mã màu, shadows, spacings tập trung
+│   │   │   ├── _mixins.scss       # Các hàm tái sử dụng (Flex, Glassmorphism, Responsive)
+│   │   │   └── main.scss          # Điểm nạp tập trung (Vite auto-inject)
+│   │   ├── components/            # Modular Components (1 Folder = 1 Component + Style)
+│   │   │   ├── Navbar/            # Thanh điều hướng chính
+│   │   │   ├── Sidebar/           # Thanh bên (Admin/Client)
+│   │   │   └── index.ts           # Barrel Export giúp import gọn hơn
 │   │   ├── hooks/                 # Custom React Hooks
-│   │   │   ├── useNotifications.ts    # Quản lý state thông báo + Socket.io
-│   │   │   └── useTabFocusWarning.ts  # Cảnh báo chuyển tab khi xem video
-│   │   ├── pages/                 # Phân chia theo vai trò
-│   │   │   ├── admin/             # CourseManagement, SectionManagement, LessonManagement, UserManagement
-│   │   │   ├── client/            # CourseList, Detail, Learning (with Comments), Profile, MyCourses
-│   │   │   └── Login, Register    # Các trang Public
+│   │   ├── pages/                 # Phân chia theo vai trò & Module
+│   │   │   ├── admin/             # Dashboard, CourseManagement, UserManagement...
+│   │   │   ├── client/            # CourseList, Learning, Profile...
+│   │   │   ├── Login/             # Trang đăng nhập kèm Login.scss
+│   │   │   └── Register/          # Trang đăng ký kèm Register.scss
 │   │   ├── services/              # API Client (axios instances)
-│   │   │   ├── api.service.ts         # commentService, notificationService, ...
-│   │   │   └── socket.ts              # Socket.io client
-│   │   ├── App.tsx                # SPA Routing & ConfigProvider
-│   │   └── main.tsx               # Entry point (Vite)
+│   │   ├── App.tsx                # SPA Routing & ScrollToTop logic
+│   │   └── main.tsx               # Entry point nạp global styles
+
 │
 ├── docker-compose.yml             # PostgreSQL Setup
 ├── README.md                      # Hướng dẫn cài đặt chính

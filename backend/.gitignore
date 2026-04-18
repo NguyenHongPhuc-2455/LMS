@@ -11,6 +11,9 @@ node_modules
 /generated/prisma
 
 /public/hls
-/uploads
+/public/uploads
 
-/thumbnails
+/public/thumbnails
+
+
+/public/attachments

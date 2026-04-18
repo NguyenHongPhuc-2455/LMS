@@ -6,43 +6,37 @@ Tài liệu này trình bày sơ đồ tư duy (Mind Map) về các thành phầ
 
 ```mermaid
 mindmap
-  root((RitaVo LMS))
-    Bảo Mật["Bảo Mật (Security)"]
-      JWT Authentication
-      RBAC["RBAC (Admin, Instructor, Student)"]
-      HLS Encryption["HLS Encryption (AES-128)"]
-      Secure Video Keys in DB
-      Tách biệt trang quản lý["Tách biệt trang quản lý (Admin Split Pages)"]
-    Hệ Thống Video["Hệ Thống Video (Video Engine)"]
-      Local FFmpeg Transcoding
-      H.264 Optimization["H.264 Optimization (CRF 26)"]
-      HLS Streaming[".m3u8, .ts"]
-      Multer Storage / Public HLS
-      Storage Cleanup["Storage Cleanup (Auto Delete)"]
-    Quản Lý Nội Dung["Quản Lý Nội Dung (Content)"]
-      Categories and Levels
-      Courses["Courses (is_private, Level, Instructor)"]
-      Full CRUD
-      Sections["Đơn vị Chương"]
-      Lessons["Bài học (Video, PDF, Content)"]
-      Tài liệu đính kèm["Tài liệu đính kèm (PDF Attachments)"]
-    Học Tập["Học Tập & Tiến Độ (Learning)"]
-      Enrollment["Đăng ký học"]
-      Lesson Completion Tracking
-      Progress Dashboard
-      Bình luận bài học["Bình luận Facebook-style (2 cấp)"]
-    Thông Báo["Thông Báo Realtime (Notifications)"]
-      Socket.io Push
-      Comment Reply Alerts
-      Click to Navigate["Click để nhảy tới bình luận"]
-      Toast Notification
-    Hạ Tầng["Hạ Tầng (Infrastructure)"]
-      Node.js Express["Node.js Express (Backend)"]
-      React Vite["React Vite (Frontend SPA)"]
-      Prisma ORM["Prisma ORM (PostgreSQL)"]
-      Socket.io["Socket.io (Realtime)"]
-      Docker Database Container
+    root((RitaVo LMS))
+      Bảo Mật["Bảo Mật (Security)"]
+        JWT Authentication
+        RBAC["RBAC (Admin, Instructor, Student)"]
+        HLS Encryption["HLS Encryption (AES-128)"]
+        Secure Video Keys in DB
+      Cấu Trúc Frontend["Cấu Trúc Frontend (Modular Architecture)"]
+        Folder-based Components["1 Folder = 1 Component + Style"]
+        Barrel Exports["index.ts tập trung"]
+        Global Style System["Variables, Mixins, Global SCSS"]
+        Vite SCSS Auto-injection
+        ScrollToTop Navigation
+      Hệ Thống Video["Hệ Thống Video (Video Engine)"]
+        Local FFmpeg Transcoding
+        H.264 Optimization["H.264 Optimization (CRF 26)"]
+        HLS Streaming[".m3u8, .ts"]
+      Quản Lý Nội Dung["Quản Lý Nội Dung (Content)"]
+        Categories and Levels
+        Courses["Courses (is_private, Level, Instructor)"]
+        Full CRUD
+        Sections & Lessons
+      Học Tập["Học Tập & Tiến Độ (Learning)"]
+        Enrollment["Đăng ký học"]
+        Lesson Completion Tracking
+        Bình luận Facebook-style (2 cấp)
+      Thông Báo["Thông Báo Realtime (Notifications)"]
+        Socket.io Push
+        Comment Reply Alerts
+        Click to Navigate["Scroll & Highlight"]
 ```
+
 
 ---
 
