@@ -13,7 +13,8 @@ import {
     LogoutOutlined,
     CheckOutlined,
     MenuFoldOutlined,
-    PlaySquareOutlined
+    PlaySquareOutlined,
+    ApartmentOutlined
 } from '@ant-design/icons';
 import './AdminLayout.scss';
 
@@ -113,6 +114,26 @@ const AdminLayout: React.FC = () => {
                             icon: <CheckOutlined />,
                             label: 'Duyệt yêu cầu',
                         },
+                        {
+                            key: '/admin/programs',
+                            icon: <ApartmentOutlined />,
+                            label: 'Chương trình học',
+                        },
+                        // {
+                        //     key: '/admin/orders',
+                        //     icon: <ShoppingCartOutlined />,
+                        //     label: 'Đơn hàng',
+                        // },
+                        // {
+                        //     key: '/admin/payments',
+                        //     icon: <CreditCardOutlined />,
+                        //     label: 'Thanh toán',
+                        // },
+                        // {
+                        //     key: '/admin/reviews',
+                        //     icon: <MessageOutlined />,
+                        //     label: 'Thảo luận',
+                        // },
                     ]}
                 />
             </Sider>

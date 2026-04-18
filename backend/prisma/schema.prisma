@@ -44,8 +44,10 @@ model User {
   completed_lessons LessonCompleted[]
   course_requests  CourseRequest[]
   notifications    Notification[]
-  comments         Comment[]
-  quizAttempts     QuizAttempt[]
+  comments              Comment[]
+  quizAttempts          QuizAttempt[]
+  instructed_programs   LearningProgram[]   @relation("ProgramInstructor")
+  program_enrollments   ProgramEnrollment[]
 
   @@map("users")
 }
@@ -103,7 +105,8 @@ model Course {
   order_items OrderItem[]
   reviews     Review[]
   wishlists   Wishlist[]
-  requests    CourseRequest[]
+  requests        CourseRequest[]
+  program_courses ProgramCourse[]
 
   @@map("courses")
 }
@@ -323,7 +326,61 @@ model Comment {
 }
 
 // ==========================================
-// 5. NHÓM TRẮC NGHIỆM (QUIZ)
+// 5. NHÓM CHƯƠNG TRÌNH HỌC (LEARNING PROGRAMS)
+// ==========================================
+
+enum ProgramStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model LearningProgram {
+  id            Int           @id @default(autoincrement())
+  instructor_id Int
+  title         String        @db.VarChar(255)
+  description   String?       @db.Text
+  thumbnail     String?       @db.VarChar(255)
+  level         String?       @db.VarChar(50)
+  status        ProgramStatus @default(DRAFT)
+  is_private    Boolean       @default(false)
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  deleted_at    DateTime?
+
+  instructor  User                @relation("ProgramInstructor", fields: [instructor_id], references: [id])
+  courses     ProgramCourse[]
+  enrollments ProgramEnrollment[]
+
+  @@map("learning_programs")
+}
+
+model ProgramCourse {
+  program_id Int
+  course_id  Int
+  order      Int @default(0)
+
+  program LearningProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  course  Course          @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@id([program_id, course_id])
+  @@map("program_courses")
+}
+
+model ProgramEnrollment {
+  user_id     Int
+  program_id  Int
+  enrolled_at DateTime @default(now())
+
+  user    User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  program LearningProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, program_id])
+  @@map("program_enrollments")
+}
+
+// ==========================================
+// 6. NHÓM TRẮC NGHIỆM (QUIZ)
 // ==========================================
 
 model Quiz {
