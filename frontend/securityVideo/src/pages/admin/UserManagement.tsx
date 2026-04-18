@@ -15,6 +15,7 @@ import type { InputRef, TableColumnsType, TableColumnType } from 'antd';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
 import Highlighter from 'react-highlight-words';
 import api from '../../api';
+import './UserManagement.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -147,18 +148,18 @@ export default function UserManagement() {
 
     const getColumnSearchProps = (dataIndex: DataIndex): TableColumnType<UserData> => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-            <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+            <div className="filter-dropdown-container" onKeyDown={(e) => e.stopPropagation()}>
                 <Input
                     ref={searchInput}
                     placeholder={`Tìm ${dataIndex}`}
                     value={selectedKeys[0]}
                     onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
                     onPressEnter={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
-                    style={{ marginBottom: 8, display: 'block' }}
+                    className="filter-input"
                 />
                 <Space>
-                    <Button type="primary" onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)} icon={<SearchOutlined />} size="small" style={{ width: 90 }}>Tìm</Button>
-                    <Button onClick={() => { if (clearFilters) clearFilters(); setSelectedKeys?.([]); confirm(); }} size="small" style={{ width: 90 }}>Xóa</Button>
+                    <Button type="primary" onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)} icon={<SearchOutlined />} size="small" className="filter-btns">Tìm</Button>
+                    <Button onClick={() => { if (clearFilters) clearFilters(); setSelectedKeys?.([]); confirm(); }} size="small" className="filter-btns">Xóa</Button>
                 </Space>
             </div>
         ),
@@ -185,7 +186,7 @@ export default function UserManagement() {
                 return (
                     <Select
                         defaultValue={record.roles[0]?.id}
-                        style={{ width: '100%' }}
+                        className="full-width"
                         size="small"
                         onChange={(val) => setEditData({ ...editData, role_id: val })}
                     >
@@ -197,7 +198,7 @@ export default function UserManagement() {
                 return (
                     <Select
                         defaultValue={currentText}
-                        style={{ width: '100%' }}
+                        className="full-width"
                         size="small"
                         onChange={(val) => setEditData({ ...editData, gender: val })}
                     >
@@ -211,7 +212,7 @@ export default function UserManagement() {
                 return (
                     <DatePicker
                         defaultValue={currentText ? dayjs(currentText) : undefined}
-                        style={{ width: '100%' }}
+                        className="full-width"
                         size="small"
                         format="DD/MM/YYYY"
                         onChange={(date) => setEditData({ ...editData, dob: date ? date.toISOString() : null })}
@@ -232,8 +233,7 @@ export default function UserManagement() {
         return (
             <div
                 onClick={() => startEditing(record, field as string)}
-                style={{ cursor: 'pointer', minHeight: '32px', width: '100%', display: 'flex', alignItems: 'center' }}
-                className="editable-cell-value"
+                className="editable-cell-display editable-cell-value"
             >
                 {field === 'roles' ? (
                     <Space wrap>
@@ -270,13 +270,13 @@ export default function UserManagement() {
             fixed: 'left',
             ...getColumnSearchProps('username'),
             render: (_, record) => (
-                <Space onClick={() => startEditing(record, 'full_name')}>
+                <Space onClick={() => startEditing(record, 'full_name')} className="user-info-wrapper">
                     <Avatar
                         src={record.avatar}
                         icon={!record.avatar && <UserOutlined />}
-                        style={{ background: 'var(--primary-hover)' }}
+                        className="user-avatar"
                     />
-                    <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', minWidth: '150px' }}>
+                    <div className="user-text-stack">
                         {editingKey === record.id ? (
                             <Input
                                 defaultValue={record.full_name}
@@ -285,9 +285,9 @@ export default function UserManagement() {
                                 autoFocus={editingField === 'full_name'}
                             />
                         ) : (
-                            <Text strong style={{ color: 'var(--text-main)' }}>{record.full_name || record.username}</Text>
+                            <Text strong className="full-name">{record.full_name || record.username}</Text>
                         )}
-                        <Text type="secondary" style={{ fontSize: '12px' }}>@{record.username}</Text>
+                        <Text type="secondary" className="username">@{record.username}</Text>
                     </div>
                 </Space>
             )
@@ -354,16 +354,16 @@ export default function UserManagement() {
             width: 180,
             sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-                <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                <div className="filter-dropdown-container" onKeyDown={(e) => e.stopPropagation()}>
                     <DatePicker.RangePicker
                         value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
                         onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
-                        style={{ marginBottom: 8, display: 'flex' }}
+                        className="range-picker-filter"
                         size="small"
                     />
                     <Space>
-                        <Button type="primary" onClick={() => confirm()} size="small" style={{ width: 90 }}>Lọc</Button>
-                        <Button onClick={() => { clearFilters(); confirm(); }} size="small" style={{ width: 90 }}>Xóa</Button>
+                        <Button type="primary" onClick={() => confirm()} size="small" className="filter-btns">Lọc</Button>
+                        <Button onClick={() => { clearFilters(); confirm(); }} size="small" className="filter-btns">Xóa</Button>
                     </Space>
                 </div>
             ),
@@ -390,14 +390,14 @@ export default function UserManagement() {
                             <List
                                 size="small"
                                 dataSource={record.enrolled_courses}
-                                renderItem={(item) => <List.Item><Text style={{ fontSize: '12px' }}>- {item}</Text></List.Item>}
-                                style={{ maxWidth: 250 }}
+                                renderItem={(item) => <List.Item><Text className="course-item-text">- {item}</Text></List.Item>}
+                                className="enrolled-courses-list"
                             />
                         ) : "Chưa mua khóa học nào"
                     }
                     trigger="hover"
                 >
-                    <Badge count={count} showZero color={count > 0 ? '#52c41a' : '#d9d9d9'} style={{ cursor: 'pointer' }} />
+                    <Badge count={count} showZero color={count > 0 ? '#52c41a' : '#d9d9d9'} className="success-badge" />
                 </Popover>
             )
         },
@@ -421,10 +421,10 @@ export default function UserManagement() {
     } : undefined;
 
     return (
-        <div style={{ padding: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div>
-                    <Title level={4} style={{ margin: 0 }}>Quản lý người dùng</Title>
+        <div className="user-management-container" >
+            <div className="user-management-header">
+                <div className="header-info">
+                    <Title level={4} className="header-title">Quản lý người dùng</Title>
                     <Text type="secondary">Quản lý người dùng, giảng viên và phân quyền toàn hệ thống</Text>
                 </div>
                 <Space>
@@ -432,31 +432,31 @@ export default function UserManagement() {
                 </Space>
             </div>
 
-            <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Row gutter={[16, 16]} className="stats-row">
                 {[1, 2, 3, 4].map(i => (
                     <Col key={i} xs={24} sm={12} md={6}>
-                        <Card className="glass-card" style={{ padding: '12px' }}>
+                        <Card className="glass-card stats-card">
                             {loading && users.length === 0 ? (
                                 <Skeleton active avatar title={false} paragraph={{ rows: 1 }} />
                             ) : (
-                                i === 1 ? <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Học viên</Text>} value={users.length} valueStyle={{ fontSize: '20px' }} prefix={<TeamOutlined style={{ color: '#3b82f6', fontSize: '16px' }} />} /> :
-                                    i === 2 ? <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Giảng viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'instructor')).length} valueStyle={{ fontSize: '20px' }} prefix={<IdcardOutlined style={{ color: '#a855f7', fontSize: '16px' }} />} /> :
-                                        i === 3 ? <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Quản trị viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'admin')).length} valueStyle={{ fontSize: '20px' }} prefix={<CrownOutlined style={{ color: '#f59e0b', fontSize: '16px' }} />} /> :
-                                            <Statistic title={<Text type="secondary" style={{ fontSize: '12px' }}>Khóa học bán</Text>} value={users.reduce((a, b) => a + b.enrollments_count, 0)} valueStyle={{ fontSize: '20px' }} prefix={<BookOutlined style={{ color: '#10b981', fontSize: '16px' }} />} />
+                                i === 1 ? <Statistic title={<Text type="secondary" className="stats-title">Học viên</Text>} value={users.length} valueStyle={{ fontSize: '20px' }} prefix={<TeamOutlined className="stats-icon student" />} /> :
+                                    i === 2 ? <Statistic title={<Text type="secondary" className="stats-title">Giảng viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'instructor')).length} valueStyle={{ fontSize: '20px' }} prefix={<IdcardOutlined className="stats-icon instructor" />} /> :
+                                        i === 3 ? <Statistic title={<Text type="secondary" className="stats-title">Quản trị viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'admin')).length} valueStyle={{ fontSize: '20px' }} prefix={<CrownOutlined className="stats-icon admin" />} /> :
+                                            <Statistic title={<Text type="secondary" className="stats-title">Khóa học bán</Text>} value={users.reduce((a, b) => a + b.enrollments_count, 0)} valueStyle={{ fontSize: '20px' }} prefix={<BookOutlined className="stats-icon courses" />} />
                             )}
                         </Card>
                     </Col>
                 ))}
             </Row>
 
-            <Card className="glass-card" style={{ padding: 0 }}>
-                <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Title level={4} style={{ margin: 0, color: 'var(--text-main)' }}>
+            <Card className="glass-card user-list-card">
+                <div className="user-list-header">
+                    <div className="header-left">
+                        <Title level={4} className="header-title">
                             <UsergroupAddOutlined /> Danh sách thành viên
                         </Title>
                         {isDeleteMode && (
-                            <Tag color="error" style={{ borderRadius: '12px', padding: '0 12px' }}>
+                            <Tag color="error" className="delete-mode-tag">
                                 Đang chọn {selectedRowKeys.length} người dùng
                             </Tag>
                         )}
@@ -470,7 +470,7 @@ export default function UserManagement() {
                                     icon={<SaveOutlined />}
                                     onClick={handleBatchSave}
                                     loading={loading}
-                                    style={{ background: '#10b981', borderColor: '#10b981' }}
+                                    className="save-batch-btn"
                                 >
                                     Lưu thay đổi
                                 </Button>
@@ -510,7 +510,7 @@ export default function UserManagement() {
                         )}
                     </Space>
                 </div>
-                <div style={{ padding: '0 12px 12px 12px' }}>
+                <div className="table-wrapper">
                     {loading && users.length === 0 ? (
                         <div style={{ padding: '24px' }}>
                             <Skeleton active paragraph={{ rows: 8 }} />
@@ -542,62 +542,6 @@ export default function UserManagement() {
                     <Button type="primary" htmlType="submit" block className="btn-primary">Tạo ngay</Button>
                 </Form>
             </Modal>
-
-            <style>{`
-                .editable-cell-value:hover {
-                    background: rgba(24, 144, 255, 0.08);
-                    border-radius: 4px;
-                    transition: all 0.2s;
-                }
-                .editable-row.active {
-                    background: rgba(99, 102, 241, 0.08) !important;
-                }
-                .ant-table-selection-column { width: 50px !important; }
-                .ant-table { 
-                    background: #ffffff !important; 
-                    color: var(--text-main) !important; 
-                }
-                .ant-table-thead > tr > th { 
-                    background: #fafafa !important; 
-                    color: var(--text-muted) !important; 
-                    border-bottom: 1px solid var(--border-color) !important; 
-                }
-                .ant-table-tbody > tr > td { 
-                    background: #ffffff !important;
-                    border-bottom: 1px solid var(--border-color) !important; 
-                }
-                .ant-table-tbody > tr:hover > td { background: #fafafa !important; }
-                .ant-input { background: #fff !important; border-color: #d9d9d9 !important; color: rgba(0, 0, 0, 0.88) !important; }
-                .ant-select-selector { background: #fff !important; border-color: #d9d9d9 !important; color: rgba(0, 0, 0, 0.88) !important; }
-                
-                /* Đảm bảo cột được ghim (fixed) hoàn toàn đặc và màu đồng nhất khi edit */
-                .ant-table-cell-fix-left, 
-                .ant-table-cell-fix-right,
-                .editable-row.active td.ant-table-cell-fix-left,
-                .editable-row.active td.ant-table-cell-fix-right {
-                    background: #ffffff !important; 
-                    z-index: 100 !important;
-                }
-                
-                .ant-table-thead > tr > th.ant-table-cell-fix-left,
-                .ant-table-thead > tr > th.ant-table-cell-fix-right {
-                    background: #fafafa !important; /* Đồng bộ màu với header khác */
-                }
-
-                /* Khi hover hàng hoặc hàng đang active edit, cột cố định cũng phải đổi màu mờ để đồng bộ */
-                .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-fix-left,
-                .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-fix-right,
-                .editable-row.active > td.ant-table-cell-fix-left,
-                .editable-row.active > td.ant-table-cell-fix-right {
-                    background: #f5f5f5 !important;
-                }
-
-                /* Thêm đường kẻ dọc tinh tế để phân tách cột cố định */
-                .ant-table-cell-fix-left-last::after {
-                    box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.05) !important;
-                    border-right: 1px solid var(--border-color) !important;
-                }
-            `}</style>
-        </div>
+        </div >
     );
 }

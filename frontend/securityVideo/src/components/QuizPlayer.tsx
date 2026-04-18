@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, Typography, Radio, Button, Space, Divider, Alert, message, Spin, Tag } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, SyncOutlined } from '@ant-design/icons';
 import api from '../api';
+import './QuizPlayer.scss';
 
 const { Title, Text } = Typography;
 
@@ -126,22 +127,22 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}><Spin size="large" /></div>;
+    if (loading) return <div className="quiz-player-loading"><Spin size="large" /></div>;
     if (!quiz) return <Alert type="error" message="Không tìm thấy bài trắc nghiệm" />;
 
     return (
-        <Card bordered={false} style={{ background: '#fff', borderRadius: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <Card bordered={false} className="quiz-player-card">
+            <div className="quiz-header">
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>{quiz.lesson?.title || 'Bài Kiểm Tra'}</Title>
-                    {quiz.description && <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>{quiz.description}</Text>}
+                    <Title level={4} className="quiz-title">{quiz.lesson?.title || 'Bài Kiểm Tra'}</Title>
+                    {quiz.description && <Text type="secondary" className="quiz-desc">{quiz.description}</Text>}
                 </div>
                 <Space direction="vertical" align="end">
-                    <Tag color="geekblue" style={{ margin: 0, padding: '4px 8px', fontSize: 13 }}>
+                    <Tag color="geekblue" className="quiz-tag-pass">
                         Điểm Đạt: {quiz.pass_score}%
                     </Tag>
                     {timeLeft !== null && (
-                        <Tag icon={<ClockCircleOutlined />} color={timeLeft < 60 ? "error" : "default"} style={{ margin: 0, padding: '4px 8px', fontSize: 14, fontWeight: 'bold' }}>
+                        <Tag icon={<ClockCircleOutlined />} color={timeLeft < 60 ? "error" : "default"} className="quiz-tag-timer">
                             {formatTime(timeLeft)}
                         </Tag>
                     )}
@@ -151,27 +152,27 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
             <Divider />
 
             {result && (
-                <div style={{ marginBottom: 24, padding: '0 10px', fontSize: '16px', fontWeight: 'bold', color: '#1677ff' }}>
+                <div className="quiz-result-summary">
                     Kết quả: {result.correctCount} / {result.totalQuestions} câu đúng - Điểm: {result.score} / 100
                 </div>
             )}
 
-            <div style={{ padding: '0 10px' }}>
+            <div className="questions-container">
                 {quiz.questions?.map((q: any, index: number) => {
                     const isCorrectAnswer = result?.status && q.options.find((o: any) => o.id === answers[q.id])?.is_correct;
                     const isIncorrectAnswer = result?.status && !q.options.find((o: any) => o.id === answers[q.id])?.is_correct && answers[q.id];
                     const notAnswered = result?.status && !answers[q.id];
 
                     return (
-                        <div key={q.id} style={{ marginBottom: 32, padding: '16px', borderRadius: 8, background: result ? (isCorrectAnswer ? '#f6ffed' : '#fff2f0') : '#fafafa', border: '1px solid', borderColor: result ? (isCorrectAnswer ? '#b37eb8f' : '#ffccc7') : '#f0f0f0' }}>
-                            <Title level={5} style={{ marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                                <span style={{ background: '#1677ff', color: '#fff', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>
+                        <div key={q.id} className={`question-item ${result ? (isCorrectAnswer ? 'correct' : 'incorrect') : ''}`}>
+                            <Title level={5} className="question-title-wrapper">
+                                <span className="question-number">
                                     {index + 1}
                                 </span>
                                 <div>
                                     {q.content}
                                     {result && (
-                                        <span style={{ marginLeft: 8 }}>
+                                        <span className="question-status-icon">
                                             {isCorrectAnswer && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
                                             {isIncorrectAnswer && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
                                             {notAnswered && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
@@ -184,7 +185,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                 onChange={(e) => handleOptionChange(q.id, e.target.value)}
                                 value={answers[q.id]}
                                 disabled={!!result}
-                                style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, paddingLeft: 32 }}
+                                className="options-group"
                             >
                                 {q.options?.map((o: any) => {
                                     const showCorrect = result && o.is_correct;
@@ -192,12 +193,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                         <Radio
                                             key={o.id}
                                             value={o.id}
-                                            style={{
-                                                whiteSpace: 'normal',
-                                                background: showCorrect ? '#e6f4ff' : 'transparent',
-                                                padding: showCorrect ? '4px 8px' : '0',
-                                                borderRadius: 4
-                                            }}
+                                            className={`option-item ${showCorrect ? 'correct-option' : ''}`}
                                         >
                                             {o.content} {showCorrect && <Text type="success" style={{ marginLeft: 8 }}>(Đáp án đúng)</Text>}
                                         </Radio>
@@ -211,7 +207,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                     description={q.explanation}
                                     type="info"
                                     showIcon
-                                    style={{ marginTop: 16, marginLeft: 32 }}
+                                    className="explanation-alert"
                                 />
                             )}
                         </div>
@@ -221,14 +217,14 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
 
             <Divider />
 
-            <div style={{ textAlign: 'center' }}>
+            <div className="submit-btn-wrapper">
                 {!result ? (
                     <Button
                         type="primary"
                         size="large"
                         onClick={handleSubmit}
                         loading={submitting}
-                        style={{ padding: '0 40px', height: 48, fontSize: 16 }}
+                        className="submit-btn"
                     >
                         Nộp Bài
                     </Button>
@@ -237,7 +233,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                         icon={<SyncOutlined />}
                         size="large"
                         onClick={() => fetchQuiz(true)}
-                        style={{ padding: '0 40px', height: 48, fontSize: 16 }}
+                        className="submit-btn"
                     >
                         Làm Lại Bài
                     </Button>

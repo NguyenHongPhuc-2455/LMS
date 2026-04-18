@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 import { UserAddOutlined, MailOutlined, LockOutlined, RocketOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { App, Form, Input, Button, Typography, Card } from 'antd';
+import './Auth.scss';
 
 const { Title, Text } = Typography;
 
@@ -27,23 +28,12 @@ export default function Register() {
     return (
         <div className="auth-container">
             <Card className="auth-card" variant="borderless">
-                <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                    <div style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '20px',
-                        background: 'var(--primary-gradient)',
-                        display: 'inline-flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: 20,
-                        boxShadow: '0 8px 16px rgba(168, 85, 247, 0.3)',
-                        animation: 'float 3s ease-in-out infinite'
-                    }}>
-                        <UserAddOutlined style={{ fontSize: 32, color: 'white' }} />
+                <div className="auth-header">
+                    <div className="auth-icon-wrapper register">
+                        <UserAddOutlined className="auth-header-icon" />
                     </div>
-                    <Title level={2} className="premium-title" style={{ margin: 0, fontSize: 32 }}>Ghi danh mới</Title>
-                    <Text type="secondary" style={{ fontSize: 16 }}>Bắt đầu hành trình chinh phục kiến thức ngay hôm nay</Text>
+                    <Title level={2} className="premium-title auth-header-title">Ghi danh mới</Title>
+                    <Text type="secondary" className="auth-header-desc">Bắt đầu hành trình chinh phục kiến thức ngay hôm nay</Text>
                 </div>
 
                 <Form
@@ -61,7 +51,7 @@ export default function Register() {
                         ]}
                     >
                         <Input
-                            prefix={<UserAddOutlined style={{ color: '#94a3b8' }} />}
+                            prefix={<UserAddOutlined className="auth-input-prefix" />}
                             placeholder="Chọn tên đăng nhập"
                         />
                     </Form.Item>
@@ -75,7 +65,7 @@ export default function Register() {
                         ]}
                     >
                         <Input
-                            prefix={<MailOutlined style={{ color: '#94a3b8' }} />}
+                            prefix={<MailOutlined className="auth-input-prefix" />}
                             placeholder="example@gmail.com"
                         />
                     </Form.Item>
@@ -89,12 +79,12 @@ export default function Register() {
                         ]}
                     >
                         <Input.Password
-                            prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                            prefix={<LockOutlined className="auth-input-prefix" />}
                             placeholder="Tối thiểu 6 ký tự"
                         />
                     </Form.Item>
 
-                    <Form.Item style={{ marginTop: 12 }}>
+                    <Form.Item className="auth-form-item-btn">
                         <Button
                             type="primary"
                             htmlType="submit"
@@ -106,9 +96,9 @@ export default function Register() {
                         </Button>
                     </Form.Item>
 
-                    <div style={{ textAlign: 'center', marginTop: 24 }}>
-                        <Link to="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-muted)' }}>
-                            <ArrowLeftOutlined style={{ fontSize: 12 }} />
+                    <div className="auth-footer">
+                        <Link to="/login" className="auth-back-link">
+                            <ArrowLeftOutlined />
                             <span>Đã có tài khoản? Quay về Đăng nhập</span>
                         </Link>
                     </div>

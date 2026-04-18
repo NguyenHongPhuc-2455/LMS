@@ -1,0 +1,231 @@
+.profile-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #F8F9FD;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.profile-left-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.profile-divider {
+    margin: 0 !important;
+}
+
+.social-icon-fb {
+    color: #1877F2;
+    font-size: 20px;
+}
+
+.social-icon-google {
+    color: #DB4437;
+    font-size: 20px;
+}
+
+.notification-title {
+    display: block !important;
+}
+
+.profile-modal {
+    .ant-modal-content {
+        border-radius: 16px !important;
+    }
+}
+
+.full-width {
+    width: 100% !important;
+}
+
+.profile-avatar-section {
+    text-align: center;
+    padding: 32px 24px;
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.profile-avatar {
+    border: 1px solid #E2E8F0;
+}
+
+.profile-avatar-button {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: #4880FF !important;
+    color: #fff !important;
+    border: none !important;
+
+    .anticon {
+        font-size: 12px;
+    }
+}
+
+.profile-name {
+    margin: 0 !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+}
+
+.profile-edit-btn {
+    color: #4880FF;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.profile-info-list {
+    padding: 24px;
+}
+
+.profile-info-item {
+    margin-bottom: 16px;
+
+    .info-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-value {
+        font-size: 14px;
+
+        &.has-value {
+            color: #475569;
+        }
+
+        &.no-value {
+            color: #94A3B8;
+        }
+
+        .add-link {
+            color: #4880FF;
+            cursor: pointer;
+        }
+    }
+}
+
+.profile-logout-section {
+    padding: 16px;
+    text-align: center;
+
+    .logout-btn {
+        font-weight: 600;
+    }
+}
+
+.profile-right-space {
+    width: 100%;
+}
+
+.profile-section-card {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+
+    .ant-card-head-title {
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+
+.btn-add-address {
+    color: #4880FF;
+    font-weight: 600;
+    padding: 0;
+
+    .anticon {
+        color: #4880FF;
+    }
+}
+
+.payment-desc {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.payment-method-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid #F1F5F9;
+    border-radius: 8px;
+}
+
+.payment-card-icon {
+    width: 40px;
+    height: 26px;
+    background: #F8FAFC;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #E2E8F0;
+
+    .anticon {
+        color: #EF4444;
+    }
+}
+
+.social-desc {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.social-item-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    background: #F8FAFC;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-desc {
+    display: block;
+    margin-bottom: 24px;
+}
+
+.notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.notification-sub-text {
+    font-size: 13px;
+    display: block;
+}
+
+.profile-modal-form {
+    margin-top: 20px;
+}
+
+.profile-modal-footer {
+    text-align: right;
+    margin-top: 24px;
+
+    .btn-save {
+        background: #4880FF;
+    }
+}
+
+.icon-small {
+    font-size: 10px;
+}
+
+.icon-gray {
+    color: #94A3B8;
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Table, Button, Space, message, Typography, Card } from 'antd';
 import { CheckOutlined, CloseOutlined, UserOutlined, BookOutlined } from '@ant-design/icons';
 import api from '../../api';
+import './CourseRequests.scss';
 
 const { Title } = Typography;
 
@@ -57,8 +58,8 @@ export default function CourseRequests() {
                 <Space>
                     <UserOutlined />
                     <div>
-                        <div style={{ fontWeight: 600 }}>{user.full_name}</div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+                        <div className="user-name">{user.full_name}</div>
+                        <div className="user-email">{user.email}</div>
                     </div>
                 </Space>
             )
@@ -72,7 +73,7 @@ export default function CourseRequests() {
             render: (course: any) => (
                 <Space>
                     <BookOutlined />
-                    <span style={{ fontWeight: 500 }}>{course.title}</span>
+                    <span className="course-title">{course.title}</span>
                 </Space>
             )
         },
@@ -80,7 +81,7 @@ export default function CourseRequests() {
             title: 'Lý do',
             dataIndex: 'reason',
             key: 'reason',
-            render: (text: string) => text || <i style={{ color: '#999' }}>Không có lý do</i>
+            render: (text: string) => text || <i className="empty-reason">Không có lý do</i>
         },
         {
             title: 'Ngày gửi',
@@ -97,7 +98,7 @@ export default function CourseRequests() {
                         type="primary"
                         icon={<CheckOutlined />}
                         onClick={() => handleApprove(record.id)}
-                        style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                        className="approve-btn"
                     >
                         Duyệt
                     </Button>
@@ -114,9 +115,9 @@ export default function CourseRequests() {
     ];
 
     return (
-        <div style={{ padding: '24px' }}>
+        <div className="course-requests-container">
             <Card className="glass-card">
-                <Title level={2} style={{ marginBottom: 24 }}>Phê duyệt truy cập khóa học</Title>
+                <Title level={2} className="request-card-title">Phê duyệt truy cập khóa học</Title>
                 <Table
                     columns={columns}
                     dataSource={requests}

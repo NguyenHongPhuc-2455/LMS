@@ -8,6 +8,7 @@ import {
     Card, Button, Input, Select, Space, Typography,
     Table, Modal, Form, message, Popconfirm
 } from 'antd';
+import './SectionManagement.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -111,10 +112,10 @@ export default function SectionManagement() {
     };
 
     return (
-        <div style={{ padding: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div className="section-management-container">
+            <div className="section-management-header">
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>Quản lý Chương Học</Title>
+                    <Title level={4} className="header-title">Quản lý Chương Học</Title>
                     <Text type="secondary">Phân bổ cấu trúc bài học cho từng khóa</Text>
                 </div>
                 <Button
@@ -128,12 +129,12 @@ export default function SectionManagement() {
             </div>
 
             <Card className="glass-card">
-                <div style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div className="course-selector-wrapper">
                     <Text strong>Chọn khóa học:</Text>
                     <Select
                         showSearch
                         placeholder="Chọn khóa học để xem chương..."
-                        style={{ width: 400 }}
+                        className="course-select"
                         size="small"
                         value={selectedCourseId}
                         onChange={(v) => setSelectedCourseId(v)}
@@ -147,9 +148,9 @@ export default function SectionManagement() {
                 </div>
 
                 {!selectedCourseId ? (
-                    <div style={{ padding: '40px', textAlign: 'center' }}>
-                        <FolderOpen size={40} style={{ color: '#cbd5e1', marginBottom: 16 }} />
-                        <Text type="secondary" style={{ display: 'block' }}>Vui lòng chọn một khóa học bên trên để quản lý chương</Text>
+                    <div className="empty-section-wrapper">
+                        <FolderOpen size={40} className="empty-icon" />
+                        <Text type="secondary" className="empty-text">Vui lòng chọn một khóa học bên trên để quản lý chương</Text>
                     </div>
                 ) : (
                     <Table
@@ -163,7 +164,7 @@ export default function SectionManagement() {
                                 dataIndex: 'title',
                                 render: (text, record) => (
                                     <span
-                                        style={{ cursor: 'pointer', color: '#6366f1', fontWeight: 500 }}
+                                        className="section-title-link"
                                         onClick={() => navigate(`/admin/lessons?courseId=${selectedCourseId}&sectionId=${record.id}`)}
                                     >
                                         {text}

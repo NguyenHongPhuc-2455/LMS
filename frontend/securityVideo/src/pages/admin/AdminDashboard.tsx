@@ -10,6 +10,7 @@ import {
     ArrowUpOutlined,
     ArrowDownOutlined
 } from '@ant-design/icons';
+import './AdminDashboard.scss';
 
 const { Title, Text } = Typography;
 
@@ -89,43 +90,35 @@ export default function AdminDashboard() {
 
     return (
         <div>
-            <Title level={2} style={{ marginTop: 0, marginBottom: '24px', fontWeight: 700, color: '#1E293B', letterSpacing: '-0.02em' }}>
+            <Title level={2} className="admin-dashboard-title">
                 Dashboard
             </Title>
 
-            <Row gutter={[24, 24]} style={{ marginBottom: '30px' }}>
+            <Row gutter={[24, 24]} className="stat-card-container">
                 {statCards.map((stat, idx) => (
                     <Col xs={24} sm={12} lg={6} key={idx}>
                         <Card
                             bordered={false}
-                            style={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}
+                            className="stat-card"
                             bodyStyle={{ padding: '24px' }}
                         >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                            <div className="stat-card-header">
                                 <div>
-                                    <Text style={{ color: '#64748B', fontSize: '15px', fontWeight: 500 }}>{stat.title}</Text>
-                                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#1E293B', marginTop: '8px' }}>
+                                    <Text className="stat-card-title">{stat.title}</Text>
+                                    <div className="stat-card-value">
                                         {stat.value}
                                     </div>
                                 </div>
-                                <div style={{
-                                    width: '56px',
-                                    height: '56px',
-                                    borderRadius: '16px',
-                                    background: stat.bg,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
+                                <div className="stat-card-icon-wrapper" style={{ background: stat.bg }}>
                                     {stat.icon}
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                <span style={{ color: stat.isUp ? '#10b981' : '#ef4444', display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                                    {stat.isUp ? <ArrowUpOutlined style={{ marginRight: '4px' }} /> : <ArrowDownOutlined style={{ marginRight: '4px' }} />}
+                            <div className="stat-card-footer">
+                                <span className={`stat-card-trend ${stat.isUp ? 'trend-up' : 'trend-down'}`}>
+                                    {stat.isUp ? <ArrowUpOutlined className="margin-right-xs" /> : <ArrowDownOutlined className="margin-right-xs" />}
                                     {stat.percent}
                                 </span>
-                                <span style={{ color: '#94A3B8' }}>{stat.detail}</span>
+                                <span className="stat-card-detail">{stat.detail}</span>
                             </div>
                         </Card>
                     </Col>
@@ -136,15 +129,15 @@ export default function AdminDashboard() {
                 <Col xl={16} lg={24}>
                     <Card
                         bordered={false}
-                        style={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}
+                        className="stat-card"
                         bodyStyle={{ padding: '24px' }}
                         loading={loading}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                            <Title level={4} style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>Xu hướng ghi danh (7 ngày qua)</Title>
+                        <div className="chart-card-header">
+                            <Title level={4} className="chart-card-title">Xu hướng ghi danh (7 ngày qua)</Title>
                         </div>
 
-                        <div style={{ height: '350px', width: '100%' }}>
+                        <div className="chart-container">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
@@ -186,18 +179,19 @@ export default function AdminDashboard() {
                 </Col>
                 <Col xl={8} lg={24}>
                     <Card
-                        title={<Title level={4} style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>Khóa học phổ biến</Title>}
+                        title={<Title level={4} className="chart-card-title">Khóa học phổ biến</Title>}
                         bordered={false}
-                        style={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', height: '100%' }}
+                        className="stat-card"
+                        style={{ height: '100%' }}
                         bodyStyle={{ padding: '24px' }}
                         loading={loading}
                     >
-                        <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                        <Space direction="vertical" className="popular-course-list" size={16}>
                             {stats?.topCourses?.map((course: any, i: number) => (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderRadius: '12px', background: '#F8FAFC' }}>
-                                    <div style={{ flex: 1, marginRight: '10px' }}>
-                                        <Text strong style={{ display: 'block', fontSize: '14px' }}>{course.title}</Text>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>Vị trí #{i + 1}</Text>
+                                <div key={i} className="popular-course-item">
+                                    <div className="flex-1 margin-right-sm">
+                                        <Text strong className="popular-course-title">{course.title}</Text>
+                                        <Text type="secondary" className="popular-course-subtitle">Vị trí #{i + 1}</Text>
                                     </div>
                                     <Badge count={course.count} color="#4880FF" />
                                 </div>

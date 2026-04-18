@@ -9,9 +9,9 @@ const ApiError = require('../utils/ApiError');
  * Upload và bắt đầu xử lý Video
  */
 exports.uploadVideo = catchAsync(async (req, res) => {
-    const { title, section_id, order } = req.body;
+    const { title, section_id, order, video_url } = req.body;
 
-    if (!req.file) throw new ApiError(400, 'Please upload a video file');
+    if (!req.file && !video_url) throw new ApiError(400, 'Please upload a video file or provide a video URL');
     if (!section_id) throw new ApiError(400, 'Section ID is required');
 
     const lesson = await prisma.lesson.create({
@@ -19,17 +19,26 @@ exports.uploadVideo = catchAsync(async (req, res) => {
             title,
             section_id: parseInt(section_id),
             type: 'VIDEO',
-            order: order ? parseInt(order) : 0
+            order: order ? parseInt(order) : 0,
+            video_url: video_url || null // Set URL right away if they passed string
         }
     });
 
-    // Chạy ngầm trong background
-    videoService.processVideoToHLS(lesson.id, req.file.path);
+    if (req.file) {
+        // Chạy ngầm trong background
+        videoService.processVideoToHLS(lesson.id, req.file.path);
 
-    res.status(202).json({
+        return res.status(202).json({
+            status: 'success',
+            message: 'Video is being processed...',
+            data: { lessonId: lesson.id }
+        });
+    }
+
+    res.status(201).json({
         status: 'success',
-        message: 'Video is being processed...',
-        data: { lessonId: lesson.id }
+        message: 'Video lesson created successfully via Link',
+        data: { lessonId: lesson.id, video_url }
     });
 });
 

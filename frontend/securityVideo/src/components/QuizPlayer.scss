@@ -1,0 +1,125 @@
+.quiz-player-loading {
+    padding: 50px;
+    text-align: center;
+}
+
+.quiz-player-card {
+    background: #fff !important;
+    border-radius: 8px !important;
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.quiz-title {
+    margin: 0 !important;
+}
+
+.quiz-desc {
+    display: block !important;
+    margin-top: 8px !important;
+}
+
+.quiz-tag-pass {
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+}
+
+.quiz-tag-timer {
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+}
+
+.quiz-result-summary {
+    margin-bottom: 24px;
+    padding: 0 10px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1677ff;
+}
+
+.questions-container {
+    padding: 0 10px;
+}
+
+.question-item {
+    margin-bottom: 32px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+
+    &.correct {
+        background: #f6ffed;
+        border-color: #b7eb8f;
+    }
+
+    &.incorrect {
+        background: #fff2f0;
+        border-color: #ffccc7;
+    }
+}
+
+.question-title-wrapper {
+    margin-bottom: 16px !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+}
+
+.question-number {
+    background: #1677ff;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.question-status-icon {
+    margin-left: 8px;
+}
+
+.options-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 32px;
+}
+
+.option-item {
+    white-space: normal !important;
+    border-radius: 4px;
+
+    &.correct-option {
+        background: #e6f4ff !important;
+        padding: 4px 8px !important;
+    }
+}
+
+.explanation-alert {
+    margin-top: 16px !important;
+    margin-left: 32px !important;
+}
+
+.submit-btn-wrapper {
+    text-align: center;
+}
+
+.submit-btn {
+    padding: 0 40px !important;
+    height: 48px !important;
+    font-size: 16px !important;
+}

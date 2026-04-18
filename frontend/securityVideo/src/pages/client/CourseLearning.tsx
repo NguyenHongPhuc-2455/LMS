@@ -3,20 +3,22 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     PlayCircleOutlined, LockOutlined, CheckCircleOutlined,
     LeftOutlined, ShoppingCartOutlined,
-    FileTextOutlined, QuestionCircleOutlined, UserOutlined,
+    FileTextOutlined, QuestionCircleOutlined,
     DownloadOutlined, DownOutlined, UpOutlined,
     MenuFoldOutlined, MenuUnfoldOutlined
 } from '@ant-design/icons';
 import {
     Collapse, App, Typography, Button,
-    Tag, Skeleton, Divider, Avatar, Row, Col
+    Tag, Skeleton, Divider, Row, Col
 } from 'antd';
 import VideoPlayer from '../../components/VideoPlayer';
+import VideoJsPlayer from '../../components/VideoJsPlayer';
 import CommentSection from '../../components/CommentSection';
 import QuizPlayer from '../../components/QuizPlayer';
 import type { VideoPlayerRef } from '../../components/VideoPlayer';
 import api from '../../api';
 import { useTabFocusWarning } from '../../hooks/useTabFocusWarning';
+import './CourseLearning.scss';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -62,6 +64,7 @@ export default function Course() {
     const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
+    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
@@ -72,6 +75,7 @@ export default function Course() {
     useTabFocusWarning(
         'Cảnh báo tập trung!',
         'Hệ thống phát hiện bạn vừa rời khỏi trình duyệt. Vui lòng tập trung hoàn thành bài học.',
+        isVideoPlaying,
         () => {
             if (activeLesson?.type === 'VIDEO') {
                 videoPlayerRef.current?.reset();
@@ -147,10 +151,9 @@ export default function Course() {
                 const el = document.getElementById(location.hash.slice(1));
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.style.transition = 'background 0.3s ease';
-                    el.style.background = '#fef9c3';
+                    el.classList.add('highlight-comment');
                     setTimeout(() => {
-                        el.style.background = '';
+                        el.classList.remove('highlight-comment');
                     }, 2500);
                 } else if (attempts < 15) {
                     setTimeout(() => tryScroll(attempts + 1), 300);
@@ -195,19 +198,19 @@ export default function Course() {
         }
     };
 
-    if (loading) return <div style={{ padding: 50 }}><Skeleton active /></div>;
+    if (loading) return <div className="learning-loading"><Skeleton active /></div>;
     if (!course) return <div>Không tìm thấy dữ liệu</div>;
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh', margin: '-24px -40px' }}>
+        <div className="learning-container">
             <Row gutter={0}>
-                <Col lg={showSidebar ? 16 : 24} md={24} style={{ padding: '24px', minHeight: '100vh', background: '#f8fafc', transition: 'all 0.3s ease' }}>
-                    <div style={{ maxWidth: showSidebar ? '1000px' : '100%', margin: '0 auto', transition: 'max-width 0.3s ease' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Col lg={showSidebar ? 16 : 24} md={24} className="main-column">
+                    <div className={`content-wrapper ${showSidebar ? 'sidebar-visible' : 'sidebar-hidden'}`}>
+                        <div className="header-actions">
                             <Button
                                 icon={<LeftOutlined />}
                                 onClick={() => navigate(`/course/${id}`)}
-                                style={{ background: 'transparent', color: 'black', border: 'none' }}
+                                className="back-btn"
                             >
                                 Quay lại trang chi tiết
                             </Button>
@@ -216,20 +219,14 @@ export default function Course() {
                                 <Button
                                     icon={<MenuUnfoldOutlined />}
                                     onClick={() => setShowSidebar(true)}
-                                    style={{
-                                        borderRadius: '8px',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px'
-                                    }}
+                                    className="show-sidebar-btn"
                                 >
                                     Hiện thanh bên
                                 </Button>
                             )}
                         </div>
 
-                        <div className="glass-card" style={{ padding: '0', overflow: 'hidden', marginBottom: 24, background: '#000', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                        <div className="video-section">
                             {activeLesson && activeLesson.type === 'QUIZ' ? (
                                 <QuizPlayer
                                     lessonId={activeLesson.id}
@@ -239,30 +236,44 @@ export default function Course() {
                                 />
                             ) : activeLesson && activeLesson.type === 'VIDEO' && (course.hasAccess || activeLesson.is_free) ? (
                                 activeLesson.video_url ? (
-                                    <VideoPlayer
-                                        ref={videoPlayerRef}
-                                        src={activeLesson.video_url.startsWith('http') ? activeLesson.video_url : `http://localhost:5000${activeLesson.video_url}`}
-                                        lessonId={activeLesson.id}
-                                        onEnded={handleNextLesson}
-                                    />
+                                    activeLesson.video_url.includes('.m3u8') ? (
+                                        <VideoPlayer
+                                            ref={videoPlayerRef}
+                                            src={`http://localhost:5000${activeLesson.video_url}`}
+                                            lessonId={activeLesson.id}
+                                            onEnded={handleNextLesson}
+                                            onPlay={() => setIsVideoPlaying(true)}
+                                            onPause={() => setIsVideoPlaying(false)}
+                                        />
+                                    ) : (
+                                        <VideoJsPlayer
+                                            ref={videoPlayerRef as any}
+                                            src={activeLesson.video_url}
+                                            lessonId={activeLesson.id}
+                                            onEnded={handleNextLesson}
+                                            onPlay={() => setIsVideoPlaying(true)}
+                                            onPause={() => setIsVideoPlaying(false)}
+                                            isCompletedInit={activeLesson.isCompleted}
+                                        />
+                                    )
                                 ) : (
-                                    <div style={{ height: '450px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#000', color: '#fff' }}>
-                                        <Skeleton.Node active style={{ width: 100, height: 100 }} />
-                                        <Title level={4} style={{ color: 'white', marginTop: 20 }}>Video đang được xử lý băm bảo mật...</Title>
-                                        <Text style={{ color: '#94a3b8' }}>Vui lòng quay lại sau vài phút</Text>
+                                    <div className="video-processing">
+                                        <Skeleton.Node active className="skeleton-square" />
+                                        <Title level={4} className="processing-title">Video đang được xử lý băm bảo mật...</Title>
+                                        <Text className="processing-text">Vui lòng quay lại sau vài phút</Text>
                                     </div>
                                 )
                             ) : (
-                                <div style={{ height: '450px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#000' }}>
-                                    <LockOutlined style={{ fontSize: '64px', color: '#ff4d4f', marginBottom: 20 }} />
-                                    <Title level={3} style={{ color: 'white' }}>Nội dung đã bị khóa</Title>
-                                    <Text style={{ color: '#94a3b8' }}>Vui lòng mua khóa học để mở khóa toàn bộ bài giảng</Text>
+                                <div className="locked-section">
+                                    <LockOutlined className="locked-icon" />
+                                    <Title level={3} className="locked-title">Nội dung đã bị khóa</Title>
+                                    <Text className="locked-desc">Vui lòng mua khóa học để mở khóa toàn bộ bài giảng</Text>
                                     {!course.hasAccess && (
                                         <Button
                                             type="primary"
                                             size="large"
                                             icon={<ShoppingCartOutlined />}
-                                            style={{ marginTop: 20, height: 50, padding: '0 40px' }}
+                                            className="buy-btn"
                                             onClick={handleBuy}
                                         >
                                             Đăng ký học ngay - {parseFloat(course.price) === 0 ? 'MIỄN PHÍ' : `${Number(course.price).toLocaleString()}đ`}
@@ -272,45 +283,32 @@ export default function Course() {
                             )}
                         </div>
 
-                        <Title level={2} style={{ color: '#0f172a' }}>{activeLesson?.title || course.title}</Title>
+                        <Title level={2} className="course-main-title">{activeLesson?.title || course.title}</Title>
 
                         {/* Hiển thị nội dung văn bản của bài học */}
                         {activeLesson?.content && (
-                            <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                            <div className="lesson-content-card">
                                 <Title level={4}>Hướng dẫn & Nội dung</Title>
-                                <div style={{ position: 'relative' }}>
-                                    <div style={{
-                                        maxHeight: isExpanded ? 'none' : '100px',
-                                        overflow: 'hidden',
-                                        transition: 'max-height 0.3s ease-out',
-                                        position: 'relative'
-                                    }}>
-                                        <Paragraph style={{ whiteSpace: 'pre-wrap', color: '#334155', margin: 0 }}>
+                                <div className="relative-pos">
+                                    <div className={`content-scroll-area ${isExpanded ? '' : 'collapsed'}`}>
+                                        <Paragraph className="content-paragraph">
                                             {activeLesson.content}
                                         </Paragraph>
 
                                         {!isExpanded && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                bottom: 0,
-                                                left: 0,
-                                                right: 0,
-                                                height: '60px',
-                                                background: 'linear-gradient(transparent, #ffffff)',
-                                                pointerEvents: 'none'
-                                            }} />
+                                            <div className="gradient-overlay" />
                                         )}
                                     </div>
 
                                     <Button
                                         type="link"
                                         onClick={() => setIsExpanded(!isExpanded)}
-                                        style={{ padding: '0 0', marginTop: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                                        className="expand-btn"
                                     >
                                         {isExpanded ? (
-                                            <>Thu gọn <UpOutlined style={{ fontSize: 12 }} /></>
+                                            <>Thu gọn <UpOutlined className="icon-small-btn" /></>
                                         ) : (
-                                            <>Xem thêm <DownOutlined style={{ fontSize: 12 }} /></>
+                                            <>Xem thêm <DownOutlined className="icon-small-btn" /></>
                                         )}
                                     </Button>
                                 </div>
@@ -319,23 +317,14 @@ export default function Course() {
 
                         {/* Hiển thị tài liệu đính kèm (PDF) */}
                         {activeLesson?.attachment_url && (
-                            <div style={{
-                                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                                borderRadius: '16px',
-                                padding: '20px',
-                                border: '1px solid #bae6fd',
-                                marginBottom: '24px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{ width: '40px', height: '40px', background: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                        <FileTextOutlined style={{ fontSize: '20px', color: '#0284c7' }} />
+                            <div className="attachment-card">
+                                <div className="attachment-info">
+                                    <div className="attachment-icon-wrapper">
+                                        <FileTextOutlined className="attachment-icon" />
                                     </div>
                                     <div>
-                                        <Text strong style={{ display: 'block', color: '#0369a1' }}>Tài liệu đính kèm</Text>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>{activeLesson.attachment_name || 'Tai_lieu_bai_hoc.pdf'}</Text>
+                                        <Text strong className="attachment-title">Tài liệu đính kèm</Text>
+                                        <Text type="secondary" className="attachment-subtitle">{activeLesson.attachment_name || 'Tai_lieu_bai_hoc.pdf'}</Text>
                                     </div>
                                 </div>
                                 <Button
@@ -344,16 +333,14 @@ export default function Course() {
                                     href={`http://localhost:5000${activeLesson.attachment_url}`}
                                     target="_blank"
                                     download
-                                    style={{ background: '#0284c7', borderColor: '#0284c7' }}
+                                    className="download-btn"
                                 >
                                     Tải về PDF
                                 </Button>
                             </div>
                         )}
 
-                        {/* <Paragraph style={{ color: '#475569', fontSize: '16px' }}>{course.description}</Paragraph> */}
-
-                        <Divider style={{ borderColor: '#e2e8f0' }} />
+                        <Divider className="divider-slate" />
 
                         {activeLesson && (
                             <CommentSection
@@ -362,44 +349,16 @@ export default function Course() {
                             />
                         )}
 
-                        <Divider style={{ margin: '40px 0' }} />
-
-                        {/* <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                <Avatar size={64} icon={<UserOutlined />} src={course.instructor.avatar} style={{ background: '#6366f1' }} />
-                                <div>
-                                    <Title level={4} style={{ margin: 0 }}>Giảng viên: {course.instructor.full_name}</Title>
-                                    <Text type="secondary">{course.instructor.bio || 'Chuyên gia đào tạo hàng đầu hệ thống.'}</Text>
-                                </div>
-                            </div>
-                        </div> */}
+                        <Divider className="divider-margin-lg" />
                     </div>
                 </Col>
 
                 {showSidebar && (
-                    <Col lg={8} md={24} style={{
-                        background: '#fff',
-                        borderLeft: '1px solid #e2e8f0',
-                        height: 'calc(100vh - 64px)',
-                        position: 'sticky',
-                        top: '64px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        transition: 'all 0.3s ease'
-                    }}>
-                        <div style={{
-                            padding: '24px',
-                            borderBottom: '1px solid #e2e8f0',
-                            background: '#fff',
-                            zIndex: 5,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            flexShrink: 0
-                        }}>
+                    <Col lg={8} md={24} className="sidebar-column">
+                        <div className="sidebar-header">
                             <div>
-                                <Title level={4} style={{ color: '#0f172a', margin: 0 }}>Nội dung khóa học</Title>
-                                <Text style={{ color: '#64748b', fontSize: '12px' }}>
+                                <Title level={4} className="sidebar-title">Nội dung khóa học</Title>
+                                <Text className="sidebar-subtitle">
                                     {course.sections.length} chương • {course.sections.reduce((a, b) => a + b.lessons.length, 0)} bài giảng
                                 </Text>
                             </div>
@@ -407,20 +366,20 @@ export default function Course() {
                                 type="text"
                                 icon={<MenuFoldOutlined />}
                                 onClick={() => setShowSidebar(false)}
-                                style={{ color: '#64748b' }}
+                                className="btn-gray-icon"
                             />
                         </div>
 
-                        <div style={{ flexGrow: 1, overflowY: 'auto', paddingBottom: 100 }}>
+                        <div className="sidebar-scroll-area">
                             <Collapse
                                 ghost
                                 expandIconPlacement="end"
                                 items={course.sections.map(section => ({
                                     key: section.id,
-                                    label: <Text strong style={{ color: '#0f172a' }}>{section.title}</Text>,
-                                    style: { borderBottom: '1px solid #e2e8f0' },
+                                    label: <Text strong className="section-label">{section.title}</Text>,
+                                    className: "section-collapse-item",
                                     children: (
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <div className="lesson-list">
                                             {section.lessons.map((lesson) => {
                                                 const allLessons = course.sections.flatMap(s => s.lessons);
                                                 const overallIndex = allLessons.findIndex(l => l.id === lesson.id);
@@ -440,31 +399,14 @@ export default function Course() {
                                                             if (canView) setActiveLesson(lesson);
                                                             else message.warning('Bài học này yêu cầu mua khóa học');
                                                         }}
-                                                        style={{
-                                                            padding: '12px 16px',
-                                                            cursor: isLockedByProgress ? 'not-allowed' : 'pointer',
-                                                            borderRadius: '8px',
-                                                            margin: '4px 0',
-                                                            transition: '0.2s',
-                                                            background: activeLesson?.id === lesson.id ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-                                                            display: 'flex',
-                                                            justifyContent: 'flex-start',
-                                                            alignItems: 'center',
-                                                            gap: '12px',
-                                                            opacity: isLockedByProgress ? 0.6 : 1
-                                                        }}
                                                     >
                                                         {renderLessonIcon(lesson, isLockedByProgress)}
-                                                        <div style={{ flex: 1 }}>
-                                                            <Text style={{
-                                                                color: activeLesson?.id === lesson.id ? '#6366f1' : (isLockedByProgress ? '#94a3b8' : '#0f172a'),
-                                                                fontSize: '13px',
-                                                                fontWeight: activeLesson?.id === lesson.id ? 600 : 400
-                                                            }}>
+                                                        <div className="flex-1">
+                                                            <Text className={`lesson-title-text ${activeLesson?.id === lesson.id ? 'active' : (isLockedByProgress ? 'locked' : 'default')}`}>
                                                                 {lesson.title}
                                                             </Text>
                                                             {lesson.duration > 0 && (
-                                                                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                                                <div className="lesson-duration-text">
                                                                     {Math.floor(lesson.duration / 60).toString().padStart(2, '0')}:{(lesson.duration % 60).toString().padStart(2, '0')}
                                                                 </div>
                                                             )}
@@ -481,23 +423,6 @@ export default function Course() {
                     </Col>
                 )}
             </Row>
-
-            <style>{`
-                .lesson-item:hover:not(.locked) {
-                    background: #f8fafc !important;
-                }
-                .lesson-item.active {
-                    background: rgba(99, 102, 241, 0.1) !important;
-                }
-                .ant-collapse-header {
-                    padding: 16px 24px !important;
-                    background: #f8fafc !important;
-                }
-                .ant-collapse-content-box {
-                    padding: 4px 12px 12px 12px !important;
-                    background: #ffffff !important;
-                }
-            `}</style>
         </div>
     );
 }

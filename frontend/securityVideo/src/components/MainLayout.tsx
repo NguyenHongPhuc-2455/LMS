@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import AppFooter from './AppFooter';
 import { Layout } from 'antd';
+import './MainLayout.scss';
 
 const { Content } = Layout;
 
@@ -20,17 +21,12 @@ const MainLayout: React.FC = () => {
     }
 
     return (
-        <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+        <Layout className="main-layout">
             <AppHeader />
-            <Layout style={{ display: 'flex', flexDirection: 'row', background: '#FFFFFF' }}>
+            <Layout className="main-layout-body">
                 <Sidebar />
-                <Content style={{
-                    minHeight: 'calc(100vh - 66px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    flex: 1
-                }}>
-                    <div className="animate-fade-in" style={{ width: '100%', padding: '24px 40px', flex: 1 }}>
+                <Content className="main-content">
+                    <div className="animate-fade-in page-wrapper">
                         <Outlet />
                     </div>
                 </Content>

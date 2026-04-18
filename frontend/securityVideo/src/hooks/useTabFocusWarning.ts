@@ -7,11 +7,12 @@ import { App } from 'antd';
  * @param msg Nội dung cảnh báo
  * @param onViolation Callback khi vi phạm (lần 2 trở đi)
  */
-export const useTabFocusWarning = (title: string, msg: string, onViolation?: (count: number) => void) => {
+export const useTabFocusWarning = (title: string, msg: string, enabled: boolean, onViolation?: (count: number) => void) => {
     const violationCount = useRef(0);
     const { notification } = App.useApp();
 
     useEffect(() => {
+        if (!enabled) return;
         let lastInFocus = true;
 
         const handleViolation = () => {
@@ -70,7 +71,7 @@ export const useTabFocusWarning = (title: string, msg: string, onViolation?: (co
             window.removeEventListener('blur', handleBlur);
             window.removeEventListener('focus', handleFocus);
         };
-    }, [title, msg, onViolation, notification]);
+    }, [title, msg, onViolation, notification, enabled]);
 
     return {
         getViolationCount: () => violationCount.current,
