@@ -15,6 +15,10 @@ import Profile from './pages/client/Profile';
 import MyCourses from './pages/client/MyCourses';
 import CourseRequests from './pages/admin/CourseRequests';
 import PaymentResult from './pages/client/PaymentResult';
+import ProgramManagement from './pages/admin/ProgramManagement';
+import ProgramList from './pages/client/ProgramList';
+import ProgramDetail from './pages/client/ProgramDetail';
+import MyPrograms from './pages/client/MyPrograms';
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
 
 function App() {
@@ -47,6 +51,9 @@ function App() {
               <Route path="/course/:id/learning" element={<CourseLearning />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/payment-result" element={<PaymentResult />} />
+              <Route path="/programs" element={<ProgramList />} />
+              <Route path="/programs/:id" element={<ProgramDetail />} />
+              <Route path="/my-programs" element={<MyPrograms />} />
             </Route>
 
             {/* Admin Routes with DashStack Layout */}
@@ -57,6 +64,7 @@ function App() {
               <Route path="lessons" element={<LessonManagement />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="requests" element={<CourseRequests />} />
+              <Route path="programs" element={<ProgramManagement />} />
               <Route path="profile" element={<Profile />} />
             </Route>
 

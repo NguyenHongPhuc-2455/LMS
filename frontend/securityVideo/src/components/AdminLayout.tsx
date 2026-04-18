@@ -16,7 +16,8 @@ import {
     LogoutOutlined,
     CheckOutlined,
     MenuFoldOutlined,
-    PlaySquareOutlined
+    PlaySquareOutlined,
+    ApartmentOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -136,6 +137,11 @@ const AdminLayout: React.FC = () => {
                             key: '/admin/requests',
                             icon: <CheckOutlined />,
                             label: 'Duyệt yêu cầu',
+                        },
+                        {
+                            key: '/admin/programs',
+                            icon: <ApartmentOutlined />,
+                            label: 'Chương trình học',
                         },
                         // {
                         //     key: '/admin/orders',
