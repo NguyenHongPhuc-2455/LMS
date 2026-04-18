@@ -8,6 +8,7 @@ import 'dayjs/locale/vi';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
+import './CommentSection.scss';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -105,6 +106,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                             el.style.background = '#fef9c3'; // Vàng nhạt highlight
                             setTimeout(() => {
                                 el.style.background = originalBg;
+                                // Xóa hash khỏi URL để không bị highlight lại nếu quay lại bài học này
+                                if (window.location.hash === hash) {
+                                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                                }
                             }, 2000);
                         }
                     }, 300);
@@ -164,24 +169,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
         const isExpanded = expandedComments.includes(item.id);
 
         return (
-            <div key={item.id} id={`comment-${item.id}`} style={{
-                marginBottom: level > 0 ? '8px' : '24px',
-                padding: '12px',
-                borderRadius: '12px',
-                background: level > 0 ? '#f8fafc' : '#fff',
-                border: level > 0 ? 'none' : '1px solid #f1f5f9'
-            }}>
-                <div style={{ display: 'flex', gap: '12px' }}>
+            <div key={item.id} id={`comment-${item.id}`} className={`comment-item ${level > 0 ? 'reply' : ''}`}>
+                <div className="comment-item-content">
                     <Avatar
                         src={item.user.avatar}
                         icon={<UserOutlined />}
                         size={level > 0 ? 'small' : 'default'}
                     />
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <div className="comment-body">
+                        <div className="comment-item-header">
                             <Space size={8}>
-                                <Text strong style={{ fontSize: '14px' }}>{item.user.full_name || item.user.username}</Text>
-                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                <Text strong className="comment-author-name">{item.user.full_name || item.user.username}</Text>
+                                <Text type="secondary" className="comment-time">
                                     {dayjs(item.created_at).fromNow()}
                                 </Text>
                             </Space>
@@ -197,9 +196,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                 </Popconfirm>
                             )}
                         </div>
-                        <Text style={{ fontSize: '14px', lineHeight: '1.6', color: '#334155' }}>{item.content}</Text>
+                        <Text className="comment-text">{item.content}</Text>
 
-                        <div style={{ marginTop: '8px' }}>
+                        <div className="comment-actions">
                             <Button
                                 type="text"
                                 size="small"
@@ -212,20 +211,20 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                         setReplyContent('');
                                     }
                                 }}
-                                style={{ padding: 0, color: '#6366f1', fontSize: '12px', fontWeight: 600 }}
+                                className="comment-reply-btn"
                             >
                                 Phản hồi
                             </Button>
                         </div>
 
                         {replyTo === item.id && (
-                            <div style={{ marginTop: '12px' }}>
+                            <div className="comment-reply-input-wrapper">
                                 <TextArea
                                     value={replyContent}
                                     onChange={(e) => setReplyContent(e.target.value)}
                                     placeholder={`Phản hồi tới ${item.user.full_name || item.user.username}...`}
                                     autoSize={{ minRows: 2, maxRows: 4 }}
-                                    style={{ borderRadius: '8px', marginBottom: '8px' }}
+                                    className="reply-textarea"
                                 />
                                 <Space>
                                     <Button
@@ -243,27 +242,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                         )}
 
                         {item.replies && item.replies.length > 0 && (
-                            <div style={{
-                                marginTop: '16px',
-                                borderLeft: level < 1 ? '2px solid #e2e8f0' : 'none',
-                                paddingLeft: level < 1 ? '16px' : '0'
-                            }}>
+                            <div className={`replies-container ${level < 1 ? 'level-0' : ''}`}>
                                 {!isExpanded ? (
                                     <Button
                                         type="text"
                                         onClick={() => toggleExpand(item.id)}
-                                        style={{
-                                            color: '#64748b',
-                                            fontSize: '13px',
-                                            fontWeight: 600,
-                                            padding: 0,
-                                            height: 'auto',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}
+                                        className="view-replies-btn"
                                     >
-                                        <div style={{ width: '20px', height: '1px', background: '#e2e8f0' }}></div>
+                                        <div className="btn-line"></div>
                                         Xem {item.replies.length} phản hồi...
                                     </Button>
                                 ) : (
@@ -272,14 +258,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                         <Button
                                             type="text"
                                             onClick={() => toggleExpand(item.id)}
-                                            style={{
-                                                color: '#64748b',
-                                                fontSize: '13px',
-                                                fontWeight: 600,
-                                                padding: 0,
-                                                marginTop: '8px',
-                                                height: 'auto'
-                                            }}
+                                            className="hide-replies-btn"
                                         >
                                             Ẩn phản hồi
                                         </Button>
@@ -294,26 +273,26 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
     };
 
     return (
-        <div style={{ marginTop: '40px' }}>
-            <Title level={4} style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="comment-section-container">
+            <Title level={4} className="comment-section-title">
                 <MessageOutlined /> Bình luận ({comments.length + comments.reduce((acc, curr) => acc + (curr.replies?.length || 0), 0)})
             </Title>
 
-            <div style={{ marginBottom: '32px', background: '#f8fafc', padding: '20px', borderRadius: '16px' }}>
+            <div className="comment-input-wrapper">
                 <TextArea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Bạn có thắc mắc gì về bài học này không?"
                     autoSize={{ minRows: 3, maxRows: 6 }}
-                    style={{ borderRadius: '12px', border: 'none', padding: '12px', marginBottom: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+                    className="comment-textarea"
                 />
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div className="comment-submit-btn-wrapper">
                     <Button
                         type="primary"
                         icon={<SendOutlined />}
                         onClick={() => handleSubmit()}
                         loading={submitting}
-                        style={{ height: '40px', borderRadius: '10px', background: '#6366f1' }}
+                        className="comment-submit-btn"
                     >
                         Gửi câu hỏi
                     </Button>

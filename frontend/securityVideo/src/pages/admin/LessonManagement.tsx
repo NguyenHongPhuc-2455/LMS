@@ -10,6 +10,7 @@ import {
     Table, Modal, Form, message, Divider, Popconfirm, Badge, Segmented, Radio, InputNumber, Row, Col
 } from 'antd';
 import { QuestionCircleOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import './LessonManagement.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -52,6 +53,7 @@ export default function LessonManagement() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
     const [lessonType, setLessonType] = useState<'VIDEO' | 'QUIZ'>('VIDEO');
+    const [videoSourceType, setVideoSourceType] = useState<'UPLOAD' | 'LINK'>('UPLOAD');
 
     const [form] = Form.useForm();
 
@@ -153,19 +155,24 @@ export default function LessonManagement() {
                     });
                     message.success('Đã cập nhật bài giảng!');
                 } else {
-                    if (!selectedFile) return message.error('Vui lòng chọn tệp video');
+                    if (videoSourceType === 'UPLOAD' && !selectedFile) return message.error('Vui lòng chọn tệp video');
                     const formData = new FormData();
                     formData.append('title', values.title);
                     formData.append('section_id', values.section_id);
                     formData.append('order', values.order || '0');
-                    formData.append('video', selectedFile);
+                    if (videoSourceType === 'UPLOAD') {
+                        formData.append('video', selectedFile!);
+                        message.loading({ content: 'Đang xử lý video HLS...', key: 'hls-up' });
+                    } else {
+                        formData.append('video_url', values.video_url);
+                        message.loading({ content: 'Đang lưu bài giảng...', key: 'hls-up' });
+                    }
 
-                    message.loading({ content: 'Đang xử lý video HLS...', key: 'hls-up' });
                     const res = await api.post('/videos/upload', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
+                        headers: { 'Content-Type': 'multipart/form-data' } // Multer in backend still processes it correctly because fields are appended
                     });
                     lessonId = res.data.data.lessonId;
-                    message.success({ content: 'Video đang được băm bảo mật...', key: 'hls-up' });
+                    message.success({ content: videoSourceType === 'UPLOAD' ? 'Video đang được băm bảo mật...' : 'Đã tải lên thành công!', key: 'hls-up' });
                 }
 
                 if (attachmentFile && lessonId) {
@@ -244,6 +251,7 @@ export default function LessonManagement() {
         setEditingId(null);
         setEditingQuizId(null);
         setLessonType('VIDEO');
+        setVideoSourceType('UPLOAD');
         form.resetFields();
         const nextOrder = lessons.length > 0 ? Math.max(...lessons.map(l => l.order || 0)) + 1 : 0;
         form.setFieldsValue({ section_id: selectedSectionId, order: nextOrder });
@@ -251,10 +259,10 @@ export default function LessonManagement() {
     };
 
     return (
-        <div style={{ padding: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div className="lesson-management-container">
+            <div className="lesson-management-header">
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>Quản lý Bài Giảng</Title>
+                    <Title level={4} className="header-title">Quản lý Bài Giảng</Title>
                     <Text type="secondary">Cập nhật nội dung video, trắc nghiệm và tài liệu học tập</Text>
                 </div>
                 <Button
@@ -267,13 +275,13 @@ export default function LessonManagement() {
                 </Button>
             </div>
 
-            <Card className="glass-card" style={{ marginBottom: 20 }}>
+            <Card className="glass-card filter-card">
                 <Space size={24}>
                     <Space>
                         <Text strong>Khóa học:</Text>
                         <Select
                             placeholder="Chọn khóa học..."
-                            style={{ width: 250 }}
+                            className="filter-select"
                             onChange={v => setSelectedCourseId(v)}
                             value={selectedCourseId}
                         >
@@ -284,7 +292,7 @@ export default function LessonManagement() {
                         <Text strong>Chương:</Text>
                         <Select
                             placeholder="Chọn chương..."
-                            style={{ width: 250 }}
+                            className="filter-select"
                             disabled={!selectedCourseId}
                             onChange={v => setSelectedSectionId(v)}
                             value={selectedSectionId}
@@ -297,9 +305,9 @@ export default function LessonManagement() {
 
             <Card className="glass-card">
                 {!selectedSectionId ? (
-                    <div style={{ padding: '40px', textAlign: 'center' }}>
-                        <PlayCircle size={40} style={{ color: '#cbd5e1', marginBottom: 16 }} />
-                        <Text type="secondary" style={{ display: 'block' }}>Vui lòng chọn Khóa học và Chương để quản lý bài giảng</Text>
+                    <div className="empty-lesson-wrapper">
+                        <PlayCircle size={40} className="empty-icon" />
+                        <Text type="secondary" className="empty-text">Vui lòng chọn Khóa học và Chương để quản lý bài giảng</Text>
                     </div>
                 ) : (
                     <Table
@@ -313,7 +321,7 @@ export default function LessonManagement() {
                                 dataIndex: 'title',
                                 render: (t, r) => (
                                     <Space>
-                                        {r.type === 'QUIZ' ? <QuestionCircleOutlined style={{ color: '#faad14' }} /> : <PlayCircle size={14} color="#6366f1" />}
+                                        {r.type === 'QUIZ' ? <QuestionCircleOutlined className="quiz-icon" /> : <PlayCircle size={14} color="#6366f1" />}
                                         {t}
                                     </Space>
                                 )
@@ -350,7 +358,7 @@ export default function LessonManagement() {
                 destroyOnClose
             >
                 {!editingId && (
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div className="segmented-wrapper">
                         <Segmented
                             options={[
                                 { label: 'Video bài học', value: 'VIDEO' },
@@ -379,7 +387,7 @@ export default function LessonManagement() {
                         </Col>
                         <Col span={6}>
                             <Form.Item name="order" label="Thứ tự hiển thị">
-                                <InputNumber min={0} style={{ width: '100%' }} />
+                                <InputNumber min={0} className="full-width" />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -390,17 +398,30 @@ export default function LessonManagement() {
                                 <Input.TextArea rows={4} />
                             </Form.Item>
 
-                            <div style={{ marginBottom: 16 }}>
-                                <Text strong style={{ display: 'block', marginBottom: 8 }}>Tài liệu đính kèm (PDF - Tùy chọn)</Text>
+                            <div className="attachment-wrapper">
+                                <Text strong className="attachment-title">Tài liệu đính kèm (PDF - Tùy chọn)</Text>
                                 <input type="file" accept="application/pdf" onChange={e => setAttachmentFile(e.target.files?.[0] || null)} />
-                                {attachmentFile && <Text type="success" style={{ fontSize: '12px' }}><br />✓ {attachmentFile.name}</Text>}
+                                {attachmentFile && <Text type="success" className="attachment-success"><br />✓ {attachmentFile.name}</Text>}
                             </div>
 
                             {!editingId && (
-                                <div style={{ marginBottom: 16 }}>
-                                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Tệp Video (MP4 - Bắt buộc)</Text>
-                                    <input type="file" accept="video/mp4" onChange={e => setSelectedFile(e.target.files?.[0] || null)} />
-                                    {selectedFile && <Text type="success" style={{ fontSize: '12px' }}><br />✓ {selectedFile.name}</Text>}
+                                <div className="video-source-wrapper">
+                                    <Radio.Group value={videoSourceType} onChange={e => setVideoSourceType(e.target.value)} className="video-source-radio">
+                                        <Radio value="UPLOAD">Upload Video MP4 (HLS)</Radio>
+                                        <Radio value="LINK">Dùng Link (Youtube/Server)</Radio>
+                                    </Radio.Group>
+
+                                    {videoSourceType === 'UPLOAD' ? (
+                                        <div>
+                                            <Text strong className="attachment-title">Tệp Video (MP4 - Bắt buộc)</Text>
+                                            <input type="file" accept="video/mp4" onChange={e => setSelectedFile(e.target.files?.[0] || null)} />
+                                            {selectedFile && <Text type="success" className="attachment-success"><br />✓ {selectedFile.name}</Text>}
+                                        </div>
+                                    ) : (
+                                        <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>
+                                            <Input placeholder="Ví dụ: https://www.youtube.com/watch?v=..." />
+                                        </Form.Item>
+                                    )}
                                 </div>
                             )}
                         </>
@@ -415,12 +436,12 @@ export default function LessonManagement() {
                             <Row gutter={16}>
                                 <Col span={12}>
                                     <Form.Item name="pass_score" label="Xác mức điểm Đạt (%)" initialValue={80}>
-                                        <InputNumber min={0} max={100} style={{ width: '100%' }} />
+                                        <InputNumber min={0} max={100} className="full-width" />
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
                                     <Form.Item name="time_limit" label="Thời gian (Giây) - Để trống = Không hạn" initialValue={null}>
-                                        <InputNumber min={0} style={{ width: '100%' }} />
+                                        <InputNumber min={0} className="full-width" />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -431,7 +452,7 @@ export default function LessonManagement() {
                                 {(fields, { add, remove }) => (
                                     <>
                                         {fields.map(({ key, name, ...restField }, index) => (
-                                            <Card size="small" key={key} style={{ marginBottom: 16, background: '#f8fafc' }} title={`Câu ${index + 1}`}>
+                                            <Card size="small" key={key} className="quiz-question-card" title={`Câu ${index + 1}`}>
                                                 <Form.Item
                                                     {...restField}
                                                     name={[name, 'content']}
@@ -444,9 +465,9 @@ export default function LessonManagement() {
                                                 <Text strong>Các lựa chọn (Đánh dấu vào đáp án đúng)</Text>
                                                 <Form.List name={[name, 'options']}>
                                                     {(optFields, { add: addOpt, remove: removeOpt }) => (
-                                                        <div style={{ marginTop: 8 }}>
+                                                        <div className="quiz-options-wrapper">
                                                             {optFields.map((optField, oIdx) => (
-                                                                <Row key={optField.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
+                                                                <Row key={optField.key} gutter={8} align="middle" className="quiz-option-row">
                                                                     <Col span={3}>
                                                                         <Form.Item {...optField} name={[optField.name, 'is_correct']} valuePropName="checked" noStyle>
                                                                             <Radio
@@ -471,7 +492,7 @@ export default function LessonManagement() {
                                                                         </Form.Item>
                                                                     </Col>
                                                                     <Col span={1}>
-                                                                        <DeleteOutlined style={{ color: 'red' }} onClick={() => removeOpt(optField.name)} />
+                                                                        <DeleteOutlined className="quiz-option-delete" onClick={() => removeOpt(optField.name)} />
                                                                     </Col>
                                                                 </Row>
                                                             ))}
@@ -484,23 +505,23 @@ export default function LessonManagement() {
                                                     )}
                                                 </Form.List>
 
-                                                <Divider style={{ margin: '12px 0' }} />
+                                                <Divider className="quiz-divider" />
 
                                                 <Form.Item
                                                     {...restField}
                                                     name={[name, 'explanation']}
                                                     label="Giải thích đáp án (tùy chọn)"
-                                                    style={{ marginBottom: 0 }}
+                                                    className="quiz-explanation-item"
                                                 >
                                                     <Input placeholder="Giải thích vì sao lại chọn đáp án này..." />
                                                 </Form.Item>
 
-                                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} style={{ position: 'absolute', top: 5, right: 5 }}>
+                                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} className="quiz-question-delete">
                                                     Xóa câu này
                                                 </Button>
                                             </Card>
                                         ))}
-                                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} style={{ marginBottom: 24 }}>
+                                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} className="add-question-btn">
                                             Thêm câu hỏi
                                         </Button>
                                     </>

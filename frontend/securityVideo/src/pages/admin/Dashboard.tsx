@@ -11,6 +11,7 @@ import {
     Table, Badge, Modal, Form, message, Divider, Popconfirm, Upload, Empty
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
+import './Dashboard.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -253,11 +254,11 @@ export default function Dashboard() {
     });
 
     return (
-        <div style={{ padding: '30px', background: 'var(--bg-color)', minHeight: '100vh' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
-                <div>
-                    <Title level={2} className="premium-title" style={{ margin: 0 }}>Quản lý khóa học</Title>
-                    <Text style={{ color: 'var(--text-muted)' }}>Điều hành nội dung và bảo mật video</Text>
+        <div className="dashboard-container">
+            <div className="dashboard-header">
+                <div className="header-title-wrapper">
+                    <Title level={2} className="premium-title header-title">Quản lý khóa học</Title>
+                    <Text className="header-subtitle">Điều hành nội dung và bảo mật video</Text>
                 </div>
             </div>
 
@@ -265,15 +266,14 @@ export default function Dashboard() {
                 <Col span={7}>
                     <Card
                         title={<Space><FolderOpen size={16} /> Danh sách Khóa Học</Space>}
-                        className="glass-card"
+                        className="glass-card course-list-card"
                         loading={loading}
-                        styles={{ body: { padding: '10px' } }}
-                        extra={<Button type="text" onClick={() => { setEditingCourseId(null); courseForm.resetFields(); setIsCourseModalOpen(true); }} icon={<Plus size={14} />} style={{ color: '#a855f7' }} />}
+                        extra={<Button type="text" onClick={() => { setEditingCourseId(null); courseForm.resetFields(); setIsCourseModalOpen(true); }} icon={<Plus size={14} />} className="purple-text" />}
                     >
-                        <Space direction="vertical" style={{ width: '100%', marginBottom: '12px' }} size={4}>
+                        <Space direction="vertical" className="course-filters" size={4}>
                             <Input
                                 placeholder="Tìm khóa học..."
-                                prefix={<SearchOutlined style={{ color: '#94a3b8', fontSize: '11px' }} />}
+                                prefix={<SearchOutlined />}
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
                                 className="admin-search-input"
@@ -284,7 +284,7 @@ export default function Dashboard() {
                                 size="small"
                                 variant="borderless"
                                 className="admin-filter-select"
-                                dropdownStyle={{ borderRadius: '8px' }}
+                                popupClassName="dropdown-radius"
                             >
                                 <Option value="All">Tất cả trình độ</Option>
                                 <Option value="Cơ bản">Cơ bản</Option>
@@ -293,27 +293,19 @@ export default function Dashboard() {
                             </Select>
                         </Space>
 
-                        <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+                        <div className="course-list-scroll">
                             {filteredCourses.length === 0 ? (
                                 <Empty description="Không tìm thấy kết quả" />
                             ) : filteredCourses.map(c => (
                                 <div
                                     key={c.id}
                                     onClick={() => setSelectedCourseId(c.id)}
-                                    style={{
-                                        padding: '12px 16px',
-                                        cursor: 'pointer',
-                                        borderRadius: '10px',
-                                        marginBottom: '8px',
-                                        background: selectedCourseId === c.id ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
-                                        border: selectedCourseId === c.id ? '1px solid #a855f7' : '1px solid transparent',
-                                        transition: '0.3s'
-                                    }}
+                                    className={`course-item ${selectedCourseId === c.id ? 'selected' : ''}`}
                                 >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Text strong style={{ color: selectedCourseId === c.id ? '#a855f7' : 'var(--text-main)' }}>{c.title}</Text>
+                                    <div className="course-item-header">
+                                        <Text strong className="course-title-text">{c.title}</Text>
                                         <Space size={4}>
-                                            <Button type="text" icon={<Edit size={12} />} size="small" onClick={(e) => { e.stopPropagation(); startEditingCourse(c); }} style={{ color: '#6366f1' }} />
+                                            <Button type="text" icon={<Edit size={12} />} size="small" onClick={(e) => { e.stopPropagation(); startEditingCourse(c); }} className="indigo-text" />
                                             {selectedCourseId === c.id && (
                                                 <Popconfirm title="Xóa toàn bộ khóa học?" onConfirm={() => handleDeleteCourse(c.id)}>
                                                     <Button type="text" danger icon={<Trash2 size={12} />} size="small" onClick={e => e.stopPropagation()} />
@@ -321,11 +313,11 @@ export default function Dashboard() {
                                             )}
                                         </Space>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.sections.length} chương nội dung</div>
+                                    <div className="course-item-footer">
+                                        <div className="course-stats">{c.sections.length} chương nội dung</div>
                                         <Badge
                                             count={c.is_private ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
-                                            style={{ backgroundColor: c.is_private ? '#7064f9' : '#28a745', fontSize: '10px' }}
+                                            className={c.is_private ? 'badge-private' : 'badge-public'}
                                         />
                                     </div>
                                 </div>
@@ -337,12 +329,12 @@ export default function Dashboard() {
                 <Col span={17}>
                     {selectedCourse ? (
                         <Card
-                            title={<Title level={4} style={{ color: 'var(--text-main)', margin: 0 }}>{selectedCourse.title}</Title>}
+                            title={<Title level={4} className="course-main-title">{selectedCourse.title}</Title>}
                             className="glass-card"
                             extra={
                                 <Space>
                                     <Button icon={<Plus size={14} />} onClick={() => setIsSectionModalOpen(true)}>Thêm Chương</Button>
-                                    <Button type="primary" icon={<UploadCloud size={14} />} onClick={() => setIsLessonModalOpen(true)} className="btn-primary" style={{ width: 'auto' }}>Đăng Bài Giảng</Button>
+                                    <Button type="primary" icon={<UploadCloud size={14} />} onClick={() => setIsLessonModalOpen(true)} className="btn-primary-fixed">Đăng Bài Giảng</Button>
                                 </Space>
                             }
                         >
@@ -352,7 +344,7 @@ export default function Dashboard() {
                                 pagination={false}
                                 columns={[
                                     { title: 'Thứ tự', dataIndex: 'order', width: 80, sorter: (a: any, b: any) => a.order - b.order },
-                                    { title: 'Chương Học', dataIndex: 'title', render: (t) => <Text style={{ color: 'var(--text-main)' }}>{t}</Text> },
+                                    { title: 'Chương Học', dataIndex: 'title', render: (t) => <Text className="section-title-text">{t}</Text> },
                                     {
                                         title: 'Số bài giảng',
                                         key: 'stats',
@@ -361,7 +353,7 @@ export default function Dashboard() {
                                     {
                                         render: (record) => (
                                             <Space>
-                                                <Button type="text" icon={<Edit size={14} />} onClick={() => startEditingSection(record)} style={{ color: '#6366f1' }} />
+                                                <Button type="text" icon={<Edit size={14} />} onClick={() => startEditingSection(record)} className="indigo-text" />
                                                 <Popconfirm title="Xóa chương này?" onConfirm={() => handleDeleteSection(record.id)}>
                                                     <Button type="text" danger icon={<Trash2 size={14} />} />
                                                 </Popconfirm>
@@ -377,31 +369,31 @@ export default function Dashboard() {
                                             pagination={false}
                                             columns={[
                                                 {
-                                                    title: <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 600 }}>Tên bài giảng</span>,
+                                                    title: <span className="lesson-title-col">Tên bài giảng</span>,
                                                     dataIndex: 'title',
-                                                    render: (t) => <Space align="center" size={10}><PlayCircle size={14} color="#a855f7" /> <Text style={{ fontSize: '13px', color: '#334155', fontWeight: 500 }}>{t}</Text></Space>
+                                                    render: (t) => <Space align="center" size={10} className="lesson-item-wrapper"><PlayCircle size={14} color="#a855f7" /> <Text className="lesson-name-text">{t}</Text></Space>
                                                 },
                                                 {
-                                                    title: <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 600 }}>ID</span>,
+                                                    title: <span className="lesson-title-col">ID</span>,
                                                     dataIndex: 'id',
                                                     width: 80,
-                                                    render: (id) => <Text style={{ fontSize: '12px', color: '#94a3b8' }}>{id}</Text>
+                                                    render: (id) => <Text className="lesson-id-text">{id}</Text>
                                                 },
                                                 {
-                                                    title: <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 600 }}>Hành động</span>,
+                                                    title: <span className="lesson-title-col">Hành động</span>,
                                                     width: 100,
                                                     align: 'center',
                                                     render: (lesson) => (
                                                         <Space>
-                                                            <Button type="text" icon={<Edit size={14} />} onClick={() => startEditingLesson(lesson, record.id)} style={{ color: '#6366f1' }} />
+                                                            <Button type="text" icon={<Edit size={14} />} onClick={() => startEditingLesson(lesson, record.id)} className="indigo-text" />
                                                             <Popconfirm title="Xóa bài giảng này?" onConfirm={() => handleDeleteLesson(lesson.id)}>
-                                                                <Button type="text" danger icon={<Trash2 size={14} />} style={{ display: 'flex', alignItems: 'center' }} />
+                                                                <Button type="text" danger icon={<Trash2 size={14} />} className="flex-center" />
                                                             </Popconfirm>
                                                         </Space>
                                                     )
                                                 }
                                             ]}
-                                            style={{ margin: '4px 0 12px 40px', background: '#fcfaff', borderRadius: '12px', border: '1px solid #f0f0f0', overflow: 'hidden' }}
+                                            className="lesson-table-expanded"
                                         />
                                     ),
                                     rowExpandable: (record) => record.lessons.length > 0,
@@ -409,9 +401,9 @@ export default function Dashboard() {
                             />
                         </Card>
                     ) : (
-                        <div style={{ padding: '100px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                            <BookOpen size={48} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: 16 }} />
-                            <Title level={4} style={{ color: 'rgba(255,255,255,0.3)' }}>Chọn khóa học để điều hành nội dung</Title>
+                        <div className="empty-dashboard-placeholder">
+                            <BookOpen size={48} className="placeholder-icon" />
+                            <Title level={4} className="placeholder-text">Chọn khóa học để điều hành nội dung</Title>
                         </div>
                     )}
                 </Col>
@@ -440,7 +432,7 @@ export default function Dashboard() {
                         </Select>
                     </Form.Item>
                     <Form.Item name="thumbnail" label="Hình ảnh khóa học (Thumbnail)">
-                        <Space direction="vertical" style={{ width: '100%' }}>
+                        <Space direction="vertical" className="full-width">
                             <Input
                                 placeholder="Dán URL ảnh hoặc chọn file từ máy tính"
                                 value={thumbUrl}
@@ -456,27 +448,23 @@ export default function Dashboard() {
                                         }}
                                         showUploadList={false}
                                     >
-                                        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary-color)' }} title="Tải ảnh lên">
+                                        <div className="upload-trigger-icon" title="Tải ảnh lên">
                                             <UploadCloud size={18} />
                                         </div>
                                     </Upload>
                                 }
-                                style={{
-                                    borderRadius: '10px',
-                                    padding: '4px 16px',
-                                    height: '40px'
-                                }}
+                                className="thumbnail-input"
                             />
                             {thumbUrl && (
-                                <div style={{ position: 'relative', marginTop: '10px' }}>
-                                    <img src={thumbUrl} style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '12px', border: '1px solid #eee' }} alt="Preview" />
+                                <div className="thumbnail-preview-container">
+                                    <img src={thumbUrl} className="thumbnail-img" alt="Preview" />
                                     <Button
                                         type="primary"
                                         danger
                                         size="small"
                                         shape="circle"
                                         icon={<Trash2 size={12} />}
-                                        style={{ position: 'absolute', top: 8, right: 8 }}
+                                        className="delete-thumb-btn"
                                         onClick={() => { setThumbUrl(''); setThumbFile(null); courseForm.setFieldsValue({ thumbnail: '' }); }}
                                     />
                                 </div>
@@ -518,41 +506,27 @@ export default function Dashboard() {
                     <Form.Item name="content" label="Nội dung bài học (Dưới dạng văn bản)">
                         <Input.TextArea rows={4} placeholder="Nhập nội dung giảng dạy, hướng dẫn..." />
                     </Form.Item>
-                    <div style={{ marginBottom: 20 }}>
-                        <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Tài liệu đính kèm (PDF - Tùy chọn)</label>
+                    <div className="file-input-section">
+                        <label className="file-input-label">Tài liệu đính kèm (PDF - Tùy chọn)</label>
                         <input
                             type="file"
                             accept="application/pdf"
                             onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                background: 'rgba(0,0,0,0.2)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '8px',
-                                color: 'var(--text-main)'
-                            }}
+                            className="file-input-custom"
                         />
-                        {attachmentFile && <Text style={{ fontSize: '12px', color: '#10b981' }}>✓ {attachmentFile.name}</Text>}
+                        {attachmentFile && <Text className="success-text">✓ {attachmentFile.name}</Text>}
                     </div>
 
                     {!editingLessonId && (
-                        <div style={{ marginBottom: 20 }}>
-                            <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Tệp Video (MP4 - Bắt buộc khi tạo mới)</label>
+                        <div className="file-input-section">
+                            <label className="file-input-label">Tệp Video (MP4 - Bắt buộc khi tạo mới)</label>
                             <input
                                 type="file"
                                 accept="video/mp4"
                                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    background: 'rgba(0,0,0,0.2)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '8px',
-                                    color: 'var(--text-main)'
-                                }}
+                                className="file-input-custom"
                             />
-                            {selectedFile && <Text style={{ fontSize: '12px', color: '#10b981' }}>✓ {selectedFile.name}</Text>}
+                            {selectedFile && <Text className="success-text">✓ {selectedFile.name}</Text>}
                         </div>
                     )}
                     <Divider />
@@ -561,44 +535,6 @@ export default function Dashboard() {
                     </Button>
                 </Form>
             </Modal>
-
-            <style>{`
-                .ant-modal-content { background: #ffffff !important; border-radius: 12px; }
-                .ant-modal-title { color: #1e293b !important; }
-                .ant-form-item-label > label { color: #475569 !important; }
-                .ant-input, .ant-select-selector { background: #ffffff !important; border-color: #e2e8f0 !important; color: #1e293b !important; }
-                .ant-table { background: #ffffff !important; color: #1e293b !important; }
-                .ant-table-thead > tr > th { background: #f8fafc !important; color: #64748b !important; border-bottom: 1px solid #e2e8f0 !important; }
-                .ant-table-tbody > tr > td { border-bottom: 1px solid #f1f5f9 !important; }
-                .ant-table-cell-row-hover { background: #f0f7ff !important; }
-                .ant-table-expanded-row { background: #fcfcfc !important; }
-
-                /* Custom Admin Inputs */
-                .admin-search-input.ant-input-affix-wrapper {
-                    height: 24px !important;
-                    padding: 0 8px !important;
-                    border-radius: 4px !important;
-                    border: 1px solid #e2e8f0 !important;
-                    box-shadow: none !important;
-                }
-                .admin-search-input .ant-input {
-                    font-size: 11px !important;
-                    height: 22px !important;
-                }
-                .admin-filter-select .ant-select-selector {
-                    height: 24px !important;
-                    padding: 0 8px !important;
-                    border-radius: 4px !important;
-                    border: 1px solid #e2e8f0 !important;
-                    display: flex;
-                    align-items: center;
-                }
-                .admin-filter-select .ant-select-selection-item {
-                    font-size: 11px !important;
-                    line-height: 22px !important;
-                    color: #475569 !important;
-                }
-            `}</style>
         </div>
     );
 }

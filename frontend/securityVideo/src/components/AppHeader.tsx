@@ -7,6 +7,7 @@ import { notification as antdNotification } from 'antd';
 import { socketService } from '../services/socket';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import './AppHeader.scss';
 
 dayjs.extend(relativeTime);
 
@@ -43,12 +44,12 @@ const AppHeader: React.FC = () => {
                             antdNotification.destroy();
                         }
                     },
-                    style: { cursor: newNotif.link ? 'pointer' : 'default' },
+                    className: newNotif.link ? 'cursor-pointer' : '',
                     icon: newNotif.type === 'COURSE_APPROVAL' ?
-                        <CheckCircleOutlined style={{ color: '#52c41a' }} /> :
+                        <CheckCircleOutlined className="icon-success" /> :
                         newNotif.type === 'COMMENT_REPLY' ?
-                            <MessageOutlined style={{ color: '#6366f1' }} /> :
-                            <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                            <MessageOutlined className="icon-primary" /> :
+                            <CloseCircleOutlined className="icon-error" />,
                 });
             };
             socket.on('newNotification', handleNewNotif);
@@ -89,17 +90,17 @@ const AppHeader: React.FC = () => {
     }, [searchTerm, navigate]);
 
     const notificationContent = (
-        <div style={{ width: '310px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 4px' }}>
-                <Text strong style={{ fontSize: '14px' }}>Thông báo</Text>
+        <div className="notification-container">
+            <div className="notification-header">
+                <Text strong className="notif-title">Thông báo</Text>
                 <Space size={8}>
                     {unreadCount > 0 && (
-                        <Button type="link" size="small" onClick={markAllAsRead} style={{ padding: 0, fontSize: '11px' }}>
+                        <Button type="link" size="small" onClick={markAllAsRead} className="action-btn">
                             Đọc hết
                         </Button>
                     )}
                     {notifications.length > 0 && (
-                        <Button type="link" danger size="small" onClick={deleteAllNotifications} style={{ padding: 0, fontSize: '11px' }}>
+                        <Button type="link" danger size="small" onClick={deleteAllNotifications} className="action-btn">
                             Xóa hết
                         </Button>
                     )}
@@ -112,15 +113,7 @@ const AppHeader: React.FC = () => {
                 locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có thông báo nào" /> }}
                 renderItem={(item) => (
                     <List.Item
-                        style={{
-                            padding: '8px 10px',
-                            cursor: 'pointer',
-                            background: item.is_read ? 'transparent' : '#f0f7ff',
-                            borderRadius: '8px',
-                            marginBottom: '4px',
-                            transition: 'all 0.2s',
-                            border: 'none'
-                        }}
+                        className={`notification-item ${item.is_read ? 'read' : 'unread'}`}
                         onClick={() => {
                             if (!item.is_read) markAsRead(item.id);
                             if (item.link) {
@@ -131,91 +124,54 @@ const AppHeader: React.FC = () => {
                             <Button
                                 type="text"
                                 size="small"
-                                icon={<DeleteOutlined style={{ color: '#ff4d4f', fontSize: '12px' }} />}
+                                icon={<DeleteOutlined />}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     deleteNotification(item.id);
                                 }}
-                                style={{ width: '24px', height: '24px', padding: 0 }}
+                                className="delete-notif-btn"
                             />
                         ]}
                     >
                         <List.Item.Meta
-                            avatar={
-                                <div style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: item.type === 'COURSE_APPROVAL' ? '#f6ffed' : '#fff1f0',
-                                    color: item.type === 'COURSE_APPROVAL' ? '#52c41a' : '#ff4d4f',
-                                    fontSize: '14px'
-                                }}>
-                                    {item.type === 'COURSE_APPROVAL' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                                </div>
-                            }
                             title={
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                                    <Text strong={!item.is_read} style={{ fontSize: '12px', lineHeight: '1.4', flex: 1 }}>{item.title}</Text>
-                                    <Text type="secondary" style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>{dayjs(item.created_at).fromNow()}</Text>
+                                <div className="notif-item-title-wrapper">
+                                    <Text strong={!item.is_read} className="notif-item-title">{item.title}</Text>
+                                    <Text type="secondary" className="notif-time">{dayjs(item.created_at).fromNow()}</Text>
                                 </div>
                             }
                             description={
-                                <Text type={item.is_read ? 'secondary' : undefined} style={{ fontSize: '11px', lineHeight: '1.4', display: 'block', marginTop: '2px' }}>
+                                <Text type={item.is_read ? 'secondary' : undefined} className="notif-item-desc">
                                     {item.message}
                                 </Text>
                             }
                         />
                     </List.Item>
                 )}
-                style={{ maxHeight: '400px', overflowY: 'auto' }}
+                className="notification-list"
             />
         </div>
     );
 
     return (
-        <Header style={{
-            background: '#FFF',
-            padding: '0 28px',
-            height: '66px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #f0f0f0',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1001,
-            width: '100%',
-        }}>
+        <Header className="app-header-container">
             {/* Left: Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }} onClick={() => {
+            <div className="app-header-logo" onClick={() => {
                 setSearchTerm('');
                 navigate('/course');
             }}>
-                <img src="/logo/logo.png" alt="Logo" style={{ height: '50px', objectFit: 'contain' }} />
+                <img src="/logo/logo.png" alt="Logo" className="logo-img" />
             </div>
 
             {/* Middle: Search */}
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 40px' }}>
-                <div style={{ position: 'relative', width: '100%', maxWidth: '420px' }}>
+            <div className="header-search-middle">
+                <div className="search-input-wrapper">
                     <Input
                         placeholder="Tìm kiếm khóa học, bài viết, video, ..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        prefix={<SearchOutlined style={{ color: '#757575', fontSize: '18px', marginRight: '8px' }} />}
-                        style={{
-                            borderRadius: '20px',
-                            background: '#FFF',
-                            border: '2px solid #e8e8e8',
-                            padding: '6px 18px',
-                            height: '40px',
-                            fontSize: '14px',
-                            transition: 'all 0.2s ease',
-                            boxShadow: 'none'
-                        }}
-                        className="f8-search-input"
+                        prefix={<SearchOutlined />}
+                        className="app-search-input"
                     />
                 </div>
             </div>
@@ -229,9 +185,9 @@ const AppHeader: React.FC = () => {
                     overlayClassName="notification-popover"
                     getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                 >
-                    <div title="Thông báo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <div title="Thông báo" className="header-notif-trigger">
                         <Badge dot={unreadCount > 0} offset={[2, 0]}>
-                            <BellOutlined style={{ fontSize: '22px', color: '#495057' }} />
+                            <BellOutlined />
                         </Badge>
                     </div>
                 </Popover>
@@ -240,32 +196,11 @@ const AppHeader: React.FC = () => {
                     <Avatar
                         src={user?.avatar}
                         icon={<UserOutlined />}
-                        style={{ cursor: 'pointer', border: '1px solid #f8f9fa' }}
+                        className="header-user-avatar"
                         size={38}
                     />
                 </Dropdown>
             </Space>
-
-            <style>{`
-                .f8-search-input:hover {
-                    border-color: #bdbdbd !important;
-                }
-                .f8-search-input:focus, .f8-search-input-focused {
-                    border-color: #444 !important;
-                    box-shadow: none !important;
-                }
-                .f8-search-input input::placeholder {
-                    color: #757575;
-                    font-weight: 400;
-                }
-                .notification-popover .ant-popover-inner {
-                    padding: 12px 16px;
-                    border-radius: 12px;
-                }
-                .notification-popover .ant-list-item:hover {
-                    background: #f5f5f5 !important;
-                }
-            `}</style>
         </Header>
     );
 };

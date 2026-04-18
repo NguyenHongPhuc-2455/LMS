@@ -2,18 +2,21 @@ import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import shaka from 'shaka-player';
 import api from '../api';
 import { message } from 'antd';
+import './VideoPlayer.scss';
 
 interface VideoPlayerProps {
     src: string;
     lessonId?: number;
     onEnded?: () => void;
+    onPlay?: () => void;
+    onPause?: () => void;
 }
 
 export interface VideoPlayerRef {
     reset: () => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, onEnded }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, onEnded, onPlay, onPause }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
@@ -43,7 +46,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         playerRef.current = player;
         player.attach(video);
 
-        player.getNetworkingEngine().registerRequestFilter((type, request) => {
+        player.getNetworkingEngine()?.registerRequestFilter((type, request) => {
             const token = localStorage.getItem('token');
             if (token) {
                 request.headers['Authorization'] = `Bearer ${token}`;
@@ -70,9 +73,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
             if (playerRef.current && src) {
                 try {
                     await playerRef.current.load(src);
-                    if (isStillMounted && videoRef.current) {
-                        videoRef.current.play().catch(e => console.warn('Autoplay blocked:', e));
-                    }
+                    // if (isStillMounted && videoRef.current) {
+                    //     videoRef.current.play().catch(e => console.warn('Autoplay blocked:', e));
+                    // }
                 } catch (e: any) {
                     if (isStillMounted && e.code !== shaka.util.Error.Code.LOAD_INTERRUPTED) {
                         console.error('❌ Shaka Player Error:', e);
@@ -123,14 +126,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     };
 
     return (
-        <div style={{ width: '100%', maxHeight: '70vh', position: 'relative', background: '#000', borderRadius: '12px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="video-player-container">
             <video
                 ref={videoRef}
                 controls
                 crossOrigin="anonymous"
                 controlsList="nodownload"
-                style={{ width: '100%', maxHeight: '70vh', height: 'auto', display: 'block', objectFit: 'contain' }}
+                className="video-element"
                 onTimeUpdate={handleTimeUpdate}
+                onPlay={onPlay}
+                onPause={onPause}
                 onEnded={() => {
                     if (!hasTriggeredEndRef.current) {
                         hasTriggeredEndRef.current = true;

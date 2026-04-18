@@ -13,69 +13,26 @@ const Sidebar: React.FC = () => {
     ];
 
     return (
-        <div style={{
-            width: '96px',
-            height: 'calc(100vh - 66px)',
-            background: '#FFF',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            paddingTop: '12px',
-            gap: '8px',
-            position: 'sticky',
-            top: '66px',
-            zIndex: 10,
-            borderRight: '1px solid #e8e8e8',
-            flexShrink: 0
-        }}>
+        <div className="sidebar-container">
             {menuItems.map(item => {
                 const isActive = location.pathname === item.key;
                 return (
                     <div
                         key={item.key}
                         onClick={() => navigate(item.key)}
-                        style={{
-                            width: '72px',
-                            height: '72px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                            borderRadius: '16px',
-                            background: isActive ? '#e8edf3' : 'transparent',
-                            transition: 'all 0.3s ease',
-                            color: isActive ? '#1a1a1a' : '#505d6b',
-                        }}
-                        className="sidebar-item"
+                        className={`sidebar-item ${isActive ? 'active' : ''}`}
                     >
-                        <div style={{ fontSize: '20px', marginBottom: '4px' }}>{item.icon}</div>
-                        <span style={{ fontSize: '11px', fontWeight: 600 }}>{item.label}</span>
+                        <div className="sidebar-icon">{item.icon}</div>
+                        <span className="sidebar-label">{item.label}</span>
                     </div>
                 );
             })}
 
-            <div style={{ marginTop: 'auto', marginBottom: '20px' }}>
-                <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '50%',
-                    background: '#e8edf3',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    color: '#505d6b'
-                }}>
-                    <PlusCircleOutlined style={{ fontSize: '24px' }} />
+            <div className="sidebar-footer">
+                <div className="sidebar-plus-btn">
+                    <PlusCircleOutlined className="sidebar-plus-icon" />
                 </div>
             </div>
-
-            <style>{`
-                .sidebar-item:hover {
-                    background: #f5f5f5;
-                }
-            `}</style>
         </div>
     );
 };

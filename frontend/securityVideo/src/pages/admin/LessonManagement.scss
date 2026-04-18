@@ -1,0 +1,107 @@
+.lesson-management-container {
+    padding: 10px;
+}
+
+.lesson-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-title {
+    margin: 0 !important;
+}
+
+.filter-card {
+    margin-bottom: 20px !important;
+}
+
+.filter-select {
+    width: 250px;
+}
+
+.empty-lesson-wrapper {
+    padding: 40px;
+    text-align: center;
+}
+
+.empty-icon {
+    color: #cbd5e1;
+    margin-bottom: 16px;
+}
+
+.empty-text {
+    display: block !important;
+}
+
+.segmented-wrapper {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.attachment-wrapper {
+    margin-bottom: 16px;
+}
+
+.attachment-title {
+    display: block !important;
+    margin-bottom: 8px !important;
+}
+
+.attachment-success {
+    font-size: 12px !important;
+}
+
+.video-source-wrapper {
+    margin-bottom: 16px;
+}
+
+.video-source-radio {
+    margin-bottom: 16px;
+}
+
+.quiz-question-card {
+    margin-bottom: 16px !important;
+    background: #f8fafc !important;
+    position: relative;
+}
+
+.quiz-options-wrapper {
+    margin-top: 8px;
+}
+
+.quiz-option-row {
+    margin-bottom: 8px;
+}
+
+.quiz-option-delete {
+    color: red;
+    cursor: pointer;
+}
+
+.quiz-divider {
+    margin: 12px 0 !important;
+}
+
+.quiz-explanation-item {
+    margin-bottom: 0 !important;
+}
+
+.quiz-question-delete {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.add-question-btn {
+    margin-bottom: 24px !important;
+}
+
+.quiz-icon {
+    color: #faad14 !important;
+}
+
+.full-width {
+    width: 100% !important;
+}

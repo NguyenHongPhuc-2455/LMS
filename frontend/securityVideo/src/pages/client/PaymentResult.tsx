@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Result, Button, Spin, Typography, Card } from 'antd';
 import api from '../../api';
+import './PaymentResult.scss';
 
 const { Text } = Typography;
 
@@ -36,7 +37,7 @@ export default function PaymentResult() {
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: 20 }}>
+            <div className="payment-result-loading">
                 <Spin size="large" />
                 <Text>Đang xác thực giao dịch với VNPay...</Text>
             </div>
@@ -44,18 +45,18 @@ export default function PaymentResult() {
     }
 
     return (
-        <div style={{ padding: '60px 20px', display: 'flex', justifyContent: 'center', background: '#f8fafc', minHeight: '100vh' }}>
-            <Card style={{ maxWidth: 600, width: '100%', borderRadius: 20, boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: 'none' }}>
+        <div className="payment-result-container">
+            <Card className="payment-result-card">
                 {status === 'success' ? (
                     <Result
                         status="success"
                         title="Thanh toán thành công!"
                         subTitle="Chào mừng bạn đến với khóa học. Bây giờ bạn đã có quyền truy cập toàn bộ nội dung."
                         extra={[
-                            <Button type="primary" key="learn" size="large" onClick={() => navigate('/my-courses')} style={{ borderRadius: 10, height: 45, padding: '0 30px' }}>
+                            <Button type="primary" key="learn" size="large" onClick={() => navigate('/my-courses')} className="payment-btn-primary">
                                 Vào học ngay
                             </Button>,
-                            <Button key="home" size="large" onClick={() => navigate('/')} style={{ borderRadius: 10, height: 45 }}>
+                            <Button key="home" size="large" onClick={() => navigate('/')} className="payment-btn-secondary">
                                 Quay về trang chủ
                             </Button>
                         ]}
@@ -66,7 +67,7 @@ export default function PaymentResult() {
                         title="Thanh toán không thành công"
                         subTitle={message || "Giao dịch đã bị hủy hoặc có lỗi xảy ra trong quá trình xử lý."}
                         extra={[
-                            <Button type="primary" key="retry" size="large" onClick={() => navigate('/')} style={{ borderRadius: 10, height: 45 }}>
+                            <Button type="primary" key="retry" size="large" onClick={() => navigate('/')} className="payment-btn-secondary">
                                 Thử lại
                             </Button>
                         ]}

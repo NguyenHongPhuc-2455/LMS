@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 import { UserOutlined, LockOutlined, LoginOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { App, Form, Input, Button, Typography, Space, Card } from 'antd';
+import './Auth.scss';
 
 const { Title, Text } = Typography;
 
@@ -35,23 +36,12 @@ export default function Login() {
     return (
         <div className="auth-container">
             <Card className="auth-card" variant="borderless">
-                <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                    <div style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '20px',
-                        background: 'var(--primary-gradient)',
-                        display: 'inline-flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: 20,
-                        boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)',
-                        animation: 'float 3s ease-in-out infinite'
-                    }}>
-                        <LoginOutlined style={{ fontSize: 32, color: 'white' }} />
+                <div className="auth-header">
+                    <div className="auth-icon-wrapper">
+                        <LoginOutlined className="auth-header-icon" />
                     </div>
-                    <Title level={2} className="premium-title" style={{ margin: 0, fontSize: 32 }}>Chào mừng</Title>
-                    <Text type="secondary" style={{ fontSize: 16 }}>Đăng nhập để tiếp tục hành trình học tập</Text>
+                    <Title level={2} className="premium-title auth-header-title">Chào mừng</Title>
+                    <Text type="secondary" className="auth-header-desc">Đăng nhập để tiếp tục hành trình học tập</Text>
                 </div>
 
                 <Form
@@ -66,7 +56,7 @@ export default function Login() {
                         rules={[{ required: true, message: 'Vui lòng nhập tài khoản!' }]}
                     >
                         <Input
-                            prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
+                            prefix={<UserOutlined className="auth-input-prefix" />}
                             placeholder="Nhập tài khoản của bạn"
                         />
                     </Form.Item>
@@ -77,12 +67,12 @@ export default function Login() {
                         rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
                     >
                         <Input.Password
-                            prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                            prefix={<LockOutlined className="auth-input-prefix" />}
                             placeholder="Nhập mật khẩu"
                         />
                     </Form.Item>
 
-                    <Form.Item style={{ marginTop: 12 }}>
+                    <Form.Item className="auth-form-item-btn">
                         <Button
                             type="primary"
                             htmlType="submit"
@@ -94,10 +84,10 @@ export default function Login() {
                         </Button>
                     </Form.Item>
 
-                    <div style={{ textAlign: 'center', marginTop: 24 }}>
+                    <div className="auth-footer">
                         <Space direction="vertical" size={4}>
                             <Text type="secondary">Chưa có tài khoản?</Text>
-                            <Link to="/register" style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
+                            <Link to="/register" className="auth-footer-link">
                                 Kích hoạt ghi danh học viên mới
                             </Link>
                         </Space>

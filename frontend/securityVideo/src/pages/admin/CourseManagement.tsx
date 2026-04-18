@@ -11,6 +11,7 @@ import {
 } from 'antd';
 import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import './CourseManagement.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -125,13 +126,13 @@ export default function CourseManagement() {
             render: (c: Course) => (
                 <Space
                     size={12}
-                    style={{ cursor: 'pointer' }}
+                    className="course-info-space"
                     onClick={() => navigate(`/admin/sections?courseId=${c.id}`)}
                 >
-                    <img src={c.thumbnail || 'https://via.placeholder.com/150'} style={{ width: 80, height: 45, borderRadius: 4, objectFit: 'cover' }} />
+                    <img src={c.thumbnail || 'https://via.placeholder.com/150'} className="course-thumbnail" />
                     <div>
-                        <Text strong style={{ display: 'block' }}>{c.title}</Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>{c.level}</Text>
+                        <Text strong className="course-title-text">{c.title}</Text>
+                        <Text type="secondary" className="course-level-text">{c.level}</Text>
                     </div>
                 </Space>
             ),
@@ -154,7 +155,7 @@ export default function CourseManagement() {
             render: (isPrivate: boolean) => (
                 <Badge
                     count={isPrivate ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
-                    style={{ backgroundColor: isPrivate ? '#7064f9' : '#28a745' }}
+                    className={isPrivate ? "badge-private" : "badge-public"}
                 />
             )
         },
@@ -166,7 +167,7 @@ export default function CourseManagement() {
                 <Badge
                     count={c._count?.enrollments || 0}
                     showZero
-                    style={{ backgroundColor: '#52c41a' }}
+                    className="badge-students"
                 />
             )
         },
@@ -176,11 +177,11 @@ export default function CourseManagement() {
             key: 'created_at',
             width: 150,
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-                <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                <div className="filter-picker-wrapper" onKeyDown={(e) => e.stopPropagation()}>
                     <RangePicker
                         value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
                         onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
-                        style={{ marginBottom: 8, display: 'flex' }}
+                        className="filter-range-picker"
                         size="small"
                     />
                     <Space>
@@ -188,7 +189,7 @@ export default function CourseManagement() {
                             type="primary"
                             onClick={() => confirm()}
                             size="small"
-                            style={{ width: 90 }}
+                            className="filter-btn"
                         >
                             Lọc
                         </Button>
@@ -198,7 +199,7 @@ export default function CourseManagement() {
                                 confirm();
                             }}
                             size="small"
-                            style={{ width: 90 }}
+                            className="filter-btn"
                         >
                             Xóa
                         </Button>
@@ -239,10 +240,10 @@ export default function CourseManagement() {
     ];
 
     return (
-        <div style={{ padding: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div className="management-container">
+            <div className="management-header">
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>Quản lý Khóa học</Title>
+                    <Title level={4} className="header-title">Quản lý Khóa học</Title>
                     <Text type="secondary">Tạo và cấu hình các khóa đào tạo</Text>
                 </div>
                 <Button type="primary" onClick={() => { setEditingId(null); setThumbUrl(''); form.resetFields(); setIsModalOpen(true); }} icon={<Plus size={16} />}>
@@ -251,16 +252,14 @@ export default function CourseManagement() {
             </div>
 
             <Card className="glass-card">
-                <div style={{ marginBottom: 20 }}>
-                    <Input
-                        placeholder="Tìm kiếm khóa học..."
-                        prefix={<SearchOutlined />}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        style={{ width: 300 }}
-                        size="small"
-                    />
-                </div>
+                <Input
+                    placeholder="Tìm kiếm khóa học..."
+                    prefix={<SearchOutlined />}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    className="search-input"
+                    size="small"
+                />
                 <Table
                     dataSource={filteredCourses}
                     columns={columns}
@@ -301,7 +300,7 @@ export default function CourseManagement() {
                     </Form.Item>
 
                     <Form.Item label="Hình ảnh khóa học (Thumbnail)">
-                        <Space direction="vertical" style={{ width: '100%' }}>
+                        <Space direction="vertical" className="full-width">
                             <Input
                                 placeholder="Dán URL ảnh hoặc chọn file"
                                 value={thumbUrl}
@@ -317,11 +316,11 @@ export default function CourseManagement() {
                                         }}
                                         showUploadList={false}
                                     >
-                                        <UploadCloud size={18} style={{ cursor: 'pointer', color: '#6366f1' }} />
+                                        <UploadCloud size={18} className="upload-icon" />
                                     </Upload>
                                 }
                             />
-                            {thumbUrl && <img src={thumbUrl} style={{ width: '100%', maxHeight: 150, objectFit: 'cover', borderRadius: 8 }} />}
+                            {thumbUrl && <img src={thumbUrl} className="thumb-preview" />}
                         </Space>
                     </Form.Item>
 

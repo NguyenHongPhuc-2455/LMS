@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import api from '../../api';
 import dayjs from 'dayjs';
+import './Profile.scss';
 
 const { Title, Text } = Typography;
 
@@ -67,12 +68,12 @@ const Profile: React.FC = () => {
     };
 
     const infoItem = (label: string, value: string | null, icon?: React.ReactNode) => (
-        <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="profile-info-item">
+            <div className="info-label">
                 {icon} {label}
             </div>
-            <div style={{ fontSize: '14px', color: value ? '#475569' : '#94A3B8' }}>
-                {value || <span style={{ color: '#4880FF', cursor: 'pointer' }} onClick={() => setIsModalOpen(true)}>+ Add</span>}
+            <div className={`info-value ${value ? 'has-value' : 'no-value'}`}>
+                {value || <span className="add-link" onClick={() => setIsModalOpen(true)}>+ Add</span>}
             </div>
         </div>
     );
@@ -80,28 +81,28 @@ const Profile: React.FC = () => {
     if (!user) return null;
 
     return (
-        <div style={{ maxWidth: '1000px', margin: '0 auto', background: '#F8F9FD', padding: '20px', borderRadius: '12px' }}>
+        <div className="profile-container">
             <Row gutter={24}>
                 {/* Left Card: Basic Info */}
                 <Col xs={24} md={8}>
-                    <Card bordered={false} styles={{ body: { padding: 0 } }} style={{ borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                        <div style={{ textAlign: 'center', padding: '32px 24px' }}>
-                            <div style={{ position: 'relative', display: 'inline-block', marginBottom: '16px' }}>
+                    <Card bordered={false} styles={{ body: { padding: 0 } }} className="profile-left-card">
+                        <div className="profile-avatar-section">
+                            <div className="profile-avatar-wrapper">
                                 <Avatar
                                     size={120}
                                     src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=4880FF&color=fff&size=200`}
-                                    style={{ border: '1px solid #E2E8F0' }}
+                                    className="profile-avatar"
                                 />
                                 <Button
                                     shape="circle"
                                     size="small"
-                                    icon={<CameraOutlined style={{ fontSize: '12px' }} />}
-                                    style={{ position: 'absolute', bottom: '5px', right: '5px', background: '#4880FF', color: '#fff', border: 'none' }}
+                                    icon={<CameraOutlined />}
+                                    className="profile-avatar-button"
                                 />
                             </div>
-                            <Title level={3} style={{ margin: 0, fontSize: '22px', fontWeight: 700 }}>{user.full_name || user.username}</Title>
+                            <Title level={3} className="profile-name">{user.full_name || user.username}</Title>
                             <Text
-                                style={{ color: '#4880FF', fontWeight: 600, cursor: 'pointer', fontSize: '14px' }}
+                                className="profile-edit-btn"
                                 onClick={() => {
                                     form.setFieldsValue({
                                         full_name: user.full_name,
@@ -118,32 +119,32 @@ const Profile: React.FC = () => {
                             </Text>
                         </div>
 
-                        <Divider style={{ margin: 0 }} />
+                        <Divider className="profile-divider" />
 
-                        <div style={{ padding: '24px' }}>
-                            {infoItem('Username', user.username, <UserOutlined style={{ fontSize: 10 }} />)}
-                            {infoItem('Full name', user.full_name, <UserOutlined style={{ fontSize: 10 }} />)}
-                            {infoItem('Mobile number', user.phone, <PhoneOutlined style={{ fontSize: 10 }} />)}
-                            {infoItem('Email address', user.email, <MailOutlined style={{ fontSize: 10 }} />)}
-                            {infoItem('Date of birth', user.dob ? dayjs(user.dob).format('DD/MM/YYYY') : null, <CalendarOutlined style={{ fontSize: 10 }} />)}
-                            {infoItem('Gender', user.gender, <ManOutlined style={{ fontSize: 10 }} />)}
+                        <div className="profile-info-list">
+                            {infoItem('Username', user.username, <UserOutlined className="icon-small" />)}
+                            {infoItem('Full name', user.full_name, <UserOutlined className="icon-small" />)}
+                            {infoItem('Mobile number', user.phone, <PhoneOutlined className="icon-small" />)}
+                            {infoItem('Email address', user.email, <MailOutlined className="icon-small" />)}
+                            {infoItem('Date of birth', user.dob ? dayjs(user.dob).format('DD/MM/YYYY') : null, <CalendarOutlined className="icon-small" />)}
+                            {infoItem('Gender', user.gender, <ManOutlined className="icon-small" />)}
                         </div>
 
-                        <Divider style={{ margin: 0 }} />
+                        <Divider className="profile-divider" />
 
-                        <div style={{ padding: '16px', textAlign: 'center' }}>
-                            <Button type="text" danger onClick={handleLogout} style={{ fontWeight: 600 }}>Log out</Button>
+                        <div className="profile-logout-section">
+                            <Button type="text" danger onClick={handleLogout} className="logout-btn">Log out</Button>
                         </div>
                     </Card>
                 </Col>
 
                 {/* Right Cards */}
                 <Col xs={24} md={16}>
-                    <Space direction="vertical" size={24} style={{ width: '100%' }}>
+                    <Space direction="vertical" size={24} className="profile-right-space">
 
                         {/* Addresses */}
-                        <Card bordered={false} title={<span style={{ fontSize: '16px', fontWeight: 700 }}>My addresses</span>} style={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                            <Button type="text" icon={<PlusCircleOutlined style={{ color: '#4880FF' }} />} style={{ color: '#4880FF', fontWeight: 600, padding: 0 }}>
+                        <Card bordered={false} title="My addresses" className="profile-section-card">
+                            <Button type="text" icon={<PlusCircleOutlined />} className="btn-add-address">
                                 Add new address
                             </Button>
                         </Card>
@@ -151,37 +152,37 @@ const Profile: React.FC = () => {
                         {/* Payment Methods */}
                         <Card
                             bordered={false}
-                            title={<span style={{ fontSize: '16px', fontWeight: 700 }}>My payment methods</span>}
-                            extra={<Button type="text" style={{ color: '#4880FF', fontWeight: 600 }}>Change</Button>}
-                            style={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}
+                            title="My payment methods"
+                            extra={<Button type="text" className="profile-edit-btn">Change</Button>}
+                            className="profile-section-card"
                         >
-                            <Text type="secondary" style={{ display: 'block', marginBottom: '20px' }}>Securely save your card details for hassle-free payments.</Text>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #F1F5F9', borderRadius: '8px' }}>
+                            <Text type="secondary" className="payment-desc">Securely save your card details for hassle-free payments.</Text>
+                            <div className="payment-method-item">
                                 <Space size={16}>
-                                    <div style={{ width: '40px', height: '26px', background: '#F8FAFC', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
-                                        <CreditCardOutlined style={{ color: '#EF4444' }} />
+                                    <div className="payment-card-icon">
+                                        <CreditCardOutlined />
                                     </div>
                                     <Text strong>MasterCard •••• 4320</Text>
                                 </Space>
                                 <Space size={16}>
                                     <Text type="secondary">Exp: 4/2028</Text>
-                                    <MoreOutlined style={{ color: '#94A3B8' }} />
+                                    <MoreOutlined className="icon-gray" />
                                 </Space>
                             </div>
                         </Card>
 
                         {/* Social Logins */}
-                        <Card bordered={false} title={<span style={{ fontSize: '16px', fontWeight: 700 }}>My social logins</span>} style={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                            <Text type="secondary" style={{ display: 'block', marginBottom: '20px' }}>Link social profiles for easier access to your Fresha account.</Text>
+                        <Card bordered={false} title="My social logins" className="profile-section-card">
+                            <Text type="secondary" className="social-desc">Link social profiles for easier access to your Fresha account.</Text>
                             <List
                                 dataSource={[
-                                    { name: 'Facebook', icon: <FacebookFilled style={{ color: '#1877F2', fontSize: '20px' }} /> },
-                                    { name: 'Google', icon: <GoogleOutlined style={{ color: '#DB4437', fontSize: '20px' }} /> }
+                                    { name: 'Facebook', icon: <FacebookFilled className="social-icon-fb" /> },
+                                    { name: 'Google', icon: <GoogleOutlined className="social-icon-google" /> }
                                 ]}
                                 renderItem={(item) => (
-                                    <List.Item extra={<Button type="text" style={{ color: '#4880FF', fontWeight: 600 }}>Connect</Button>}>
+                                    <List.Item extra={<Button type="text" className="profile-edit-btn">Connect</Button>}>
                                         <Space size={16}>
-                                            <div style={{ width: '40px', height: '40px', background: '#F8FAFC', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div className="social-item-icon-wrapper">
                                                 {item.icon}
                                             </div>
                                             <Text strong>{item.name}</Text>
@@ -192,12 +193,12 @@ const Profile: React.FC = () => {
                         </Card>
 
                         {/* Notifications */}
-                        <Card bordered={false} title={<span style={{ fontSize: '16px', fontWeight: 700 }}>My notifications</span>} style={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                            <Text type="secondary" style={{ display: 'block', marginBottom: '24px' }}>We'll send you updates about your appointments, news and marketing offers.</Text>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Card bordered={false} title="My notifications" className="profile-section-card">
+                            <Text type="secondary" className="notification-desc">We'll send you updates about your appointments, news and marketing offers.</Text>
+                            <div className="notification-item">
                                 <div>
-                                    <Text strong style={{ display: 'block' }}>Text message appointment notifications</Text>
-                                    <Text type="secondary" style={{ fontSize: '13px' }}>Receive texts based on your sender's settings</Text>
+                                    <Text strong className="notification-title">Text message appointment notifications</Text>
+                                    <Text type="secondary" className="notification-sub-text">Receive texts based on your sender's settings</Text>
                                 </div>
                                 <Switch defaultChecked />
                             </div>
@@ -214,14 +215,14 @@ const Profile: React.FC = () => {
                 onCancel={() => setIsModalOpen(false)}
                 footer={null}
                 centered
-                style={{ borderRadius: '16px' }}
+                className="profile-modal"
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={onFinish}
                     requiredMark={false}
-                    style={{ marginTop: '20px' }}
+                    className="profile-modal-form"
                 >
                     <Form.Item label="Họ và tên" name="full_name">
                         <Input placeholder="Nguyễn Văn A" />
@@ -235,7 +236,7 @@ const Profile: React.FC = () => {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item label="Ngày sinh" name="dob">
-                                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                                <DatePicker className="full-width" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -251,10 +252,10 @@ const Profile: React.FC = () => {
                     <Form.Item label="Link Avatar" name="avatar">
                         <Input placeholder="https://..." />
                     </Form.Item>
-                    <div style={{ textAlign: 'right', marginTop: '24px' }}>
+                    <div className="profile-modal-footer">
                         <Space>
                             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-                            <Button type="primary" htmlType="submit" loading={loading} style={{ background: '#4880FF' }}>
+                            <Button type="primary" htmlType="submit" loading={loading} className="btn-save">
                                 Lưu thay đổi
                             </Button>
                         </Space>

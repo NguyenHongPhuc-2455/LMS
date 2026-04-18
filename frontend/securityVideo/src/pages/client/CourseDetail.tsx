@@ -10,6 +10,7 @@ import {
     Collapse, Space, Skeleton, App, List, Badge
 } from 'antd';
 import api from '../../api';
+import './CourseDetail.scss';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -78,7 +79,7 @@ export default function CourseDetail() {
         }
     };
 
-    if (loading) return <div style={{ padding: 50 }}><Skeleton active /></div>;
+    if (loading) return <div className="loader-container-center"><Skeleton active /></div>;
     if (!course) return <div>Không tìm thấy khóa học</div>;
 
     const totalLessons = course.sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
@@ -90,15 +91,7 @@ export default function CourseDetail() {
                     type="primary"
                     size="large"
                     block
-                    style={{
-                        height: '50px',
-                        borderRadius: '25px',
-                        background: '#26ac51',
-                        border: 'none',
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        marginBottom: '24px'
-                    }}
+                    className="action-btn-styled btn-success"
                     onClick={() => navigate(`/course/${course.id}/learning`)}
                 >
                     VÀO HỌC NGAY
@@ -113,13 +106,7 @@ export default function CourseDetail() {
                         size="large"
                         block
                         disabled
-                        style={{
-                            height: '50px',
-                            borderRadius: '25px',
-                            fontWeight: 700,
-                            fontSize: '16px',
-                            marginBottom: '24px'
-                        }}
+                        className="action-btn-styled"
                     >
                         ĐANG CHỜ PHÊ DUYỆT
                     </Button>
@@ -133,13 +120,7 @@ export default function CourseDetail() {
                         danger
                         size="large"
                         block
-                        style={{
-                            height: '50px',
-                            borderRadius: '25px',
-                            fontWeight: 700,
-                            fontSize: '16px',
-                            marginBottom: '24px'
-                        }}
+                        className="action-btn-styled"
                         onClick={handleRequestAccess}
                         loading={submitting}
                     >
@@ -153,15 +134,7 @@ export default function CourseDetail() {
                     type="primary"
                     size="large"
                     block
-                    style={{
-                        height: '50px',
-                        borderRadius: '25px',
-                        background: '#7064f9ff',
-                        border: 'none',
-                        fontWeight: 700,
-                        fontSize: '16px',
-                        marginBottom: '24px'
-                    }}
+                    className="action-btn-styled btn-private"
                     onClick={handleRequestAccess}
                     loading={submitting}
                 >
@@ -175,15 +148,7 @@ export default function CourseDetail() {
                 type="primary"
                 size="large"
                 block
-                style={{
-                    height: '50px',
-                    borderRadius: '25px',
-                    background: '#6366f1',
-                    border: 'none',
-                    fontWeight: 700,
-                    fontSize: '16px',
-                    marginBottom: '24px'
-                }}
+                className="action-btn-styled btn-public"
                 onClick={handleJoinPublicCourse}
                 loading={submitting}
             >
@@ -193,26 +158,26 @@ export default function CourseDetail() {
     };
 
     return (
-        <div style={{ padding: '20px 4%', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="course-detail-container">
             <Row gutter={40}>
                 {/* Left Side: Info */}
                 <Col lg={16} md={24}>
-                    <Title level={1} style={{ fontSize: '32px', marginBottom: '16px' }}>{course.title}</Title>
-                    <Paragraph style={{ fontSize: '15px', color: '#444', marginBottom: '32px' }}>
+                    <Title level={1} className="course-title-main">{course.title}</Title>
+                    <Paragraph className="course-description">
                         {course.description}
                     </Paragraph>
 
-                    <div style={{ marginBottom: '40px' }}>
+                    <div className="info-section">
                         <Title level={4}>Bạn sẽ học được gì?</Title>
                         <Row gutter={[16, 12]}>
                             {(course.learning_outcomes || "- Kiến thức chuyên sâu và thực tế\n- Tự tay xây dựng các dự án phức tạp\n- Nắm vững các concept nâng cao\n- Kỹ năng giải quyết vấn đề thực tế\n- Tư duy lập trình chuyên nghiệp\n- Sẵn sàng cho các vị trí công việc cao")
                                 .split('\n')
                                 .filter(line => line.trim() !== '')
                                 .map((item, index) => (
-                                    <Col span={12} key={index}>
+                                    <Col span={12} key={index} className="outcome-item">
                                         <Space align="start">
-                                            <CheckOutlined style={{ color: '#f05123', marginTop: '5px' }} />
-                                            <Text style={{ fontSize: '14px' }}>{item.replace(/^- /, '')}</Text>
+                                            <CheckOutlined className="outcome-icon" />
+                                            <Text className="outcome-text">{item.replace(/^- /, '')}</Text>
                                         </Space>
                                     </Col>
                                 ))
@@ -220,14 +185,14 @@ export default function CourseDetail() {
                         </Row>
                     </div>
 
-                    <div style={{ marginBottom: '40px' }}>
+                    <div className="info-section">
                         <Title level={4}>Yêu cầu</Title>
-                        <ul style={{ paddingLeft: '20px', color: '#444' }}>
+                        <ul className="requirements-list">
                             {(course.requirements || "- Có máy tính kết nối internet\n- Kiến thức cơ bản về HTML/CSS")
                                 .split('\n')
                                 .filter(line => line.trim() !== '')
                                 .map((item, index) => (
-                                    <li key={index} style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                    <li key={index} className="requirement-item">
                                         {item.replace(/^- /, '')}
                                     </li>
                                 ))
@@ -235,11 +200,11 @@ export default function CourseDetail() {
                         </ul>
                     </div>
 
-                    <div style={{ marginBottom: '40px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div className="info-section">
+                        <div className="section-content-header">
                             <Title level={4} style={{ margin: 0 }}>Nội dung khóa học</Title>
                         </div>
-                        <Text type="secondary" style={{ display: 'block', marginBottom: '16px' }}>
+                        <Text type="secondary" className="section-stats">
                             {course.sections.length} chương • {totalLessons} bài học • Thời lượng {(() => {
                                 const totalSeconds = course.sections.reduce((acc, s) => acc + (s.lessons?.reduce((lacc: number, l: any) => lacc + (l.duration || 0), 0) || 0), 0);
                                 const h = Math.floor(totalSeconds / 3600);
@@ -251,11 +216,11 @@ export default function CourseDetail() {
                         <Collapse
                             expandIconPlacement="start"
                             bordered={false}
-                            style={{ background: '#fff' }}
+                            className="curriculum-collapse"
                             items={course.sections.map((section, idx) => ({
                                 key: section.id,
                                 label: (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '4px 0' }}>
+                                    <div className="section-collapse-header">
                                         <Text strong>{idx + 1}. {section.title}</Text>
                                         <Text type="secondary">{section.lessons?.length || 0} bài học</Text>
                                     </div>
@@ -264,13 +229,13 @@ export default function CourseDetail() {
                                     <List
                                         dataSource={section.lessons}
                                         renderItem={(lesson: any, lidx: number) => (
-                                            <List.Item style={{ border: 'none', padding: '12px 20px' }}>
+                                            <List.Item className="lesson-item">
                                                 <Space size={12}>
-                                                    <PlayCircleFilled style={{ color: '#f05123', fontSize: '14px', opacity: 0.6 }} />
-                                                    <Text style={{ fontSize: '14px', color: '#333' }}>{idx + 1}.{lidx + 1} {lesson.title}</Text>
+                                                    <PlayCircleFilled className="lesson-icon" />
+                                                    <Text className="lesson-title">{idx + 1}.{lidx + 1} {lesson.title}</Text>
                                                 </Space>
                                                 {lesson.duration > 0 && (
-                                                    <Text type="secondary" style={{ fontSize: '13px' }}>
+                                                    <Text type="secondary" className="lesson-duration">
                                                         {Math.floor(lesson.duration / 60).toString().padStart(2, '0')}:{(lesson.duration % 60).toString().padStart(2, '0')}
                                                     </Text>
                                                 )}
@@ -278,13 +243,7 @@ export default function CourseDetail() {
                                         )}
                                     />
                                 ),
-                                style: {
-                                    marginBottom: '8px',
-                                    background: '#f7f8fa',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    overflow: 'hidden'
-                                }
+                                className: "section-panel-item"
                             }))}
                         />
                     </div>
@@ -292,39 +251,27 @@ export default function CourseDetail() {
 
                 {/* Right Side: Floating Sidebar */}
                 <Col lg={8} md={24}>
-                    <div style={{
-                        position: 'sticky',
-                        top: '90px',
-                        background: '#fff',
-                        borderRadius: '16px',
-                        padding: '2px',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{
-                            position: 'relative',
-                            borderRadius: '14px',
-                            overflow: 'hidden',
-                            marginBottom: '20px',
-                            cursor: 'pointer'
-                        }}>
+                    <div className="floating-sidebar">
+                        <div className="thumbnail-wrapper">
                             <img
                                 src={course.thumbnail || "https://files.fullstack.edu.vn/f8-prod/courses/2.png"}
-                                style={{ width: '100%', display: 'block', transition: '0.3s' }}
+                                className="thumbnail-img"
                                 alt="Course"
                             />
                         </div>
 
-                        <div style={{ padding: '0 20px 20px' }}>
-                            <div style={{ marginBottom: '24px' }}>
+                        <div className="sidebar-actions">
+                            <div className="status-badge-container">
                                 <Badge
                                     count={course.is_private ? "KHÓA HỌC RIÊNG TƯ" : "KHÓA HỌC CÔNG KHAI"}
-                                    style={{ backgroundColor: course.is_private ? '#7064f9' : '#26ac51', padding: '0 12px', height: '24px', lineHeight: '24px' }}
+                                    className={course.is_private ? 'badge-private' : 'badge-public-height'}
+                                    style={!course.is_private ? { backgroundColor: '#26ac51' } : {}}
                                 />
                             </div>
 
                             {renderActionButton()}
 
-                            <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, margin: 0 }}>
+                            <ul className="sidebar-info-list">
                                 {[
                                     { icon: <ExperimentOutlined />, text: `Trình độ ${course.level || 'Cơ bản'}` },
                                     { icon: <PlaySquareOutlined />, text: `Tổng số ${totalLessons} bài học` },
@@ -339,9 +286,9 @@ export default function CourseDetail() {
                                     },
                                     { icon: <GlobalOutlined />, text: "Học mọi lúc, mọi nơi" }
                                 ].map((item, i) => (
-                                    <li key={i} style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ color: '#444', fontSize: '16px' }}>{item.icon}</span>
-                                        <Text style={{ color: '#494949', fontSize: '14px' }}>{item.text}</Text>
+                                    <li key={i} className="info-item">
+                                        <span className="info-icon">{item.icon}</span>
+                                        <Text className="info-text">{item.text}</Text>
                                     </li>
                                 ))}
                             </ul>
@@ -350,10 +297,6 @@ export default function CourseDetail() {
                 </Col>
             </Row>
 
-            <style>{`
-                .ant-collapse-header { padding: 12px 20px !important; }
-                .ant-collapse-content-box { padding: 0 !important; background: #fff !important; }
-            `}</style>
         </div>
     );
 }
