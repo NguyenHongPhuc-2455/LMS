@@ -1,16 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Login, Register } from './pages';
+import { Login, Register } from '@/pages';
 import {
-  AdminDashboard, CourseManagement, CourseRequests,
+  AdminDashboard, CourseManagement, CourseRequestManagement,
   LessonManagement, ProgramManagement, SectionManagement,
   UserManagement
-} from './pages/admin';
+} from '@/pages/admin';
 import {
   CourseDetail, CourseLearning, CourseList,
-  MyCourses, MyPrograms, PaymentResult,
+  MyCourses, MyPrograms,
   Profile, ProgramDetail, ProgramList
-} from './pages/client';
-import { MainLayout, AdminLayout } from './components';
+} from '@/pages/client';
+import { MainLayout, AdminLayout } from '@/components';
 
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
 import { useEffect } from 'react';
@@ -56,7 +56,6 @@ function App() {
               <Route path="/course/:id" element={<CourseDetail />} />
               <Route path="/course/:id/learning" element={<CourseLearning />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/payment-result" element={<PaymentResult />} />
               <Route path="/programs" element={<ProgramList />} />
               <Route path="/programs/:id" element={<ProgramDetail />} />
               <Route path="/my-programs" element={<MyPrograms />} />
@@ -69,7 +68,7 @@ function App() {
               <Route path="sections" element={<SectionManagement />} />
               <Route path="lessons" element={<LessonManagement />} />
               <Route path="users" element={<UserManagement />} />
-              <Route path="requests" element={<CourseRequests />} />
+              <Route path="requests" element={<CourseRequestManagement />} />
               <Route path="programs" element={<ProgramManagement />} />
               <Route path="profile" element={<Profile />} />
             </Route>

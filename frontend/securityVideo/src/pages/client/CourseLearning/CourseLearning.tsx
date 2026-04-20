@@ -1,28 +1,18 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
-    PlayCircleOutlined, LockOutlined, CheckCircleOutlined,
-    LeftOutlined, ShoppingCartOutlined,
-    FileTextOutlined, QuestionCircleOutlined,
-    DownloadOutlined, DownOutlined, UpOutlined,
-    MenuFoldOutlined, MenuUnfoldOutlined
-} from '@ant-design/icons';
-import {
-    Collapse, App, Typography, Button,
-    Tag, Skeleton, Divider, Row, Col
+    App, Skeleton, Row, Col
 } from 'antd';
-import { VideoPlayer, VideoJsPlayer, CommentSection, QuizPlayer, type VideoPlayerRef } from '../../../components';
+import { type VideoPlayerRef } from '../../../components';
 
 import { courseService } from '../../../services/course.service';
-import { contentService } from '../../../services/content.service';
-import { paymentService } from '../../../services/payment.service';
 import { useTabFocusWarning } from '../../../hooks/useTabFocusWarning';
 
+// New specialized components
+import LearningContent from './components/LearningContent';
+import LearningSidebar from './components/LearningSidebar';
 
 import styles from './CourseLearning.module.scss';
-
-
-const { Title, Text, Paragraph } = Typography;
 
 interface Lesson {
     id: number;
@@ -53,7 +43,7 @@ interface Course {
     instructor: { full_name: string; bio: string; avatar: string; avatar_url?: string };
 }
 
-export default function Course() {
+export default function CourseLearning() {
     const { message } = App.useApp();
     const { id } = useParams();
     const navigate = useNavigate();
@@ -90,18 +80,15 @@ export default function Course() {
             const data = await courseService.getById(id!);
             setCourse(data);
 
-            // Nếu có lessonId từ URL, ưu tiên chọn bài đó
             if (!activeLesson) {
                 const allLessons: Lesson[] = data.sections.flatMap((s: any) => s.lessons);
-
                 if (initialLessonId) {
                     const target = allLessons.find(l => l.id === parseInt(initialLessonId));
                     if (target) {
                         setActiveLesson(target);
-                        return; // Đã tìm thấy bài cụ thể
+                        return;
                     }
                 }
-
                 if (data.sections.length > 0) {
                     const firstLesson = data.sections[0].lessons[0];
                     if (firstLesson) setActiveLesson(firstLesson);
@@ -121,14 +108,12 @@ export default function Course() {
     useEffect(() => {
         if (id) {
             fetchDetail();
-            // Chỉ scroll lên đầu nếu không có hash (không phải từ thông báo)
             if (!location.hash) {
                 window.scrollTo(0, 0);
             }
         }
     }, [id]);
 
-    // Khi lessonId thay đổi từ URL (ví dụ: từ thông báo), chọn bài đó
     useEffect(() => {
         if (initialLessonId && course) {
             const allLessons: Lesson[] = course.sections.flatMap((s: any) => s.lessons);
@@ -145,7 +130,6 @@ export default function Course() {
         }
     }, [activeLesson?.id]);
 
-    // Scroll tới bình luận khi có hash #comment-xxx
     useEffect(() => {
         if (location.hash && location.hash.startsWith('#comment-')) {
             const tryScroll = (attempts = 0) => {
@@ -160,23 +144,9 @@ export default function Course() {
                     setTimeout(() => tryScroll(attempts + 1), 300);
                 }
             };
-            // Đợi comments load xong
             setTimeout(() => tryScroll(), 500);
         }
     }, [location.hash, activeLesson?.id]);
-
-    const handleBuy = async () => {
-        try {
-            message.loading({ content: 'Đang kết nối tới cổng thanh toán VNPay...', key: 'payment' });
-            const data = await paymentService.createVNPayUrl(Number(id));
-            if (data.payUrl) {
-                window.location.href = data.payUrl;
-            }
-
-        } catch (error: any) {
-            message.error({ content: error.response?.data?.error || 'Lỗi khởi tạo thanh toán', key: 'payment' });
-        }
-    };
 
     const handleNextLesson = () => {
         if (!course || !activeLesson) return;
@@ -188,18 +158,6 @@ export default function Course() {
         }
     };
 
-    const renderLessonIcon = (lesson: Lesson, isLockedByProgress: boolean) => {
-        if (lesson.isCompleted) return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-        if (isLockedByProgress) return <LockOutlined style={{ color: '#94a3b8' }} />;
-        if (!course?.hasAccess && !lesson.is_free) return <LockOutlined style={{ color: '#ff4d4f' }} />;
-        switch (lesson.type) {
-            case 'VIDEO': return <PlayCircleOutlined style={{ color: '#6366f1' }} />;
-            case 'DOCUMENT': return <FileTextOutlined style={{ color: '#52c41a' }} />;
-            case 'QUIZ': return <QuestionCircleOutlined style={{ color: '#faad14' }} />;
-            default: return <PlayCircleOutlined />;
-        }
-    };
-
     if (loading) return <div className={styles.learningLoading}><Skeleton active /></div>;
     if (!course) return <div>Không tìm thấy dữ liệu</div>;
 
@@ -207,224 +165,35 @@ export default function Course() {
         <div className={styles.learningContainer}>
             <Row gutter={0}>
                 <Col lg={showSidebar ? 16 : 24} md={24} className={styles.mainColumn}>
-                    <div className={`${styles.contentWrapper} ${showSidebar ? styles.sidebarVisible : styles.sidebarHidden}`}>
-                        <div className={styles.headerActions}>
-                            <Button
-                                icon={<LeftOutlined />}
-                                onClick={() => navigate(`/course/${id}`)}
-                                className={styles.backBtn}
-                            >
-                                Quay lại trang chi tiết
-                            </Button>
-
-                            {!showSidebar && (
-                                <Button
-                                    icon={<MenuUnfoldOutlined />}
-                                    onClick={() => setShowSidebar(true)}
-                                    className={styles.showSidebarBtn}
-                                >
-                                    Hiện thanh bên
-                                </Button>
-                            )}
-                        </div>
-
-                        <div className={styles.videoSection}>
-                            {activeLesson && activeLesson.type === 'QUIZ' ? (
-                                <QuizPlayer
-                                    lessonId={activeLesson.id}
-                                    onCompleted={() => {
-                                        fetchDetail(); // Refresh progress
-                                    }}
-                                />
-                            ) : activeLesson && activeLesson.type === 'VIDEO' && (course.hasAccess || activeLesson.is_free) ? (
-                                activeLesson.video_url ? (
-                                    activeLesson.video_url.includes('.m3u8') ? (
-                                        <VideoPlayer
-                                            ref={videoPlayerRef}
-                                            src={`http://localhost:5000${activeLesson.video_url}`}
-                                            lessonId={activeLesson.id}
-                                            onEnded={handleNextLesson}
-                                            onPlay={() => setIsVideoPlaying(true)}
-                                            onPause={() => setIsVideoPlaying(false)}
-                                        />
-                                    ) : (
-                                        <VideoJsPlayer
-                                            ref={videoPlayerRef as any}
-                                            src={activeLesson.video_url}
-                                            lessonId={activeLesson.id}
-                                            onEnded={handleNextLesson}
-                                            onPlay={() => setIsVideoPlaying(true)}
-                                            onPause={() => setIsVideoPlaying(false)}
-                                            isCompletedInit={activeLesson.isCompleted}
-                                        />
-                                    )
-                                ) : (
-                                    <div className={styles.videoProcessing}>
-                                        <Skeleton.Node active className={styles.skeletonSquare} />
-                                        <Title level={4} className={styles.processingTitle}>Video đang được xử lý băm bảo mật...</Title>
-                                        <Text className={styles.processingText}>Vui lòng quay lại sau vài phút</Text>
-                                    </div>
-                                )
-                            ) : (
-                                <div className={styles.lockedSection}>
-                                    <LockOutlined className={styles.lockedIcon} />
-                                    <Title level={3} className={styles.lockedTitle}>Nội dung đã bị khóa</Title>
-                                    <Text className={styles.lockedDesc}>Vui lòng mua khóa học để mở khóa toàn bộ bài giảng</Text>
-                                    {!course.hasAccess && (
-                                        <Button
-                                            type="primary"
-                                            size="large"
-                                            icon={<ShoppingCartOutlined />}
-                                            className={styles.buyBtn}
-                                            onClick={handleBuy}
-                                        >
-                                            Đăng ký học ngay - {parseFloat(course.price) === 0 ? 'MIỄN PHÍ' : `${Number(course.price).toLocaleString()}đ`}
-                                        </Button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <Title level={2} className={styles.courseMainTitle}>{activeLesson?.title || course.title}</Title>
-
-                        {/* Hiển thị nội dung văn bản của bài học */}
-                        {activeLesson?.content && (
-                            <div className={styles.lessonContentCard}>
-                                <Title level={4}>Hướng dẫn & Nội dung</Title>
-                                <div className={styles.relativePos}>
-                                    <div className={`${styles.contentScrollArea} ${isExpanded ? '' : styles.collapsed}`}>
-                                        <Paragraph className={styles.contentParagraph}>
-                                            {activeLesson.content}
-                                        </Paragraph>
-
-                                        {!isExpanded && (
-                                            <div className={styles.gradientOverlay} />
-                                        )}
-                                    </div>
-
-                                    <Button
-                                        type="link"
-                                        onClick={() => setIsExpanded(!isExpanded)}
-                                        className={styles.expandBtn}
-                                    >
-                                        {isExpanded ? (
-                                            <>Thu gọn <UpOutlined className={styles.iconSmallBtn} /></>
-                                        ) : (
-                                            <>Xem thêm <DownOutlined className={styles.iconSmallBtn} /></>
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Hiển thị tài liệu đính kèm (PDF) */}
-                        {activeLesson?.attachment_url && (
-                            <div className={styles.attachmentCard}>
-                                <div className={styles.attachmentInfo}>
-                                    <div className={styles.attachmentIconWrapper}>
-                                        <FileTextOutlined className={styles.attachmentIcon} />
-                                    </div>
-                                    <div>
-                                        <Text strong className={styles.attachmentTitle}>Tài liệu đính kèm</Text>
-                                        <Text type="secondary" className={styles.attachmentSubtitle}>{activeLesson.attachment_name || 'Tai_lieu_bai_hoc.pdf'}</Text>
-                                    </div>
-                                </div>
-                                <Button
-                                    type="primary"
-                                    icon={<DownloadOutlined />}
-                                    href={`http://localhost:5000${activeLesson.attachment_url}`}
-                                    target="_blank"
-                                    download
-                                    className={styles.downloadBtn}
-                                >
-                                    Tải về PDF
-                                </Button>
-                            </div>
-                        )}
-
-                        <Divider className={styles.dividerSlate} />
-
-                        {activeLesson && (
-                            <CommentSection
-                                lessonId={activeLesson.id}
-                                currentUser={user}
-                            />
-                        )}
-
-                        <Divider className={styles.dividerMarginLg} />
-                    </div>
+                    <LearningContent
+                        course={course}
+                        activeLesson={activeLesson}
+                        showSidebar={showSidebar}
+                        setShowSidebar={setShowSidebar}
+                        isExpanded={isExpanded}
+                        setIsExpanded={setIsExpanded}
+                        videoPlayerRef={videoPlayerRef}
+                        handleNextLesson={handleNextLesson}
+                        setIsVideoPlaying={setIsVideoPlaying}
+                        navigate={navigate}
+                        id={id!}
+                        user={user}
+                    />
                 </Col>
 
                 {showSidebar && (
                     <Col lg={8} md={24} className={styles.sidebarColumn}>
-                        <div className={styles.sidebarHeader}>
-                            <div>
-                                <Title level={4} className={styles.sidebarTitle}>Nội dung khóa học</Title>
-                                <Text className={styles.sidebarSubtitle}>
-                                    {course.sections.length} chương • {course.sections.reduce((a, b) => a + b.lessons.length, 0)} bài giảng
-                                </Text>
-                            </div>
-                            <Button
-                                type="text"
-                                icon={<MenuFoldOutlined />}
-                                onClick={() => setShowSidebar(false)}
-                                className={styles.btnGrayIcon}
-                            />
-                        </div>
-
-                        <div className={styles.sidebarScrollArea}>
-                            <Collapse
-                                ghost
-                                expandIconPlacement="end"
-                                items={course.sections.map(section => ({
-                                    key: section.id,
-                                    label: <Text strong className={styles.sectionLabel}>{section.title}</Text>,
-                                    className: styles.sectionCollapseItem,
-                                    children: (
-                                        <div className={styles.lessonList}>
-                                            {section.lessons.map((lesson) => {
-                                                const allLessons = course.sections.flatMap(s => s.lessons);
-                                                const overallIndex = allLessons.findIndex(l => l.id === lesson.id);
-                                                const previousLesson = overallIndex > 0 ? allLessons[overallIndex - 1] : null;
-                                                const isLockedByProgress = previousLesson ? !previousLesson.isCompleted : false;
-                                                const canView = course.hasAccess || lesson.is_free;
-
-                                                return (
-                                                    <div
-                                                        key={lesson.id}
-                                                        className={`${styles.lessonItem} ${activeLesson?.id === lesson.id ? styles.active : ''} ${isLockedByProgress ? styles.locked : ''}`}
-                                                        onClick={() => {
-                                                            if (isLockedByProgress) {
-                                                                message.info('Vui lòng hoàn thành bài học trước đó để mở khóa bài này');
-                                                                return;
-                                                            }
-                                                            if (canView) setActiveLesson(lesson);
-                                                            else message.warning('Bài học này yêu cầu mua khóa học');
-                                                        }}
-                                                    >
-                                                        {renderLessonIcon(lesson, isLockedByProgress)}
-                                                        <div className={styles.flex1}>
-                                                            <Text className={`${styles.lessonTitleText} ${activeLesson?.id === lesson.id ? styles.active : (isLockedByProgress ? styles.locked : styles.default)}`}>
-                                                                {lesson.title}
-                                                            </Text>
-                                                            {lesson.duration > 0 && (
-                                                                <div className={styles.lessonDurationText}>
-                                                                    {Math.floor(lesson.duration / 60).toString().padStart(2, '0')}:{(lesson.duration % 60).toString().padStart(2, '0')}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        {lesson.is_free && !course.hasAccess && <Tag color="green">Học thử</Tag>}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )
-                                }))}
-                            />
-                        </div>
+                        <LearningSidebar
+                            course={course}
+                            activeLesson={activeLesson}
+                            setActiveLesson={setActiveLesson}
+                            setShowSidebar={setShowSidebar}
+                            message={message}
+                        />
                     </Col>
                 )}
             </Row>
         </div>
     );
 }
+

@@ -59,6 +59,37 @@ exports.requestAccess = catchAsync(async (req, res) => {
         }
     });
 
+    // 5. Thông báo cho tất cả Admin
+    try {
+        const admins = await prisma.user.findMany({
+            where: {
+                user_roles: {
+                    some: {
+                        role: { name: 'admin' }
+                    }
+                }
+            },
+            select: { id: true }
+        });
+
+        const student = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { full_name: true, username: true }
+        });
+
+        for (const admin of admins) {
+            await notificationService.createNotification({
+                userId: admin.id,
+                title: 'Yêu cầu phê duyệt lộ trình mới',
+                message: `Học viên ${student.full_name || student.username} đã gửi yêu cầu tham gia lộ trình "${program.title}".`,
+                type: 'NEW_PROGRAM_REQUEST',
+                link: `/admin/requests`
+            });
+        }
+    } catch (error) {
+        console.error('❌ Lỗi khi gửi thông báo cho Admin:', error);
+    }
+
     res.status(201).json({
         message: 'Gửi yêu cầu thành công, vui lòng chờ Admin phê duyệt',
         data: newRequest

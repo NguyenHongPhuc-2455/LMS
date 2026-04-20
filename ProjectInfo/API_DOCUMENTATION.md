@@ -45,7 +45,50 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 
 ---
 
-## 👥 4. Users & Management (`/users`)
+## 📝 4. Quizzes (`/quizzes`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| POST | `/` | Tạo bộ câu hỏi trắc nghiệm mới | ✅ |
+| GET | `/lesson/:lessonId` | Lấy Quiz theo ID bài học | ✅ |
+| POST | `/:id/submit` | Nộp bài làm trắc nghiệm | ✅ |
+| GET | `/:id/attempts` | Lấy lịch sử làm bài của user | ✅ |
+| PUT | `/:id` | Cập nhật nội dung Quiz | ✅ |
+| DELETE | `/:id` | Xóa Quiz | ✅ |
+
+---
+
+## 🎓 5. Learning Paths/Programs (`/programs`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/` | Danh sách các lộ trình học tập | ✅ |
+| GET | `/my-programs` | Lộ trình đang tham gia | ✅ |
+| GET | `/:id` | Chi tiết lộ trình & các khóa học bên trong | ✅ |
+| POST | `/` | Tạo lộ trình mới | ✅ |
+| PUT | `/:id` | Cập nhật lộ trình | ✅ |
+| DELETE | `/:id` | Xóa lộ trình (Admin) | ✅ (Admin) |
+| POST | `/:id/courses` | Thêm khóa học vào lộ trình | ✅ (Admin) |
+| DELETE | `/:id/courses/:courseId` | Xóa khóa học khỏi lộ trình | ✅ (Admin) |
+| POST | `/:id/enroll` | Đăng ký trực tiếp (nếu lộ trình công khai) | ✅ |
+
+---
+
+## ✉️ 6. Access Requests (`/course-requests`, `/program-requests`)
+
+Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và Lộ trình riêng tư (Private).
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| POST | `/course-requests` | Gửi yêu cầu vào khóa học | ✅ |
+| POST | `/program-requests/request` | Gửi yêu cầu vào lộ trình | ✅ |
+| GET | `/*/pending` | Xem các yêu cầu đang chờ (Admin) | ✅ (Admin) |
+| POST | `/*/approve-bulk` | Duyệt hàng loạt yêu cầu | ✅ (Admin) |
+| PATCH/POST | `/*/approve` | Duyệt một yêu cầu cụ thể | ✅ (Admin) |
+
+---
+
+## 👥 7. Users & Management (`/users`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -54,7 +97,15 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 
 ---
 
-## 💳 5. Payments (`/payments`)
+## 📈 8. Statistics (`/stats`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/dashboard` | Tổng quan số liệu hệ thống (Users, Courses, Revenue...) | ✅ (Admin) |
+
+---
+
+## 💳 9. Payments (`/payments`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -63,7 +114,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 
 ---
 
-## 💬 6. Comments (`/comments`)
+## 💬 10. Comments (`/comments`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -75,7 +126,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 
 ---
 
-## 🔔 7. Notifications (`/notifications`)
+## 🔔 11. Notifications (`/notifications`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |

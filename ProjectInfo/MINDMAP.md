@@ -17,6 +17,7 @@ mindmap
         Barrel Exports["index.ts tập trung"]
         Global Style System["Variables, Mixins, Global SCSS"]
         Vite SCSS Auto-injection
+        Absolute Imports["@/alias cho src/"]
         ScrollToTop Navigation
       Hệ Thống Video["Hệ Thống Video (Video Engine)"]
         Local FFmpeg Transcoding

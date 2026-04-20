@@ -3,7 +3,6 @@ export { default as CourseLearning } from './CourseLearning/CourseLearning';
 export { default as CourseList } from './CourseList/CourseList';
 export { default as MyCourses } from './MyCourses/MyCourses';
 export { default as MyPrograms } from './MyPrograms/MyPrograms';
-export { default as PaymentResult } from './PaymentResult/PaymentResult';
 export { default as Profile } from './Profile/Profile';
 export { default as ProgramDetail } from './ProgramDetail/ProgramDetail';
 export { default as ProgramList } from './ProgramList/ProgramList';

@@ -51,6 +51,7 @@
 .courseListContainer {
     padding: 10px 3%;
     min-height: 100vh;
+
 }
 
 .sortWrapper {
@@ -70,13 +71,14 @@
 }
 
 .courseSection {
-    margin-bottom: 48px;
+    margin-bottom: 50px;
 }
 
 .sectionHeader {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-bottom: 22px;
 
     .sectionTitle {
         margin: 0;

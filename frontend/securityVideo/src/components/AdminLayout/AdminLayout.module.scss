@@ -160,3 +160,56 @@
     padding: 24px 30px;
     min-height: 280px;
 }
+
+// Notification Popover Styles
+.notificationContainer {
+    width: 320px;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+.notificationHeader {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notificationList {
+    overflow-y: auto;
+
+    :global {
+        .ant-list-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+
+            &:hover {
+                background: #f7fafc;
+            }
+        }
+    }
+}
+
+.notificationItem {
+    &.unread {
+        background: #ebf8ff;
+    }
+
+    &.read {
+        background: #fff;
+    }
+}
+
+.notifMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notifTime {
+    font-size: 11px;
+    color: #a0aec0;
+}

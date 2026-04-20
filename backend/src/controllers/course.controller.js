@@ -31,10 +31,24 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
 
     let hasAccess = false;
     if (userId) {
-        const enrollment = await prisma.enrollment.findUnique({
-            where: { user_id_course_id: { user_id: userId, course_id: parseInt(id) } }
-        });
-        if (enrollment || isAdmin || isOwner) hasAccess = true;
+        // Kiểm tra quyền truy cập trực tiếp HOẶC thông qua Lộ trình học (Program)
+        const [enrollment, programEnrollment] = await Promise.all([
+            prisma.enrollment.findUnique({
+                where: { user_id_course_id: { user_id: userId, course_id: parseInt(id) } }
+            }),
+            prisma.programEnrollment.findFirst({
+                where: {
+                    user_id: userId,
+                    program: {
+                        courses: {
+                            some: { course_id: parseInt(id) }
+                        }
+                    }
+                }
+            })
+        ]);
+
+        if (enrollment || programEnrollment || isAdmin || isOwner) hasAccess = true;
     }
 
     let requestStatus = null;
@@ -55,7 +69,7 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
             // Hide secure content if no access and not free
             ...(!hasAccess && !l.is_free && {
                 video_url: null,
-                content: course.is_private ? 'Khóa học này là riêng tư. Vui lòng gửi yêu cầu tham gia để xem nội dung.' : 'Vui lòng mua khóa học để xem nội dung này.'
+                content: 'Nội dung này đã bị khóa. Vui lòng liên hệ quản trị viên để mở khóa.'
             })
         }))
     }));

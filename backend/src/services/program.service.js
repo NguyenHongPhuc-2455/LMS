@@ -58,7 +58,7 @@ const softDeleteProgram = async (id) => {
 
 const addCourse = async (programId, courseId, order) => {
     const count = await prisma.programCourse.count({ where: { program_id: parseInt(programId) } });
-    return await prisma.programCourse.create({
+    const programCourse = await prisma.programCourse.create({
         data: {
             program_id: parseInt(programId),
             course_id: parseInt(courseId),
@@ -66,6 +66,26 @@ const addCourse = async (programId, courseId, order) => {
         },
         include: { course: { select: { id: true, title: true, thumbnail: true, level: true } } }
     });
+
+    // Tự động ghi danh toàn bộ học viên hiện tại của chương trình vào khóa học mới này
+    const programParticipants = await prisma.programEnrollment.findMany({
+        where: { program_id: parseInt(programId) }
+    });
+
+    if (programParticipants.length > 0) {
+        const enrollments = programParticipants.map(participant => ({
+            user_id: participant.user_id,
+            course_id: parseInt(courseId)
+        }));
+
+        // Sử dụng createMany với skipDuplicates: true để tránh lỗi nếu user đã được ghi danh trước đó
+        await prisma.enrollment.createMany({
+            data: enrollments,
+            skipDuplicates: true
+        });
+    }
+
+    return programCourse;
 };
 
 const removeCourse = async (programId, courseId) => {

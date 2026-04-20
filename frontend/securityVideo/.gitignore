@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 .env
 .vite
+tsc_error*.txt
+tsc_errors*.txt
+*.error.txt
+build_error_debug.txt
+build_error.txt
+build_log.txt

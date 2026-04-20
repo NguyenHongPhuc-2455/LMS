@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 
 import path from 'path'
 
+// Triggering restart to clear Sass cache
 // https://vite.dev/config/
+
 export default defineConfig({
   plugins: [react()],
   resolve: {

@@ -38,7 +38,6 @@ model User {
   user_roles       UserRole[]
   instructed_courses Course[]     @relation("Instructor")
   enrollments      Enrollment[]
-  orders           Order[]
   reviews          Review[]
   wishlists        Wishlist[]
   completed_lessons LessonCompleted[]
@@ -103,7 +102,6 @@ model Course {
   instructor  User         @relation("Instructor", fields: [instructor_id], references: [id])
   sections    Section[]
   enrollments Enrollment[]
-  order_items OrderItem[]
   reviews     Review[]
   wishlists   Wishlist[]
   requests        CourseRequest[]
@@ -177,68 +175,6 @@ model Lesson {
   quiz        Quiz?
 
   @@map("lessons")
-}
-
-// ==========================================
-// 3. NHÓM BÁN HÀNG & THANH TOÁN (PAYMENTS)
-// ==========================================
-
-enum OrderStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-}
-
-model Order {
-  id           Int         @id @default(autoincrement())
-  user_id      Int
-  coupon_id    Int?
-  total_price  Decimal     @db.Decimal(10, 2)
-  status       OrderStatus @default(PENDING)
-  created_at   DateTime    @default(now())
-
-  user        User        @relation(fields: [user_id], references: [id])
-  coupon      Coupon?     @relation(fields: [coupon_id], references: [id])
-  items       OrderItem[]
-  payments    Payment[]
-
-  @@map("orders")
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  order_id  Int
-  course_id Int
-  price     Decimal @db.Decimal(10, 2)
-
-  order  Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [course_id], references: [id])
-
-  @@map("order_items")
-}
-
-model Payment {
-  id             Int      @id @default(autoincrement())
-  order_id       Int
-  method         String   @db.VarChar(50) // Momo, Stripe, Bank Transfer
-  transaction_id String?  @unique @db.VarChar(255)
-  amount         Decimal  @db.Decimal(10, 2)
-  status         String   @default("SUCCESS")
-  created_at     DateTime @default(now())
-
-  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
-
-  @@map("payments")
-}
-
-model Coupon {
-  id               Int      @id @default(autoincrement())
-  code             String   @unique @db.VarChar(50)
-  discount_percent Int
-  expiry_date      DateTime
-  orders           Order[]
-
-  @@map("coupons")
 }
 
 // ==========================================

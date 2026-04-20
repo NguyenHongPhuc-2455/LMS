@@ -1,0 +1,62 @@
+import { Table, Space, Badge, Button, Popconfirm } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { PlayCircle, Edit, Trash2 } from 'lucide-react';
+import styles from '../LessonManagement.module.scss';
+
+interface Lesson {
+    id: number;
+    title: string;
+    video_url: string;
+    type: 'VIDEO' | 'DOCUMENT' | 'QUIZ';
+    order?: number;
+}
+
+interface LessonTableProps {
+    lessons: Lesson[];
+    loading: boolean;
+    onEdit: (lesson: Lesson) => void;
+    onDelete: (lesson: Lesson) => void;
+}
+
+export default function LessonTable({ lessons, loading, onEdit, onDelete }: LessonTableProps) {
+    const columns = [
+        { title: 'ID', dataIndex: 'id', width: 80 },
+        {
+            title: 'Tên bài giảng',
+            dataIndex: 'title',
+            render: (t: string, r: Lesson) => (
+                <Space>
+                    {r.type === 'QUIZ' ? <QuestionCircleOutlined className={styles.quizIcon} /> : <PlayCircle size={14} color="#6366f1" />}
+                    {t}
+                </Space>
+            )
+        },
+        {
+            title: 'Phân loại',
+            dataIndex: 'type',
+            render: (t: string) => t === 'QUIZ' ? <Badge status="warning" text="Trắc nghiệm" /> : <Badge status="processing" text="Video/Tài liệu" />
+        },
+        {
+            title: 'Hành động',
+            key: 'actions',
+            width: 150,
+            render: (record: Lesson) => (
+                <Space>
+                    <Button type="text" icon={<Edit size={16} />} onClick={() => onEdit(record)} />
+                    <Popconfirm title="Xóa bài giảng?" onConfirm={() => onDelete(record)}>
+                        <Button type="text" danger icon={<Trash2 size={16} />} />
+                    </Popconfirm>
+                </Space>
+            )
+        }
+    ];
+
+    return (
+        <Table
+            dataSource={lessons}
+            loading={loading}
+            rowKey="id"
+            columns={columns}
+        />
+    );
+}
