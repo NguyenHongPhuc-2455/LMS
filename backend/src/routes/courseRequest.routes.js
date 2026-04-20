@@ -13,7 +13,10 @@ router.get('/my-requests', courseRequestController.getMyRequests);
 // Admin/Manager routes (Giả sử có middleware check admin)
 // router.use(authMiddleware.restrictTo('admin', 'manager'));
 router.get('/pending', courseRequestController.getPendingRequests);
+router.post('/approve-bulk', courseRequestController.approveBulk);
+router.post('/reject-bulk', courseRequestController.rejectBulk);
 router.patch('/:id/approve', courseRequestController.approveRequest);
 router.patch('/:id/reject', courseRequestController.rejectRequest);
+
 
 module.exports = router;

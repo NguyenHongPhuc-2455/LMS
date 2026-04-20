@@ -5,7 +5,6 @@ const path = require('path');
 const authRoutes = require('./routes/auth.routes');
 const videoRoutes = require('./routes/video.routes');
 const courseRoutes = require('./routes/course.routes');
-const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
 const courseRequestRoutes = require('./routes/courseRequest.routes');
 const notificationRoutes = require('./routes/notification.routes');
@@ -15,6 +14,7 @@ const commentRoutes = require('./routes/comment.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const quizRoutes = require('./routes/quiz.routes');
 const programRoutes = require('./routes/program.routes');
+const programRequestRoutes = require('./routes/programRequest.routes');
 
 const app = express();
 
@@ -61,7 +61,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/quizzes', quizRoutes);
-app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/course-requests', courseRequestRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -69,6 +68,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/programs', programRoutes);
+app.use('/api/program-requests', programRequestRoutes);
 
 // Centralized Error Handling
 app.use(errorMiddleware);

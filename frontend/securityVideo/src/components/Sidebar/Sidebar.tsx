@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { HomeOutlined, BookOutlined, FileTextOutlined, PlusCircleOutlined, MessageOutlined, ApartmentOutlined } from '@ant-design/icons';
-import './Sidebar.scss';
+import { HomeOutlined, PlusCircleOutlined, MessageOutlined, ApartmentOutlined } from '@ant-design/icons';
+import styles from './Sidebar.module.scss';
 
 
 const Sidebar: React.FC = () => {
@@ -15,29 +15,30 @@ const Sidebar: React.FC = () => {
     ];
 
     return (
-        <div className="sidebar-container">
+        <div className={styles.sidebarContainer}>
             {menuItems.map(item => {
                 const isActive = location.pathname === item.key;
                 return (
                     <div
                         key={item.key}
                         onClick={() => navigate(item.key)}
-                        className={`sidebar-item ${isActive ? 'active' : ''}`}
+                        className={`${styles.sidebarItem} ${isActive ? styles.active : ''}`}
                     >
-                        <div className="sidebar-icon">{item.icon}</div>
-                        <span className="sidebar-label">{item.label}</span>
+                        <div className={styles.sidebarIcon}>{item.icon}</div>
+                        <span className={styles.sidebarLabel}>{item.label}</span>
                     </div>
                 );
             })}
 
-            <div className="sidebar-footer">
-                <div className="sidebar-plus-btn">
-                    <PlusCircleOutlined className="sidebar-plus-icon" />
+            <div className={styles.sidebarFooter}>
+                <div className={styles.sidebarPlusBtn}>
+                    <PlusCircleOutlined className={styles.sidebarPlusIcon} />
                 </div>
             </div>
         </div>
     );
 };
+
 
 export default Sidebar;
 

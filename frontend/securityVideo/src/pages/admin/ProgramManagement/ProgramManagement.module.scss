@@ -1,0 +1,79 @@
+.programManagementContainer {
+    padding: 10px;
+}
+
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .headerInfo {
+        .title {
+            margin: 0;
+        }
+    }
+}
+
+.searchBarWrapper {
+    margin-bottom: 20px;
+}
+
+.programInfoCell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .programThumb {
+        width: 80px;
+        height: 45px;
+        border-radius: 4px;
+        object-fit: cover;
+    }
+
+    .programTitle {
+        display: block;
+        font-weight: 600;
+    }
+
+    .programLevel {
+        font-size: 12px;
+    }
+}
+
+.statusCell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.courseDrawerList {
+    .drawerSectionTitle {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+
+    .addCourseSection {
+        margin: 16px 0 8px;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 16px;
+
+        .sectionLabel {
+            font-weight: 600;
+        }
+    }
+
+    .courseItemMeta {
+        .itemThumb {
+            border-radius: 4px;
+        }
+    }
+}
+
+.modalThumbPreview {
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    margin-top: 10px;
+}

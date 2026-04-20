@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import api from '../../../api';
+import { courseService } from '../../../services/course.service';
+import { contentService } from '../../../services/content.service';
+
+import { Plus } from 'lucide-react';
 import {
-    Trash2, Plus, Edit, FolderOpen
-} from 'lucide-react';
-import {
-    Card, Button, Input, Select, Space, Typography,
-    Table, Modal, Form, message, Popconfirm
+    Card, Button, Select, Typography,
+    message
 } from 'antd';
-import './SectionManagement.scss';
+import styles from './SectionManagement.module.scss';
+
+// New specialized components
+import SectionTable from './components/SectionTable';
+import SectionFormModal from './components/SectionFormModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -17,7 +21,7 @@ interface Section {
     id: number;
     title: string;
     order: number;
-    _count?: { lessons: number };
+    lessons?: any[];
 }
 
 interface Course {
@@ -35,24 +39,20 @@ export default function SectionManagement() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [form] = Form.useForm();
+    const [editingSection, setEditingSection] = useState<any>(null);
 
     const fetchCourses = async () => {
         try {
-            const res = await api.get('/courses');
-            setCourses(res.data);
-            if (res.data.length > 0 && !selectedCourseId) {
-                // Tự động chọn khóa học đầu tiên nếu chưa chọn
-                // setSelectedCourseId(res.data[0].id);
-            }
+            const data = await courseService.getAll();
+            setCourses(data);
         } catch (e) { message.error('Lỗi tải danh sách khóa học'); }
     };
 
     const fetchSections = async (courseId: number) => {
         setLoading(true);
         try {
-            const res = await api.get(`/courses/${courseId}`);
-            setSections(res.data.sections || []);
+            const data = await courseService.getById(courseId);
+            setSections(data.sections || []);
         } catch (e) {
             message.error('Lỗi tải danh chương');
         } finally {
@@ -62,7 +62,6 @@ export default function SectionManagement() {
 
     useEffect(() => {
         fetchCourses();
-
         const courseIdFromUrl = searchParams.get('courseId');
         if (courseIdFromUrl) {
             setSelectedCourseId(Number(courseIdFromUrl));
@@ -81,47 +80,39 @@ export default function SectionManagement() {
         if (!selectedCourseId) return;
         try {
             if (editingId) {
-                await api.put(`/courses/sections/${editingId}`, values);
+                await contentService.updateSection(editingId, values);
                 message.success('Đã cập nhật chương!');
             } else {
-                await api.post('/courses/sections', { ...values, course_id: selectedCourseId });
+                await contentService.createSection({ ...values, course_id: selectedCourseId });
                 message.success('Đã tạo chương mới!');
             }
+
             setIsModalOpen(false);
             setEditingId(null);
-            form.resetFields();
+            setEditingSection(null);
             fetchSections(selectedCourseId);
         } catch (e) { message.error('Lỗi lưu chương'); }
     };
 
-    const startEditing = (section: any) => {
-        setEditingId(section.id);
-        form.setFieldsValue({
-            title: section.title,
-            order: section.order
-        });
-        setIsModalOpen(true);
-    };
-
     const handleDelete = async (id: number) => {
         try {
-            await api.delete(`/courses/sections/${id}`);
+            await contentService.deleteSection(id);
             message.success('Đã xóa chương');
             if (selectedCourseId) fetchSections(selectedCourseId);
-        } catch (e) { message.error('Lỗi khi xóa chương'); }
+        } catch (e) { message.error('Lỗi xóa chương'); }
     };
 
     return (
-        <div className="section-management-container">
-            <div className="section-management-header">
+        <div className={styles.sectionManagementContainer}>
+            <div className={styles.sectionManagementHeader}>
                 <div>
-                    <Title level={4} className="header-title">Quản lý Chương Học</Title>
+                    <Title level={4} className={styles.headerTitle}>Quản lý Chương Học</Title>
                     <Text type="secondary">Phân bổ cấu trúc bài học cho từng khóa</Text>
                 </div>
                 <Button
                     type="primary"
                     disabled={!selectedCourseId}
-                    onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
+                    onClick={() => { setEditingId(null); setEditingSection(null); setIsModalOpen(true); }}
                     icon={<Plus size={16} />}
                 >
                     Thêm chương mới
@@ -129,12 +120,12 @@ export default function SectionManagement() {
             </div>
 
             <Card className="glass-card">
-                <div className="course-selector-wrapper">
+                <div className={styles.courseSelectorWrapper}>
                     <Text strong>Chọn khóa học:</Text>
                     <Select
                         showSearch
                         placeholder="Chọn khóa học để xem chương..."
-                        className="course-select"
+                        className={styles.courseSelect}
                         size="small"
                         value={selectedCourseId}
                         onChange={(v) => setSelectedCourseId(v)}
@@ -147,61 +138,25 @@ export default function SectionManagement() {
                     </Select>
                 </div>
 
-                {!selectedCourseId ? (
-                    <div className="empty-section-wrapper">
-                        <FolderOpen size={40} className="empty-icon" />
-                        <Text type="secondary" className="empty-text">Vui lòng chọn một khóa học bên trên để quản lý chương</Text>
-                    </div>
-                ) : (
-                    <Table
-                        dataSource={sections}
-                        loading={loading}
-                        rowKey="id"
-                        columns={[
-                            { title: 'Thứ tự', dataIndex: 'order', width: 100, sorter: (a, b) => a.order - b.order },
-                            {
-                                title: 'Tiêu đề chương',
-                                dataIndex: 'title',
-                                render: (text, record) => (
-                                    <span
-                                        className="section-title-link"
-                                        onClick={() => navigate(`/admin/lessons?courseId=${selectedCourseId}&sectionId=${record.id}`)}
-                                    >
-                                        {text}
-                                    </span>
-                                )
-                            },
-                            { title: 'Số bài giảng', key: 'lessons', render: (record) => record.lessons?.length || 0 },
-                            {
-                                title: 'Hành động',
-                                key: 'actions',
-                                width: 150,
-                                render: (record) => (
-                                    <Space>
-                                        <Button type="text" icon={<Edit size={16} />} onClick={() => startEditing(record)} />
-                                        <Popconfirm title="Xóa chương này?" onConfirm={() => handleDelete(record.id)}>
-                                            <Button type="text" danger icon={<Trash2 size={16} />} />
-                                        </Popconfirm>
-                                    </Space>
-                                )
-                            }
-                        ]}
-                    />
-                )}
+                <SectionTable
+                    sections={sections}
+                    loading={loading}
+                    courseSelected={!!selectedCourseId}
+                    onEdit={(s) => { setEditingId(s.id); setEditingSection(s); setIsModalOpen(true); }}
+                    onDelete={handleDelete}
+                    onNavigateLessons={(sid) => navigate(`/admin/lessons?courseId=${selectedCourseId}&sectionId=${sid}`)}
+                />
             </Card>
 
-            <Modal title={editingId ? "Chỉnh sửa Chương" : "Thêm Chương Mới"} open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null}>
-                <Form form={form} layout="vertical" onFinish={handleSave}>
-                    <Form.Item name="title" label="Tiêu đề chương" rules={[{ required: true }]}>
-                        <Input placeholder="Ví dụ: Chương 1: Giới thiệu" />
-                    </Form.Item>
-                    <Form.Item name="order" label="Thứ tự hiển thị" initialValue={0}>
-                        <Input type="number" />
-                    </Form.Item>
-                    <Button type="primary" htmlType="submit" block size="large">Hoàn tất</Button>
-                </Form>
-            </Modal>
+            <SectionFormModal
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                onSuccess={handleSave}
+                editingId={editingId}
+                initialValues={editingSection}
+            />
         </div>
     );
 }
+
 

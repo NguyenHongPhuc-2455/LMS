@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Card, Typography, Radio, Button, Space, Divider, Alert, message, Spin, Tag } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, SyncOutlined } from '@ant-design/icons';
-import api from '../../api';
-import './QuizPlayer.scss';
+import { quizService } from '../../services/quiz.service';
+import styles from './QuizPlayer.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -27,8 +27,9 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
         if (timerRef.current) clearInterval(timerRef.current);
 
         try {
-            const res = await api.get(`/quizzes/lesson/${lessonId}`);
-            const quizData = res.data.data;
+            const data = await quizService.getByLesson(lessonId);
+            const quizData = data.data;
+
             setQuiz(quizData);
 
             // Nếu có kết quả cũ thì hiển thị luôn (trừ khi đang ép làm mới bài)
@@ -109,9 +110,10 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
         }));
 
         try {
-            const res = await api.post(`/quizzes/${quiz.id}/submit`, { answers: formattedAnswers });
-            setResult(res.data.data);
-            if (res.data.data.status === 'PASSED' && onCompleted) {
+            const data = await quizService.submit(quiz.id, formattedAnswers);
+            setResult(data.data);
+
+            if (data.data.status === 'PASSED' && onCompleted) {
                 onCompleted();
             }
         } catch (e: any) {
@@ -127,22 +129,22 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    if (loading) return <div className="quiz-player-loading"><Spin size="large" /></div>;
+    if (loading) return <div className={styles.quizPlayerLoading}><Spin size="large" /></div>;
     if (!quiz) return <Alert type="error" message="Không tìm thấy bài trắc nghiệm" />;
 
     return (
-        <Card bordered={false} className="quiz-player-card">
-            <div className="quiz-header">
+        <Card bordered={false} className={styles.quizPlayerCard}>
+            <div className={styles.quizHeader}>
                 <div>
-                    <Title level={4} className="quiz-title">{quiz.lesson?.title || 'Bài Kiểm Tra'}</Title>
-                    {quiz.description && <Text type="secondary" className="quiz-desc">{quiz.description}</Text>}
+                    <Title level={4} className={styles.quizTitle}>{quiz.lesson?.title || 'Bài Kiểm Tra'}</Title>
+                    {quiz.description && <Text type="secondary" className={styles.quizDesc}>{quiz.description}</Text>}
                 </div>
                 <Space direction="vertical" align="end">
-                    <Tag color="geekblue" className="quiz-tag-pass">
+                    <Tag color="geekblue" className={styles.quizTagPass}>
                         Điểm Đạt: {quiz.pass_score}%
                     </Tag>
                     {timeLeft !== null && (
-                        <Tag icon={<ClockCircleOutlined />} color={timeLeft < 60 ? "error" : "default"} className="quiz-tag-timer">
+                        <Tag icon={<ClockCircleOutlined />} color={timeLeft < 60 ? "error" : "default"} className={styles.quizTagTimer}>
                             {formatTime(timeLeft)}
                         </Tag>
                     )}
@@ -152,27 +154,27 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
             <Divider />
 
             {result && (
-                <div className="quiz-result-summary">
+                <div className={styles.quizResultSummary}>
                     Kết quả: {result.correctCount} / {result.totalQuestions} câu đúng - Điểm: {result.score} / 100
                 </div>
             )}
 
-            <div className="questions-container">
+            <div className={styles.questionsContainer}>
                 {quiz.questions?.map((q: any, index: number) => {
                     const isCorrectAnswer = result?.status && q.options.find((o: any) => o.id === answers[q.id])?.is_correct;
                     const isIncorrectAnswer = result?.status && !q.options.find((o: any) => o.id === answers[q.id])?.is_correct && answers[q.id];
                     const notAnswered = result?.status && !answers[q.id];
 
                     return (
-                        <div key={q.id} className={`question-item ${result ? (isCorrectAnswer ? 'correct' : 'incorrect') : ''}`}>
-                            <Title level={5} className="question-title-wrapper">
-                                <span className="question-number">
+                        <div key={q.id} className={`${styles.questionItem} ${result ? (isCorrectAnswer ? styles.correct : styles.incorrect) : ''}`}>
+                            <Title level={5} className={styles.questionTitleWrapper}>
+                                <span className={styles.questionNumber}>
                                     {index + 1}
                                 </span>
                                 <div>
                                     {q.content}
                                     {result && (
-                                        <span className="question-status-icon">
+                                        <span className={styles.questionStatusIcon}>
                                             {isCorrectAnswer && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
                                             {isIncorrectAnswer && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
                                             {notAnswered && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
@@ -185,7 +187,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                 onChange={(e) => handleOptionChange(q.id, e.target.value)}
                                 value={answers[q.id]}
                                 disabled={!!result}
-                                className="options-group"
+                                className={styles.optionsGroup}
                             >
                                 {q.options?.map((o: any) => {
                                     const showCorrect = result && o.is_correct;
@@ -193,7 +195,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                         <Radio
                                             key={o.id}
                                             value={o.id}
-                                            className={`option-item ${showCorrect ? 'correct-option' : ''}`}
+                                            className={`${styles.optionItem} ${showCorrect ? styles.correctOption : ''}`}
                                         >
                                             {o.content} {showCorrect && <Text type="success" style={{ marginLeft: 8 }}>(Đáp án đúng)</Text>}
                                         </Radio>
@@ -207,7 +209,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                     description={q.explanation}
                                     type="info"
                                     showIcon
-                                    className="explanation-alert"
+                                    className={styles.explanationAlert}
                                 />
                             )}
                         </div>
@@ -217,14 +219,14 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
 
             <Divider />
 
-            <div className="submit-btn-wrapper">
+            <div className={styles.submitBtnWrapper}>
                 {!result ? (
                     <Button
                         type="primary"
                         size="large"
                         onClick={handleSubmit}
                         loading={submitting}
-                        className="submit-btn"
+                        className={styles.submitBtn}
                     >
                         Nộp Bài
                     </Button>
@@ -233,7 +235,7 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                         icon={<SyncOutlined />}
                         size="large"
                         onClick={() => fetchQuiz(true)}
-                        className="submit-btn"
+                        className={styles.submitBtn}
                     >
                         Làm Lại Bài
                     </Button>
@@ -242,5 +244,6 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
         </Card>
     );
 }
+
 
 

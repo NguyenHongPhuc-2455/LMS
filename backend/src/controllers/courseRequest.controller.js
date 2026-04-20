@@ -59,6 +59,37 @@ exports.requestAccess = catchAsync(async (req, res) => {
         }
     });
 
+    // 5. Thông báo cho tất cả Admin
+    try {
+        const admins = await prisma.user.findMany({
+            where: {
+                user_roles: {
+                    some: {
+                        role: { name: 'admin' }
+                    }
+                }
+            },
+            select: { id: true }
+        });
+
+        const student = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { full_name: true, username: true }
+        });
+
+        for (const admin of admins) {
+            await notificationService.createNotification({
+                userId: admin.id,
+                title: 'Yêu cầu phê duyệt khóa học mới',
+                message: `Học viên ${student.full_name || student.username} đã gửi yêu cầu tham gia khóa học "${course.title}".`,
+                type: 'NEW_COURSE_REQUEST',
+                link: `/admin/requests`
+            });
+        }
+    } catch (error) {
+        console.error('❌ Lỗi khi gửi thông báo cho Admin:', error);
+    }
+
     res.status(201).json({
         message: 'Gửi yêu cầu thành công, vui lòng chờ Admin phê duyệt',
         data: newRequest
@@ -190,3 +221,64 @@ exports.rejectRequest = catchAsync(async (req, res) => {
 
     res.json({ message: 'Đã từ chối yêu cầu truy cập', data: updatedRequest });
 });
+
+exports.approveBulk = catchAsync(async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) throw new ApiError(400, 'ids array là bắt buộc');
+
+    const requests = await prisma.courseRequest.findMany({
+        where: { id: { in: ids.map(id => parseInt(id)) }, status: 'PENDING' },
+        include: { course: { select: { id: true, title: true } } }
+    });
+
+    for (const request of requests) {
+        await prisma.courseRequest.update({
+            where: { id: request.id },
+            data: { status: 'APPROVED' }
+        });
+
+        await prisma.enrollment.upsert({
+            where: { user_id_course_id: { user_id: request.user_id, course_id: request.course_id } },
+            update: {},
+            create: { user_id: request.user_id, course_id: request.course_id }
+        });
+
+        await notificationService.createNotification({
+            userId: request.user_id,
+            title: 'Yêu cầu được phê duyệt',
+            message: `Yêu cầu tham gia khóa học "${request.course.title}" của bạn đã được phê duyệt.`,
+            type: 'COURSE_APPROVAL',
+            link: `/course/${request.course_id}`
+        });
+    }
+
+    res.json({ message: `Đã phê duyệt ${requests.length} yêu cầu` });
+});
+
+exports.rejectBulk = catchAsync(async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) throw new ApiError(400, 'ids array là bắt buộc');
+
+    const requests = await prisma.courseRequest.findMany({
+        where: { id: { in: ids.map(id => parseInt(id)) }, status: 'PENDING' },
+        include: { course: { select: { id: true, title: true } } }
+    });
+
+    for (const request of requests) {
+        await prisma.courseRequest.update({
+            where: { id: request.id },
+            data: { status: 'REJECTED' }
+        });
+
+        await notificationService.createNotification({
+            userId: request.user_id,
+            title: 'Yêu cầu bị từ chối',
+            message: `Yêu cầu tham gia khóa học "${request.course.title}" của bạn đã bị từ chối.`,
+            type: 'COURSE_REJECTION',
+            link: `/course/${request.course_id}`
+        });
+    }
+
+    res.json({ message: `Đã từ chối ${requests.length} yêu cầu` });
+});
+

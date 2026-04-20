@@ -3,7 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { Sidebar, AppHeader, AppFooter } from '../';
 
 import { Layout } from 'antd';
-import './MainLayout.scss';
+import styles from './MainLayout.module.scss';
 
 const { Content } = Layout;
 
@@ -20,12 +20,12 @@ const MainLayout: React.FC = () => {
     }
 
     return (
-        <Layout className="main-layout">
+        <Layout className={styles.mainLayout}>
             <AppHeader />
-            <Layout className="main-layout-body">
+            <Layout className={styles.mainLayoutBody}>
                 <Sidebar />
-                <Content className="main-content">
-                    <div className="animate-fade-in page-wrapper">
+                <Content className={styles.mainContent}>
+                    <div className={`animate-fade-in ${styles.pageWrapper}`}>
                         <Outlet />
                     </div>
                 </Content>
@@ -34,6 +34,7 @@ const MainLayout: React.FC = () => {
         </Layout>
     );
 };
+
 
 export default MainLayout;
 

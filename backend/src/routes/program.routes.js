@@ -10,7 +10,9 @@ router.post('/', auth.verifyToken, c.createProgram);
 router.put('/:id', auth.verifyToken, c.updateProgram);
 router.delete('/:id', auth.verifyToken, auth.isAdmin, c.deleteProgram);
 router.post('/:id/courses', auth.verifyToken, auth.isAdmin, c.addCourseToProgram);
+router.put('/:id/courses/reorder', auth.verifyToken, auth.isAdmin, c.reorderProgramCourses);
 router.delete('/:id/courses/:courseId', auth.verifyToken, auth.isAdmin, c.removeCourseFromProgram);
+
 router.post('/:id/enroll', auth.verifyToken, c.enrollProgram);
 
 module.exports = router;

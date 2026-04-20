@@ -2,8 +2,9 @@ import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 're
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import 'videojs-youtube';
-import api from '../../api';
-import './VideoJsPlayer.scss';
+import { contentService } from '../../services/content.service';
+import styles from './VideoJsPlayer.module.scss';
+
 
 interface VideoJsPlayerProps {
     src: string;
@@ -146,7 +147,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
             const currentLessonId = stateRef.current.lessonId;
             if (currentLessonId) {
                 try {
-                    await api.post(`/videos/complete/${currentLessonId}`);
+                    await contentService.completeLesson(currentLessonId);
                 } catch (e) {
                     console.error('Lỗi báo cáo tiến độ');
                 }
@@ -173,7 +174,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     }, [src, lessonId]);
 
     return (
-        <div className="video-js-player-container">
+        <div className={styles.videoJsPlayerContainer}>
             <div data-vjs-player ref={containerRef}></div>
         </div>
     );

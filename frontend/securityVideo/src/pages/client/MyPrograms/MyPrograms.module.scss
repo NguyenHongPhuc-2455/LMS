@@ -1,0 +1,95 @@
+.myProgramsContainer {
+    padding: 10px 3%;
+    min-height: 100vh;
+}
+
+.pageHeader {
+    margin-bottom: 28px;
+
+    .headerTitle {
+        margin: 0;
+    }
+}
+
+.programsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.programCard {
+    border-radius: $radius-base;
+    overflow: hidden;
+    border: none;
+    box-shadow: $shadow-sm;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: $shadow-base;
+    }
+
+    .cardCoverWrapper {
+        height: 130px;
+        background: $primary-gradient;
+        position: relative;
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .emptyThumb {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #fff;
+            font-size: 36px;
+        }
+    }
+
+    .cardBodyContent {
+        padding: 16px;
+    }
+
+    .programLevelTag {
+        font-size: 10px;
+    }
+
+    .programCardTitle {
+        margin-top: 6px;
+        margin-bottom: 0;
+    }
+
+    .instructorText {
+        font-size: 12px;
+    }
+
+    .cardFooter {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+
+        .statsText {
+            color: $text-muted;
+            font-size: 12px;
+        }
+
+        .enrolledDate {
+            font-size: 11px;
+        }
+    }
+
+    .actionBtn {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
+
+.loadingContainer {
+    padding: 60px 40px;
+}

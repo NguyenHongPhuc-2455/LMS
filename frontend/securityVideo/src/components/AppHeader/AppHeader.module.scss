@@ -1,0 +1,171 @@
+.appHeaderContainer {
+    background: #FFF;
+    padding: 0 28px;
+    height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0f0f0;
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+    width: 100%;
+}
+
+.appHeaderLogo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+
+    .logoImg {
+        height: 50px;
+        object-fit: contain;
+    }
+}
+
+.headerSearchMiddle {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 0 40px;
+}
+
+.searchInputWrapper {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+}
+
+.appSearchInput {
+    border-radius: 20px;
+    background: #FFF;
+    border: 2px solid #e8e8e8;
+    padding: 6px 18px;
+    height: 40px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-shadow: none;
+
+    :global {
+        .ant-input-prefix {
+            margin-right: 8px;
+
+            .anticon {
+                color: #757575;
+                font-size: 18px;
+            }
+        }
+    }
+}
+
+.headerNotifTrigger {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    :global(.anticon) {
+        font-size: 22px;
+        color: #495057;
+    }
+}
+
+.headerUserAvatar {
+    cursor: pointer;
+    border: 1px solid #f8f9fa;
+}
+
+.notificationContainer {
+    width: 310px;
+}
+
+.notificationHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 4px;
+
+    .notifTitle {
+        font-size: 14px;
+    }
+
+    .actionBtn {
+        padding: 0;
+        font-size: 11px;
+    }
+}
+
+.notificationList {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notificationItem {
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: all 0.2s;
+    border: none;
+
+    &.unread {
+        background: #f0f7ff;
+    }
+
+    &.read {
+        background: transparent;
+    }
+}
+
+.deleteNotifBtn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+
+    :global(.anticon) {
+        color: #ff4d4f;
+        font-size: 12px;
+    }
+}
+
+.notifItemTitleWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+
+    .notifItemTitle {
+        font-size: 12px;
+        line-height: 1.4;
+        flex: 1;
+    }
+
+    .notifTime {
+        font-size: 10px;
+        white-space: nowrap;
+    }
+}
+
+.notifItemDesc {
+    font-size: 11px;
+    line-height: 1.4;
+    display: block;
+    margin-top: 2px;
+}
+
+.iconSuccess {
+    color: #52c41a;
+}
+
+.iconPrimary {
+    color: #6366f1;
+}
+
+.iconError {
+    color: #ff4d4f;
+}
+
+.cursorPointer {
+    cursor: pointer;
+}

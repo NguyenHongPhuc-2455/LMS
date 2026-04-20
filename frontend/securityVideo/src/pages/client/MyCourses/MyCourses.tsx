@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, Row, Col, Progress, Typography, Button, Empty, Skeleton, Tag, Space } from 'antd';
 import { PlayCircleOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../api';
-import './MyCourses.scss';
+import { courseService } from '../../../services/course.service';
+import styles from './MyCourses.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -14,8 +14,9 @@ export default function MyCourses() {
 
     const fetchMyCourses = async () => {
         try {
-            const res = await api.get('/courses/my-courses');
-            setCourses(res.data);
+            const data = await courseService.getMyCourses();
+            setCourses(data);
+
         } catch (error) {
             console.error('Lỗi fetch khóa học:', error);
         } finally {
@@ -29,21 +30,21 @@ export default function MyCourses() {
 
     if (loading) {
         return (
-            <div className="my-courses-loading">
+            <div className={styles.myCoursesLoading}>
                 <Skeleton active paragraph={{ rows: 10 }} />
             </div>
         );
     }
 
     return (
-        <div className="my-courses-container">
-            <div className="my-courses-header">
-                <Title level={2} className="header-title">Khóa học của tôi</Title>
+        <div className={styles.myCoursesContainer}>
+            <div className={styles.myCoursesHeader}>
+                <Title level={2} className={styles.headerTitle}>Khóa học của tôi</Title>
                 <Text type="secondary">Quản lý tiến độ và tiếp tục hành trình rèn luyện kỹ năng của bạn.</Text>
             </div>
 
             {courses.length === 0 ? (
-                <Card bordered={false} className="glass-card empty-courses-card">
+                <Card bordered={false} className={`glass-card ${styles.emptyCoursesCard}`}>
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                         description={
@@ -61,32 +62,32 @@ export default function MyCourses() {
                             <Card
                                 hoverable
                                 cover={
-                                    <div className="course-card-cover">
+                                    <div className={styles.courseCardCover}>
                                         <img
                                             alt={course.title}
                                             src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'}
-                                            className="course-thumb"
+                                            className={styles.courseThumb}
                                         />
-                                        <div className="status-tag-wrapper">
-                                            <Tag color={course.progressPercent === 100 ? 'success' : 'processing'} className="status-tag">
+                                        <div className={styles.statusTagWrapper}>
+                                            <Tag color={course.progressPercent === 100 ? 'success' : 'processing'} className={styles.statusTag}>
                                                 {course.progressPercent === 100 ? 'HOÀN THÀNH' : 'ĐANG HỌC'}
                                             </Tag>
                                         </div>
                                     </div>
                                 }
-                                className="progress-course-card"
+                                className={styles.progressCourseCard}
                                 onClick={() => navigate(`/course/${course.id}/learning${course.nextLessonId ? `?lessonId=${course.nextLessonId}` : ''}`)}
                             >
-                                <div className="course-card-title-wrapper">
-                                    <Title level={5} className="course-card-title line-clamp-2">
+                                <div className={styles.courseCardTitleWrapper}>
+                                    <Title level={5} className={`${styles.courseCardTitle} line-clamp-2`}>
                                         {course.title}
                                     </Title>
                                 </div>
 
-                                <div className="course-progress-section">
-                                    <div className="progress-info">
-                                        <Text className="progress-label">Tiến độ</Text>
-                                        <Text strong className="progress-percent">{course.progressPercent}%</Text>
+                                <div className={styles.courseProgressSection}>
+                                    <div className={styles.progressInfo}>
+                                        <Text className={styles.progressLabel}>Tiến độ</Text>
+                                        <Text strong className={styles.progressPercent}>{course.progressPercent}%</Text>
                                     </div>
                                     <Progress
                                         percent={course.progressPercent}
@@ -97,11 +98,11 @@ export default function MyCourses() {
                                     />
                                 </div>
 
-                                <div className="course-card-footer">
-                                    <Space size={12} className="stats-space">
+                                <div className={styles.courseCardFooter}>
+                                    <Space size={12} className={styles.statsSpace}>
                                         <span><BookOutlined /> {course.completedLessons}/{course.totalLessons} bài</span>
                                     </Space>
-                                    <Text type="secondary" className="date-text">
+                                    <Text type="secondary" className={styles.dateText}>
                                         <ClockCircleOutlined /> {new Date(course.enrolledAt).toLocaleDateString('vi-VN')}
                                     </Text>
                                 </div>
@@ -110,7 +111,7 @@ export default function MyCourses() {
                                     type="primary"
                                     block
                                     icon={<PlayCircleOutlined />}
-                                    className={`continue-btn ${course.progressPercent === 100 ? 'completed' : ''}`}
+                                    className={`${styles.continueBtn} ${course.progressPercent === 100 ? styles.completed : ''}`}
                                 >
                                     {course.progressPercent === 100 ? 'Xem lại bài học' : 'Tiếp tục học'}
                                 </Button>

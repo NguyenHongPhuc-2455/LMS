@@ -1,0 +1,215 @@
+.adminLayoutContainer {
+    min-height: 100vh;
+    background: #F5F6FA;
+    font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+.adminSidebar {
+    border-right: 1px solid #E0E0E0;
+    background: #FFFFFF;
+    overflow: auto;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+}
+
+.adminLogoSection {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #F1F5F9;
+    gap: 16px;
+
+    &.collapsed {
+        justify-content: center;
+        padding: 0;
+    }
+
+    &.expanded {
+        justify-content: flex-start;
+        padding: 0 28px;
+    }
+}
+
+.sidebarToggleIcon {
+    font-size: 20px;
+    cursor: pointer;
+    color: #718096;
+}
+
+.adminLogoImg {
+    height: 40px;
+    object-fit: contain;
+}
+
+.adminMenu {
+    border-right: 0;
+    padding: 0 10px;
+}
+
+.adminMainLayout {
+    transition: all 0.2s ease 0s;
+}
+
+.adminHeader {
+    padding: 0 24px;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #E0E0E0;
+    height: 70px;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+}
+
+.headerSearchWrapper {
+    position: relative;
+    width: 380px;
+}
+
+.adminSearchInput {
+    border-radius: 20px;
+    background: #FFF;
+    border: 2px solid #e8e8e8;
+    padding: 6px 18px;
+    height: 40px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-shadow: none;
+
+    :global {
+        .ant-input-prefix {
+            margin-right: 8px;
+
+            .anticon {
+                color: #757575;
+                font-size: 18px;
+            }
+        }
+    }
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+}
+
+.notificationIcon {
+    font-size: 20px;
+    color: #718096;
+    cursor: pointer;
+}
+
+.languageSelector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    .langIcon {
+        font-size: 20px;
+        color: #718096;
+    }
+
+    .langText {
+        font-weight: 500;
+        color: #4A5568;
+    }
+
+    .langArrow {
+        font-size: 10px;
+        color: #A0AEC0;
+    }
+}
+
+.userProfileDropdown {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.userName {
+    font-weight: 600;
+    color: #2D3748;
+}
+
+.userRole {
+    font-size: 12px;
+    color: #A0AEC0;
+    text-transform: capitalize;
+}
+
+.userArrow {
+    font-size: 10px;
+    color: #A0AEC0;
+}
+
+.adminContent {
+    padding: 24px 30px;
+    min-height: 280px;
+}
+
+// Notification Popover Styles
+.notificationContainer {
+    width: 320px;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+.notificationHeader {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notificationList {
+    overflow-y: auto;
+
+    :global {
+        .ant-list-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+
+            &:hover {
+                background: #f7fafc;
+            }
+        }
+    }
+}
+
+.notificationItem {
+    &.unread {
+        background: #ebf8ff;
+    }
+
+    &.read {
+        background: #fff;
+    }
+}
+
+.notifMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notifTime {
+    font-size: 11px;
+    color: #a0aec0;
+}

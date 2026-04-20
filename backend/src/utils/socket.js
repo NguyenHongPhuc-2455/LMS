@@ -40,9 +40,6 @@ exports.init = (server) => {
     return io;
 };
 
-/**
- * Gửi dữ liệu cho một user cụ thể
- */
 exports.emitToUser = (userId, event, data) => {
     if (!io) return;
     const socketId = userSockets.get(userId.toString());
@@ -51,6 +48,40 @@ exports.emitToUser = (userId, event, data) => {
         console.log(`📢 Đã gửi event '${event}' tới user ${userId}`);
     } else {
         console.log(`⚠️ Không tìm thấy socketId cho user ${userId}`);
+    }
+};
+
+/**
+ * Gửi dữ liệu cho tất cả các Admin đang online
+ */
+exports.emitToAdmins = async (event, data) => {
+    if (!io) return;
+
+    try {
+        const prisma = require('../configs/prisma');
+        // Tìm tất cả user có role 'admin'
+        const admins = await prisma.user.findMany({
+            where: {
+                user_roles: {
+                    some: {
+                        role: {
+                            name: 'admin'
+                        }
+                    }
+                }
+            },
+            select: { id: true }
+        });
+
+        admins.forEach(admin => {
+            const socketId = userSockets.get(admin.id.toString());
+            if (socketId) {
+                io.to(socketId).emit(event, data);
+                console.log(`📢 Đã gửi event '${event}' tới Admin ${admin.id}`);
+            }
+        });
+    } catch (error) {
+        console.error('❌ Lỗi khi gửi broadcast tới Admins:', error);
     }
 };
 

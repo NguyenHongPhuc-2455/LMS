@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../../api';
-import { UserAddOutlined, MailOutlined, LockOutlined, RocketOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { App, Form, Input, Button, Typography, Card } from 'antd';
-import '../Auth.scss';
-
+import { authService } from '../../services/auth.service';
+import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
+import { App, Form, Input, Button, Typography, Checkbox } from 'antd';
+import styles from '../Auth.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -16,7 +15,7 @@ export default function Register() {
     const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            await api.post('/auth/register', values);
+            await authService.register(values);
             message.success('Ghi danh thành công! Mời bạn đăng nhập');
             navigate('/login');
         } catch (error: any) {
@@ -27,84 +26,50 @@ export default function Register() {
     };
 
     return (
-        <div className="auth-container">
-            <Card className="auth-card" variant="borderless">
-                <div className="auth-header">
-                    <div className="auth-icon-wrapper register">
-                        <UserAddOutlined className="auth-header-icon" />
-                    </div>
-                    <Title level={2} className="premium-title auth-header-title">Ghi danh mới</Title>
-                    <Text type="secondary" className="auth-header-desc">Bắt đầu hành trình chinh phục kiến thức ngay hôm nay</Text>
+        <div className={styles.authContainer}>
+            <div className={styles.blob1}></div>
+            <div className={styles.blob2}></div>
+
+            <div className={`${styles.authWrapper} ${styles.registerLayout}`}>
+                {/* Side: Form */}
+                <div className={styles.authSideForm}>
+                    <Title level={2} className={styles.sideTitle}>Create Account</Title>
+                    <Form layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
+                        <Form.Item name="username" rules={[{ required: true, message: 'Nhập tài khoản!' }]}>
+                            <Input prefix={<UserOutlined className={styles.authInputPrefix} />} placeholder="Username" />
+                        </Form.Item>
+
+                        <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Nhập Email!' }]}>
+                            <Input prefix={<MailOutlined className={styles.authInputPrefix} />} placeholder="E-mail" />
+                        </Form.Item>
+
+                        <Form.Item name="password" rules={[{ required: true, min: 6, message: 'Tối thiểu 6 ký tự' }]}>
+                            <Input.Password prefix={<LockOutlined className={styles.authInputPrefix} />} placeholder="Password" />
+                        </Form.Item>
+
+                        <div className={styles.formExtras}>
+                            <Checkbox>I accept the terms of the agreement</Checkbox>
+                        </div>
+
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit" className={styles.btnTheme} block loading={loading}>
+                                Sign Up
+                            </Button>
+                        </Form.Item>
+
+                    </Form>
                 </div>
 
-                <Form
-                    layout="vertical"
-                    onFinish={onFinish}
-                    requiredMark={false}
-                    size="large"
-                >
-                    <Form.Item
-                        label="Tên đăng nhập"
-                        name="username"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập tên tài khoản!' },
-                            { pattern: /^[a-zA-Z0-9_]{3,20}$/, message: 'Username từ 3-20 ký tự, không chứa ký tự đặc biệt!' }
-                        ]}
-                    >
-                        <Input
-                            prefix={<UserAddOutlined className="auth-input-prefix" />}
-                            placeholder="Chọn tên đăng nhập"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Địa chỉ Email"
-                        name="email"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập Email!' },
-                            { type: 'email', message: 'Email không đúng định dạng!' }
-                        ]}
-                    >
-                        <Input
-                            prefix={<MailOutlined className="auth-input-prefix" />}
-                            placeholder="example@gmail.com"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Mật khẩu"
-                        name="password"
-                        rules={[
-                            { required: true, message: 'Bắt buộc nhập!' },
-                            { min: 6, message: 'Tối thiểu 6 ký tự' }
-                        ]}
-                    >
-                        <Input.Password
-                            prefix={<LockOutlined className="auth-input-prefix" />}
-                            placeholder="Tối thiểu 6 ký tự"
-                        />
-                    </Form.Item>
-
-                    <Form.Item className="auth-form-item-btn">
-                        <Button
-                            type="primary"
-                            htmlType="submit"
-                            className="btn-primary"
-                            loading={loading}
-                            icon={<RocketOutlined />}
-                        >
-                            Kích hoạt tài khoản
-                        </Button>
-                    </Form.Item>
-
-                    <div className="auth-footer">
-                        <Link to="/login" className="auth-back-link">
-                            <ArrowLeftOutlined />
-                            <span>Đã có tài khoản? Quay về Đăng nhập</span>
-                        </Link>
-                    </div>
-                </Form>
-            </Card>
+                {/* Side: Info Area */}
+                <div className={styles.authSideInfo}>
+                    <Title level={1} className={styles.infoTitle}>Get Started</Title>
+                    <Text className={styles.infoDesc}>Already have an account?</Text>
+                    <Link to="/login">
+                        <Button className={styles.btnOutline}>Log in</Button>
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 }
+

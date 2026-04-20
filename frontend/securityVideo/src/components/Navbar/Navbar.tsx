@@ -11,7 +11,8 @@ import {
 import { useNotifications } from '../../hooks/useNotifications';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import './Navbar.scss';
+import styles from './Navbar.module.scss';
+
 
 dayjs.extend(relativeTime);
 
@@ -52,17 +53,17 @@ export default function Navbar() {
     } = useNotifications(user?.id);
 
     const notificationContent = (
-        <div className="notification-container">
-            <div className="notification-header">
-                <Text strong className="notif-title">Thông báo</Text>
+        <div className={styles.notificationContainer}>
+            <div className={styles.notificationHeader}>
+                <Text strong className={styles.notifTitle}>Thông báo</Text>
                 <Space size={8}>
                     {unreadCount > 0 && (
-                        <Button type="link" size="small" onClick={markAllAsRead} className="action-btn">
+                        <Button type="link" size="small" onClick={markAllAsRead} className={styles.actionBtn}>
                             Đọc hết
                         </Button>
                     )}
                     {notifications.length > 0 && (
-                        <Button type="link" danger size="small" onClick={deleteAllNotifications} className="action-btn">
+                        <Button type="link" danger size="small" onClick={deleteAllNotifications} className={styles.actionBtn}>
                             Xóa hết
                         </Button>
                     )}
@@ -75,7 +76,7 @@ export default function Navbar() {
                 locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có thông báo nào" /> }}
                 renderItem={(item) => (
                     <List.Item
-                        className={`notification-item ${item.is_read ? 'read' : 'unread'}`}
+                        className={`${styles.notificationItem} ${item.is_read ? styles.read : styles.unread}`}
                         onClick={() => !item.is_read && markAsRead(item.id)}
                         actions={[
                             <Button
@@ -86,26 +87,26 @@ export default function Navbar() {
                                     e.stopPropagation();
                                     deleteNotification(item.id);
                                 }}
-                                className="delete-notif-btn"
+                                className={styles.deleteNotifBtn}
                             />
                         ]}
                     >
                         <List.Item.Meta
                             title={
-                                <div className="notif-item-title-wrapper">
-                                    <Text strong={!item.is_read} className="notif-item-title">{item.title}</Text>
-                                    <Text type="secondary" className="notif-time">{dayjs(item.created_at).fromNow()}</Text>
+                                <div className={styles.notifItemTitleWrapper}>
+                                    <Text strong={!item.is_read} className={styles.notifItemTitle}>{item.title}</Text>
+                                    <Text type="secondary" className={styles.notifTime}>{dayjs(item.created_at).fromNow()}</Text>
                                 </div>
                             }
                             description={
-                                <Text type={item.is_read ? 'secondary' : undefined} className="notif-item-desc">
+                                <Text type={item.is_read ? 'secondary' : undefined} className={styles.notifItemDesc}>
                                     {item.message}
                                 </Text>
                             }
                         />
                     </List.Item>
                 )}
-                className="notification-list"
+                className={styles.notificationList}
             />
         </div>
     );
@@ -147,20 +148,20 @@ export default function Navbar() {
     };
 
     return (
-        <Header className="navbar-header">
+        <Header className={styles.navbarHeader}>
             {/* Logo Section */}
             <div
-                className="navbar-logo-section"
+                className={styles.navbarLogoSection}
                 onClick={() => navigate('/')}
             >
-                <img src="/logo/logo.png" alt="Logo" className="logo-img" />
+                <img src="/logo/logo.png" alt="Logo" className={styles.logoImg} />
             </div>
 
             {/* Navigation Menu */}
             <Menu
                 mode="horizontal"
                 selectedKeys={[location.pathname]}
-                className="navbar-menu"
+                className={styles.navbarMenu}
                 items={menuItems}
             />
 
@@ -176,24 +177,24 @@ export default function Navbar() {
                         <Button
                             type="text"
                             icon={<BellOutlined />}
-                            className="bell-btn"
+                            className={styles.bellBtn}
                         />
                     </Badge>
                 </Popover>
 
-                <div className="vertical-divider" />
+                <div className={styles.verticalDivider} />
 
                 <Dropdown menu={userMenu} placement="bottomRight" arrow={{ pointAtCenter: true }} trigger={['click']}>
-                    <div className="user-dropdown-trigger">
-                        <div className="user-info-text">
-                            <Text strong className="user-name-text">{user?.full_name || user?.username}</Text>
-                            <Text className="user-role-text">{isAdmin ? 'Quản trị viên' : 'Học viên'}</Text>
+                    <div className={styles.userDropdownTrigger}>
+                        <div className={styles.userInfoText}>
+                            <Text strong className={styles.userNameText}>{user?.full_name || user?.username}</Text>
+                            <Text className={styles.userRoleText}>{isAdmin ? 'Quản trị viên' : 'Học viên'}</Text>
                         </div>
                         <Avatar
                             src={user?.avatar}
                             size={44}
                             icon={<UserOutlined />}
-                            className="user-navbar-avatar"
+                            className={styles.userNavbarAvatar}
                         />
                     </div>
                 </Dropdown>

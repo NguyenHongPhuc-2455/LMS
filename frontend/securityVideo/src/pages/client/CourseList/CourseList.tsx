@@ -1,54 +1,37 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import {
-    BookOutlined, ClockCircleOutlined,
-    RocketOutlined
-} from '@ant-design/icons';
-import { Card, Badge, Typography, Space, message, Skeleton, Empty, Pagination, Select } from 'antd';
-const { Option } = Select;
-import api from '../../../api';
-import './CourseList.scss';
+import { useSearchParams } from 'react-router-dom';
+import { Skeleton, message, Empty } from 'antd';
+import { courseService } from '../../../services/course.service';
+import styles from './CourseList.module.scss';
 
-const { Title, Text } = Typography;
-
-interface Course {
-    id: number;
-    title: string;
-    description: string;
-    level: string;
-    thumbnail: string;
-    category?: { name: string };
-    instructor?: { full_name: string; username: string };
-    is_private: boolean;
-    created_at: string;
-    _count?: { sections: number };
-}
+// Sub-components
+import CourseFilter from './components/CourseFilter';
+import CourseGrid from './components/CourseGrid';
+import type { Course } from '../components/CourseCard';
 
 export default function CourseList() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
     const searchQuery = searchParams.get('search') || '';
 
-    // Phân trang
+    // Phân trang & Sắp xếp
     const [currentPagePrivate, setCurrentPagePrivate] = useState(1);
     const [currentPagePublic, setCurrentPagePublic] = useState(1);
     const [sortBy, setSortBy] = useState('newest');
     const pageSize = 4;
 
     useEffect(() => {
-        // Reset về trang 1 khi tìm kiếm
         setCurrentPagePrivate(1);
         setCurrentPagePublic(1);
-    }, [searchQuery]);
+    }, [searchQuery, sortBy]);
 
     useEffect(() => {
         const fetchCourses = async () => {
             try {
                 setLoading(true);
-                const res = await api.get(`/courses${searchQuery ? `?search=${searchQuery}` : ''}`);
-                setCourses(res.data);
+                const data = await courseService.getAll(searchQuery);
+                setCourses(data);
             } catch (error) {
                 message.error('Lỗi khi tải danh sách khóa học');
             } finally {
@@ -60,7 +43,7 @@ export default function CourseList() {
 
     if (loading) {
         return (
-            <div className="loader-container">
+            <div className={styles.loaderContainer}>
                 <Skeleton active paragraph={{ rows: 10 }} />
             </div>
         );
@@ -92,264 +75,34 @@ export default function CourseList() {
     const publicCourses = sortCourses(courses.filter(c => !c.is_private));
     const privateCourses = sortCourses(courses.filter(c => c.is_private));
 
-    // Dữ liệu hiển thị sau khi phân trang
-    const displayedPrivateCourses = privateCourses.slice(
-        (currentPagePrivate - 1) * pageSize,
-        currentPagePrivate * pageSize
-    );
-    const displayedPublicCourses = publicCourses.slice(
-        (currentPagePublic - 1) * pageSize,
-        currentPagePublic * pageSize
-    );
-
     return (
-        <div className="course-list-container">
-            {/* Mục Khóa học Riêng tư */}
-            {privateCourses.length > 0 ? (
-                <div className="course-section">
-                    <div className="section-header-combined">
-                        <div className="section-header">
-                            <Title level={2} className="section-title">
-                                Khóa học Riêng tư (Cần phê duyệt)
-                            </Title>
-                            <Badge count="Yêu cầu" className="badge-private" />
-                        </div>
-                        <div className="sort-wrapper">
-                            <Space>
-                                <span className="sort-label">Sắp xếp theo:</span>
-                                <Select
-                                    defaultValue="newest"
-                                    className="sort-select"
-                                    onChange={(val) => setSortBy(val)}
-                                    popupClassName="sort-select-dropdown"
-                                >
-                                    <Option value="newest">Ngày tạo (Mới nhất)</Option>
-                                    <Option value="oldest">Ngày tạo (Cũ nhất)</Option>
-                                    <Option value="az">Tên khóa học (A-Z)</Option>
-                                    <Option value="za">Tên khóa học (Z-A)</Option>
-                                    <Option value="level">Trình độ (Tăng dần)</Option>
-                                </Select>
-                            </Space>
-                        </div>
-                    </div>
+        <div className={styles.courseListContainer}>
+            <div className={styles.sectionHeaderCombined}>
+                <div style={{ flex: 1 }}></div>
+                <CourseFilter sortBy={sortBy} setSortBy={setSortBy} />
+            </div>
 
-                    <div className="course-grid">
-                        {displayedPrivateCourses.map(course => (
-                            <CourseCard key={course.id} course={course} navigate={navigate} />
-                        ))}
-                    </div>
-                    {privateCourses.length > pageSize && (
-                        <div className="pagination-wrapper">
-                            <Pagination
-                                current={currentPagePrivate}
-                                pageSize={pageSize}
-                                total={privateCourses.length}
-                                onChange={(page) => setCurrentPagePrivate(page)}
-                                showSizeChanger={false}
-                                itemRender={(_, type, originalElement) => {
-                                    const totalPages = Math.ceil(privateCourses.length / pageSize);
-                                    if (type === 'prev') {
-                                        return (
-                                            <div
-                                                onClick={() => currentPagePrivate === 1 && setCurrentPagePrivate(totalPages)}
-                                                className="page-item-wrapper"
-                                            >
-                                                {originalElement}
-                                            </div>
-                                        );
-                                    }
-                                    if (type === 'next') {
-                                        return (
-                                            <div
-                                                onClick={() => currentPagePrivate === totalPages && setCurrentPagePrivate(1)}
-                                                className="page-item-wrapper"
-                                            >
-                                                {originalElement}
-                                            </div>
-                                        );
-                                    }
-                                    return originalElement;
-                                }}
-                            />
-                        </div>
-                    )}
-                </div>
-            ) : (
-                /* Mục Khóa học Công khai (Nếu không có riêng tư thì hiện Sort ở đây) */
-                publicCourses.length > 0 && (
-                    <div className="course-section">
-                        <div className="section-header-combined">
-                            <div className="section-header">
-                                <Title level={2} className="section-title">
-                                    Khóa học cộng đồng (Tự động)
-                                </Title>
-                            </div>
-                            <div className="sort-wrapper">
-                                <Space>
-                                    <span className="sort-label">Sắp xếp theo:</span>
-                                    <Select
-                                        defaultValue="newest"
-                                        className="sort-select"
-                                        onChange={(val) => setSortBy(val)}
-                                        popupClassName="sort-select-dropdown"
-                                    >
-                                        <Option value="newest">Ngày tạo (Mới nhất)</Option>
-                                        <Option value="oldest">Ngày tạo (Cũ nhất)</Option>
-                                        <Option value="az">Tên khóa học (A-Z)</Option>
-                                        <Option value="za">Tên khóa học (Z-A)</Option>
-                                        <Option value="level">Trình độ (Tăng dần)</Option>
-                                    </Select>
-                                </Space>
-                            </div>
-                        </div>
-                        <div className="course-grid">
-                            {displayedPublicCourses.map(course => (
-                                <CourseCard key={course.id} course={course} navigate={navigate} />
-                            ))}
-                        </div>
-                        {publicCourses.length > pageSize && (
-                            <div className="pagination-wrapper">
-                                <Pagination
-                                    current={currentPagePublic}
-                                    pageSize={pageSize}
-                                    total={publicCourses.length}
-                                    onChange={(page) => setCurrentPagePublic(page)}
-                                    showSizeChanger={false}
-                                    itemRender={(_, type, originalElement) => {
-                                        const totalPages = Math.ceil(publicCourses.length / pageSize);
-                                        if (type === 'prev') {
-                                            return (
-                                                <div
-                                                    onClick={() => currentPagePublic === 1 && setCurrentPagePublic(totalPages)}
-                                                    className="page-item-wrapper"
-                                                >
-                                                    {originalElement}
-                                                </div>
-                                            );
-                                        }
-                                        if (type === 'next') {
-                                            return (
-                                                <div
-                                                    onClick={() => currentPagePublic === totalPages && setCurrentPagePublic(1)}
-                                                    className="page-item-wrapper"
-                                                >
-                                                    {originalElement}
-                                                </div>
-                                            );
-                                        }
-                                        return originalElement;
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                )
-            )}
+            <CourseGrid
+                title="Khóa học Riêng tư (Cần phê duyệt)"
+                tagLabel="Yêu cầu"
+                courses={privateCourses}
+                currentPage={currentPagePrivate}
+                pageSize={pageSize}
+                setCurrentPage={setCurrentPagePrivate}
+            />
 
-            {/* Mục Khóa học Công khai (Nếu ĐÃ hiện riêng tư thì hiện công khai bình thường ở dưới) */}
-            {privateCourses.length > 0 && publicCourses.length > 0 && (
-                <div className="course-section">
-                    <div className="section-header">
-                        <Title level={2} className="section-title">
-                            Khóa học cộng đồng (Tự động)
-                        </Title>
-                    </div>
-                    <div className="course-grid">
-                        {displayedPublicCourses.map(course => (
-                            <CourseCard key={course.id} course={course} navigate={navigate} />
-                        ))}
-                    </div>
-                    {publicCourses.length > pageSize && (
-                        <div className="pagination-wrapper">
-                            <Pagination
-                                current={currentPagePublic}
-                                pageSize={pageSize}
-                                total={publicCourses.length}
-                                onChange={(page) => setCurrentPagePublic(page)}
-                                showSizeChanger={false}
-                                itemRender={(_, type, originalElement) => {
-                                    const totalPages = Math.ceil(publicCourses.length / pageSize);
-                                    if (type === 'prev') {
-                                        return (
-                                            <div
-                                                onClick={() => currentPagePublic === 1 && setCurrentPagePublic(totalPages)}
-                                                className="page-item-wrapper"
-                                            >
-                                                {originalElement}
-                                            </div>
-                                        );
-                                    }
-                                    if (type === 'next') {
-                                        return (
-                                            <div
-                                                onClick={() => currentPagePublic === totalPages && setCurrentPagePublic(1)}
-                                                className="page-item-wrapper"
-                                            >
-                                                {originalElement}
-                                            </div>
-                                        );
-                                    }
-                                    return originalElement;
-                                }}
-                            />
-                        </div>
-                    )}
-                </div>
-            )}
-
+            <CourseGrid
+                title="Khóa học cộng đồng (Tự động)"
+                courses={publicCourses}
+                currentPage={currentPagePublic}
+                pageSize={pageSize}
+                setCurrentPage={setCurrentPagePublic}
+            />
 
             {courses.length === 0 && (
                 <Empty description="Chưa có khóa học nào được đăng tải" />
             )}
         </div>
-    );
-}
-
-// Tách Card thành component con để tái sử dụng
-function CourseCard({ course, navigate }: { course: Course, navigate: any }) {
-    return (
-        <Card
-            hoverable
-            className="glass-card course-hover-card"
-            cover={
-                <div className="course-card-cover">
-                    {course.thumbnail ? (
-                        <img src={course.thumbnail} alt={course.title} className="thumbnail-img" />
-                    ) : (
-                        <div className="placeholder-icon-wrapper">
-                            <BookOutlined />
-                        </div>
-                    )}
-                </div>
-            }
-            onClick={() => navigate(`/course/${course.id}`)}
-        >
-            <div className="course-card-header">
-                <Badge status="processing" text={<Text className="level-badge-text">{course.level?.toUpperCase() || 'OFFICIAL'}</Text>} />
-                <Title level={5} className="course-title">{course.title}</Title>
-            </div>
-
-            <div className="course-card-body-row">
-                <Space direction="vertical" size={0} className="creator-info">
-                    <Text className="creator-label">Người tạo</Text>
-                    <Text strong className="creator-name">{course.instructor?.full_name || 'Hệ thống'}</Text>
-                </Space>
-                <div className="card-badge-container">
-                    <Badge
-                        count={course.is_private ? "RIÊNG TƯ" : "CÔNG KHAI"}
-                        className={course.is_private ? 'badge-private' : 'badge-public'}
-                    />
-                </div>
-            </div>
-
-            <hr className="course-card-divider" />
-
-            <div className="course-card-footer">
-                <Space size={4}><ClockCircleOutlined /> Lộ trình</Space>
-                <Space size={4}><RocketOutlined /> {course._count?.sections || 0} chương</Space>
-            </div>
-
-        </Card>
     );
 }
 

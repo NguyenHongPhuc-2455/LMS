@@ -37,27 +37,20 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   ├── middlewares/           # Auth, Upload, Error Handler
 │   │   ├── utils/                 # ApiError, catchAsync, socket.js
 │   │   └── app.js                 # Cấu hình Express
+│   ├── scripts/                   # Các script quản lý database, seed dữ liệu
 │   └── server.js                  # Entry point (Port 5000, Socket.io)
 │
 ├── frontend/securityVideo/       # React SPA
 │   ├── src/
 │   │   ├── styles/                # Global Style System (Variables, Mixins, Global SCSS)
-│   │   │   ├── _variables.scss    # Quản lý mã màu, shadows, spacings tập trung
-│   │   │   ├── _mixins.scss       # Các hàm tái sử dụng (Flex, Glassmorphism, Responsive)
-│   │   │   └── main.scss          # Điểm nạp tập trung (Vite auto-inject)
-│   │   ├── components/            # Modular Components (1 Folder = 1 Component + Style)
-│   │   │   ├── Navbar/            # Thanh điều hướng chính
-│   │   │   ├── Sidebar/           # Thanh bên (Admin/Client)
-│   │   │   └── index.ts           # Barrel Export giúp import gọn hơn
+│   │   ├── components/            # Modular Components (Sử dụng Absolute Import @/components)
 │   │   ├── hooks/                 # Custom React Hooks
-│   │   ├── pages/                 # Phân chia theo vai trò & Module
-│   │   │   ├── admin/             # Dashboard, CourseManagement, UserManagement...
-│   │   │   ├── client/            # CourseList, Learning, Profile...
-│   │   │   ├── Login/             # Trang đăng nhập kèm Login.scss
-│   │   │   └── Register/          # Trang đăng ký kèm Register.scss
+│   │   ├── pages/                 # Phân chia theo vai trò (Admin/Client)
 │   │   ├── services/              # API Client (axios instances)
-│   │   ├── App.tsx                # SPA Routing & ScrollToTop logic
+│   │   ├── App.tsx                # SPA Routing & Absolute Imports Config
 │   │   └── main.tsx               # Entry point nạp global styles
+│   ├── tsconfig.app.json          # Cấu hình Absolute Imports (@/* -> ./src/*)
+│   └── vite.config.ts             # Cấu hình Resolve Alias (@)
 
 │
 ├── docker-compose.yml             # PostgreSQL Setup

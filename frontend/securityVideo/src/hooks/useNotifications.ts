@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { notificationService } from '../services/api.service';
+import { notificationService } from '../services/notification.service';
 import { socketService } from '../services/socket';
 
 export interface Notification {

@@ -5,9 +5,9 @@
 }
 
 @mixin glass-effect {
-    background: rgba(255, 255, 255, 0.8) !important;
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 @mixin premium-text {
@@ -20,3 +20,4 @@
 @mixin transition-standard {
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
+

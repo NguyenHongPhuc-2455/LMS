@@ -38,7 +38,6 @@ model User {
   user_roles       UserRole[]
   instructed_courses Course[]     @relation("Instructor")
   enrollments      Enrollment[]
-  orders           Order[]
   reviews          Review[]
   wishlists        Wishlist[]
   completed_lessons LessonCompleted[]
@@ -48,6 +47,7 @@ model User {
   quizAttempts          QuizAttempt[]
   instructed_programs   LearningProgram[]   @relation("ProgramInstructor")
   program_enrollments   ProgramEnrollment[]
+  program_requests      ProgramRequest[]
 
   @@map("users")
 }
@@ -102,7 +102,6 @@ model Course {
   instructor  User         @relation("Instructor", fields: [instructor_id], references: [id])
   sections    Section[]
   enrollments Enrollment[]
-  order_items OrderItem[]
   reviews     Review[]
   wishlists   Wishlist[]
   requests        CourseRequest[]
@@ -138,6 +137,7 @@ model Section {
   title     String   @db.VarChar(255)
   order     Int      @default(0)
   course    Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
   lessons   Lesson[]
 
   @@map("sections")
@@ -175,68 +175,6 @@ model Lesson {
   quiz        Quiz?
 
   @@map("lessons")
-}
-
-// ==========================================
-// 3. NHÓM BÁN HÀNG & THANH TOÁN (PAYMENTS)
-// ==========================================
-
-enum OrderStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-}
-
-model Order {
-  id           Int         @id @default(autoincrement())
-  user_id      Int
-  coupon_id    Int?
-  total_price  Decimal     @db.Decimal(10, 2)
-  status       OrderStatus @default(PENDING)
-  created_at   DateTime    @default(now())
-
-  user        User        @relation(fields: [user_id], references: [id])
-  coupon      Coupon?     @relation(fields: [coupon_id], references: [id])
-  items       OrderItem[]
-  payments    Payment[]
-
-  @@map("orders")
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  order_id  Int
-  course_id Int
-  price     Decimal @db.Decimal(10, 2)
-
-  order  Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [course_id], references: [id])
-
-  @@map("order_items")
-}
-
-model Payment {
-  id             Int      @id @default(autoincrement())
-  order_id       Int
-  method         String   @db.VarChar(50) // Momo, Stripe, Bank Transfer
-  transaction_id String?  @unique @db.VarChar(255)
-  amount         Decimal  @db.Decimal(10, 2)
-  status         String   @default("SUCCESS")
-  created_at     DateTime @default(now())
-
-  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
-
-  @@map("payments")
-}
-
-model Coupon {
-  id               Int      @id @default(autoincrement())
-  code             String   @unique @db.VarChar(50)
-  discount_percent Int
-  expiry_date      DateTime
-  orders           Order[]
-
-  @@map("coupons")
 }
 
 // ==========================================
@@ -351,6 +289,7 @@ model LearningProgram {
   instructor  User                @relation("ProgramInstructor", fields: [instructor_id], references: [id])
   courses     ProgramCourse[]
   enrollments ProgramEnrollment[]
+  requests    ProgramRequest[]
 
   @@map("learning_programs")
 }
@@ -378,6 +317,22 @@ model ProgramEnrollment {
   @@id([user_id, program_id])
   @@map("program_enrollments")
 }
+
+model ProgramRequest {
+  id          Int           @id @default(autoincrement())
+  user_id     Int
+  program_id  Int
+  status      RequestStatus @default(PENDING)
+  reason      String?       @db.Text
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  
+  user        User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  program     LearningProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
+
+  @@map("program_requests")
+}
+
 
 // ==========================================
 // 6. NHÓM TRẮC NGHIỆM (QUIZ)
