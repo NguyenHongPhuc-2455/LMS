@@ -1,0 +1,49 @@
+.sectionManagementContainer {
+    padding: 10px;
+}
+
+.sectionManagementHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.headerTitle {
+    margin: 0;
+}
+
+.courseSelectorWrapper {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.courseSelect {
+    width: 400px;
+}
+
+.emptySectionWrapper {
+    padding: 40px;
+    text-align: center;
+}
+
+.emptyIcon {
+    color: #cbd5e1;
+    margin-bottom: 16px;
+}
+
+.emptyText {
+    display: block;
+}
+
+.sectionTitleLink {
+    cursor: pointer;
+    color: #6366f1;
+    font-weight: 500;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}

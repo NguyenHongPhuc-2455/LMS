@@ -13,9 +13,14 @@ import {
 } from 'antd';
 import { VideoPlayer, VideoJsPlayer, CommentSection, QuizPlayer, type VideoPlayerRef } from '../../../components';
 
-import api from '../../../api';
+import { courseService } from '../../../services/course.service';
+import { contentService } from '../../../services/content.service';
+import { paymentService } from '../../../services/payment.service';
 import { useTabFocusWarning } from '../../../hooks/useTabFocusWarning';
-import './CourseLearning.scss';
+
+
+import styles from './CourseLearning.module.scss';
+
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -82,8 +87,7 @@ export default function Course() {
 
     const fetchDetail = async () => {
         try {
-            const res = await api.get(`/courses/${id}`);
-            const data = res.data;
+            const data = await courseService.getById(id!);
             setCourse(data);
 
             // Nếu có lessonId từ URL, ưu tiên chọn bài đó
@@ -148,9 +152,9 @@ export default function Course() {
                 const el = document.getElementById(location.hash.slice(1));
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('highlight-comment');
+                    el.classList.add(styles.highlightComment);
                     setTimeout(() => {
-                        el.classList.remove('highlight-comment');
+                        el.classList.remove(styles.highlightComment);
                     }, 2500);
                 } else if (attempts < 15) {
                     setTimeout(() => tryScroll(attempts + 1), 300);
@@ -164,10 +168,11 @@ export default function Course() {
     const handleBuy = async () => {
         try {
             message.loading({ content: 'Đang kết nối tới cổng thanh toán VNPay...', key: 'payment' });
-            const res = await api.post('/payments/create-vnpay-url', { courseId: id });
-            if (res.data.payUrl) {
-                window.location.href = res.data.payUrl;
+            const data = await paymentService.createVNPayUrl(Number(id));
+            if (data.payUrl) {
+                window.location.href = data.payUrl;
             }
+
         } catch (error: any) {
             message.error({ content: error.response?.data?.error || 'Lỗi khởi tạo thanh toán', key: 'payment' });
         }
@@ -195,19 +200,19 @@ export default function Course() {
         }
     };
 
-    if (loading) return <div className="learning-loading"><Skeleton active /></div>;
+    if (loading) return <div className={styles.learningLoading}><Skeleton active /></div>;
     if (!course) return <div>Không tìm thấy dữ liệu</div>;
 
     return (
-        <div className="learning-container">
+        <div className={styles.learningContainer}>
             <Row gutter={0}>
-                <Col lg={showSidebar ? 16 : 24} md={24} className="main-column">
-                    <div className={`content-wrapper ${showSidebar ? 'sidebar-visible' : 'sidebar-hidden'}`}>
-                        <div className="header-actions">
+                <Col lg={showSidebar ? 16 : 24} md={24} className={styles.mainColumn}>
+                    <div className={`${styles.contentWrapper} ${showSidebar ? styles.sidebarVisible : styles.sidebarHidden}`}>
+                        <div className={styles.headerActions}>
                             <Button
                                 icon={<LeftOutlined />}
                                 onClick={() => navigate(`/course/${id}`)}
-                                className="back-btn"
+                                className={styles.backBtn}
                             >
                                 Quay lại trang chi tiết
                             </Button>
@@ -216,14 +221,14 @@ export default function Course() {
                                 <Button
                                     icon={<MenuUnfoldOutlined />}
                                     onClick={() => setShowSidebar(true)}
-                                    className="show-sidebar-btn"
+                                    className={styles.showSidebarBtn}
                                 >
                                     Hiện thanh bên
                                 </Button>
                             )}
                         </div>
 
-                        <div className="video-section">
+                        <div className={styles.videoSection}>
                             {activeLesson && activeLesson.type === 'QUIZ' ? (
                                 <QuizPlayer
                                     lessonId={activeLesson.id}
@@ -254,23 +259,23 @@ export default function Course() {
                                         />
                                     )
                                 ) : (
-                                    <div className="video-processing">
-                                        <Skeleton.Node active className="skeleton-square" />
-                                        <Title level={4} className="processing-title">Video đang được xử lý băm bảo mật...</Title>
-                                        <Text className="processing-text">Vui lòng quay lại sau vài phút</Text>
+                                    <div className={styles.videoProcessing}>
+                                        <Skeleton.Node active className={styles.skeletonSquare} />
+                                        <Title level={4} className={styles.processingTitle}>Video đang được xử lý băm bảo mật...</Title>
+                                        <Text className={styles.processingText}>Vui lòng quay lại sau vài phút</Text>
                                     </div>
                                 )
                             ) : (
-                                <div className="locked-section">
-                                    <LockOutlined className="locked-icon" />
-                                    <Title level={3} className="locked-title">Nội dung đã bị khóa</Title>
-                                    <Text className="locked-desc">Vui lòng mua khóa học để mở khóa toàn bộ bài giảng</Text>
+                                <div className={styles.lockedSection}>
+                                    <LockOutlined className={styles.lockedIcon} />
+                                    <Title level={3} className={styles.lockedTitle}>Nội dung đã bị khóa</Title>
+                                    <Text className={styles.lockedDesc}>Vui lòng mua khóa học để mở khóa toàn bộ bài giảng</Text>
                                     {!course.hasAccess && (
                                         <Button
                                             type="primary"
                                             size="large"
                                             icon={<ShoppingCartOutlined />}
-                                            className="buy-btn"
+                                            className={styles.buyBtn}
                                             onClick={handleBuy}
                                         >
                                             Đăng ký học ngay - {parseFloat(course.price) === 0 ? 'MIỄN PHÍ' : `${Number(course.price).toLocaleString()}đ`}
@@ -280,32 +285,32 @@ export default function Course() {
                             )}
                         </div>
 
-                        <Title level={2} className="course-main-title">{activeLesson?.title || course.title}</Title>
+                        <Title level={2} className={styles.courseMainTitle}>{activeLesson?.title || course.title}</Title>
 
                         {/* Hiển thị nội dung văn bản của bài học */}
                         {activeLesson?.content && (
-                            <div className="lesson-content-card">
+                            <div className={styles.lessonContentCard}>
                                 <Title level={4}>Hướng dẫn & Nội dung</Title>
-                                <div className="relative-pos">
-                                    <div className={`content-scroll-area ${isExpanded ? '' : 'collapsed'}`}>
-                                        <Paragraph className="content-paragraph">
+                                <div className={styles.relativePos}>
+                                    <div className={`${styles.contentScrollArea} ${isExpanded ? '' : styles.collapsed}`}>
+                                        <Paragraph className={styles.contentParagraph}>
                                             {activeLesson.content}
                                         </Paragraph>
 
                                         {!isExpanded && (
-                                            <div className="gradient-overlay" />
+                                            <div className={styles.gradientOverlay} />
                                         )}
                                     </div>
 
                                     <Button
                                         type="link"
                                         onClick={() => setIsExpanded(!isExpanded)}
-                                        className="expand-btn"
+                                        className={styles.expandBtn}
                                     >
                                         {isExpanded ? (
-                                            <>Thu gọn <UpOutlined className="icon-small-btn" /></>
+                                            <>Thu gọn <UpOutlined className={styles.iconSmallBtn} /></>
                                         ) : (
-                                            <>Xem thêm <DownOutlined className="icon-small-btn" /></>
+                                            <>Xem thêm <DownOutlined className={styles.iconSmallBtn} /></>
                                         )}
                                     </Button>
                                 </div>
@@ -314,14 +319,14 @@ export default function Course() {
 
                         {/* Hiển thị tài liệu đính kèm (PDF) */}
                         {activeLesson?.attachment_url && (
-                            <div className="attachment-card">
-                                <div className="attachment-info">
-                                    <div className="attachment-icon-wrapper">
-                                        <FileTextOutlined className="attachment-icon" />
+                            <div className={styles.attachmentCard}>
+                                <div className={styles.attachmentInfo}>
+                                    <div className={styles.attachmentIconWrapper}>
+                                        <FileTextOutlined className={styles.attachmentIcon} />
                                     </div>
                                     <div>
-                                        <Text strong className="attachment-title">Tài liệu đính kèm</Text>
-                                        <Text type="secondary" className="attachment-subtitle">{activeLesson.attachment_name || 'Tai_lieu_bai_hoc.pdf'}</Text>
+                                        <Text strong className={styles.attachmentTitle}>Tài liệu đính kèm</Text>
+                                        <Text type="secondary" className={styles.attachmentSubtitle}>{activeLesson.attachment_name || 'Tai_lieu_bai_hoc.pdf'}</Text>
                                     </div>
                                 </div>
                                 <Button
@@ -330,14 +335,14 @@ export default function Course() {
                                     href={`http://localhost:5000${activeLesson.attachment_url}`}
                                     target="_blank"
                                     download
-                                    className="download-btn"
+                                    className={styles.downloadBtn}
                                 >
                                     Tải về PDF
                                 </Button>
                             </div>
                         )}
 
-                        <Divider className="divider-slate" />
+                        <Divider className={styles.dividerSlate} />
 
                         {activeLesson && (
                             <CommentSection
@@ -346,16 +351,16 @@ export default function Course() {
                             />
                         )}
 
-                        <Divider className="divider-margin-lg" />
+                        <Divider className={styles.dividerMarginLg} />
                     </div>
                 </Col>
 
                 {showSidebar && (
-                    <Col lg={8} md={24} className="sidebar-column">
-                        <div className="sidebar-header">
+                    <Col lg={8} md={24} className={styles.sidebarColumn}>
+                        <div className={styles.sidebarHeader}>
                             <div>
-                                <Title level={4} className="sidebar-title">Nội dung khóa học</Title>
-                                <Text className="sidebar-subtitle">
+                                <Title level={4} className={styles.sidebarTitle}>Nội dung khóa học</Title>
+                                <Text className={styles.sidebarSubtitle}>
                                     {course.sections.length} chương • {course.sections.reduce((a, b) => a + b.lessons.length, 0)} bài giảng
                                 </Text>
                             </div>
@@ -363,20 +368,20 @@ export default function Course() {
                                 type="text"
                                 icon={<MenuFoldOutlined />}
                                 onClick={() => setShowSidebar(false)}
-                                className="btn-gray-icon"
+                                className={styles.btnGrayIcon}
                             />
                         </div>
 
-                        <div className="sidebar-scroll-area">
+                        <div className={styles.sidebarScrollArea}>
                             <Collapse
                                 ghost
                                 expandIconPlacement="end"
                                 items={course.sections.map(section => ({
                                     key: section.id,
-                                    label: <Text strong className="section-label">{section.title}</Text>,
-                                    className: "section-collapse-item",
+                                    label: <Text strong className={styles.sectionLabel}>{section.title}</Text>,
+                                    className: styles.sectionCollapseItem,
                                     children: (
-                                        <div className="lesson-list">
+                                        <div className={styles.lessonList}>
                                             {section.lessons.map((lesson) => {
                                                 const allLessons = course.sections.flatMap(s => s.lessons);
                                                 const overallIndex = allLessons.findIndex(l => l.id === lesson.id);
@@ -387,7 +392,7 @@ export default function Course() {
                                                 return (
                                                     <div
                                                         key={lesson.id}
-                                                        className={`lesson-item ${activeLesson?.id === lesson.id ? 'active' : ''} ${isLockedByProgress ? 'locked' : ''}`}
+                                                        className={`${styles.lessonItem} ${activeLesson?.id === lesson.id ? styles.active : ''} ${isLockedByProgress ? styles.locked : ''}`}
                                                         onClick={() => {
                                                             if (isLockedByProgress) {
                                                                 message.info('Vui lòng hoàn thành bài học trước đó để mở khóa bài này');
@@ -398,12 +403,12 @@ export default function Course() {
                                                         }}
                                                     >
                                                         {renderLessonIcon(lesson, isLockedByProgress)}
-                                                        <div className="flex-1">
-                                                            <Text className={`lesson-title-text ${activeLesson?.id === lesson.id ? 'active' : (isLockedByProgress ? 'locked' : 'default')}`}>
+                                                        <div className={styles.flex1}>
+                                                            <Text className={`${styles.lessonTitleText} ${activeLesson?.id === lesson.id ? styles.active : (isLockedByProgress ? styles.locked : styles.default)}`}>
                                                                 {lesson.title}
                                                             </Text>
                                                             {lesson.duration > 0 && (
-                                                                <div className="lesson-duration-text">
+                                                                <div className={styles.lessonDurationText}>
                                                                     {Math.floor(lesson.duration / 60).toString().padStart(2, '0')}:{(lesson.duration % 60).toString().padStart(2, '0')}
                                                                 </div>
                                                             )}
@@ -423,4 +428,3 @@ export default function Course() {
         </div>
     );
 }
-

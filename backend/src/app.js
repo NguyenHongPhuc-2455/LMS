@@ -15,6 +15,7 @@ const commentRoutes = require('./routes/comment.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const quizRoutes = require('./routes/quiz.routes');
 const programRoutes = require('./routes/program.routes');
+const programRequestRoutes = require('./routes/programRequest.routes');
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/programs', programRoutes);
+app.use('/api/program-requests', programRequestRoutes);
 
 // Centralized Error Handling
 app.use(errorMiddleware);

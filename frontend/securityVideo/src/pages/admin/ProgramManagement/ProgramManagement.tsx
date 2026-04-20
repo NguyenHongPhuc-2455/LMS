@@ -3,12 +3,19 @@ import {
     Card, Button, Input, Select, Space, Typography,
     Table, Badge, Modal, Form, message, Popconfirm, Upload, Row, Col, Tag, Drawer, List, Avatar
 } from 'antd';
-import { Plus, Edit, Trash2, UploadCloud, BookOpen, X } from 'lucide-react';
+import { Plus, Edit, Trash2, UploadCloud, BookOpen, X, ArrowUp, ArrowDown } from 'lucide-react';
+
 import { SearchOutlined } from '@ant-design/icons';
-import api from '../../../api';
+import { programService } from '../../../services/program.service';
+import { courseService } from '../../../services/course.service';
+import { uploadService } from '../../../services/upload.service';
+
+import styles from './ProgramManagement.module.scss';
+
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
 
 interface Course {
     id: number;
@@ -48,8 +55,9 @@ export default function ProgramManagement() {
     const fetchPrograms = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/programs');
-            setPrograms(res.data);
+            const data = await programService.getAll();
+            setPrograms(data);
+
         } catch {
             message.error('Lỗi khi tải danh sách chương trình học');
         } finally {
@@ -59,8 +67,9 @@ export default function ProgramManagement() {
 
     const fetchAllCourses = async () => {
         try {
-            const res = await api.get('/courses');
-            setAllCourses(res.data);
+            const data = await courseService.getAll();
+            setAllCourses(data);
+
         } catch { /* ignore */ }
     };
 
@@ -75,17 +84,19 @@ export default function ProgramManagement() {
             if (thumbFile) {
                 const fd = new FormData();
                 fd.append('image', thumbFile);
-                const up = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-                finalThumbnail = up.data.url;
+                const up = await uploadService.image(fd);
+                finalThumbnail = up.url;
             }
+
             const payload = { ...values, thumbnail: finalThumbnail };
             if (editingId) {
-                await api.put(`/programs/${editingId}`, payload);
+                await programService.update(editingId, payload);
                 message.success('Đã cập nhật chương trình học!');
             } else {
-                await api.post('/programs', payload);
+                await programService.create(payload);
                 message.success('Đã tạo chương trình học mới!');
             }
+
             setIsModalOpen(false);
             setEditingId(null);
             setThumbFile(null);
@@ -106,7 +117,7 @@ export default function ProgramManagement() {
 
     const handleDelete = async (id: number) => {
         try {
-            await api.delete(`/programs/${id}`);
+            await programService.delete(id);
             message.success('Đã xóa chương trình học');
             fetchPrograms();
         } catch {
@@ -123,11 +134,12 @@ export default function ProgramManagement() {
         if (!selectedProgram) return;
         setAddingCourseId(courseId);
         try {
-            await api.post(`/programs/${selectedProgram.id}/courses`, { course_id: courseId });
+            await programService.addCourse(selectedProgram.id, courseId);
             message.success('Đã thêm khóa học vào chương trình');
-            const res = await api.get('/programs');
-            setPrograms(res.data);
-            setSelectedProgram(res.data.find((p: Program) => p.id === selectedProgram.id) || null);
+            const data = await programService.getAll();
+            setPrograms(data);
+            setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
+
         } catch {
             message.error('Lỗi khi thêm khóa học');
         } finally {
@@ -138,15 +150,47 @@ export default function ProgramManagement() {
     const handleRemoveCourse = async (courseId: number) => {
         if (!selectedProgram) return;
         try {
-            await api.delete(`/programs/${selectedProgram.id}/courses/${courseId}`);
+            await programService.removeCourse(selectedProgram.id, courseId);
             message.success('Đã xóa khóa học khỏi chương trình');
-            const res = await api.get('/programs');
-            setPrograms(res.data);
-            setSelectedProgram(res.data.find((p: Program) => p.id === selectedProgram.id) || null);
+            const data = await programService.getAll();
+            setPrograms(data);
+            setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
+
         } catch {
             message.error('Lỗi khi xóa khóa học');
         }
     };
+
+    const handleReorder = async (direction: 'up' | 'down', index: number) => {
+        if (!selectedProgram) return;
+        const courses = [...selectedProgram.courses].sort((a, b) => a.order - b.order);
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+        if (newIndex < 0 || newIndex >= courses.length) return;
+
+        // Swap
+        const [moved] = courses.splice(index, 1);
+        courses.splice(newIndex, 0, moved);
+
+        // Map to new order
+        const payload = courses.map((c, idx) => ({
+            courseId: c.course.id,
+            order: idx
+        }));
+
+        try {
+            await programService.reorderCourses(selectedProgram.id, payload);
+            message.success('Đã cập nhật thứ tự');
+            const data = await programService.getAll();
+            setPrograms(data);
+            const fresh = data.find((p: Program) => p.id === selectedProgram.id);
+            setSelectedProgram(fresh);
+
+        } catch {
+            message.error('Lỗi khi sắp xếp');
+        }
+    };
+
 
     const currentCourseIds = selectedProgram?.courses.map(pc => pc.course.id) || [];
     const availableCourses = allCourses.filter(c => !currentCourseIds.includes(c.id));
@@ -161,26 +205,63 @@ export default function ProgramManagement() {
             title: 'Chương trình học',
             key: 'info',
             render: (p: Program) => (
-                <Space size={12}>
-                    <img src={p.thumbnail || 'https://via.placeholder.com/80x45'} style={{ width: 80, height: 45, borderRadius: 4, objectFit: 'cover' }} />
+                <div className={styles.programInfoCell}>
+                    <img src={p.thumbnail || 'https://via.placeholder.com/80x45'} className={styles.programThumb} />
                     <div>
-                        <Text strong style={{ display: 'block' }}>{p.title}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>{p.level}</Text>
+                        <Text className={styles.programTitle}>{p.title}</Text>
+                        <Text className={styles.programLevel}>{p.level}</Text>
                     </div>
-                </Space>
+                </div>
             )
         },
         {
             title: 'Trạng thái',
             key: 'status',
-            width: 130,
+            width: 160,
             render: (p: Program) => (
-                <Space direction="vertical" size={4}>
-                    <Badge count={statusLabel[p.status] || p.status} style={{ backgroundColor: statusColor[p.status] || '#8c8c8c' }} />
-                    <Badge count={p.is_private ? 'RIÊNG TƯ' : 'CÔNG KHAI'} style={{ backgroundColor: p.is_private ? '#7064f9' : '#28a745' }} />
+                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                    <Select
+                        size="small"
+                        value={p.status}
+                        onChange={async (val) => {
+                            try {
+                                await programService.update(p.id, { status: val });
+
+                                message.success('Đã cập nhật trạng thái');
+                                fetchPrograms();
+                            } catch {
+                                message.error('Lỗi khi cập nhật');
+                            }
+                        }}
+                        style={{ width: '100%' }}
+                        className="status-select-inline"
+                    >
+                        <Option value="DRAFT">Nháp</Option>
+                        <Option value="PUBLISHED">Phát hành</Option>
+                        <Option value="ARCHIVED">Lưu trữ</Option>
+                    </Select>
+                    <Select
+                        size="small"
+                        value={p.is_private}
+                        onChange={async (val) => {
+                            try {
+                                await programService.update(p.id, { is_private: val });
+
+                                message.success('Đã cập nhật chế độ truy cập');
+                                fetchPrograms();
+                            } catch {
+                                message.error('Lỗi khi cập nhật');
+                            }
+                        }}
+                        style={{ width: '100%' }}
+                    >
+                        <Option value={false}>CÔNG KHAI</Option>
+                        <Option value={true}>RIÊNG TƯ</Option>
+                    </Select>
                 </Space>
             )
         },
+
         {
             title: 'Khóa học',
             key: 'courses',
@@ -195,7 +276,14 @@ export default function ProgramManagement() {
             title: 'Học viên',
             key: 'enroll',
             width: 90,
-            render: (p: Program) => <Badge count={p._count?.enrollments || 0} showZero style={{ backgroundColor: '#52c41a' }} />
+            render: (p: Program) => (
+                <Badge
+                    count={p._count?.enrollments || 0}
+                    showZero
+                    color="#52c41a"
+                    className="student-badge"
+                />
+            )
         },
         {
             title: 'Ngày tạo',
@@ -218,11 +306,12 @@ export default function ProgramManagement() {
         }
     ];
 
+
     return (
-        <div style={{ padding: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div>
-                    <Title level={4} style={{ margin: 0 }}>Quản lý Chương trình học</Title>
+        <div className={styles.programManagementContainer}>
+            <div className={styles.pageHeader}>
+                <div className={styles.headerInfo}>
+                    <Title level={4} className={styles.title}>Quản lý Chương trình học</Title>
                     <Text type="secondary">Gom nhiều khóa học thành lộ trình đào tạo</Text>
                 </div>
                 <Button type="primary" icon={<Plus size={16} />}
@@ -232,7 +321,7 @@ export default function ProgramManagement() {
             </div>
 
             <Card className="glass-card">
-                <div style={{ marginBottom: 20 }}>
+                <div className={styles.searchBarWrapper}>
                     <Input placeholder="Tìm kiếm chương trình..." prefix={<SearchOutlined />}
                         value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} size="small" />
                 </div>
@@ -297,7 +386,7 @@ export default function ProgramManagement() {
                                     </Upload>
                                 }
                             />
-                            {thumbUrl && <img src={thumbUrl} style={{ width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 8 }} />}
+                            {thumbUrl && <img src={thumbUrl} className={styles.modalThumbPreview} />}
                         </Space>
                     </Form.Item>
                     <Button type="primary" htmlType="submit" block size="large">Hoàn tất</Button>
@@ -310,31 +399,50 @@ export default function ProgramManagement() {
                 open={isCourseDrawerOpen}
                 onClose={() => setIsCourseDrawerOpen(false)}
                 width={520}
+                className={styles.courseDrawerList}
             >
                 {selectedProgram && (
                     <>
-                        <Text strong style={{ display: 'block', marginBottom: 8 }}>Đang có ({currentCourseIds.length} khóa)</Text>
+                        <Text strong className={styles.drawerSectionTitle}>Đang có ({currentCourseIds.length} khóa)</Text>
                         <List
-                            dataSource={selectedProgram.courses.sort((a, b) => a.order - b.order)}
+                            dataSource={[...selectedProgram.courses].sort((a, b) => a.order - b.order)}
                             locale={{ emptyText: 'Chưa có khóa học nào' }}
-                            renderItem={pc => (
+                            renderItem={(pc, index) => (
                                 <List.Item actions={[
-                                    <Button type="text" danger size="small" icon={<X size={14} />}
+                                    <Space key="reorder">
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            icon={<ArrowUp size={14} />}
+                                            disabled={index === 0}
+                                            onClick={() => handleReorder('up', index)}
+                                        />
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            icon={<ArrowDown size={14} />}
+                                            disabled={index === selectedProgram.courses.length - 1}
+                                            onClick={() => handleReorder('down', index)}
+                                        />
+                                    </Space>,
+                                    <Button key="remove" type="text" danger size="small" icon={<X size={14} />}
                                         onClick={() => handleRemoveCourse(pc.course.id)} />
                                 ]}>
                                     <List.Item.Meta
-                                        avatar={<Avatar src={pc.course.thumbnail} shape="square" size={40} style={{ borderRadius: 4 }} />}
-                                        title={pc.course.title}
+                                        avatar={<Avatar src={pc.course.thumbnail} shape="square" size={40} className={styles.itemThumb} />}
+                                        title={<Text strong>{pc.course.title}</Text>}
                                         description={<Tag>{pc.course.level}</Tag>}
+                                        className={styles.courseItemMeta}
                                     />
                                 </List.Item>
                             )}
                         />
 
+
                         {availableCourses.length > 0 && (
                             <>
-                                <div style={{ margin: '16px 0 8px', borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-                                    <Text strong>Thêm khóa học</Text>
+                                <div className={styles.addCourseSection}>
+                                    <Text className={styles.sectionLabel}>Thêm khóa học</Text>
                                 </div>
                                 <List
                                     dataSource={availableCourses}
@@ -344,9 +452,10 @@ export default function ProgramManagement() {
                                                 onClick={() => handleAddCourse(c.id)}>Thêm</Button>
                                         ]}>
                                             <List.Item.Meta
-                                                avatar={<Avatar src={c.thumbnail} shape="square" size={40} style={{ borderRadius: 4 }} />}
+                                                avatar={<Avatar src={c.thumbnail} shape="square" size={40} className={styles.itemThumb} />}
                                                 title={c.title}
                                                 description={<Tag>{c.level}</Tag>}
+                                                className={styles.courseItemMeta}
                                             />
                                         </List.Item>
                                     )}
@@ -359,4 +468,3 @@ export default function ProgramManagement() {
         </div>
     );
 }
-

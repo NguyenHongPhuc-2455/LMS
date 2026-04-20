@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { List, Avatar, Button, Input, message, Typography, Space, Popconfirm } from 'antd';
 import { SendOutlined, MessageOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
-import { commentService } from '../../services/api.service';
+import { commentService } from '../../services/comment.service';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
-import './CommentSection.scss';
+import styles from './CommentSection.module.scss';
+
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -169,18 +170,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
         const isExpanded = expandedComments.includes(item.id);
 
         return (
-            <div key={item.id} id={`comment-${item.id}`} className={`comment-item ${level > 0 ? 'reply' : ''}`}>
-                <div className="comment-item-content">
+            <div key={item.id} id={`comment-${item.id}`} className={`${styles.commentItem} ${level > 0 ? styles.reply : ''}`}>
+                <div className={styles.commentItemContent}>
                     <Avatar
                         src={item.user.avatar}
                         icon={<UserOutlined />}
                         size={level > 0 ? 'small' : 'default'}
                     />
-                    <div className="comment-body">
-                        <div className="comment-item-header">
+                    <div className={styles.commentBody}>
+                        <div className={styles.commentItemHeader}>
                             <Space size={8}>
-                                <Text strong className="comment-author-name">{item.user.full_name || item.user.username}</Text>
-                                <Text type="secondary" className="comment-time">
+                                <Text strong className={styles.commentAuthorName}>{item.user.full_name || item.user.username}</Text>
+                                <Text type="secondary" className={styles.commentTime}>
                                     {dayjs(item.created_at).fromNow()}
                                 </Text>
                             </Space>
@@ -196,9 +197,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                 </Popconfirm>
                             )}
                         </div>
-                        <Text className="comment-text">{item.content}</Text>
+                        <Text className={styles.commentText}>{item.content}</Text>
 
-                        <div className="comment-actions">
+                        <div className={styles.commentActions}>
                             <Button
                                 type="text"
                                 size="small"
@@ -211,20 +212,20 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                         setReplyContent('');
                                     }
                                 }}
-                                className="comment-reply-btn"
+                                className={styles.commentReplyBtn}
                             >
                                 Phản hồi
                             </Button>
                         </div>
 
                         {replyTo === item.id && (
-                            <div className="comment-reply-input-wrapper">
+                            <div className={styles.commentReplyInputWrapper}>
                                 <TextArea
                                     value={replyContent}
                                     onChange={(e) => setReplyContent(e.target.value)}
                                     placeholder={`Phản hồi tới ${item.user.full_name || item.user.username}...`}
                                     autoSize={{ minRows: 2, maxRows: 4 }}
-                                    className="reply-textarea"
+                                    className={styles.replyTextarea}
                                 />
                                 <Space>
                                     <Button
@@ -242,14 +243,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                         )}
 
                         {item.replies && item.replies.length > 0 && (
-                            <div className={`replies-container ${level < 1 ? 'level-0' : ''}`}>
+                            <div className={`${styles.repliesContainer} ${level < 1 ? styles.level0 : ''}`}>
                                 {!isExpanded ? (
                                     <Button
                                         type="text"
                                         onClick={() => toggleExpand(item.id)}
-                                        className="view-replies-btn"
+                                        className={styles.viewRepliesBtn}
                                     >
-                                        <div className="btn-line"></div>
+                                        <div className={styles.btnLine}></div>
                                         Xem {item.replies.length} phản hồi...
                                     </Button>
                                 ) : (
@@ -258,7 +259,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                                         <Button
                                             type="text"
                                             onClick={() => toggleExpand(item.id)}
-                                            className="hide-replies-btn"
+                                            className={styles.hideRepliesBtn}
                                         >
                                             Ẩn phản hồi
                                         </Button>
@@ -273,26 +274,26 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
     };
 
     return (
-        <div className="comment-section-container">
-            <Title level={4} className="comment-section-title">
+        <div className={styles.commentSectionContainer}>
+            <Title level={4} className={styles.commentSectionTitle}>
                 <MessageOutlined /> Bình luận ({comments.length + comments.reduce((acc, curr) => acc + (curr.replies?.length || 0), 0)})
             </Title>
 
-            <div className="comment-input-wrapper">
+            <div className={styles.commentInputWrapper}>
                 <TextArea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Bạn có thắc mắc gì về bài học này không?"
                     autoSize={{ minRows: 3, maxRows: 6 }}
-                    className="comment-textarea"
+                    className={styles.commentTextarea}
                 />
-                <div className="comment-submit-btn-wrapper">
+                <div className={styles.commentSubmitBtnWrapper}>
                     <Button
                         type="primary"
                         icon={<SendOutlined />}
                         onClick={() => handleSubmit()}
                         loading={submitting}
-                        className="comment-submit-btn"
+                        className={styles.commentSubmitBtn}
                     >
                         Gửi câu hỏi
                     </Button>

@@ -1,0 +1,107 @@
+.lessonManagementContainer {
+    padding: 10px;
+}
+
+.lessonManagementHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.headerTitle {
+    margin: 0;
+}
+
+.filterCard {
+    margin-bottom: 20px;
+}
+
+.filterSelect {
+    width: 250px;
+}
+
+.emptyLessonWrapper {
+    padding: 40px;
+    text-align: center;
+}
+
+.emptyIcon {
+    color: #cbd5e1;
+    margin-bottom: 16px;
+}
+
+.emptyText {
+    display: block;
+}
+
+.segmentedWrapper {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.attachmentWrapper {
+    margin-bottom: 16px;
+}
+
+.attachmentTitle {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.attachmentSuccess {
+    font-size: 12px;
+}
+
+.videoSourceWrapper {
+    margin-bottom: 16px;
+}
+
+.videoSourceRadio {
+    margin-bottom: 16px;
+}
+
+.quizQuestionCard {
+    margin-bottom: 16px;
+    background: #f8fafc;
+    position: relative;
+}
+
+.quizOptionsWrapper {
+    margin-top: 8px;
+}
+
+.quizOptionRow {
+    margin-bottom: 8px;
+}
+
+.quizOptionDelete {
+    color: red;
+    cursor: pointer;
+}
+
+.quizDivider {
+    margin: 12px 0;
+}
+
+.quizExplanationItem {
+    margin-bottom: 0;
+}
+
+.quizQuestionDelete {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.addQuestionBtn {
+    margin-bottom: 24px;
+}
+
+.quizIcon {
+    color: #faad14;
+}
+
+.fullWidth {
+    width: 100%;
+}

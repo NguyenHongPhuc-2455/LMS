@@ -1,0 +1,234 @@
+.profileContainer {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #F8F9FD;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.profileLeftCard {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.profileDivider {
+    margin: 0;
+}
+
+.socialIconFb {
+    color: #1877F2;
+    font-size: 20px;
+}
+
+.socialIconGoogle {
+    color: #DB4437;
+    font-size: 20px;
+}
+
+.notificationTitle {
+    display: block;
+}
+
+.profileModal {
+    :global(.ant-modal-content) {
+        border-radius: 16px;
+    }
+}
+
+.fullWidth {
+    width: 100%;
+}
+
+.profileAvatarSection {
+    text-align: center;
+    padding: 32px 24px;
+}
+
+.profileAvatarWrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.profileAvatar {
+    border: 1px solid #E2E8F0;
+}
+
+.profileAvatarButton {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: #4880FF;
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    :global(.anticon) {
+        font-size: 12px;
+    }
+}
+
+.profileName {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.profileEditBtn {
+    color: #4880FF;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.profileInfoList {
+    padding: 24px;
+}
+
+.profileInfoItem {
+    margin-bottom: 16px;
+
+    .infoLabel {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .infoValue {
+        font-size: 14px;
+
+        &.hasValue {
+            color: #475569;
+        }
+
+        &.noValue {
+            color: #94A3B8;
+        }
+
+        .addLink {
+            color: #4880FF;
+            cursor: pointer;
+        }
+    }
+}
+
+.profileLogoutSection {
+    padding: 16px;
+    text-align: center;
+
+    .logoutBtn {
+        font-weight: 600;
+    }
+}
+
+.profileRightSpace {
+    width: 100%;
+}
+
+.profileSectionCard {
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+
+    :global(.ant-card-head-title) {
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+
+.btnAddAddress {
+    color: #4880FF;
+    font-weight: 600;
+    padding: 0;
+
+    :global(.anticon) {
+        color: #4880FF;
+    }
+}
+
+.paymentDesc {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.paymentMethodItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid #F1F5F9;
+    border-radius: 8px;
+}
+
+.paymentCardIcon {
+    width: 40px;
+    height: 26px;
+    background: #F8FAFC;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #E2E8F0;
+
+    :global(.anticon) {
+        color: #EF4444;
+    }
+}
+
+.socialDesc {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.socialItemIconWrapper {
+    width: 40px;
+    height: 40px;
+    background: #F8FAFC;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notificationDesc {
+    display: block;
+    margin-bottom: 24px;
+}
+
+.notificationItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.notificationSubText {
+    font-size: 13px;
+    display: block;
+}
+
+.profileModalForm {
+    margin-top: 20px;
+}
+
+.profileModalFooter {
+    text-align: right;
+    margin-top: 24px;
+
+    .btnSave {
+        background: #4880FF;
+    }
+}
+
+.iconSmall {
+    font-size: 10px;
+}
+
+.iconGray {
+    color: #94A3B8;
+}

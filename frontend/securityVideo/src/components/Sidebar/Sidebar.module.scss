@@ -1,0 +1,74 @@
+.sidebarContainer {
+    width: 96px;
+    height: calc(100vh - 66px);
+    background: #FFF;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+    gap: 8px;
+    position: sticky;
+    top: 66px;
+    z-index: 10;
+    border-right: 1px solid #e8e8e8;
+    flex-shrink: 0;
+}
+
+.sidebarItem {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 16px;
+    background: transparent;
+    @include transition-standard;
+    color: $text-muted;
+
+    &.active {
+        background: #e8edf3;
+        color: $text-main;
+    }
+
+    &:hover {
+        background: #f5f5f5;
+    }
+
+    .sidebarIcon {
+        font-size: 20px;
+        margin-bottom: 4px;
+    }
+
+    .sidebarLabel {
+        font-size: 11px;
+        font-weight: 600;
+    }
+}
+
+.sidebarFooter {
+    margin-top: auto;
+    margin-bottom: 20px;
+}
+
+.sidebarPlusBtn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #e8edf3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    @include transition-standard;
+    color: $text-muted;
+
+    &:hover {
+        background: #d1d9e6;
+    }
+}
+
+.sidebarPlusIcon {
+    font-size: 24px;
+}

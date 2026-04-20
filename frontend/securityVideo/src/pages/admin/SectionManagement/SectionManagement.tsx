@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import api from '../../../api';
+import { courseService } from '../../../services/course.service';
+import { contentService } from '../../../services/content.service';
+
 import {
     Trash2, Plus, Edit, FolderOpen
 } from 'lucide-react';
@@ -8,7 +10,7 @@ import {
     Card, Button, Input, Select, Space, Typography,
     Table, Modal, Form, message, Popconfirm
 } from 'antd';
-import './SectionManagement.scss';
+import styles from './SectionManagement.module.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -39,9 +41,10 @@ export default function SectionManagement() {
 
     const fetchCourses = async () => {
         try {
-            const res = await api.get('/courses');
-            setCourses(res.data);
-            if (res.data.length > 0 && !selectedCourseId) {
+            const data = await courseService.getAll();
+            setCourses(data);
+
+            if (data.length > 0 && !selectedCourseId) {
                 // Tự động chọn khóa học đầu tiên nếu chưa chọn
                 // setSelectedCourseId(res.data[0].id);
             }
@@ -51,8 +54,9 @@ export default function SectionManagement() {
     const fetchSections = async (courseId: number) => {
         setLoading(true);
         try {
-            const res = await api.get(`/courses/${courseId}`);
-            setSections(res.data.sections || []);
+            const data = await courseService.getById(courseId);
+            setSections(data.sections || []);
+
         } catch (e) {
             message.error('Lỗi tải danh chương');
         } finally {
@@ -81,12 +85,13 @@ export default function SectionManagement() {
         if (!selectedCourseId) return;
         try {
             if (editingId) {
-                await api.put(`/courses/sections/${editingId}`, values);
+                await contentService.updateSection(editingId, values);
                 message.success('Đã cập nhật chương!');
             } else {
-                await api.post('/courses/sections', { ...values, course_id: selectedCourseId });
+                await contentService.createSection({ ...values, course_id: selectedCourseId });
                 message.success('Đã tạo chương mới!');
             }
+
             setIsModalOpen(false);
             setEditingId(null);
             form.resetFields();
@@ -105,17 +110,18 @@ export default function SectionManagement() {
 
     const handleDelete = async (id: number) => {
         try {
-            await api.delete(`/courses/sections/${id}`);
+            await contentService.deleteSection(id);
             message.success('Đã xóa chương');
             if (selectedCourseId) fetchSections(selectedCourseId);
-        } catch (e) { message.error('Lỗi khi xóa chương'); }
+        } catch (e) { message.error('Lỗi xóa chương'); }
+
     };
 
     return (
-        <div className="section-management-container">
-            <div className="section-management-header">
+        <div className={styles.sectionManagementContainer}>
+            <div className={styles.sectionManagementHeader}>
                 <div>
-                    <Title level={4} className="header-title">Quản lý Chương Học</Title>
+                    <Title level={4} className={styles.headerTitle}>Quản lý Chương Học</Title>
                     <Text type="secondary">Phân bổ cấu trúc bài học cho từng khóa</Text>
                 </div>
                 <Button
@@ -129,12 +135,12 @@ export default function SectionManagement() {
             </div>
 
             <Card className="glass-card">
-                <div className="course-selector-wrapper">
+                <div className={styles.courseSelectorWrapper}>
                     <Text strong>Chọn khóa học:</Text>
                     <Select
                         showSearch
                         placeholder="Chọn khóa học để xem chương..."
-                        className="course-select"
+                        className={styles.courseSelect}
                         size="small"
                         value={selectedCourseId}
                         onChange={(v) => setSelectedCourseId(v)}
@@ -148,9 +154,9 @@ export default function SectionManagement() {
                 </div>
 
                 {!selectedCourseId ? (
-                    <div className="empty-section-wrapper">
-                        <FolderOpen size={40} className="empty-icon" />
-                        <Text type="secondary" className="empty-text">Vui lòng chọn một khóa học bên trên để quản lý chương</Text>
+                    <div className={styles.emptySectionWrapper}>
+                        <FolderOpen size={40} className={styles.emptyIcon} />
+                        <Text type="secondary" className={styles.emptyText}>Vui lòng chọn một khóa học bên trên để quản lý chương</Text>
                     </div>
                 ) : (
                     <Table
@@ -164,7 +170,7 @@ export default function SectionManagement() {
                                 dataIndex: 'title',
                                 render: (text, record) => (
                                     <span
-                                        className="section-title-link"
+                                        className={styles.sectionTitleLink}
                                         onClick={() => navigate(`/admin/lessons?courseId=${selectedCourseId}&sectionId=${record.id}`)}
                                     >
                                         {text}

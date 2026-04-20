@@ -13,9 +13,10 @@ import {
     CalendarOutlined,
     ManOutlined
 } from '@ant-design/icons';
-import api from '../../../api';
+import { userService } from '../../../services/user.service';
 import dayjs from 'dayjs';
-import './Profile.scss';
+import styles from './Profile.module.scss';
+
 
 const { Title, Text } = Typography;
 
@@ -28,9 +29,10 @@ const Profile: React.FC = () => {
 
     const fetchUser = async () => {
         try {
-            const res = await api.get('/users/profile');
-            setUser(res.data);
-            localStorage.setItem('user', JSON.stringify(res.data));
+            const data = await userService.getProfile();
+            setUser(data);
+            localStorage.setItem('user', JSON.stringify(data));
+
         } catch (error) {
             // Fallback to localStorage if API fails
             const userStr = localStorage.getItem('user');
@@ -55,9 +57,10 @@ const Profile: React.FC = () => {
                 ...values,
                 dob: values.dob ? values.dob.toISOString() : null
             };
-            const res = await api.put('/users/profile', payload);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            setUser(res.data.user);
+            const data = await userService.updateProfile(payload);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            setUser(data.user);
             message.success('Cập nhật hồ sơ thành công!');
             setIsModalOpen(false);
         } catch (error: any) {
@@ -68,12 +71,12 @@ const Profile: React.FC = () => {
     };
 
     const infoItem = (label: string, value: string | null, icon?: React.ReactNode) => (
-        <div className="profile-info-item">
-            <div className="info-label">
+        <div className={styles.profileInfoItem}>
+            <div className={styles.infoLabel}>
                 {icon} {label}
             </div>
-            <div className={`info-value ${value ? 'has-value' : 'no-value'}`}>
-                {value || <span className="add-link" onClick={() => setIsModalOpen(true)}>+ Add</span>}
+            <div className={`${styles.infoValue} ${value ? styles.hasValue : styles.noValue}`}>
+                {value || <span className={styles.addLink} onClick={() => setIsModalOpen(true)}>+ Add</span>}
             </div>
         </div>
     );
@@ -81,28 +84,28 @@ const Profile: React.FC = () => {
     if (!user) return null;
 
     return (
-        <div className="profile-container">
+        <div className={styles.profileContainer}>
             <Row gutter={24}>
                 {/* Left Card: Basic Info */}
                 <Col xs={24} md={8}>
-                    <Card bordered={false} styles={{ body: { padding: 0 } }} className="profile-left-card">
-                        <div className="profile-avatar-section">
-                            <div className="profile-avatar-wrapper">
+                    <Card bordered={false} styles={{ body: { padding: 0 } }} className={styles.profileLeftCard}>
+                        <div className={styles.profileAvatarSection}>
+                            <div className={styles.profileAvatarWrapper}>
                                 <Avatar
                                     size={120}
                                     src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=4880FF&color=fff&size=200`}
-                                    className="profile-avatar"
+                                    className={styles.profileAvatar}
                                 />
                                 <Button
                                     shape="circle"
                                     size="small"
                                     icon={<CameraOutlined />}
-                                    className="profile-avatar-button"
+                                    className={styles.profileAvatarButton}
                                 />
                             </div>
-                            <Title level={3} className="profile-name">{user.full_name || user.username}</Title>
+                            <Title level={3} className={styles.profileName}>{user.full_name || user.username}</Title>
                             <Text
-                                className="profile-edit-btn"
+                                className={styles.profileEditBtn}
                                 onClick={() => {
                                     form.setFieldsValue({
                                         full_name: user.full_name,
@@ -119,32 +122,32 @@ const Profile: React.FC = () => {
                             </Text>
                         </div>
 
-                        <Divider className="profile-divider" />
+                        <Divider className={styles.profileDivider} />
 
-                        <div className="profile-info-list">
-                            {infoItem('Username', user.username, <UserOutlined className="icon-small" />)}
-                            {infoItem('Full name', user.full_name, <UserOutlined className="icon-small" />)}
-                            {infoItem('Mobile number', user.phone, <PhoneOutlined className="icon-small" />)}
-                            {infoItem('Email address', user.email, <MailOutlined className="icon-small" />)}
-                            {infoItem('Date of birth', user.dob ? dayjs(user.dob).format('DD/MM/YYYY') : null, <CalendarOutlined className="icon-small" />)}
-                            {infoItem('Gender', user.gender, <ManOutlined className="icon-small" />)}
+                        <div className={styles.profileInfoList}>
+                            {infoItem('Username', user.username, <UserOutlined className={styles.iconSmall} />)}
+                            {infoItem('Full name', user.full_name, <UserOutlined className={styles.iconSmall} />)}
+                            {infoItem('Mobile number', user.phone, <PhoneOutlined className={styles.iconSmall} />)}
+                            {infoItem('Email address', user.email, <MailOutlined className={styles.iconSmall} />)}
+                            {infoItem('Date of birth', user.dob ? dayjs(user.dob).format('DD/MM/YYYY') : null, <CalendarOutlined className={styles.iconSmall} />)}
+                            {infoItem('Gender', user.gender, <ManOutlined className={styles.iconSmall} />)}
                         </div>
 
-                        <Divider className="profile-divider" />
+                        <Divider className={styles.profileDivider} />
 
-                        <div className="profile-logout-section">
-                            <Button type="text" danger onClick={handleLogout} className="logout-btn">Log out</Button>
+                        <div className={styles.profileLogoutSection}>
+                            <Button type="text" danger onClick={handleLogout} className={styles.logoutBtn}>Log out</Button>
                         </div>
                     </Card>
                 </Col>
 
                 {/* Right Cards */}
                 <Col xs={24} md={16}>
-                    <Space direction="vertical" size={24} className="profile-right-space">
+                    <Space direction="vertical" size={24} className={styles.profileRightSpace}>
 
                         {/* Addresses */}
-                        <Card bordered={false} title="My addresses" className="profile-section-card">
-                            <Button type="text" icon={<PlusCircleOutlined />} className="btn-add-address">
+                        <Card bordered={false} title="My addresses" className={styles.profileSectionCard}>
+                            <Button type="text" icon={<PlusCircleOutlined />} className={styles.btnAddAddress}>
                                 Add new address
                             </Button>
                         </Card>
@@ -153,36 +156,36 @@ const Profile: React.FC = () => {
                         <Card
                             bordered={false}
                             title="My payment methods"
-                            extra={<Button type="text" className="profile-edit-btn">Change</Button>}
-                            className="profile-section-card"
+                            extra={<Button type="text" className={styles.profileEditBtn}>Change</Button>}
+                            className={styles.profileSectionCard}
                         >
-                            <Text type="secondary" className="payment-desc">Securely save your card details for hassle-free payments.</Text>
-                            <div className="payment-method-item">
+                            <Text type="secondary" className={styles.paymentDesc}>Securely save your card details for hassle-free payments.</Text>
+                            <div className={styles.paymentMethodItem}>
                                 <Space size={16}>
-                                    <div className="payment-card-icon">
+                                    <div className={styles.paymentCardIcon}>
                                         <CreditCardOutlined />
                                     </div>
                                     <Text strong>MasterCard •••• 4320</Text>
                                 </Space>
                                 <Space size={16}>
                                     <Text type="secondary">Exp: 4/2028</Text>
-                                    <MoreOutlined className="icon-gray" />
+                                    <MoreOutlined className={styles.iconGray} />
                                 </Space>
                             </div>
                         </Card>
 
                         {/* Social Logins */}
-                        <Card bordered={false} title="My social logins" className="profile-section-card">
-                            <Text type="secondary" className="social-desc">Link social profiles for easier access to your Fresha account.</Text>
+                        <Card bordered={false} title="My social logins" className={styles.profileSectionCard}>
+                            <Text type="secondary" className={styles.socialDesc}>Link social profiles for easier access to your Fresha account.</Text>
                             <List
                                 dataSource={[
-                                    { name: 'Facebook', icon: <FacebookFilled className="social-icon-fb" /> },
-                                    { name: 'Google', icon: <GoogleOutlined className="social-icon-google" /> }
+                                    { name: 'Facebook', icon: <FacebookFilled className={styles.socialIconFb} /> },
+                                    { name: 'Google', icon: <GoogleOutlined className={styles.socialIconGoogle} /> }
                                 ]}
                                 renderItem={(item) => (
-                                    <List.Item extra={<Button type="text" className="profile-edit-btn">Connect</Button>}>
+                                    <List.Item extra={<Button type="text" className={styles.profileEditBtn}>Connect</Button>}>
                                         <Space size={16}>
-                                            <div className="social-item-icon-wrapper">
+                                            <div className={styles.socialItemIconWrapper}>
                                                 {item.icon}
                                             </div>
                                             <Text strong>{item.name}</Text>
@@ -193,12 +196,12 @@ const Profile: React.FC = () => {
                         </Card>
 
                         {/* Notifications */}
-                        <Card bordered={false} title="My notifications" className="profile-section-card">
-                            <Text type="secondary" className="notification-desc">We'll send you updates about your appointments, news and marketing offers.</Text>
-                            <div className="notification-item">
+                        <Card bordered={false} title="My notifications" className={styles.profileSectionCard}>
+                            <Text type="secondary" className={styles.notificationDesc}>We'll send you updates about your appointments, news and marketing offers.</Text>
+                            <div className={styles.notificationItem}>
                                 <div>
-                                    <Text strong className="notification-title">Text message appointment notifications</Text>
-                                    <Text type="secondary" className="notification-sub-text">Receive texts based on your sender's settings</Text>
+                                    <Text strong className={styles.notificationTitle}>Text message appointment notifications</Text>
+                                    <Text type="secondary" className={styles.notificationSubText}>Receive texts based on your sender's settings</Text>
                                 </div>
                                 <Switch defaultChecked />
                             </div>
@@ -215,14 +218,14 @@ const Profile: React.FC = () => {
                 onCancel={() => setIsModalOpen(false)}
                 footer={null}
                 centered
-                className="profile-modal"
+                className={styles.profileModal}
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={onFinish}
                     requiredMark={false}
-                    className="profile-modal-form"
+                    className={styles.profileModalForm}
                 >
                     <Form.Item label="Họ và tên" name="full_name">
                         <Input placeholder="Nguyễn Văn A" />
@@ -236,7 +239,7 @@ const Profile: React.FC = () => {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item label="Ngày sinh" name="dob">
-                                <DatePicker className="full-width" format="DD/MM/YYYY" />
+                                <DatePicker className={styles.fullWidth} format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -252,10 +255,10 @@ const Profile: React.FC = () => {
                     <Form.Item label="Link Avatar" name="avatar">
                         <Input placeholder="https://..." />
                     </Form.Item>
-                    <div className="profile-modal-footer">
+                    <div className={styles.profileModalFooter}>
                         <Space>
                             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-                            <Button type="primary" htmlType="submit" loading={loading} className="btn-save">
+                            <Button type="primary" htmlType="submit" loading={loading} className={styles.btnSave}>
                                 Lưu thay đổi
                             </Button>
                         </Space>

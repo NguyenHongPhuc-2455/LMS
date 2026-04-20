@@ -1,0 +1,27 @@
+.mainLayout {
+    min-height: 100vh;
+    background: #FFFFFF;
+}
+
+.mainLayoutBody {
+    display: flex;
+    flex-direction: row;
+    background: #FFFFFF;
+}
+
+.mainContent {
+    min-height: calc(100vh - 66px);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.pageWrapper {
+    width: 100%;
+    padding: 24px 40px;
+    flex: 1;
+
+    @media (max-width: 768px) {
+        padding: 20px;
+    }
+}

@@ -114,6 +114,17 @@ const getMyPrograms = async (userId) => {
     return enrollments.map(e => ({ ...e.program, enrolled_at: e.enrolled_at }));
 };
 
+const reorderCourses = async (programId, courses) => {
+    // courses: [{ courseId: 1, order: 0 }, { courseId: 2, order: 1 }]
+    const updates = courses.map(c =>
+        prisma.programCourse.update({
+            where: { program_id_course_id: { program_id: parseInt(programId), course_id: parseInt(c.courseId) } },
+            data: { order: parseInt(c.order) }
+        })
+    );
+    return await prisma.$transaction(updates);
+};
+
 module.exports = {
     getAllPrograms,
     getProgramById,
@@ -122,6 +133,8 @@ module.exports = {
     softDeleteProgram,
     addCourse,
     removeCourse,
+    reorderCourses,
     enrollProgram,
     getMyPrograms
 };
+

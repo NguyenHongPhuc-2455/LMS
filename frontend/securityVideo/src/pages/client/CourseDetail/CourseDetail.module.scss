@@ -1,0 +1,197 @@
+:global {
+    .ant-collapse-header {
+        padding: 12px 20px;
+    }
+
+    .ant-collapse-content-box {
+        padding: 0;
+        background: #fff;
+    }
+}
+
+.courseDetailContainer {
+    padding: 20px 4%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.courseTitleMain {
+    font-size: 32px;
+    margin-bottom: 16px;
+}
+
+.courseDescription {
+    font-size: 15px;
+    color: #444;
+    margin-bottom: 32px;
+}
+
+.infoSection {
+    margin-bottom: 40px;
+}
+
+.outcomeItem {
+    .outcomeIcon {
+        color: #f05123;
+        margin-top: 5px;
+    }
+
+    .outcomeText {
+        font-size: 14px;
+    }
+}
+
+.requirementsList {
+    padding-left: 20px;
+    color: #444;
+
+    .requirementItem {
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+}
+
+.sectionContentHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.sectionStats {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.curriculumCollapse {
+    background: #fff;
+}
+
+.sectionCollapseHeader {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px 0;
+}
+
+.lessonItem {
+    border: none;
+    padding: 12px 20px;
+
+    .lessonIcon {
+        color: #f05123;
+        font-size: 14px;
+        opacity: 0.6;
+    }
+
+    .lessonTitle {
+        font-size: 14px;
+        color: #333;
+    }
+
+    .lessonDuration {
+        font-size: 13px;
+    }
+}
+
+.sectionPanelItem {
+    margin-bottom: 8px;
+    background: #f7f8fa;
+    border-radius: 6px;
+    border: none;
+    overflow: hidden;
+}
+
+.floatingSidebar {
+    position: sticky;
+    top: 90px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 2px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.thumbnailWrapper {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    cursor: pointer;
+
+    .thumbnailImg {
+        width: 100%;
+        display: block;
+        transition: 0.3s;
+
+        &:hover {
+            transform: scale(1.05);
+        }
+    }
+}
+
+.sidebarActions {
+    padding: 0 20px 20px;
+}
+
+.statusTagContainer {
+    margin-bottom: 24px;
+}
+
+.courseStatusTag {
+    border-radius: 6px;
+    font-weight: 700;
+    padding: 4px 16px;
+    border: none;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.actionBtnStyled {
+    height: 50px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 24px;
+    border: none;
+
+    &.btnSuccess {
+        background: #26ac51;
+    }
+
+    &.btnPrivate {
+        background: #7064f9ff;
+    }
+
+    &.btnPublic {
+        background: #6366f1;
+    }
+}
+
+.sidebarInfoList {
+    text-align: left;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    .infoItem {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .infoIcon {
+            color: #444;
+            font-size: 16px;
+        }
+
+        .infoText {
+            color: #494949;
+            font-size: 14px;
+        }
+    }
+}
+
+.loaderContainerCenter {
+    padding: 50px;
+}

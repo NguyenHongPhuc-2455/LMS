@@ -1,6 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import api from '../../../api';
+import { courseService } from '../../../services/course.service';
+import { contentService } from '../../../services/content.service';
+import { quizService } from '../../../services/quiz.service';
+import { videoService } from '../../../services/video.service';
+
+
 import {
     Trash2,
     Plus, ShieldCheck, PlayCircle, Edit
@@ -10,7 +15,8 @@ import {
     Table, Modal, Form, message, Divider, Popconfirm, Badge, Segmented, Radio, InputNumber, Row, Col
 } from 'antd';
 import { QuestionCircleOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import './LessonManagement.scss';
+import styles from './LessonManagement.module.scss';
+
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -59,23 +65,25 @@ export default function LessonManagement() {
 
     const fetchCourses = async () => {
         try {
-            const res = await api.get('/courses');
-            setCourses(res.data);
+            const data = await courseService.getAll();
+            setCourses(data);
+
         } catch (e) { message.error('Lỗi tải khóa học'); }
     };
 
     const fetchSections = async (courseId: number) => {
         try {
-            const res = await api.get(`/courses/${courseId}`);
-            setSections(res.data.sections || []);
+            const data = await courseService.getById(courseId);
+            setSections(data.sections || []);
+
         } catch (e) { message.error('Lỗi tải chương'); }
     };
 
     const fetchLessons = async (sectionId: number) => {
         setLoading(true);
         try {
-            const res = await api.get(`/courses/sections/${sectionId}`);
-            setLessons(res.data.lessons || []);
+            const data = await contentService.getLessonsBySection(sectionId);
+            setLessons(data || []);
         } catch (e) {
         } finally {
             setLoading(false);
@@ -121,33 +129,20 @@ export default function LessonManagement() {
             let lessonId = editingId;
 
             if (lessonType === 'QUIZ') {
-                if (editingId && editingQuizId) {
-                    await api.put(`/quizzes/${editingQuizId}`, {
-                        title: values.title,
-                        section_id: values.section_id,
-                        description: values.description,
-                        pass_score: values.pass_score,
-                        time_limit: values.time_limit,
-                        questions: values.questions,
-                        order: values.order
-                    });
+                if (editingQuizId) {
+                    await quizService.update(editingQuizId, values);
                     message.success('Đã cập nhật bài trắc nghiệm!');
                 } else {
-                    // Create quiz
-                    await api.post('/quizzes', {
-                        title: values.title,
-                        section_id: values.section_id,
-                        description: values.description,
-                        pass_score: values.pass_score,
-                        time_limit: values.time_limit,
-                        questions: values.questions,
+                    await quizService.create({
+                        ...values,
+                        section_id: selectedSectionId,
                         order: values.order
                     });
                     message.success('Đã tạo bài trắc nghiệm!');
                 }
             } else {
                 if (editingId) {
-                    await api.put(`/videos/${editingId}`, {
+                    await videoService.update(editingId, {
                         title: values.title,
                         section_id: values.section_id,
                         content: values.content,
@@ -158,8 +153,8 @@ export default function LessonManagement() {
                     if (videoSourceType === 'UPLOAD' && !selectedFile) return message.error('Vui lòng chọn tệp video');
                     const formData = new FormData();
                     formData.append('title', values.title);
-                    formData.append('section_id', values.section_id);
-                    formData.append('order', values.order || '0');
+                    formData.append('section_id', String(values.section_id));
+                    formData.append('order', String(values.order || '0'));
                     if (videoSourceType === 'UPLOAD') {
                         formData.append('video', selectedFile!);
                         message.loading({ content: 'Đang xử lý video HLS...', key: 'hls-up' });
@@ -168,19 +163,15 @@ export default function LessonManagement() {
                         message.loading({ content: 'Đang lưu bài giảng...', key: 'hls-up' });
                     }
 
-                    const res = await api.post('/videos/upload', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' } // Multer in backend still processes it correctly because fields are appended
-                    });
-                    lessonId = res.data.data.lessonId;
+                    const data = await videoService.upload(formData);
+                    lessonId = data.data.lessonId;
                     message.success({ content: videoSourceType === 'UPLOAD' ? 'Video đang được băm bảo mật...' : 'Đã tải lên thành công!', key: 'hls-up' });
                 }
 
                 if (attachmentFile && lessonId) {
                     const attachData = new FormData();
                     attachData.append('attachment', attachmentFile);
-                    await api.post(`/videos/upload-attachment/${lessonId}`, attachData, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
-                    });
+                    await videoService.uploadAttachment(lessonId, attachData);
                     message.success('Đã đính kèm tài liệu!');
                 }
             }
@@ -205,9 +196,10 @@ export default function LessonManagement() {
             form.resetFields();
             try {
                 message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
-                const res = await api.get(`/quizzes/lesson/${lesson.id}`);
-                const quizData = res.data.data;
+                const data = await quizService.getByLesson(lesson.id);
+                const quizData = data.data;
                 setEditingQuizId(quizData.id);
+
                 form.setFieldsValue({
                     title: lesson.title,
                     section_id: selectedSectionId,
@@ -235,13 +227,8 @@ export default function LessonManagement() {
 
     const handleDelete = async (lesson: Lesson) => {
         try {
-            if (lesson.type === 'QUIZ') {
-                // Must get quizId from somewhere, or just use lesson delete endpoint if backend deletes quiz via cascade.
-                // Our video delete endpoint actually deletes lesson:
-                await api.delete(`/videos/${lesson.id}`);
-            } else {
-                await api.delete(`/videos/${lesson.id}`);
-            }
+            await videoService.delete(lesson.id);
+
             message.success('Đã xóa bài giảng');
             if (selectedSectionId) fetchLessons(selectedSectionId);
         } catch (e) { message.error('Lỗi khi xóa'); }
@@ -259,10 +246,10 @@ export default function LessonManagement() {
     };
 
     return (
-        <div className="lesson-management-container">
-            <div className="lesson-management-header">
+        <div className={styles.lessonManagementContainer}>
+            <div className={styles.lessonManagementHeader}>
                 <div>
-                    <Title level={4} className="header-title">Quản lý Bài Giảng</Title>
+                    <Title level={4} className={styles.headerTitle}>Quản lý Bài Giảng</Title>
                     <Text type="secondary">Cập nhật nội dung video, trắc nghiệm và tài liệu học tập</Text>
                 </div>
                 <Button
@@ -275,13 +262,13 @@ export default function LessonManagement() {
                 </Button>
             </div>
 
-            <Card className="glass-card filter-card">
+            <Card className={`glass-card ${styles.filterCard}`}>
                 <Space size={24}>
                     <Space>
                         <Text strong>Khóa học:</Text>
                         <Select
                             placeholder="Chọn khóa học..."
-                            className="filter-select"
+                            className={styles.filterSelect}
                             onChange={v => setSelectedCourseId(v)}
                             value={selectedCourseId}
                         >
@@ -292,7 +279,7 @@ export default function LessonManagement() {
                         <Text strong>Chương:</Text>
                         <Select
                             placeholder="Chọn chương..."
-                            className="filter-select"
+                            className={styles.filterSelect}
                             disabled={!selectedCourseId}
                             onChange={v => setSelectedSectionId(v)}
                             value={selectedSectionId}
@@ -305,9 +292,9 @@ export default function LessonManagement() {
 
             <Card className="glass-card">
                 {!selectedSectionId ? (
-                    <div className="empty-lesson-wrapper">
-                        <PlayCircle size={40} className="empty-icon" />
-                        <Text type="secondary" className="empty-text">Vui lòng chọn Khóa học và Chương để quản lý bài giảng</Text>
+                    <div className={styles.emptyLessonWrapper}>
+                        <PlayCircle size={40} className={styles.emptyIcon} />
+                        <Text type="secondary" className={styles.emptyText}>Vui lòng chọn Khóa học và Chương để quản lý bài giảng</Text>
                     </div>
                 ) : (
                     <Table
@@ -321,7 +308,7 @@ export default function LessonManagement() {
                                 dataIndex: 'title',
                                 render: (t, r) => (
                                     <Space>
-                                        {r.type === 'QUIZ' ? <QuestionCircleOutlined className="quiz-icon" /> : <PlayCircle size={14} color="#6366f1" />}
+                                        {r.type === 'QUIZ' ? <QuestionCircleOutlined className={styles.quizIcon} /> : <PlayCircle size={14} color="#6366f1" />}
                                         {t}
                                     </Space>
                                 )
@@ -358,7 +345,7 @@ export default function LessonManagement() {
                 destroyOnClose
             >
                 {!editingId && (
-                    <div className="segmented-wrapper">
+                    <div className={styles.segmentedWrapper}>
                         <Segmented
                             options={[
                                 { label: 'Video bài học', value: 'VIDEO' },
@@ -387,7 +374,7 @@ export default function LessonManagement() {
                         </Col>
                         <Col span={6}>
                             <Form.Item name="order" label="Thứ tự hiển thị">
-                                <InputNumber min={0} className="full-width" />
+                                <InputNumber min={0} className={styles.fullWidth} />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -398,24 +385,24 @@ export default function LessonManagement() {
                                 <Input.TextArea rows={4} />
                             </Form.Item>
 
-                            <div className="attachment-wrapper">
-                                <Text strong className="attachment-title">Tài liệu đính kèm (PDF - Tùy chọn)</Text>
+                            <div className={styles.attachmentWrapper}>
+                                <Text strong className={styles.attachmentTitle}>Tài liệu đính kèm (PDF - Tùy chọn)</Text>
                                 <input type="file" accept="application/pdf" onChange={e => setAttachmentFile(e.target.files?.[0] || null)} />
-                                {attachmentFile && <Text type="success" className="attachment-success"><br />✓ {attachmentFile.name}</Text>}
+                                {attachmentFile && <Text type="success" className={styles.attachmentSuccess}><br />✓ {attachmentFile.name}</Text>}
                             </div>
 
                             {!editingId && (
-                                <div className="video-source-wrapper">
-                                    <Radio.Group value={videoSourceType} onChange={e => setVideoSourceType(e.target.value)} className="video-source-radio">
+                                <div className={styles.videoSourceWrapper}>
+                                    <Radio.Group value={videoSourceType} onChange={e => setVideoSourceType(e.target.value)} className={styles.videoSourceRadio}>
                                         <Radio value="UPLOAD">Upload Video MP4 (HLS)</Radio>
                                         <Radio value="LINK">Dùng Link (Youtube/Server)</Radio>
                                     </Radio.Group>
 
                                     {videoSourceType === 'UPLOAD' ? (
                                         <div>
-                                            <Text strong className="attachment-title">Tệp Video (MP4 - Bắt buộc)</Text>
+                                            <Text strong className={styles.attachmentTitle}>Tệp Video (MP4 - Bắt buộc)</Text>
                                             <input type="file" accept="video/mp4" onChange={e => setSelectedFile(e.target.files?.[0] || null)} />
-                                            {selectedFile && <Text type="success" className="attachment-success"><br />✓ {selectedFile.name}</Text>}
+                                            {selectedFile && <Text type="success" className={styles.attachmentSuccess}><br />✓ {selectedFile.name}</Text>}
                                         </div>
                                     ) : (
                                         <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>
@@ -436,12 +423,12 @@ export default function LessonManagement() {
                             <Row gutter={16}>
                                 <Col span={12}>
                                     <Form.Item name="pass_score" label="Xác mức điểm Đạt (%)" initialValue={80}>
-                                        <InputNumber min={0} max={100} className="full-width" />
+                                        <InputNumber min={0} max={100} className={styles.fullWidth} />
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
                                     <Form.Item name="time_limit" label="Thời gian (Giây) - Để trống = Không hạn" initialValue={null}>
-                                        <InputNumber min={0} className="full-width" />
+                                        <InputNumber min={0} className={styles.fullWidth} />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -452,7 +439,7 @@ export default function LessonManagement() {
                                 {(fields, { add, remove }) => (
                                     <>
                                         {fields.map(({ key, name, ...restField }, index) => (
-                                            <Card size="small" key={key} className="quiz-question-card" title={`Câu ${index + 1}`}>
+                                            <Card size="small" key={key} className={styles.quizQuestionCard} title={`Câu ${index + 1}`}>
                                                 <Form.Item
                                                     {...restField}
                                                     name={[name, 'content']}
@@ -465,9 +452,9 @@ export default function LessonManagement() {
                                                 <Text strong>Các lựa chọn (Đánh dấu vào đáp án đúng)</Text>
                                                 <Form.List name={[name, 'options']}>
                                                     {(optFields, { add: addOpt, remove: removeOpt }) => (
-                                                        <div className="quiz-options-wrapper">
+                                                        <div className={styles.quizOptionsWrapper}>
                                                             {optFields.map((optField, oIdx) => (
-                                                                <Row key={optField.key} gutter={8} align="middle" className="quiz-option-row">
+                                                                <Row key={optField.key} gutter={8} align="middle" className={styles.quizOptionRow}>
                                                                     <Col span={3}>
                                                                         <Form.Item {...optField} name={[optField.name, 'is_correct']} valuePropName="checked" noStyle>
                                                                             <Radio
@@ -492,7 +479,7 @@ export default function LessonManagement() {
                                                                         </Form.Item>
                                                                     </Col>
                                                                     <Col span={1}>
-                                                                        <DeleteOutlined className="quiz-option-delete" onClick={() => removeOpt(optField.name)} />
+                                                                        <DeleteOutlined className={styles.quizOptionDelete} onClick={() => removeOpt(optField.name)} />
                                                                     </Col>
                                                                 </Row>
                                                             ))}
@@ -505,23 +492,23 @@ export default function LessonManagement() {
                                                     )}
                                                 </Form.List>
 
-                                                <Divider className="quiz-divider" />
+                                                <Divider className={styles.quizDivider} />
 
                                                 <Form.Item
                                                     {...restField}
                                                     name={[name, 'explanation']}
                                                     label="Giải thích đáp án (tùy chọn)"
-                                                    className="quiz-explanation-item"
+                                                    className={styles.quizExplanationItem}
                                                 >
                                                     <Input placeholder="Giải thích vì sao lại chọn đáp án này..." />
                                                 </Form.Item>
 
-                                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} className="quiz-question-delete">
+                                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} className={styles.quizQuestionDelete}>
                                                     Xóa câu này
                                                 </Button>
                                             </Card>
                                         ))}
-                                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} className="add-question-btn">
+                                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} className={styles.addQuestionBtn}>
                                             Thêm câu hỏi
                                         </Button>
                                     </>

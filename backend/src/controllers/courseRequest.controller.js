@@ -190,3 +190,64 @@ exports.rejectRequest = catchAsync(async (req, res) => {
 
     res.json({ message: 'Đã từ chối yêu cầu truy cập', data: updatedRequest });
 });
+
+exports.approveBulk = catchAsync(async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) throw new ApiError(400, 'ids array là bắt buộc');
+
+    const requests = await prisma.courseRequest.findMany({
+        where: { id: { in: ids.map(id => parseInt(id)) }, status: 'PENDING' },
+        include: { course: { select: { id: true, title: true } } }
+    });
+
+    for (const request of requests) {
+        await prisma.courseRequest.update({
+            where: { id: request.id },
+            data: { status: 'APPROVED' }
+        });
+
+        await prisma.enrollment.upsert({
+            where: { user_id_course_id: { user_id: request.user_id, course_id: request.course_id } },
+            update: {},
+            create: { user_id: request.user_id, course_id: request.course_id }
+        });
+
+        await notificationService.createNotification({
+            userId: request.user_id,
+            title: 'Yêu cầu được phê duyệt',
+            message: `Yêu cầu tham gia khóa học "${request.course.title}" của bạn đã được phê duyệt.`,
+            type: 'COURSE_APPROVAL',
+            link: `/course/${request.course_id}`
+        });
+    }
+
+    res.json({ message: `Đã phê duyệt ${requests.length} yêu cầu` });
+});
+
+exports.rejectBulk = catchAsync(async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) throw new ApiError(400, 'ids array là bắt buộc');
+
+    const requests = await prisma.courseRequest.findMany({
+        where: { id: { in: ids.map(id => parseInt(id)) }, status: 'PENDING' },
+        include: { course: { select: { id: true, title: true } } }
+    });
+
+    for (const request of requests) {
+        await prisma.courseRequest.update({
+            where: { id: request.id },
+            data: { status: 'REJECTED' }
+        });
+
+        await notificationService.createNotification({
+            userId: request.user_id,
+            title: 'Yêu cầu bị từ chối',
+            message: `Yêu cầu tham gia khóa học "${request.course.title}" của bạn đã bị từ chối.`,
+            type: 'COURSE_REJECTION',
+            link: `/course/${request.course_id}`
+        });
+    }
+
+    res.json({ message: `Đã từ chối ${requests.length} yêu cầu` });
+});
+

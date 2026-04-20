@@ -4,10 +4,11 @@ import {
     BookOutlined, ClockCircleOutlined,
     RocketOutlined
 } from '@ant-design/icons';
-import { Card, Badge, Typography, Space, message, Skeleton, Empty, Pagination, Select } from 'antd';
+import { Card, Badge, Typography, Space, message, Skeleton, Empty, Pagination, Select, Tag } from 'antd';
 const { Option } = Select;
-import api from '../../../api';
-import './CourseList.scss';
+import { courseService } from '../../../services/course.service';
+import styles from './CourseList.module.scss';
+
 
 const { Title, Text } = Typography;
 
@@ -47,8 +48,9 @@ export default function CourseList() {
         const fetchCourses = async () => {
             try {
                 setLoading(true);
-                const res = await api.get(`/courses${searchQuery ? `?search=${searchQuery}` : ''}`);
-                setCourses(res.data);
+                const data = await courseService.getAll(searchQuery);
+                setCourses(data);
+
             } catch (error) {
                 message.error('Lỗi khi tải danh sách khóa học');
             } finally {
@@ -60,7 +62,7 @@ export default function CourseList() {
 
     if (loading) {
         return (
-            <div className="loader-container">
+            <div className={styles.loaderContainer}>
                 <Skeleton active paragraph={{ rows: 10 }} />
             </div>
         );
@@ -103,23 +105,24 @@ export default function CourseList() {
     );
 
     return (
-        <div className="course-list-container">
+        <div className={styles.courseListContainer}>
             {/* Mục Khóa học Riêng tư */}
             {privateCourses.length > 0 ? (
-                <div className="course-section">
-                    <div className="section-header-combined">
-                        <div className="section-header">
-                            <Title level={2} className="section-title">
+                <div className={styles.courseSection}>
+                    <div className={styles.sectionHeaderCombined}>
+                        <div className={styles.sectionHeader}>
+                            <Title level={2} className={styles.sectionTitle}>
                                 Khóa học Riêng tư (Cần phê duyệt)
                             </Title>
-                            <Badge count="Yêu cầu" className="badge-private" />
+                            <Tag color="error" className={styles.statusTag}>Yêu cầu</Tag>
                         </div>
-                        <div className="sort-wrapper">
+                        <div className={styles.sortWrapper}>
+
                             <Space>
-                                <span className="sort-label">Sắp xếp theo:</span>
+                                <span className={styles.sortLabel}>Sắp xếp theo:</span>
                                 <Select
                                     defaultValue="newest"
-                                    className="sort-select"
+                                    className={styles.sortSelect}
                                     onChange={(val) => setSortBy(val)}
                                     popupClassName="sort-select-dropdown"
                                 >
@@ -133,13 +136,13 @@ export default function CourseList() {
                         </div>
                     </div>
 
-                    <div className="course-grid">
+                    <div className={styles.courseGrid}>
                         {displayedPrivateCourses.map(course => (
                             <CourseCard key={course.id} course={course} navigate={navigate} />
                         ))}
                     </div>
                     {privateCourses.length > pageSize && (
-                        <div className="pagination-wrapper">
+                        <div className={styles.paginationWrapper}>
                             <Pagination
                                 current={currentPagePrivate}
                                 pageSize={pageSize}
@@ -152,7 +155,7 @@ export default function CourseList() {
                                         return (
                                             <div
                                                 onClick={() => currentPagePrivate === 1 && setCurrentPagePrivate(totalPages)}
-                                                className="page-item-wrapper"
+                                                className={styles.pageItemWrapper}
                                             >
                                                 {originalElement}
                                             </div>
@@ -162,7 +165,7 @@ export default function CourseList() {
                                         return (
                                             <div
                                                 onClick={() => currentPagePrivate === totalPages && setCurrentPagePrivate(1)}
-                                                className="page-item-wrapper"
+                                                className={styles.pageItemWrapper}
                                             >
                                                 {originalElement}
                                             </div>
@@ -177,19 +180,19 @@ export default function CourseList() {
             ) : (
                 /* Mục Khóa học Công khai (Nếu không có riêng tư thì hiện Sort ở đây) */
                 publicCourses.length > 0 && (
-                    <div className="course-section">
-                        <div className="section-header-combined">
-                            <div className="section-header">
-                                <Title level={2} className="section-title">
+                    <div className={styles.courseSection}>
+                        <div className={styles.sectionHeaderCombined}>
+                            <div className={styles.sectionHeader}>
+                                <Title level={2} className={styles.sectionTitle}>
                                     Khóa học cộng đồng (Tự động)
                                 </Title>
                             </div>
-                            <div className="sort-wrapper">
+                            <div className={styles.sortWrapper}>
                                 <Space>
-                                    <span className="sort-label">Sắp xếp theo:</span>
+                                    <span className={styles.sortLabel}>Sắp xếp theo:</span>
                                     <Select
                                         defaultValue="newest"
-                                        className="sort-select"
+                                        className={styles.sortSelect}
                                         onChange={(val) => setSortBy(val)}
                                         popupClassName="sort-select-dropdown"
                                     >
@@ -202,13 +205,13 @@ export default function CourseList() {
                                 </Space>
                             </div>
                         </div>
-                        <div className="course-grid">
+                        <div className={styles.courseGrid}>
                             {displayedPublicCourses.map(course => (
                                 <CourseCard key={course.id} course={course} navigate={navigate} />
                             ))}
                         </div>
                         {publicCourses.length > pageSize && (
-                            <div className="pagination-wrapper">
+                            <div className={styles.paginationWrapper}>
                                 <Pagination
                                     current={currentPagePublic}
                                     pageSize={pageSize}
@@ -221,7 +224,7 @@ export default function CourseList() {
                                             return (
                                                 <div
                                                     onClick={() => currentPagePublic === 1 && setCurrentPagePublic(totalPages)}
-                                                    className="page-item-wrapper"
+                                                    className={styles.pageItemWrapper}
                                                 >
                                                     {originalElement}
                                                 </div>
@@ -231,7 +234,7 @@ export default function CourseList() {
                                             return (
                                                 <div
                                                     onClick={() => currentPagePublic === totalPages && setCurrentPagePublic(1)}
-                                                    className="page-item-wrapper"
+                                                    className={styles.pageItemWrapper}
                                                 >
                                                     {originalElement}
                                                 </div>
@@ -248,9 +251,9 @@ export default function CourseList() {
 
             {/* Mục Khóa học Công khai (Nếu ĐÃ hiện riêng tư thì hiện công khai bình thường ở dưới) */}
             {privateCourses.length > 0 && publicCourses.length > 0 && (
-                <div className="course-section">
-                    <div className="section-header">
-                        <Title level={2} className="section-title">
+                <div className={styles.courseSection}>
+                    <div className={styles.sectionHeader}>
+                        <Title level={2} className={styles.sectionTitle}>
                             Khóa học cộng đồng (Tự động)
                         </Title>
                     </div>
@@ -310,13 +313,13 @@ function CourseCard({ course, navigate }: { course: Course, navigate: any }) {
     return (
         <Card
             hoverable
-            className="glass-card course-hover-card"
+            className={`glass-card ${styles.courseHoverCard}`}
             cover={
-                <div className="course-card-cover">
+                <div className={styles.courseCardCover}>
                     {course.thumbnail ? (
-                        <img src={course.thumbnail} alt={course.title} className="thumbnail-img" />
+                        <img src={course.thumbnail} alt={course.title} className={styles.thumbnailImg} />
                     ) : (
-                        <div className="placeholder-icon-wrapper">
+                        <div className={styles.placeholderIconWrapper}>
                             <BookOutlined />
                         </div>
                     )}
@@ -324,27 +327,26 @@ function CourseCard({ course, navigate }: { course: Course, navigate: any }) {
             }
             onClick={() => navigate(`/course/${course.id}`)}
         >
-            <div className="course-card-header">
-                <Badge status="processing" text={<Text className="level-badge-text">{course.level?.toUpperCase() || 'OFFICIAL'}</Text>} />
-                <Title level={5} className="course-title">{course.title}</Title>
+            <div className={styles.courseCardHeader}>
+                <Badge status="processing" text={<Text className={styles.levelBadgeText}>{course.level?.toUpperCase() || 'OFFICIAL'}</Text>} />
+                <Title level={5} className={styles.courseTitle}>{course.title}</Title>
             </div>
 
-            <div className="course-card-body-row">
-                <Space direction="vertical" size={0} className="creator-info">
-                    <Text className="creator-label">Người tạo</Text>
-                    <Text strong className="creator-name">{course.instructor?.full_name || 'Hệ thống'}</Text>
+            <div className={styles.courseCardBodyRow}>
+                <Space direction="vertical" size={0} className={styles.creatorInfo}>
+                    <Text className={styles.creatorLabel}>Người tạo</Text>
+                    <Text strong className={styles.creatorName}>{course.instructor?.full_name || 'Hệ thống'}</Text>
                 </Space>
                 <div className="card-badge-container">
-                    <Badge
-                        count={course.is_private ? "RIÊNG TƯ" : "CÔNG KHAI"}
-                        className={course.is_private ? 'badge-private' : 'badge-public'}
-                    />
+                    <Tag color={course.is_private ? 'purple' : 'green'} className={styles.statusTag}>
+                        {course.is_private ? "RIÊNG TƯ" : "CÔNG KHAI"}
+                    </Tag>
                 </div>
             </div>
 
-            <hr className="course-card-divider" />
+            <hr className={styles.courseCardDivider} />
 
-            <div className="course-card-footer">
+            <div className={styles.courseCardFooter}>
                 <Space size={4}><ClockCircleOutlined /> Lộ trình</Space>
                 <Space size={4}><RocketOutlined /> {course._count?.sections || 0} chương</Space>
             </div>

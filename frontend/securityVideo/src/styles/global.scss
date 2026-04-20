@@ -1,5 +1,6 @@
-@import 'variables';
-@import 'mixins';
+@use 'variables' as *;
+@use 'mixins' as *;
+
 
 * {
     margin: 0;
@@ -16,8 +17,8 @@ body {
 
 .glass-card {
     @include glass-effect;
-    border-radius: $radius-base !important;
-    box-shadow: $shadow-lg !important;
+    border-radius: $radius-base;
+    box-shadow: $shadow-lg;
 }
 
 .premium-title {
@@ -31,35 +32,43 @@ body {
     animation: fadeIn 0.6s ease-out forwards;
 }
 
+.purple-text {
+    color: #a855f7;
+}
+
+.indigo-text {
+    color: #6366f1;
+}
+
 .btn-primary {
     @include flex-center;
     @include transition-standard;
     width: 100%;
-    height: 48px !important;
-    background: $primary-gradient !important;
-    border: none !important;
-    border-radius: $radius-base !important;
-    color: white !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
+    height: 48px;
+    background: $primary-gradient;
+    border: none;
+    border-radius: $radius-base;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
     gap: 8px;
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.45) !important;
+        box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.45);
     }
 }
 
 // Ant Design Overrides
 .ant-input-affix-wrapper,
 .ant-input {
-    padding: 10px 14px !important;
-    border-radius: 10px !important;
+    padding: 10px 14px;
+    border-radius: 10px;
 }
 
 .ant-form-item-label label {
-    font-weight: 500 !important;
-    color: $text-main !important;
+    font-weight: 500;
+    color: $text-main;
 }
 
 // Animations

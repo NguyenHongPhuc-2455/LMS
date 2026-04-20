@@ -12,6 +12,7 @@ router.get('/', authMiddleware.verifyToken, authMiddleware.isAdmin, userControll
 router.get('/roles', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.getRoles);
 router.post('/', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.createUser);
 router.put('/:id', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.updateUser);
+router.post('/batch-update', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.batchUpdateUsers);
 router.delete('/:id', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.deleteUser);
 
 module.exports = router;

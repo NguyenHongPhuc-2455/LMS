@@ -1,5 +1,5 @@
 import React from 'react';
-import api from '../../../api';
+import { statsService } from '../../../services/stats.service';
 import { Row, Col, Card, Typography, Space, Empty, Badge } from 'antd';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -10,7 +10,8 @@ import {
     ArrowUpOutlined,
     ArrowDownOutlined
 } from '@ant-design/icons';
-import './AdminDashboard.scss';
+import styles from './AdminDashboard.module.scss';
+
 
 const { Title, Text } = Typography;
 
@@ -36,8 +37,9 @@ export default function AdminDashboard() {
     React.useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await api.get('/stats/dashboard');
-                setStats(res.data);
+                const data = await statsService.getDashboardStats();
+                setStats(data);
+
             } catch (error) {
                 console.error('Lỗi khi tải thống kê:', error);
             } finally {
@@ -90,35 +92,35 @@ export default function AdminDashboard() {
 
     return (
         <div>
-            <Title level={2} className="admin-dashboard-title">
+            <Title level={2} className={styles.adminDashboardTitle}>
                 Dashboard
             </Title>
 
-            <Row gutter={[24, 24]} className="stat-card-container">
+            <Row gutter={[24, 24]} className={styles.statCardContainer}>
                 {statCards.map((stat, idx) => (
                     <Col xs={24} sm={12} lg={6} key={idx}>
                         <Card
                             bordered={false}
-                            className="stat-card"
+                            className={styles.statCard}
                             bodyStyle={{ padding: '24px' }}
                         >
-                            <div className="stat-card-header">
+                            <div className={styles.statCardHeader}>
                                 <div>
-                                    <Text className="stat-card-title">{stat.title}</Text>
-                                    <div className="stat-card-value">
+                                    <Text className={styles.statCardTitle}>{stat.title}</Text>
+                                    <div className={styles.statCardValue}>
                                         {stat.value}
                                     </div>
                                 </div>
-                                <div className="stat-card-icon-wrapper" style={{ background: stat.bg }}>
+                                <div className={styles.statCardIconWrapper} style={{ background: stat.bg }}>
                                     {stat.icon}
                                 </div>
                             </div>
-                            <div className="stat-card-footer">
-                                <span className={`stat-card-trend ${stat.isUp ? 'trend-up' : 'trend-down'}`}>
-                                    {stat.isUp ? <ArrowUpOutlined className="margin-right-xs" /> : <ArrowDownOutlined className="margin-right-xs" />}
+                            <div className={styles.statCardFooter}>
+                                <span className={`${styles.statCardTrend} ${stat.isUp ? styles.trendUp : styles.trendDown}`}>
+                                    {stat.isUp ? <ArrowUpOutlined className={styles.marginRightXs} /> : <ArrowDownOutlined className={styles.marginRightXs} />}
                                     {stat.percent}
                                 </span>
-                                <span className="stat-card-detail">{stat.detail}</span>
+                                <span className={styles.statCardDetail}>{stat.detail}</span>
                             </div>
                         </Card>
                     </Col>
@@ -129,15 +131,15 @@ export default function AdminDashboard() {
                 <Col xl={16} lg={24}>
                     <Card
                         bordered={false}
-                        className="stat-card"
+                        className={styles.statCard}
                         bodyStyle={{ padding: '24px' }}
                         loading={loading}
                     >
-                        <div className="chart-card-header">
-                            <Title level={4} className="chart-card-title">Xu hướng ghi danh (7 ngày qua)</Title>
+                        <div className={styles.chartCardHeader}>
+                            <Title level={4} className={styles.chartCardTitle}>Xu hướng ghi danh (7 ngày qua)</Title>
                         </div>
 
-                        <div className="chart-container">
+                        <div className={styles.chartContainer}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
@@ -179,19 +181,19 @@ export default function AdminDashboard() {
                 </Col>
                 <Col xl={8} lg={24}>
                     <Card
-                        title={<Title level={4} className="chart-card-title">Khóa học phổ biến</Title>}
+                        title={<Title level={4} className={styles.chartCardTitle}>Khóa học phổ biến</Title>}
                         bordered={false}
-                        className="stat-card"
+                        className={styles.statCard}
                         style={{ height: '100%' }}
                         bodyStyle={{ padding: '24px' }}
                         loading={loading}
                     >
-                        <Space direction="vertical" className="popular-course-list" size={16}>
+                        <Space direction="vertical" className={styles.popularCourseList} size={16}>
                             {stats?.topCourses?.map((course: any, i: number) => (
-                                <div key={i} className="popular-course-item">
-                                    <div className="flex-1 margin-right-sm">
-                                        <Text strong className="popular-course-title">{course.title}</Text>
-                                        <Text type="secondary" className="popular-course-subtitle">Vị trí #{i + 1}</Text>
+                                <div key={i} className={styles.popularCourseItem}>
+                                    <div className={`${styles.flex1} ${styles.marginRightSm}`}>
+                                        <Text strong className={styles.popularCourseTitle}>{course.title}</Text>
+                                        <Text type="secondary" className={styles.popularCourseSubtitle}>Vị trí #{i + 1}</Text>
                                     </div>
                                     <Badge count={course.count} color="#4880FF" />
                                 </div>

@@ -1,0 +1,79 @@
+.appFooter {
+    background: #181e2a;
+    padding: 48px 100px 24px;
+    color: #d1d5db;
+
+    @media (max-width: 992px) {
+        padding: 40px 20px 24px;
+    }
+}
+
+.footerLogoWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footerLogo {
+    height: 50px;
+    object-fit: contain;
+}
+
+.footerContactText {
+    color: #9ca3af;
+    font-size: 14px;
+    display: block;
+}
+
+.footerSectionTitle {
+    color: #ffffff;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.footerLink {
+    color: #9ca3af;
+    font-size: 14px;
+
+    &:hover {
+        color: #fff;
+    }
+}
+
+.footerCompanyDesc {
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.footerSocialIcon {
+    font-size: 24px;
+    color: #9ca3af;
+}
+
+.tiktokIconWrapper {
+    background: #9ca3af;
+    padding: 3px;
+    border-radius: 4px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+
+    img {
+        height: 12px;
+        filter: brightness(10);
+    }
+}
+
+.footerDivider {
+    border-color: rgba(255, 255, 255, 0.1);
+    margin: 40px 0 20px;
+}
+
+.footerBottomText {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.footerVerticalDivider {
+    border-color: #374151;
+}

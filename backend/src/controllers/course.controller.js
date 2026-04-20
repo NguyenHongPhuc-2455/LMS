@@ -60,7 +60,18 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
         }))
     }));
 
-    res.json({ ...course, hasAccess, requestStatus });
+    // Calculate progress and next lesson
+    let nextLessonId = null;
+    let isCourseFinished = false;
+    if (userId && hasAccess) {
+        const allLessons = course.sections.flatMap(s => s.lessons);
+        const nextLesson = allLessons.find(l => !completedLessonIds.includes(l.id));
+        nextLessonId = nextLesson ? nextLesson.id : (allLessons.length > 0 ? allLessons[0].id : null);
+        isCourseFinished = allLessons.length > 0 && completedLessonIds.length === allLessons.length;
+    }
+
+    res.json({ ...course, hasAccess, requestStatus, nextLessonId, isCourseFinished });
+
 });
 
 exports.createCourse = catchAsync(async (req, res) => {

@@ -7,7 +7,8 @@ import { notification as antdNotification } from 'antd';
 import { socketService } from '../../services/socket';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import './AppHeader.scss';
+import styles from './AppHeader.module.scss';
+
 
 dayjs.extend(relativeTime);
 
@@ -44,12 +45,12 @@ const AppHeader: React.FC = () => {
                             antdNotification.destroy();
                         }
                     },
-                    className: newNotif.link ? 'cursor-pointer' : '',
+                    className: newNotif.link ? styles.cursorPointer : '',
                     icon: newNotif.type === 'COURSE_APPROVAL' ?
-                        <CheckCircleOutlined className="icon-success" /> :
+                        <CheckCircleOutlined className={styles.iconSuccess} /> :
                         newNotif.type === 'COMMENT_REPLY' ?
-                            <MessageOutlined className="icon-primary" /> :
-                            <CloseCircleOutlined className="icon-error" />,
+                            <MessageOutlined className={styles.iconPrimary} /> :
+                            <CloseCircleOutlined className={styles.iconError} />,
                 });
             };
             socket.on('newNotification', handleNewNotif);
@@ -90,17 +91,17 @@ const AppHeader: React.FC = () => {
     }, [searchTerm, navigate]);
 
     const notificationContent = (
-        <div className="notification-container">
-            <div className="notification-header">
-                <Text strong className="notif-title">Thông báo</Text>
+        <div className={styles.notificationContainer}>
+            <div className={styles.notificationHeader}>
+                <Text strong className={styles.notifTitle}>Thông báo</Text>
                 <Space size={8}>
                     {unreadCount > 0 && (
-                        <Button type="link" size="small" onClick={markAllAsRead} className="action-btn">
+                        <Button type="link" size="small" onClick={markAllAsRead} className={styles.actionBtn}>
                             Đọc hết
                         </Button>
                     )}
                     {notifications.length > 0 && (
-                        <Button type="link" danger size="small" onClick={deleteAllNotifications} className="action-btn">
+                        <Button type="link" danger size="small" onClick={deleteAllNotifications} className={styles.actionBtn}>
                             Xóa hết
                         </Button>
                     )}
@@ -113,7 +114,7 @@ const AppHeader: React.FC = () => {
                 locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có thông báo nào" /> }}
                 renderItem={(item) => (
                     <List.Item
-                        className={`notification-item ${item.is_read ? 'read' : 'unread'}`}
+                        className={`${styles.notificationItem} ${item.is_read ? styles.read : styles.unread}`}
                         onClick={() => {
                             if (!item.is_read) markAsRead(item.id);
                             if (item.link) {
@@ -129,49 +130,49 @@ const AppHeader: React.FC = () => {
                                     e.stopPropagation();
                                     deleteNotification(item.id);
                                 }}
-                                className="delete-notif-btn"
+                                className={styles.deleteNotifBtn}
                             />
                         ]}
                     >
                         <List.Item.Meta
                             title={
-                                <div className="notif-item-title-wrapper">
-                                    <Text strong={!item.is_read} className="notif-item-title">{item.title}</Text>
-                                    <Text type="secondary" className="notif-time">{dayjs(item.created_at).fromNow()}</Text>
+                                <div className={styles.notifItemTitleWrapper}>
+                                    <Text strong={!item.is_read} className={styles.notifItemTitle}>{item.title}</Text>
+                                    <Text type="secondary" className={styles.notifTime}>{dayjs(item.created_at).fromNow()}</Text>
                                 </div>
                             }
                             description={
-                                <Text type={item.is_read ? 'secondary' : undefined} className="notif-item-desc">
+                                <Text type={item.is_read ? 'secondary' : undefined} className={styles.notifItemDesc}>
                                     {item.message}
                                 </Text>
                             }
                         />
                     </List.Item>
                 )}
-                className="notification-list"
+                className={styles.notificationList}
             />
         </div>
     );
 
     return (
-        <Header className="app-header-container">
+        <Header className={styles.appHeaderContainer}>
             {/* Left: Logo */}
-            <div className="app-header-logo" onClick={() => {
+            <div className={styles.appHeaderLogo} onClick={() => {
                 setSearchTerm('');
                 navigate('/course');
             }}>
-                <img src="/logo/logo.png" alt="Logo" className="logo-img" />
+                <img src="/logo/logo.png" alt="Logo" className={styles.logoImg} />
             </div>
 
             {/* Middle: Search */}
-            <div className="header-search-middle">
-                <div className="search-input-wrapper">
+            <div className={styles.headerSearchMiddle}>
+                <div className={styles.searchInputWrapper}>
                     <Input
                         placeholder="Tìm kiếm khóa học, bài viết, video, ..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         prefix={<SearchOutlined />}
-                        className="app-search-input"
+                        className={styles.appSearchInput}
                     />
                 </div>
             </div>
@@ -185,7 +186,7 @@ const AppHeader: React.FC = () => {
                     overlayClassName="notification-popover"
                     getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                 >
-                    <div title="Thông báo" className="header-notif-trigger">
+                    <div title="Thông báo" className={styles.headerNotifTrigger}>
                         <Badge dot={unreadCount > 0} offset={[2, 0]}>
                             <BellOutlined />
                         </Badge>
@@ -196,7 +197,7 @@ const AppHeader: React.FC = () => {
                     <Avatar
                         src={user?.avatar}
                         icon={<UserOutlined />}
-                        className="header-user-avatar"
+                        className={styles.headerUserAvatar}
                         size={38}
                     />
                 </Dropdown>

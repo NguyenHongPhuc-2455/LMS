@@ -1,0 +1,37 @@
+.courseRequestsContainer {
+    padding: 24px;
+}
+
+.requestCardTitle {
+    margin-bottom: 24px;
+}
+
+.userName {
+    font-weight: 600;
+}
+
+.userEmail {
+    font-size: 12px;
+    color: #666;
+}
+
+.courseTitle {
+    font-weight: 500;
+}
+
+.emptyReason {
+    color: #999;
+    font-style: italic;
+}
+
+.approveBtn {
+    background-color: #52c41a;
+    border-color: #52c41a;
+    color: white;
+
+    &:hover {
+        background-color: #73d13d !important;
+        border-color: #73d13d !important;
+        color: white !important;
+    }
+}

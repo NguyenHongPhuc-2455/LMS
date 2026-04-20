@@ -9,15 +9,18 @@ import {
     SearchOutlined, DeleteOutlined, UserOutlined,
     BookOutlined, SaveOutlined, CloseOutlined,
     PlusOutlined, TeamOutlined,
-    CrownOutlined, UsergroupAddOutlined, IdcardOutlined
+    CrownOutlined, IdcardOutlined,
+    EditOutlined, UsergroupAddOutlined
 } from '@ant-design/icons';
+
 import type { InputRef, TableColumnsType, TableColumnType } from 'antd';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
 import Highlighter from 'react-highlight-words';
-import api from '../../../api';
-import './UserManagement.scss';
+import { userService } from '../../../services/user.service';
+import styles from './UserManagement.module.scss';
 
 const { Title, Text } = Typography;
+
 const { Option } = Select;
 
 interface RoleData {
@@ -50,12 +53,14 @@ export default function UserManagement() {
     const [roles, setRoles] = useState<RoleData[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Batch & Edit State
+    // Selection & Edit State
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-    const [editingKey, setEditingKey] = useState<number | null>(null);
-    const [editingField, setEditingField] = useState<string | null>(null);
-    const [editData, setEditData] = useState<any>({});
+    const [editingKeys, setEditingKeys] = useState<React.Key[]>([]);
+    const [editData, setEditData] = useState<Record<number, any>>({});
+
+    // Modes
     const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const [isBatchEditMode, setIsBatchEditMode] = useState(false);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [createForm] = Form.useForm();
@@ -65,14 +70,14 @@ export default function UserManagement() {
     const searchInput = useRef<InputRef>(null);
 
     const fetchData = async () => {
-        setLoading(true);
         try {
-            const [usersRes, rolesRes] = await Promise.all([
-                api.get('/users'),
-                api.get('/users/roles')
+            setLoading(true);
+            const [usersData, rolesData] = await Promise.all([
+                userService.getAll(),
+                userService.getRoles()
             ]);
-            setUsers(usersRes.data);
-            setRoles(rolesRes.data);
+            setUsers(usersData);
+            setRoles(rolesData);
         } catch (error: any) {
             message.error('Lỗi khi tải dữ liệu hệ thống');
         } finally {
@@ -84,59 +89,62 @@ export default function UserManagement() {
         fetchData();
     }, []);
 
-    const handleBatchSave = async () => {
-        setLoading(true);
-        try {
-            // 1. Handle Deletions if any
-            if (selectedRowKeys.length > 0) {
-                // Confirm before batch delete
-                Modal.confirm({
-                    title: `Xác nhận xóa ${selectedRowKeys.length} thành viên?`,
-                    content: 'Hành động này không thể hoàn tác.',
-                    onOk: async () => {
-                        try {
-                            for (const id of selectedRowKeys) {
-                                await api.delete(`/users/${id}`);
-                            }
-                            message.success(`Đã xóa thành công`);
-                            setSelectedRowKeys([]);
-                            setIsDeleteMode(false);
-                            await fetchData();
-                        } catch (e: any) {
-                            message.error('Lỗi khi xóa một số thành viên');
-                        }
-                    }
-                });
-            }
-
-            // 2. Handle Inline Edits if any
-            if (editingKey && Object.keys(editData).length > 0) {
-                await api.put(`/users/${editingKey}`, editData);
-                message.success('Đã cập nhật thay đổi thành công');
-                setEditingKey(null);
-                setEditData({});
-                await fetchData();
-            }
-
-            if (selectedRowKeys.length === 0) {
-                // Only stop loading here if no deletion modal was shown
-                setLoading(false);
-            }
-        } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi lưu thay đổi');
-            setLoading(false);
-        }
+    const resetStates = () => {
+        setEditingKeys([]);
+        setEditData({});
+        setSelectedRowKeys([]);
+        setIsDeleteMode(false);
+        setIsBatchEditMode(false);
     };
 
-    const handleCreateFinish = async (values: any) => {
+    const handleBatchSave = async () => {
+        if (isDeleteMode) {
+            if (selectedRowKeys.length === 0) return;
+            Modal.confirm({
+                title: `Xác nhận xóa ${selectedRowKeys.length} thành viên?`,
+                content: 'Hành động này không thể hoàn tác.',
+                onOk: async () => {
+                    try {
+                        setLoading(true);
+                        for (const key of selectedRowKeys) {
+                            await userService.delete(Number(key));
+                        }
+                        message.success(`Đã xóa thành công ${selectedRowKeys.length} thành viên`);
+                        resetStates();
+                        await fetchData();
+                    } catch (e: any) {
+                        message.error('Lỗi khi xóa một số thành viên');
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            });
+            return;
+        }
+
+        // Handle Batch Edit
+        const changeCount = Object.keys(editData).length;
+        if (changeCount === 0) {
+            resetStates();
+            return;
+        }
+
+        setLoading(true);
         try {
-            await api.post('/users', values);
-            message.success('Tạo người dùng mới thành công');
-            setIsCreateModalOpen(false);
-            createForm.resetFields();
-            fetchData();
+            const payload = Object.entries(editData).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+
+            await userService.batchUpdate({ users: payload });
+
+            message.success(`Đã cập nhật ${payload.length} thành viên thành công`);
+            resetStates();
+            await fetchData();
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi lưu dữ liệu');
+            message.error(error.response?.data?.error || 'Lỗi lưu thay đổi');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -148,18 +156,18 @@ export default function UserManagement() {
 
     const getColumnSearchProps = (dataIndex: DataIndex): TableColumnType<UserData> => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-            <div className="filter-dropdown-container" onKeyDown={(e) => e.stopPropagation()}>
+            <div className={styles.filterDropdownContainer} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
                     ref={searchInput}
                     placeholder={`Tìm ${dataIndex}`}
                     value={selectedKeys[0]}
                     onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
                     onPressEnter={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
-                    className="filter-input"
+                    className={styles.filterInput}
                 />
                 <Space>
-                    <Button type="primary" onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)} icon={<SearchOutlined />} size="small" className="filter-btns">Tìm</Button>
-                    <Button onClick={() => { if (clearFilters) clearFilters(); setSelectedKeys?.([]); confirm(); }} size="small" className="filter-btns">Xóa</Button>
+                    <Button type="primary" onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)} icon={<SearchOutlined />} size="small" className={styles.filterBtns}>Tìm</Button>
+                    <Button onClick={() => { if (clearFilters) clearFilters(); setSelectedKeys?.([]); confirm(); }} size="small" className={styles.filterBtns}>Xóa</Button>
                 </Space>
             </div>
         ),
@@ -170,16 +178,30 @@ export default function UserManagement() {
         ) : (text),
     });
 
-    const startEditing = (record: UserData, field: string) => {
+    const startRowEditing = (record: UserData) => {
         if (isDeleteMode) return;
-        setEditingKey(record.id);
-        setEditingField(field);
-        const { roles, ...rest } = record;
-        setEditData({ ...rest, role_id: roles[0]?.id });
+        if (!editingKeys.includes(record.id)) {
+            setEditingKeys([...editingKeys, record.id]);
+            // Initialize editData for this row if not exists
+            if (!editData[record.id]) {
+                const { roles, ...rest } = record;
+                setEditData({ ...editData, [record.id]: { ...rest, role_id: roles[0]?.id } });
+            }
+        }
+    };
+
+    const updateEditData = (id: number, field: string, value: any) => {
+        setEditData(prev => ({
+            ...prev,
+            [id]: {
+                ...prev[id],
+                [field]: value
+            }
+        }));
     };
 
     const renderEditableCell = (record: UserData, field: keyof UserData, currentText: any) => {
-        const isEditing = editingKey === record.id;
+        const isEditing = editingKeys.includes(record.id);
 
         if (isEditing) {
             if (field === 'roles') {
@@ -188,7 +210,7 @@ export default function UserManagement() {
                         defaultValue={record.roles[0]?.id}
                         className="full-width"
                         size="small"
-                        onChange={(val) => setEditData({ ...editData, role_id: val })}
+                        onChange={(val) => updateEditData(record.id, 'role_id', val)}
                     >
                         {roles.map(r => <Option key={r.id} value={r.id}>{r.name.toUpperCase()}</Option>)}
                     </Select>
@@ -200,7 +222,7 @@ export default function UserManagement() {
                         defaultValue={currentText}
                         className="full-width"
                         size="small"
-                        onChange={(val) => setEditData({ ...editData, gender: val })}
+                        onChange={(val) => updateEditData(record.id, 'gender', val)}
                     >
                         <Option value="Nam">Nam</Option>
                         <Option value="Nữ">Nữ</Option>
@@ -215,8 +237,7 @@ export default function UserManagement() {
                         className="full-width"
                         size="small"
                         format="DD/MM/YYYY"
-                        onChange={(date) => setEditData({ ...editData, dob: date ? date.toISOString() : null })}
-                        autoFocus
+                        onChange={(date) => updateEditData(record.id, 'dob', date ? date.toISOString() : null)}
                     />
                 );
             }
@@ -224,16 +245,15 @@ export default function UserManagement() {
                 <Input
                     defaultValue={currentText}
                     size="small"
-                    onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
-                    autoFocus={editingField === field}
+                    onChange={(e) => updateEditData(record.id, field as string, e.target.value)}
                 />
             );
         }
 
         return (
             <div
-                onClick={() => startEditing(record, field as string)}
-                className="editable-cell-display editable-cell-value"
+                onClick={() => startRowEditing(record)}
+                className={styles.editableCellDisplay}
             >
                 {field === 'roles' ? (
                     <Space wrap>
@@ -269,28 +289,33 @@ export default function UserManagement() {
             width: 250,
             fixed: 'left',
             ...getColumnSearchProps('username'),
-            render: (_, record) => (
-                <Space onClick={() => startEditing(record, 'full_name')} className="user-info-wrapper">
-                    <Avatar
-                        src={record.avatar}
-                        icon={!record.avatar && <UserOutlined />}
-                        className="user-avatar"
-                    />
-                    <div className="user-text-stack">
-                        {editingKey === record.id ? (
-                            <Input
-                                defaultValue={record.full_name}
-                                size="small"
-                                onChange={e => setEditData({ ...editData, full_name: e.target.value })}
-                                autoFocus={editingField === 'full_name'}
+            render: (_, record) => {
+                const isEditing = editingKeys.includes(record.id);
+                return (
+                    <Space onClick={() => startRowEditing(record)} className={styles.userInfoWrapper}>
+                        <Badge dot={isEditing} status="processing" offset={[-2, 32]}>
+                            <Avatar
+                                src={record.avatar}
+                                icon={!record.avatar && <UserOutlined />}
+                                className={styles.userAvatar}
                             />
-                        ) : (
-                            <Text strong className="full-name">{record.full_name || record.username}</Text>
-                        )}
-                        <Text type="secondary" className="username">@{record.username}</Text>
-                    </div>
-                </Space>
-            )
+                        </Badge>
+                        <div className={styles.userTextStack}>
+                            {isEditing ? (
+                                <Input
+                                    defaultValue={record.full_name}
+                                    size="small"
+                                    onChange={e => updateEditData(record.id, 'full_name', e.target.value)}
+                                    placeholder="Họ tên"
+                                />
+                            ) : (
+                                <Text strong className={styles.fullName}>{record.full_name || record.username}</Text>
+                            )}
+                            <Text type="secondary" className={styles.username}>@{record.username}</Text>
+                        </div>
+                    </Space>
+                );
+            }
         },
         {
             title: 'Vai trò',
@@ -353,27 +378,6 @@ export default function UserManagement() {
             key: 'created_at',
             width: 180,
             sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-            filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-                <div className="filter-dropdown-container" onKeyDown={(e) => e.stopPropagation()}>
-                    <DatePicker.RangePicker
-                        value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
-                        onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
-                        className="range-picker-filter"
-                        size="small"
-                    />
-                    <Space>
-                        <Button type="primary" onClick={() => confirm()} size="small" className="filter-btns">Lọc</Button>
-                        <Button onClick={() => { clearFilters(); confirm(); }} size="small" className="filter-btns">Xóa</Button>
-                    </Space>
-                </div>
-            ),
-            onFilter: (value: any, record: UserData) => {
-                if (!value || value.length === 0) return true;
-                const start = dayjs(value[0][0]).startOf('day');
-                const end = dayjs(value[0][1]).endOf('day');
-                const recordDate = dayjs(record.created_at);
-                return recordDate.isAfter(start) && recordDate.isBefore(end);
-            },
             render: (text) => new Date(text).toLocaleString()
         },
         {
@@ -390,23 +394,16 @@ export default function UserManagement() {
                             <List
                                 size="small"
                                 dataSource={record.enrolled_courses}
-                                renderItem={(item) => <List.Item><Text className="course-item-text">- {item}</Text></List.Item>}
-                                className="enrolled-courses-list"
+                                renderItem={(item) => <List.Item><Text className={styles.courseItemText}>- {item}</Text></List.Item>}
+                                className={styles.enrolledCoursesList}
                             />
                         ) : "Chưa mua khóa học nào"
                     }
                     trigger="hover"
                 >
-                    <Badge count={count} showZero color={count > 0 ? '#52c41a' : '#d9d9d9'} className="success-badge" />
+                    <Badge count={count} showZero color={count > 0 ? '#52c41a' : '#d9d9d9'} className={styles.successBadge} />
                 </Popover>
             )
-        },
-        {
-            title: 'Cập nhật cuối',
-            dataIndex: 'updated_at',
-            key: 'updated_at',
-            width: 180,
-            render: (text) => new Date(text).toLocaleString()
         }
     ];
 
@@ -414,35 +411,52 @@ export default function UserManagement() {
         setSelectedRowKeys(newSelectedRowKeys);
     };
 
-    const rowSelection = isDeleteMode ? {
+    const rowSelection = (isDeleteMode || isBatchEditMode) ? {
         selectedRowKeys,
         onChange: onSelectChange,
         columnWidth: 50,
     } : undefined;
 
+    const startBatchEdit = () => {
+        if (selectedRowKeys.length === 0) {
+            message.warning('Vui lòng chọn ít nhất 1 thành viên để sửa');
+            return;
+        }
+        setEditingKeys(selectedRowKeys);
+        const newEditData = { ...editData };
+        selectedRowKeys.forEach(id => {
+            if (!newEditData[id as number]) {
+                const user = users.find(u => u.id === id);
+                if (user) {
+                    const { roles, ...rest } = user;
+                    newEditData[id as number] = { ...rest, role_id: roles[0]?.id };
+                }
+            }
+        });
+        setEditData(newEditData);
+        setIsBatchEditMode(false); // Close the selection mode
+    };
+
     return (
-        <div className="user-management-container" >
-            <div className="user-management-header">
-                <div className="header-info">
-                    <Title level={4} className="header-title">Quản lý người dùng</Title>
-                    <Text type="secondary">Quản lý người dùng, giảng viên và phân quyền toàn hệ thống</Text>
+        <div className={styles.userManagementContainer} >
+            <div className={styles.userManagementHeader}>
+                <div className={styles.headerInfo}>
+                    <Title level={4} className={styles.headerTitle}>Quản lý người dùng</Title>
+                    <Text type="secondary">Quản lý, phân quyền và chỉnh sửa thông tin hàng loạt</Text>
                 </div>
-                <Space>
-                    {/* Top actions moved to card header */}
-                </Space>
             </div>
 
-            <Row gutter={[16, 16]} className="stats-row">
+            <Row gutter={[16, 16]} className={styles.statsRow}>
                 {[1, 2, 3, 4].map(i => (
                     <Col key={i} xs={24} sm={12} md={6}>
                         <Card className="glass-card stats-card">
                             {loading && users.length === 0 ? (
                                 <Skeleton active avatar title={false} paragraph={{ rows: 1 }} />
                             ) : (
-                                i === 1 ? <Statistic title={<Text type="secondary" className="stats-title">Học viên</Text>} value={users.length} valueStyle={{ fontSize: '20px' }} prefix={<TeamOutlined className="stats-icon student" />} /> :
-                                    i === 2 ? <Statistic title={<Text type="secondary" className="stats-title">Giảng viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'instructor')).length} valueStyle={{ fontSize: '20px' }} prefix={<IdcardOutlined className="stats-icon instructor" />} /> :
-                                        i === 3 ? <Statistic title={<Text type="secondary" className="stats-title">Quản trị viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'admin')).length} valueStyle={{ fontSize: '20px' }} prefix={<CrownOutlined className="stats-icon admin" />} /> :
-                                            <Statistic title={<Text type="secondary" className="stats-title">Khóa học bán</Text>} value={users.reduce((a, b) => a + b.enrollments_count, 0)} valueStyle={{ fontSize: '20px' }} prefix={<BookOutlined className="stats-icon courses" />} />
+                                i === 1 ? <Statistic title={<Text type="secondary" className={styles.statsTitle}>Học viên</Text>} value={users.length} valueStyle={{ fontSize: '20px' }} prefix={<TeamOutlined className={`${styles.statsIcon} ${styles.student}`} />} /> :
+                                    i === 2 ? <Statistic title={<Text type="secondary" className={styles.statsTitle}>Giảng viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'instructor')).length} valueStyle={{ fontSize: '20px' }} prefix={<IdcardOutlined className={`${styles.statsIcon} ${styles.instructor}`} />} /> :
+                                        i === 3 ? <Statistic title={<Text type="secondary" className={styles.statsTitle}>Quản trị viên</Text>} value={users.filter(u => u.roles.some(r => r.name === 'admin')).length} valueStyle={{ fontSize: '20px' }} prefix={<CrownOutlined className={`${styles.statsIcon} ${styles.admin}`} />} /> :
+                                            <Statistic title={<Text type="secondary" className={styles.statsTitle}>Khóa học bán</Text>} value={users.reduce((a, b) => a + b.enrollments_count, 0)} valueStyle={{ fontSize: '20px' }} prefix={<BookOutlined className={`${styles.statsIcon} ${styles.courses}`} />} />
                             )}
                         </Card>
                     </Col>
@@ -450,59 +464,72 @@ export default function UserManagement() {
             </Row>
 
             <Card className="glass-card user-list-card">
-                <div className="user-list-header">
-                    <div className="header-left">
-                        <Title level={4} className="header-title">
+                <div className={styles.userListHeader}>
+                    <div className={styles.headerLeft}>
+                        <Title level={4} className={styles.headerTitle}>
                             <UsergroupAddOutlined /> Danh sách thành viên
                         </Title>
+                        {editingKeys.length > 0 && (
+                            <Tag color="processing" icon={<EditOutlined />} className="edit-mode-tag">
+                                Đang chỉnh sửa {editingKeys.length} người
+                            </Tag>
+                        )}
                         {isDeleteMode && (
-                            <Tag color="error" className="delete-mode-tag">
-                                Đang chọn {selectedRowKeys.length} người dùng
+                            <Tag color="error" className={styles.deleteModeTag}>
+                                Đang chọn {selectedRowKeys.length} người để xóa
+                            </Tag>
+                        )}
+                        {isBatchEditMode && (
+                            <Tag color="warning" className="edit-mode-tag">
+                                Chọn người dùng để sửa hàng loạt ({selectedRowKeys.length})
                             </Tag>
                         )}
                     </div>
 
                     <Space>
-                        {(editingKey || selectedRowKeys.length > 0) ? (
+                        {(editingKeys.length > 0 || isDeleteMode || isBatchEditMode) ? (
                             <Space>
-                                <Button
-                                    type="primary"
-                                    icon={<SaveOutlined />}
-                                    onClick={handleBatchSave}
-                                    loading={loading}
-                                    className="save-batch-btn"
-                                >
-                                    Lưu thay đổi
-                                </Button>
-                                <Button
-                                    icon={<CloseOutlined />}
-                                    onClick={() => {
-                                        setEditingKey(null);
-                                        setEditingField(null);
-                                        setEditData({});
-                                        setSelectedRowKeys([]);
-                                        setIsDeleteMode(false);
-                                    }}
-                                >
-                                    Hủy
-                                </Button>
+                                {isBatchEditMode ? (
+                                    <Button
+                                        type="primary"
+                                        icon={<EditOutlined />}
+                                        onClick={startBatchEdit}
+                                        disabled={selectedRowKeys.length === 0}
+                                    >
+                                        Bắt đầu sửa ({selectedRowKeys.length})
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="primary"
+                                        icon={<SaveOutlined />}
+                                        onClick={handleBatchSave}
+                                        loading={loading}
+                                        className={styles.saveBatchBtn}
+                                    >
+                                        Lưu {isDeleteMode ? 'Xóa' : 'Thay đổi'}
+                                    </Button>
+                                )}
+                                <Button icon={<CloseOutlined />} onClick={resetStates}>Hủy</Button>
                             </Space>
                         ) : (
                             <Space>
                                 <Button
+                                    icon={<EditOutlined />}
+                                    onClick={() => setIsBatchEditMode(true)}
+                                >
+                                    Sửa hàng loạt
+                                </Button>
+                                <Button
                                     danger
                                     icon={<DeleteOutlined />}
-                                    onClick={() => setIsDeleteMode(!isDeleteMode)}
-                                    type={isDeleteMode ? "primary" : "default"}
-                                    size="middle"
+                                    onClick={() => setIsDeleteMode(true)}
                                 >
-                                    {isDeleteMode ? "Hủy chọn" : "Xóa (Chọn)"}
+                                    Xóa nhiều
                                 </Button>
                                 <Button
                                     type="primary"
                                     icon={<PlusOutlined />}
                                     onClick={() => setIsCreateModalOpen(true)}
-                                    size="middle"
                                 >
                                     Thêm thành viên
                                 </Button>
@@ -510,23 +537,18 @@ export default function UserManagement() {
                         )}
                     </Space>
                 </div>
-                <div className="table-wrapper">
-                    {loading && users.length === 0 ? (
-                        <div style={{ padding: '24px' }}>
-                            <Skeleton active paragraph={{ rows: 8 }} />
-                        </div>
-                    ) : (
-                        <Table
-                            columns={columns}
-                            dataSource={users}
-                            rowKey="id"
-                            loading={loading}
-                            rowSelection={rowSelection}
-                            pagination={{ pageSize: 10 }}
-                            rowClassName={(record) => record.id === editingKey ? 'editable-row active' : 'premium-row'}
-                            scroll={{ x: 1800 }}
-                        />
-                    )}
+
+                <div className={styles.tableWrapper}>
+                    <Table
+                        columns={columns}
+                        dataSource={users}
+                        rowKey="id"
+                        loading={loading}
+                        rowSelection={rowSelection}
+                        pagination={{ pageSize: 10 }}
+                        rowClassName={(record) => editingKeys.includes(record.id) ? `${styles.editableRow} ${styles.active}` : 'premium-row'}
+                        scroll={{ x: 1800 }}
+                    />
                 </div>
             </Card>
 
@@ -544,5 +566,19 @@ export default function UserManagement() {
             </Modal>
         </div >
     );
-}
 
+    async function handleCreateFinish(values: any) {
+        try {
+            setLoading(true);
+            await userService.create(values);
+            message.success('Tạo người dùng mới thành công');
+            setIsCreateModalOpen(false);
+            createForm.resetFields();
+            fetchData();
+        } catch (error: any) {
+            message.error(error.response?.data?.error || 'Lỗi lưu dữ liệu');
+        } finally {
+            setLoading(false);
+        }
+    }
+}

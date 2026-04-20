@@ -167,3 +167,50 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.batchUpdateUsers = async (req, res) => {
+    try {
+        const { users } = req.body; // Expecting [{id, username, email, ...}]
+
+        if (!Array.isArray(users)) {
+            return res.status(400).json({ error: 'Dữ liệu không hợp lệ' });
+        }
+
+        const updates = users.map(async (u) => {
+            const { id, username, email, full_name, role_id, phone, dob, gender, bio, avatar } = u;
+
+            // Cập nhật thông tin cơ bản
+            await prisma.user.update({
+                where: { id: parseInt(id) },
+                data: {
+                    username,
+                    email,
+                    full_name,
+                    phone,
+                    dob: dob ? new Date(dob) : undefined,
+                    gender,
+                    bio,
+                    avatar
+                }
+            });
+
+            // Nếu có thay đổi role
+            if (role_id) {
+                await prisma.userRole.deleteMany({ where: { user_id: parseInt(id) } });
+                await prisma.userRole.create({
+                    data: {
+                        user_id: parseInt(id),
+                        role_id: parseInt(role_id)
+                    }
+                });
+            }
+        });
+
+        await Promise.all(updates);
+
+        res.json({ message: `Đã cập nhật thành công ${users.length} thành viên` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+

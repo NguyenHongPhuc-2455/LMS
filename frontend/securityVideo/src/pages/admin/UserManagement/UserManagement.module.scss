@@ -1,0 +1,224 @@
+.editableCellValue:hover {
+    background: rgba(24, 144, 255, 0.08);
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.editableRow {
+    &.active {
+        background: rgba(99, 102, 241, 0.08);
+    }
+}
+
+.userManagementContainer {
+    padding: 10px;
+
+    :global {
+        .ant-table-selection-column {
+            width: 50px;
+        }
+
+        .ant-table {
+            background: #ffffff;
+            color: $text-main;
+        }
+
+        .ant-table-thead>tr>th {
+            background: #fafafa;
+            color: $text-muted;
+            border-bottom: 1px solid $border-color;
+        }
+
+        .ant-table-tbody>tr>td {
+            background: #ffffff;
+            border-bottom: 1px solid $border-color;
+        }
+
+        .ant-table-tbody>tr:hover>td {
+            background: #fafafa;
+        }
+
+        .ant-input {
+            background: #fff;
+            border-color: #d9d9d9;
+            color: rgba(0, 0, 0, 0.88);
+        }
+
+        .ant-select-selector {
+            background: #fff;
+            border-color: #d9d9d9;
+            color: rgba(0, 0, 0, 0.88);
+        }
+
+        /* Fixed columns sync */
+        .ant-table-cell-fix-left,
+        .ant-table-cell-fix-right {
+            background: #ffffff;
+            z-index: 100;
+        }
+
+        .ant-table-thead>tr>th.ant-table-cell-fix-left,
+        .ant-table-thead>tr>th.ant-table-cell-fix-right {
+            background: #fafafa;
+        }
+
+        .ant-table-tbody>tr.ant-table-row:hover>td.ant-table-cell-fix-left,
+        .ant-table-tbody>tr.ant-table-row:hover>td.ant-table-cell-fix-right {
+            background: #f5f5f5;
+        }
+
+        .ant-table-cell-fix-left-last::after {
+            box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.05);
+            border-right: 1px solid $border-color;
+        }
+    }
+}
+
+.userManagementHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .headerInfo {
+        .headerTitle {
+            margin: 0;
+        }
+    }
+}
+
+.statsRow {
+    margin-bottom: 20px;
+}
+
+.statsCard {
+    padding: 12px;
+}
+
+.statsTitle {
+    font-size: 12px;
+}
+
+.statsValue {
+    font-size: 20px;
+}
+
+.statsIcon {
+    font-size: 16px;
+
+    &.student {
+        color: #3b82f6;
+    }
+
+    &.instructor {
+        color: #a855f7;
+    }
+
+    &.admin {
+        color: #f59e0b;
+    }
+
+    &.courses {
+        color: #10b981;
+    }
+}
+
+.userListCard {
+    padding: 0;
+}
+
+.userListHeader {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid $border-color;
+
+    .headerLeft {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .headerTitle {
+            margin: 0;
+            color: $text-main;
+        }
+    }
+}
+
+.deleteModeTag {
+    border-radius: 12px;
+    padding: 0 12px;
+}
+
+.saveBatchBtn {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.tableWrapper {
+    padding: 0 12px 12px 12px;
+}
+
+.userInfoWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.userAvatar {
+    background: $primary-hover;
+}
+
+.userTextStack {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    cursor: pointer;
+
+    .fullName {
+        color: $text-main;
+    }
+
+    .username {
+        font-size: 12px;
+    }
+}
+
+.editableCellDisplay {
+    cursor: pointer;
+    min-height: 32px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.filterDropdownContainer {
+    padding: 8px;
+}
+
+.filterInput {
+    margin-bottom: 8px;
+    display: block;
+}
+
+.filterBtns {
+    width: 90px;
+}
+
+.rangePickerFilter {
+    margin-bottom: 8px;
+    display: flex;
+}
+
+.enrolledCoursesList {
+    max-width: 250px;
+
+    .courseItemText {
+        font-size: 12px;
+    }
+}
+
+.successBadge {
+    cursor: pointer;
+}

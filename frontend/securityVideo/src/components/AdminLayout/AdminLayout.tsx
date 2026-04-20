@@ -16,7 +16,8 @@ import {
     PlaySquareOutlined,
     ApartmentOutlined
 } from '@ant-design/icons';
-import './AdminLayout.scss';
+import styles from './AdminLayout.module.scss';
+
 
 const { Header, Sider, Content } = Layout;
 
@@ -59,29 +60,29 @@ const AdminLayout: React.FC = () => {
     };
 
     return (
-        <Layout className="admin-layout-container">
+        <Layout className={styles.adminLayoutContainer}>
             <Sider
                 trigger={null}
                 collapsible
                 collapsed={collapsed}
                 theme="light"
                 width={250}
-                className="admin-sidebar"
+                className={styles.adminSidebar}
             >
-                <div className={`admin-logo-section ${collapsed ? 'collapsed' : 'expanded'}`}>
+                <div className={`${styles.adminLogoSection} ${collapsed ? styles.collapsed : styles.expanded}`}>
                     <MenuOutlined
-                        className="sidebar-toggle-icon"
+                        className={styles.sidebarToggleIcon}
                         onClick={() => setCollapsed(!collapsed)}
                     />
                     {!collapsed && (
-                        <img src="/logo/logo.png" alt="Logo" className="admin-logo-img" />
+                        <img src="/logo/logo.png" alt="Logo" className={styles.adminLogoImg} />
                     )}
                 </div>
 
                 <Menu
                     mode="inline"
                     selectedKeys={[location.pathname]}
-                    className="admin-menu"
+                    className={styles.adminMenu}
                     onClick={({ key }) => navigate(key)}
                     items={[
                         {
@@ -119,6 +120,8 @@ const AdminLayout: React.FC = () => {
                             icon: <ApartmentOutlined />,
                             label: 'Chương trình học',
                         },
+
+
                         // {
                         //     key: '/admin/orders',
                         //     icon: <ShoppingCartOutlined />,
@@ -137,45 +140,45 @@ const AdminLayout: React.FC = () => {
                     ]}
                 />
             </Sider>
-            <Layout className="admin-main-layout" style={{ marginLeft: collapsed ? 80 : 250 }}>
-                <Header className="admin-header">
-                    <div className="header-search-wrapper">
+            <Layout className={styles.adminMainLayout} style={{ marginLeft: collapsed ? 80 : 250 }}>
+                <Header className={styles.adminHeader}>
+                    <div className={styles.headerSearchWrapper}>
                         <Input
                             placeholder="Tìm kiếm khóa học, bài viết, video, ..."
                             prefix={<SearchOutlined />}
-                            className="admin-search-input"
+                            className={styles.adminSearchInput}
                         />
                     </div>
 
-                    <Space size={24} className="header-actions">
+                    <Space size={24} className={styles.headerActions}>
                         <Badge count={6} size="small" offset={[-2, 5]}>
-                            <BellOutlined className="notification-icon" />
+                            <BellOutlined className={styles.notificationIcon} />
                         </Badge>
 
-                        <div className="language-selector">
-                            <GlobalOutlined className="lang-icon" />
-                            <span className="lang-text">English</span>
-                            <DownOutlined className="lang-arrow" />
+                        <div className={styles.languageSelector}>
+                            <GlobalOutlined className={styles.langIcon} />
+                            <span className={styles.langText}>English</span>
+                            <DownOutlined className={styles.langArrow} />
                         </div>
 
                         <Dropdown menu={userMenu} trigger={['click']}>
-                            <div className="user-profile-dropdown">
+                            <div className={styles.userProfileDropdown}>
                                 <Avatar
                                     src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'Admin')}&background=4880FF&color=fff`}
                                     size={40}
                                 />
-                                <div className="user-info">
-                                    <span className="user-name">{user?.full_name || user?.username || 'Admin'}</span>
-                                    <span className="user-role">
+                                <div className={styles.userInfo}>
+                                    <span className={styles.userName}>{user?.full_name || user?.username || 'Admin'}</span>
+                                    <span className={styles.userRole}>
                                         {userRoles.map((r: any) => typeof r === 'string' ? r : r.name).join(', ')}
                                     </span>
                                 </div>
-                                <DownOutlined className="user-arrow" />
+                                <DownOutlined className={styles.userArrow} />
                             </div>
                         </Dropdown>
                     </Space>
                 </Header>
-                <Content className="admin-content">
+                <Content className={styles.adminContent}>
                     <div className="animate-fade-in">
                         <Outlet />
                     </div>

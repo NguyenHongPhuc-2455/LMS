@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import api from '../../../api';
+import { courseService } from '../../../services/course.service';
+import { contentService } from '../../../services/content.service';
+import { videoService } from '../../../services/video.service';
+import { uploadService } from '../../../services/upload.service';
+
+import styles from './Dashboard.module.scss';
 import {
     Trash2, UploadCloud,
     Plus, ShieldCheck, BookOpen,
@@ -11,7 +16,7 @@ import {
     Table, Badge, Modal, Form, message, Divider, Popconfirm, Upload, Empty
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import './Dashboard.scss';
+
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -63,11 +68,12 @@ export default function Dashboard() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/courses');
+            const data = await courseService.getAll();
             const detailedCourses = await Promise.all(
-                res.data.map((c: any) => api.get(`/courses/${c.id}`).then(r => r.data))
+                data.map((c: any) => courseService.getById(c.id))
             );
             setCourses(detailedCourses);
+
             if (detailedCourses.length > 0 && selectedCourseId === null) {
                 setSelectedCourseId(detailedCourses[0].id);
             }
@@ -92,21 +98,21 @@ export default function Dashboard() {
             if (thumbFile) {
                 const formData = new FormData();
                 formData.append('image', thumbFile);
-                const uploadRes = await api.post('/upload/image', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                finalThumbnail = uploadRes.data.url;
+                const uploadRes = await uploadService.image(formData);
+                finalThumbnail = uploadRes.url;
             }
+
 
             const payload = { ...values, thumbnail: finalThumbnail };
 
             if (editingCourseId) {
-                await api.put(`/courses/${editingCourseId}`, payload);
+                await courseService.update(editingCourseId, payload);
                 message.success('Đã cập nhật khóa học!');
             } else {
-                await api.post('/courses', payload);
+                await courseService.create(payload);
                 message.success('Đã tạo khóa học mới!');
             }
+
             setIsCourseModalOpen(false);
             setEditingCourseId(null);
             setThumbFile(null);
@@ -136,12 +142,13 @@ export default function Dashboard() {
     const handleSaveSection = async (values: any) => {
         try {
             if (editingSectionId) {
-                await api.put(`/courses/sections/${editingSectionId}`, values);
+                await contentService.updateSection(editingSectionId, values);
                 message.success('Đã cập nhật chương!');
             } else {
-                await api.post('/courses/sections', { ...values, course_id: selectedCourseId });
+                await contentService.createSection({ ...values, course_id: selectedCourseId });
                 message.success('Đã tạo chương mới thành công!');
             }
+
             setIsSectionModalOpen(false);
             setEditingSectionId(null);
             sectionForm.resetFields();
@@ -163,12 +170,13 @@ export default function Dashboard() {
             let lessonId = editingLessonId;
             if (editingLessonId) {
                 // Nếu đang edit, cập nhật title, section_id và content
-                await api.put(`/videos/${editingLessonId}`, {
+                await videoService.update(editingLessonId, {
                     title: values.title,
                     section_id: values.section_id,
                     content: values.content
                 });
                 message.success('Đã cập nhật bài giảng!');
+
             } else {
                 // Nếu tạo mới, bắt buộc phải có video
                 if (!selectedFile) return message.error('Vui lòng chọn tệp video');
@@ -179,10 +187,9 @@ export default function Dashboard() {
                 formData.append('video', selectedFile);
 
                 message.loading({ content: 'Đang khởi tạo băm bảo mật HLS...', key: 'hls-upload' });
-                const res = await api.post('/videos/upload', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                lessonId = res.data.data.lessonId;
+                const data = await videoService.upload(formData);
+                lessonId = data.data.lessonId;
+
                 message.success({ content: 'Bài giảng đã được đưa vào hàng chờ xử lý!', key: 'hls-upload' });
             }
 
@@ -190,11 +197,10 @@ export default function Dashboard() {
             if (attachmentFile && lessonId) {
                 const attachData = new FormData();
                 attachData.append('attachment', attachmentFile);
-                await api.post(`/videos/upload-attachment/${lessonId}`, attachData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await videoService.uploadAttachment(lessonId, attachData);
                 message.success('Đã tải lên tài liệu đính kèm!');
             }
+
 
             setIsLessonModalOpen(false);
             setEditingLessonId(null);
@@ -219,7 +225,7 @@ export default function Dashboard() {
 
     const handleDeleteLesson = async (id: number) => {
         try {
-            await api.delete(`/videos/${id}`);
+            await videoService.delete(id);
             message.success('Đã xóa bài giảng');
             fetchData();
         } catch (e) { message.error('Không thể xóa bài giảng'); }
@@ -228,7 +234,7 @@ export default function Dashboard() {
     const handleDeleteSection = async (id: number) => {
         try {
             // Cần endpoint xóa section, giả định là backend có
-            await api.delete(`/courses/sections/${id}`);
+            await contentService.deleteSection(id);
             message.success('Đã xóa chương');
             fetchData();
         } catch (e) { message.error('Lỗi khi xóa chương'); }
@@ -236,7 +242,7 @@ export default function Dashboard() {
 
     const handleDeleteCourse = async (id: number) => {
         try {
-            await api.delete(`/courses/${id}`);
+            await courseService.delete(id);
             message.success('Đã xóa khóa học');
             setSelectedCourseId(null);
             fetchData();
@@ -254,11 +260,11 @@ export default function Dashboard() {
     });
 
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <div className="header-title-wrapper">
-                    <Title level={2} className="premium-title header-title">Quản lý khóa học</Title>
-                    <Text className="header-subtitle">Điều hành nội dung và bảo mật video</Text>
+        <div className={styles.dashboardContainer}>
+            <div className={styles.dashboardHeader}>
+                <div className={styles.headerTitleWrapper}>
+                    <Title level={2} className={styles.headerTitle}>Hệ thống Quản trị</Title>
+                    <Text className={styles.headerSubtitle}>Quản lý học liệu, học viên và bài giảng bảo mật</Text>
                 </div>
             </div>
 
@@ -266,24 +272,24 @@ export default function Dashboard() {
                 <Col span={7}>
                     <Card
                         title={<Space><FolderOpen size={16} /> Danh sách Khóa Học</Space>}
-                        className="glass-card course-list-card"
+                        className={`glass-card ${styles.courseListCard}`}
                         loading={loading}
                         extra={<Button type="text" onClick={() => { setEditingCourseId(null); courseForm.resetFields(); setIsCourseModalOpen(true); }} icon={<Plus size={14} />} className="purple-text" />}
                     >
-                        <Space direction="vertical" className="course-filters" size={4}>
+                        <Space direction="vertical" className={styles.courseFilters} size={4}>
                             <Input
                                 placeholder="Tìm khóa học..."
                                 prefix={<SearchOutlined />}
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
-                                className="admin-search-input"
+                                className={styles.adminSearchInput}
                             />
                             <Select
                                 defaultValue="All"
                                 onChange={(v) => setFilterLevel(v)}
                                 size="small"
                                 variant="borderless"
-                                className="admin-filter-select"
+                                className={styles.adminFilterSelect}
                                 popupClassName="dropdown-radius"
                             >
                                 <Option value="All">Tất cả trình độ</Option>
@@ -293,17 +299,17 @@ export default function Dashboard() {
                             </Select>
                         </Space>
 
-                        <div className="course-list-scroll">
+                        <div className={styles.courseListScroll}>
                             {filteredCourses.length === 0 ? (
                                 <Empty description="Không tìm thấy kết quả" />
                             ) : filteredCourses.map(c => (
                                 <div
                                     key={c.id}
                                     onClick={() => setSelectedCourseId(c.id)}
-                                    className={`course-item ${selectedCourseId === c.id ? 'selected' : ''}`}
+                                    className={`${styles.courseItem} ${selectedCourseId === c.id ? styles.selected : ''}`}
                                 >
-                                    <div className="course-item-header">
-                                        <Text strong className="course-title-text">{c.title}</Text>
+                                    <div className={styles.courseItemHeader}>
+                                        <Text strong className={styles.courseTitleText}>{c.title}</Text>
                                         <Space size={4}>
                                             <Button type="text" icon={<Edit size={12} />} size="small" onClick={(e) => { e.stopPropagation(); startEditingCourse(c); }} className="indigo-text" />
                                             {selectedCourseId === c.id && (
@@ -313,11 +319,11 @@ export default function Dashboard() {
                                             )}
                                         </Space>
                                     </div>
-                                    <div className="course-item-footer">
-                                        <div className="course-stats">{c.sections.length} chương nội dung</div>
+                                    <div className={styles.courseItemFooter}>
+                                        <div className={styles.courseStats}>{c.sections.length} chương nội dung</div>
                                         <Badge
                                             count={c.is_private ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
-                                            className={c.is_private ? 'badge-private' : 'badge-public'}
+                                            className={c.is_private ? styles.badgePrivate : styles.badgePublic}
                                         />
                                     </div>
                                 </div>
@@ -363,47 +369,48 @@ export default function Dashboard() {
                                 ]}
                                 expandable={{
                                     expandedRowRender: (record) => (
-                                        <Table
-                                            dataSource={record.lessons}
-                                            rowKey="id"
-                                            pagination={false}
-                                            columns={[
-                                                {
-                                                    title: <span className="lesson-title-col">Tên bài giảng</span>,
-                                                    dataIndex: 'title',
-                                                    render: (t) => <Space align="center" size={10} className="lesson-item-wrapper"><PlayCircle size={14} color="#a855f7" /> <Text className="lesson-name-text">{t}</Text></Space>
-                                                },
-                                                {
-                                                    title: <span className="lesson-title-col">ID</span>,
-                                                    dataIndex: 'id',
-                                                    width: 80,
-                                                    render: (id) => <Text className="lesson-id-text">{id}</Text>
-                                                },
-                                                {
-                                                    title: <span className="lesson-title-col">Hành động</span>,
-                                                    width: 100,
-                                                    align: 'center',
-                                                    render: (lesson) => (
-                                                        <Space>
-                                                            <Button type="text" icon={<Edit size={14} />} onClick={() => startEditingLesson(lesson, record.id)} className="indigo-text" />
-                                                            <Popconfirm title="Xóa bài giảng này?" onConfirm={() => handleDeleteLesson(lesson.id)}>
-                                                                <Button type="text" danger icon={<Trash2 size={14} />} className="flex-center" />
-                                                            </Popconfirm>
-                                                        </Space>
-                                                    )
-                                                }
-                                            ]}
-                                            className="lesson-table-expanded"
-                                        />
+                                        <div className={styles.lessonTableExpanded}>
+                                            <Table
+                                                dataSource={record.lessons}
+                                                rowKey="id"
+                                                pagination={false}
+                                                columns={[
+                                                    {
+                                                        title: <span className={styles.lessonTitleCol}>Tên bài giảng</span>,
+                                                        dataIndex: 'title',
+                                                        render: (t) => <Space align="center" size={10} className={styles.lessonItemWrapper}><PlayCircle size={14} color="#a855f7" /> <Text className={styles.lessonNameText}>{t}</Text></Space>
+                                                    },
+                                                    {
+                                                        title: <span className={styles.lessonTitleCol}>ID</span>,
+                                                        dataIndex: 'id',
+                                                        width: 80,
+                                                        render: (id) => <Text className={styles.lessonIdText}>{id}</Text>
+                                                    },
+                                                    {
+                                                        title: <span className={styles.lessonTitleCol}>Hành động</span>,
+                                                        width: 100,
+                                                        align: 'center',
+                                                        render: (lesson) => (
+                                                            <Space>
+                                                                <Button type="text" icon={<Edit size={14} />} onClick={() => startEditingLesson(lesson, record.id)} className="indigo-text" />
+                                                                <Popconfirm title="Xóa bài giảng này?" onConfirm={() => handleDeleteLesson(lesson.id)}>
+                                                                    <Button type="text" danger icon={<Trash2 size={14} />} className="flex-center" />
+                                                                </Popconfirm>
+                                                            </Space>
+                                                        )
+                                                    }
+                                                ]}
+                                            />
+                                        </div>
                                     ),
                                     rowExpandable: (record) => record.lessons.length > 0,
                                 }}
                             />
                         </Card>
                     ) : (
-                        <div className="empty-dashboard-placeholder">
-                            <BookOpen size={48} className="placeholder-icon" />
-                            <Title level={4} className="placeholder-text">Chọn khóa học để điều hành nội dung</Title>
+                        <div className={styles.emptyDashboardPlaceholder}>
+                            <BookOpen size={48} className={styles.placeholderIcon} />
+                            <Title level={4} className={styles.placeholderText}>Chọn khóa học để điều hành nội dung</Title>
                         </div>
                     )}
                 </Col>
@@ -448,7 +455,7 @@ export default function Dashboard() {
                                         }}
                                         showUploadList={false}
                                     >
-                                        <div className="upload-trigger-icon" title="Tải ảnh lên">
+                                        <div className={styles.uploadTriggerIcon} title="Tải ảnh lên">
                                             <UploadCloud size={18} />
                                         </div>
                                     </Upload>
@@ -456,15 +463,15 @@ export default function Dashboard() {
                                 className="thumbnail-input"
                             />
                             {thumbUrl && (
-                                <div className="thumbnail-preview-container">
-                                    <img src={thumbUrl} className="thumbnail-img" alt="Preview" />
+                                <div className={styles.thumbnailPreviewContainer}>
+                                    <img src={thumbUrl} className={styles.thumbnailImg} alt="Preview" />
                                     <Button
                                         type="primary"
                                         danger
                                         size="small"
                                         shape="circle"
                                         icon={<Trash2 size={12} />}
-                                        className="delete-thumb-btn"
+                                        className={styles.deleteThumbBtn}
                                         onClick={() => { setThumbUrl(''); setThumbFile(null); courseForm.setFieldsValue({ thumbnail: '' }); }}
                                     />
                                 </div>
@@ -506,27 +513,27 @@ export default function Dashboard() {
                     <Form.Item name="content" label="Nội dung bài học (Dưới dạng văn bản)">
                         <Input.TextArea rows={4} placeholder="Nhập nội dung giảng dạy, hướng dẫn..." />
                     </Form.Item>
-                    <div className="file-input-section">
-                        <label className="file-input-label">Tài liệu đính kèm (PDF - Tùy chọn)</label>
+                    <div className={styles.fileInputSection}>
+                        <label className={styles.fileInputLabel}>Tài liệu đính kèm (PDF - Tùy chọn)</label>
                         <input
                             type="file"
                             accept="application/pdf"
                             onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
-                            className="file-input-custom"
+                            className={styles.fileInputCustom}
                         />
-                        {attachmentFile && <Text className="success-text">✓ {attachmentFile.name}</Text>}
+                        {attachmentFile && <Text className={styles.successText}>✓ {attachmentFile.name}</Text>}
                     </div>
 
                     {!editingLessonId && (
-                        <div className="file-input-section">
-                            <label className="file-input-label">Tệp Video (MP4 - Bắt buộc khi tạo mới)</label>
+                        <div className={styles.fileInputSection}>
+                            <label className={styles.fileInputLabel}>Tệp Video (MP4 - Bắt buộc khi tạo mới)</label>
                             <input
                                 type="file"
                                 accept="video/mp4"
                                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                                className="file-input-custom"
+                                className={styles.fileInputCustom}
                             />
-                            {selectedFile && <Text className="success-text">✓ {selectedFile.name}</Text>}
+                            {selectedFile && <Text className={styles.successText}>✓ {selectedFile.name}</Text>}
                         </div>
                     )}
                     <Divider />

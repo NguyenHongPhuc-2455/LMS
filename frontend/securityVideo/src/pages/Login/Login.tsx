@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../../api';
-import { UserOutlined, LockOutlined, LoginOutlined, ArrowRightOutlined } from '@ant-design/icons';
-import { App, Form, Input, Button, Typography, Space, Card } from 'antd';
-import '../Auth.scss';
-
+import { authService } from '../../services/auth.service';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { App, Form, Input, Button, Typography, Checkbox } from 'antd';
+import styles from '../Auth.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -16,13 +15,11 @@ export default function Login() {
     const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            const res = await api.post('/auth/login', values);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-
+            const data = await authService.login(values);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
             message.success('Chào mừng bạn quay trở lại!');
-
-            if (res.data.user.roles?.includes('admin')) {
+            if (data.user.roles?.includes('admin')) {
                 navigate('/admin');
             } else {
                 navigate('/course');
@@ -35,66 +32,47 @@ export default function Login() {
     };
 
     return (
-        <div className="auth-container">
-            <Card className="auth-card" variant="borderless">
-                <div className="auth-header">
-                    <div className="auth-icon-wrapper">
-                        <LoginOutlined className="auth-header-icon" />
-                    </div>
-                    <Title level={2} className="premium-title auth-header-title">Chào mừng</Title>
-                    <Text type="secondary" className="auth-header-desc">Đăng nhập để tiếp tục hành trình học tập</Text>
+        <div className={styles.authContainer}>
+            <div className={styles.blob1}></div>
+            <div className={styles.blob2}></div>
+
+            <div className={styles.authWrapper}>
+                {/* Left Side: Form */}
+                <div className={styles.authSideForm}>
+                    <Title level={2} className={styles.sideTitle}>Log in</Title>
+                    <Form layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
+                        <Form.Item name="username" rules={[{ required: true, message: 'Nhập tài khoản!' }]}>
+                            <Input prefix={<UserOutlined className={styles.authInputPrefix} />} placeholder="Username" />
+                        </Form.Item>
+
+                        <Form.Item name="password" rules={[{ required: true, message: 'Nhập mật khẩu!' }]}>
+                            <Input.Password prefix={<LockOutlined className={styles.authInputPrefix} />} placeholder="Password" />
+                        </Form.Item>
+
+                        <div className={styles.formExtras}>
+                            <Checkbox>Remember me</Checkbox>
+                            <Link to="#" className={styles.forgotLink}>forgot password?</Link>
+                        </div>
+
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit" className={styles.btnTheme} block loading={loading}>
+                                Log in
+                            </Button>
+                        </Form.Item>
+
+                    </Form>
                 </div>
 
-                <Form
-                    layout="vertical"
-                    onFinish={onFinish}
-                    requiredMark={false}
-                    size="large"
-                >
-                    <Form.Item
-                        label="Tên đăng nhập"
-                        name="username"
-                        rules={[{ required: true, message: 'Vui lòng nhập tài khoản!' }]}
-                    >
-                        <Input
-                            prefix={<UserOutlined className="auth-input-prefix" />}
-                            placeholder="Nhập tài khoản của bạn"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Mật khẩu"
-                        name="password"
-                        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-                    >
-                        <Input.Password
-                            prefix={<LockOutlined className="auth-input-prefix" />}
-                            placeholder="Nhập mật khẩu"
-                        />
-                    </Form.Item>
-
-                    <Form.Item className="auth-form-item-btn">
-                        <Button
-                            type="primary"
-                            htmlType="submit"
-                            className="btn-primary"
-                            loading={loading}
-                            icon={<ArrowRightOutlined />}
-                        >
-                            Đăng nhập ngay
-                        </Button>
-                    </Form.Item>
-
-                    <div className="auth-footer">
-                        <Space direction="vertical" size={4}>
-                            <Text type="secondary">Chưa có tài khoản?</Text>
-                            <Link to="/register" className="auth-footer-link">
-                                Kích hoạt ghi danh học viên mới
-                            </Link>
-                        </Space>
-                    </div>
-                </Form>
-            </Card>
+                {/* Right Side: Info Area */}
+                <div className={styles.authSideInfo}>
+                    <Title level={1} className={styles.infoTitle}>Welcome Back!</Title>
+                    <Text className={styles.infoDesc}>Please enter your details<br />Don't have an account?</Text>
+                    <Link to="/register">
+                        <Button className={styles.btnOutline}>Sign Up</Button>
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 }
+

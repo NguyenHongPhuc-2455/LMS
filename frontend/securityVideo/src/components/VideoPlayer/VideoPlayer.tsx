@@ -1,8 +1,9 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import shaka from 'shaka-player';
-import api from '../../api';
+import { contentService } from '../../services/content.service';
 import { message } from 'antd';
-import './VideoPlayer.scss';
+import styles from './VideoPlayer.module.scss';
+
 
 interface VideoPlayerProps {
     src: string;
@@ -91,7 +92,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     const reportProgress = async () => {
         if (!lessonId) return;
         try {
-            await api.post(`/videos/complete/${lessonId}`);
+            await contentService.completeLesson(lessonId);
         } catch (e) {
             console.error('Lỗi báo cáo tiến độ');
         }
@@ -126,13 +127,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     };
 
     return (
-        <div className="video-player-container">
+        <div className={styles.videoPlayerContainer}>
             <video
                 ref={videoRef}
                 controls
                 crossOrigin="anonymous"
                 controlsList="nodownload"
-                className="video-element"
+                className={styles.videoElement}
                 onTimeUpdate={handleTimeUpdate}
                 onPlay={onPlay}
                 onPause={onPause}

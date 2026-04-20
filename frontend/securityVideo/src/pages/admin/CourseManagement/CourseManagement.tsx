@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../api';
+import { courseService } from '../../../services/course.service';
+import { uploadService } from '../../../services/upload.service';
+
 import {
     Trash2, UploadCloud,
     Plus, Edit
 } from 'lucide-react';
 import {
     Card, Button, Input, Select, Space, Typography,
-    Table, Badge, Modal, Form, message, Popconfirm, Upload, Row, Col, DatePicker
+    Table, Badge, Modal, Form, message, Popconfirm, Upload, Row, Col, DatePicker, Tag
+
 } from 'antd';
 import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import './CourseManagement.scss';
+import styles from './CourseManagement.module.scss';
+
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -47,8 +51,9 @@ export default function CourseManagement() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/courses');
-            setCourses(res.data);
+            const data = await courseService.getAll();
+            setCourses(data);
+
         } catch (e) {
             message.error('Lỗi khi tải danh sách khóa học');
         } finally {
@@ -67,21 +72,21 @@ export default function CourseManagement() {
             if (thumbFile) {
                 const formData = new FormData();
                 formData.append('image', thumbFile);
-                const uploadRes = await api.post('/upload/image', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                finalThumbnail = uploadRes.data.url;
+                const uploadRes = await uploadService.image(formData);
+                finalThumbnail = uploadRes.url;
             }
+
 
             const payload = { ...values, thumbnail: finalThumbnail };
 
             if (editingId) {
-                await api.put(`/courses/${editingId}`, payload);
+                await courseService.update(editingId, payload);
                 message.success('Đã cập nhật khóa học!');
             } else {
-                await api.post('/courses', payload);
+                await courseService.create(payload);
                 message.success('Đã tạo khóa học mới!');
             }
+
             setIsModalOpen(false);
             setEditingId(null);
             setThumbFile(null);
@@ -109,7 +114,7 @@ export default function CourseManagement() {
 
     const handleDelete = async (id: number) => {
         try {
-            await api.delete(`/courses/${id}`);
+            await courseService.delete(id);
             message.success('Đã xóa khóa học');
             fetchData();
         } catch (e) { message.error('Lỗi khi xóa khóa học'); }
@@ -126,13 +131,13 @@ export default function CourseManagement() {
             render: (c: Course) => (
                 <Space
                     size={12}
-                    className="course-info-space"
+                    className={styles.courseInfoSpace}
                     onClick={() => navigate(`/admin/sections?courseId=${c.id}`)}
                 >
-                    <img src={c.thumbnail || 'https://via.placeholder.com/150'} className="course-thumbnail" />
+                    <img src={c.thumbnail || 'https://via.placeholder.com/150'} className={styles.courseThumbnail} />
                     <div>
-                        <Text strong className="course-title-text">{c.title}</Text>
-                        <Text type="secondary" className="course-level-text">{c.level}</Text>
+                        <Text strong className={styles.courseTitleText}>{c.title}</Text>
+                        <Text type="secondary" className={styles.courseLevelText}>{c.level}</Text>
                     </div>
                 </Space>
             ),
@@ -153,10 +158,9 @@ export default function CourseManagement() {
             ],
             onFilter: (value: any, record: Course) => record.is_private === value,
             render: (isPrivate: boolean) => (
-                <Badge
-                    count={isPrivate ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
-                    className={isPrivate ? "badge-private" : "badge-public"}
-                />
+                <Tag color={isPrivate ? 'purple' : 'green'} className={styles.statusTag}>
+                    {isPrivate ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
+                </Tag>
             )
         },
         {
@@ -167,21 +171,23 @@ export default function CourseManagement() {
                 <Badge
                     count={c._count?.enrollments || 0}
                     showZero
-                    className="badge-students"
+                    color="#52c41a"
+                    className={styles.studentBadge}
                 />
             )
         },
+
         {
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
             width: 150,
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-                <div className="filter-picker-wrapper" onKeyDown={(e) => e.stopPropagation()}>
+                <div className={styles.filterPickerWrapper} onKeyDown={(e) => e.stopPropagation()}>
                     <RangePicker
                         value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
                         onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
-                        className="filter-range-picker"
+                        className={styles.filterRangePicker}
                         size="small"
                     />
                     <Space>
@@ -189,7 +195,7 @@ export default function CourseManagement() {
                             type="primary"
                             onClick={() => confirm()}
                             size="small"
-                            className="filter-btn"
+                            className={styles.filterBtn}
                         >
                             Lọc
                         </Button>
@@ -199,7 +205,7 @@ export default function CourseManagement() {
                                 confirm();
                             }}
                             size="small"
-                            className="filter-btn"
+                            className={styles.filterBtn}
                         >
                             Xóa
                         </Button>
@@ -240,10 +246,10 @@ export default function CourseManagement() {
     ];
 
     return (
-        <div className="management-container">
-            <div className="management-header">
+        <div className={styles.managementContainer}>
+            <div className={styles.managementHeader}>
                 <div>
-                    <Title level={4} className="header-title">Quản lý Khóa học</Title>
+                    <Title level={4} className={styles.headerTitle}>Quản lý Khóa học</Title>
                     <Text type="secondary">Tạo và cấu hình các khóa đào tạo</Text>
                 </div>
                 <Button type="primary" onClick={() => { setEditingId(null); setThumbUrl(''); form.resetFields(); setIsModalOpen(true); }} icon={<Plus size={16} />}>
@@ -257,7 +263,7 @@ export default function CourseManagement() {
                     prefix={<SearchOutlined />}
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
-                    className="search-input"
+                    className={styles.searchInput}
                     size="small"
                 />
                 <Table
@@ -300,7 +306,7 @@ export default function CourseManagement() {
                     </Form.Item>
 
                     <Form.Item label="Hình ảnh khóa học (Thumbnail)">
-                        <Space direction="vertical" className="full-width">
+                        <Space direction="vertical" className={styles.fullWidth}>
                             <Input
                                 placeholder="Dán URL ảnh hoặc chọn file"
                                 value={thumbUrl}
@@ -316,11 +322,11 @@ export default function CourseManagement() {
                                         }}
                                         showUploadList={false}
                                     >
-                                        <UploadCloud size={18} className="upload-icon" />
+                                        <UploadCloud size={18} className={styles.uploadIcon} />
                                     </Upload>
                                 }
                             />
-                            {thumbUrl && <img src={thumbUrl} className="thumb-preview" />}
+                            {thumbUrl && <img src={thumbUrl} className={styles.thumbPreview} />}
                         </Space>
                     </Form.Item>
 
