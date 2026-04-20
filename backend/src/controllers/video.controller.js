@@ -9,7 +9,7 @@ const ApiError = require('../utils/ApiError');
  * Upload và bắt đầu xử lý Video
  */
 exports.uploadVideo = catchAsync(async (req, res) => {
-    const { title, section_id, order, video_url } = req.body;
+    const { title, section_id, order, video_url, content } = req.body;
 
     if (!req.file && !video_url) throw new ApiError(400, 'Please upload a video file or provide a video URL');
     if (!section_id) throw new ApiError(400, 'Section ID is required');
@@ -19,6 +19,7 @@ exports.uploadVideo = catchAsync(async (req, res) => {
             title,
             section_id: parseInt(section_id),
             type: 'VIDEO',
+            content: content || null,
             order: order ? parseInt(order) : 0,
             video_url: video_url || null // Set URL right away if they passed string
         }

@@ -154,6 +154,7 @@ export default function LessonManagement() {
                     formData.append('title', values.title);
                     formData.append('section_id', String(values.section_id));
                     formData.append('order', String(values.order || '0'));
+                    formData.append('content', values.content || '');
 
                     if (videoSourceType === 'UPLOAD') {
                         formData.append('video', selectedFile!);

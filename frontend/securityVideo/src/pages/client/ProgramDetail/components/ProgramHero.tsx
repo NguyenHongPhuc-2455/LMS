@@ -1,5 +1,5 @@
-import { Typography, Button, Space } from 'antd';
-import { RocketOutlined, TeamOutlined, BookOutlined, CheckCircleOutlined, LockOutlined } from '@ant-design/icons';
+import { Typography, Button } from 'antd';
+import { TeamOutlined, BookOutlined, CheckCircleOutlined, LockOutlined } from '@ant-design/icons';
 import styles from '../ProgramDetail.module.scss';
 
 const { Title, Paragraph } = Typography;
@@ -26,17 +26,32 @@ export default function ProgramHero({
     return (
         <div className={styles.heroBanner}>
             <div className={styles.heroContent}>
-                <div className={styles.heroHeader}>
-                    <div style={{ flex: 1 }}>
-                        <Title level={1} className={styles.heroTitle} style={{ margin: 0 }}>{program.title}</Title>
+                <div className={styles.heroMainLayout}>
+                    <div className={styles.heroTextSection}>
+                        <Title level={1} className={styles.heroTitle}>{program.title}</Title>
+
+                        {program.description && (
+                            <Paragraph className={styles.heroDescription}>
+                                {program.description}
+                            </Paragraph>
+                        )}
+
+                        <div className={styles.heroStats}>
+                            <div className={styles.statItem}><BookOutlined /> <span>{program._count?.courses || 0} khóa học</span></div>
+                            <div className={styles.statDivider} />
+                            <div className={styles.statItem}><TeamOutlined /> <span>{program._count?.enrollments || 0} học viên</span></div>
+                            <div className={styles.statDivider} />
+                            <div className={styles.statItem}><CheckCircleOutlined /> <span>Tạo bởi <strong>{program.instructor?.full_name}</strong></span></div>
+                        </div>
                     </div>
-                    <div className={styles.heroActionTop}>
+
+                    <div className={styles.heroActionSection}>
+                        <div className={styles.actionGlowEffect} />
                         {program.isEnrolled ? (
                             <Button
                                 type="primary"
-                                size="large"
                                 icon={<CheckCircleOutlined />}
-                                className={`${styles.enrollBtn} ${styles.enrolled}`}
+                                className={`${styles.premiumActionBtn} ${styles.enrolled}`}
                                 onClick={() => {
                                     if (program.currentCourseId) {
                                         navigate(`/course/${program.currentCourseId}`);
@@ -47,17 +62,16 @@ export default function ProgramHero({
                                     }
                                 }}
                             >
-                                Đã đăng ký — Vào học ngay
+                                ĐÃ ĐĂNG KÝ — VÀO HỌC NGAY
                             </Button>
                         ) : program.is_private ? (
                             program.requestStatus === 'PENDING' ? (
-                                <Button size="large" disabled className={styles.enrollBtn}>ĐANG CHỜ PHÊ DUYỆT</Button>
+                                <Button disabled className={styles.premiumActionBtn}>ĐANG CHỜ PHÊ DUYỆT</Button>
                             ) : program.requestStatus === 'REJECTED' ? (
                                 <Button
                                     type="primary"
                                     danger
-                                    size="large"
-                                    className={styles.enrollBtn}
+                                    className={styles.premiumActionBtn}
                                     onClick={handleRequestAccess}
                                     loading={submitting}
                                 >
@@ -66,39 +80,26 @@ export default function ProgramHero({
                             ) : (
                                 <Button
                                     type="primary"
-                                    size="large"
-                                    className={`${styles.enrollBtn} ${styles.privateBtn}`}
+                                    className={`${styles.premiumActionBtn} ${styles.privateBtn}`}
                                     onClick={handleRequestAccess}
                                     loading={submitting}
                                     icon={<LockOutlined />}
                                 >
-                                    ĐĂNG KÝ KHÓA HỌC
+                                    ĐĂNG KÝ THAM GIA
                                 </Button>
                             )
                         ) : (
                             <Button
                                 type="primary"
-                                size="large"
                                 loading={enrolling}
                                 onClick={handleEnroll}
-                                className={styles.enrollBtn}
+                                className={styles.premiumActionBtn}
                             >
-                                Đăng ký miễn phí
+                                BẮT ĐẦU NGAY — MIỄN PHÍ
                             </Button>
                         )}
                     </div>
                 </div>
-
-                {program.description && (
-                    <Paragraph className={styles.heroDescription}>
-                        {program.description}
-                    </Paragraph>
-                )}
-                <Space size={24} className={styles.heroStats}>
-                    <Space><RocketOutlined /> {program._count?.courses || 0} khóa học</Space>
-                    <Space><TeamOutlined /> {program._count?.enrollments || 0} học viên đã đăng ký</Space>
-                    <Space><BookOutlined /> Tạo bởi {program.instructor?.full_name}</Space>
-                </Space>
             </div>
         </div>
     );
