@@ -4,7 +4,6 @@ import {
     PieChartOutlined,
     BookOutlined,
     UserOutlined,
-    MenuOutlined,
     MenuFoldOutlined,
     PlaySquareOutlined,
     ApartmentOutlined,
@@ -17,12 +16,7 @@ import styles from '../AdminLayout.module.scss';
 
 const { Sider } = Layout;
 
-interface AdminSidebarProps {
-    collapsed: boolean;
-    setCollapsed: (collapsed: boolean) => void;
-}
-
-export default function AdminSidebar({ collapsed, setCollapsed }: AdminSidebarProps) {
+export default function AdminSidebar() {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -109,23 +103,10 @@ export default function AdminSidebar({ collapsed, setCollapsed }: AdminSidebarPr
 
     return (
         <Sider
-            trigger={null}
-            collapsible
-            collapsed={collapsed}
             theme="light"
             width={250}
             className={styles.adminSidebar}
         >
-            <div className={`${styles.adminLogoSection} ${collapsed ? styles.collapsed : styles.expanded}`}>
-                <MenuOutlined
-                    className={styles.sidebarToggleIcon}
-                    onClick={() => setCollapsed(!collapsed)}
-                />
-                {!collapsed && (
-                    <img src="/logo/logo.png" alt="Logo" className={styles.adminLogoImg} />
-                )}
-            </div>
-
             <Menu
                 mode="inline"
                 selectedKeys={[location.pathname]}

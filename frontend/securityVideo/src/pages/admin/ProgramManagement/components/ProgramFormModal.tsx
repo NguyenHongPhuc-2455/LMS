@@ -52,7 +52,7 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                     </Col>
                     <Col span={10}>
                         <Form.Item name="level" label="Trình độ" initialValue="Cơ bản">
-                            <Select>
+                            <Select showSearch={false}>
                                 <Option value="Cơ bản">Cơ bản</Option>
                                 <Option value="Trung cấp">Trung cấp</Option>
                                 <Option value="Nâng cao">Nâng cao</Option>
@@ -68,7 +68,7 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="status" label="Trạng thái" initialValue="DRAFT">
-                            <Select>
+                            <Select showSearch={false}>
                                 <Option value="DRAFT">Nháp</Option>
                                 <Option value="PUBLISHED">Phát hành</Option>
                                 <Option value="ARCHIVED">Lưu trữ</Option>
@@ -77,7 +77,7 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                     </Col>
                     <Col span={12}>
                         <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false}>
-                            <Select>
+                            <Select showSearch={false}>
                                 <Option value={false}>Công khai</Option>
                                 <Option value={true}>Riêng tư</Option>
                             </Select>

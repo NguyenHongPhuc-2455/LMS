@@ -117,20 +117,27 @@ export default function CourseManagement() {
                     <Title level={4} className={styles.headerTitle}>Quản lý Khóa học</Title>
                     <Text type="secondary">Tạo và cấu hình các khóa đào tạo</Text>
                 </div>
-                <Button type="primary" onClick={() => { setEditingCourse(null); setIsModalOpen(true); }} icon={<Plus size={16} />}>
-                    Khóa học mới
-                </Button>
             </div>
 
             <Card className="glass-card">
-                <Input
-                    placeholder="Tìm kiếm khóa học..."
-                    prefix={<SearchOutlined />}
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    className={styles.searchInput}
-                    size="small"
-                />
+                <div className={styles.tableHeaderActions}>
+                    <Input
+                        placeholder="Tìm kiếm khóa học..."
+                        prefix={<SearchOutlined />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        className={styles.searchInput}
+                        size="small"
+                    />
+                    <Button
+                        type="primary"
+                        onClick={() => { setEditingCourse(null); setIsModalOpen(true); }}
+                        icon={<Plus size={16} />}
+                        className={styles.adminAddButton}
+                    >
+                        Khóa học mới
+                    </Button>
+                </div>
                 <CourseTable
                     courses={filteredCourses}
                     loading={loading}

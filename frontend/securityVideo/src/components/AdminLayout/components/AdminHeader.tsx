@@ -2,7 +2,6 @@ import { Layout, Input, Badge, Space, Dropdown, Avatar, Popover, List, Typograph
 import {
     SearchOutlined,
     BellOutlined,
-    GlobalOutlined,
     DownOutlined,
     UserOutlined,
     LogoutOutlined,
@@ -19,12 +18,7 @@ dayjs.extend(relativeTime);
 const { Header } = Layout;
 const { Text } = Typography;
 
-interface AdminHeaderProps {
-    user: any;
-    userRoles: any[];
-}
-
-export default function AdminHeader({ user, userRoles }: AdminHeaderProps) {
+export default function AdminHeader({ user }: { user: any }) {
     const navigate = useNavigate();
     const {
         notifications,
@@ -108,50 +102,52 @@ export default function AdminHeader({ user, userRoles }: AdminHeaderProps) {
 
     return (
         <Header className={styles.adminHeader}>
-            <div className={styles.headerSearchWrapper}>
-                <Input
-                    placeholder="Tìm kiếm khóa học, bài viết, video, ..."
-                    prefix={<SearchOutlined />}
-                    className={styles.adminSearchInput}
-                />
+            <div className={styles.headerLeft}>
+                <div className={styles.headerLogoWrapper} onClick={() => navigate('/admin')}>
+                    <img src="/logo/logo.svg" alt="RITA VÕ" className={styles.headerLogoImg} />
+                </div>
             </div>
 
-            <Space size={24} className={styles.headerActions}>
-                <Popover
-                    content={notificationContent}
-                    trigger="click"
-                    placement="bottomRight"
-                    overlayClassName="notification-popover"
-                >
-                    <div style={{ cursor: 'pointer' }}>
-                        <Badge count={unreadCount} size="small" offset={[-2, 5]}>
-                            <BellOutlined className={styles.notificationIcon} />
-                        </Badge>
-                    </div>
-                </Popover>
-
-                <div className={styles.languageSelector}>
-                    <GlobalOutlined className={styles.langIcon} />
-                    <span className={styles.langText}>English</span>
-                    <DownOutlined className={styles.langArrow} />
+            <div className={styles.headerCenter}>
+                <div className={styles.headerSearchWrapper}>
+                    <Input
+                        placeholder="Tìm kiếm..."
+                        prefix={<SearchOutlined />}
+                        allowClear
+                        className={styles.adminSearchInput}
+                    />
                 </div>
+            </div>
 
-                <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
-                    <div className={styles.userProfileDropdown}>
-                        <Avatar
-                            src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'Admin')}&background=4880FF&color=fff`}
-                            size={40}
-                        />
-                        <div className={styles.userInfo}>
-                            <span className={styles.userName}>{user?.full_name || user?.username || 'Admin'}</span>
-                            <span className={styles.userRole}>
-                                {userRoles.map((r: any) => typeof r === 'string' ? r : r.name).join(', ')}
-                            </span>
+            <div className={styles.headerRight}>
+                <Space size={24} className={styles.headerActions}>
+                    <Popover
+                        content={notificationContent}
+                        trigger="click"
+                        placement="bottomRight"
+                        overlayClassName="notification-popover"
+                    >
+                        <div className={styles.notificationTrigger} style={{ cursor: 'pointer' }}>
+                            <Badge count={unreadCount} size="small" offset={[-2, 5]}>
+                                <BellOutlined className={styles.notificationIcon} />
+                            </Badge>
                         </div>
-                        <DownOutlined className={styles.userArrow} />
-                    </div>
-                </Dropdown>
-            </Space>
+                    </Popover>
+
+                    <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
+                        <div className={styles.userProfileDropdown}>
+                            <Badge dot status="success" offset={[-5, 32]}>
+                                <Avatar
+                                    src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'Admin')}&background=4880FF&color=fff`}
+                                    size={40}
+                                />
+                            </Badge>
+                            <span className={styles.userName}>{user?.full_name || user?.username || 'Admin'}</span>
+                            <DownOutlined className={styles.userArrow} />
+                        </div>
+                    </Dropdown>
+                </Space>
+            </div>
         </Header>
     );
 }

@@ -275,6 +275,7 @@ export default function UserManagement() {
                                     type="primary"
                                     icon={<PlusOutlined />}
                                     onClick={() => setIsCreateModalOpen(true)}
+                                    className={styles.adminAddButton}
                                 >
                                     Thêm thành viên
                                 </Button>
@@ -307,7 +308,13 @@ export default function UserManagement() {
                             },
                             showSizeChanger: true,
                             pageSizeOptions: ['10', '20', '50', '100'],
-                            selectProps: { showSearch: false }
+                            selectProps: { showSearch: false },
+                            itemRender: (current: number, type: string, originalElement: any) => {
+                                if (type === 'page') {
+                                    return <a>{current < 10 ? `0${current}` : current}</a>;
+                                }
+                                return originalElement;
+                            }
                         }}
                     />
                 </div>

@@ -49,6 +49,7 @@ export default function UserFormModal({ open, onCancel, onSuccess, roles, loadin
                 </Form.Item>
                 <Form.Item name="gender" label="Giới tính">
                     <Select
+                        showSearch={false}
                         options={[
                             { value: 'Nam', label: 'Nam' },
                             { value: 'Nữ', label: 'Nữ' },
@@ -58,6 +59,7 @@ export default function UserFormModal({ open, onCancel, onSuccess, roles, loadin
                 </Form.Item>
                 <Form.Item name="role_id" label="Vai trò chính" rules={[{ required: true }]}>
                     <Select
+                        showSearch={false}
                         options={roles.map(r => ({ value: r.id, label: r.name.toUpperCase() }))}
                     />
                 </Form.Item>

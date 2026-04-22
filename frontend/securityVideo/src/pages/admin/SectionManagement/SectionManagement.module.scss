@@ -10,13 +10,42 @@
 }
 
 .headerTitle {
-    margin: 0;
+    margin-bottom: 0 !important;
+    color: #1e293b;
+}
+
+.adminAddButton {
+    background-color: #12B76A !important;
+    border-color: #12B76A !important;
+    border-radius: 8px !important;
+    color: white !important;
+    height: 32px !important;
+    padding: 0 16px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    line-height: 1 !important;
+
+    &:hover {
+        background-color: #0e9657 !important;
+        border-color: #0e9657 !important;
+    }
+
+    :global(.anticon),
+    :global(.lucide) {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        transform: translateY(1px);
+    }
 }
 
 .courseSelectorWrapper {
     margin-bottom: 20px;
     display: flex;
-    gap: 12px;
+    justify-content: space-between;
     align-items: center;
 }
 

@@ -91,7 +91,7 @@ exports.requestAccess = catchAsync(async (req, res) => {
         // Cập nhật số lượng cho Admin
         await statsService.emitPendingRequestsCountToAdmins();
     } catch (error) {
-        console.error('❌ Lỗi khi gửi thông báo cho Admin:', error);
+        console.error('Lỗi khi gửi thông báo cho Admin:', error);
     }
 
     res.status(201).json({

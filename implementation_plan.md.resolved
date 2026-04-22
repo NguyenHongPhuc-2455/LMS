@@ -6,7 +6,7 @@ Kế hoạch này tập trung vào việc nâng cấp hiệu năng, bảo mật 
 
 ---
 
-### 🚀 1. Hiệu năng Frontend (Frontend Performance)
+### 1. Hiệu năng Frontend (Frontend Performance)
 Tối ưu hóa tốc độ tải trang ban đầu và giảm kích thước Bundle.
 
 #### [MODIFY] [App.tsx](file:///d:/SercurityVideo/frontend/securityVideo/src/App.tsx)
@@ -17,7 +17,7 @@ Tối ưu hóa tốc độ tải trang ban đầu và giảm kích thước Bund
 
 ---
 
-### 🛡️ 2. Hiệu năng & Bảo mật Backend (Backend Resilience)
+### 2. Hiệu năng & Bảo mật Backend (Backend Resilience)
 Tăng tốc độ truy vấn và gia cố hàng rào bảo mật.
 
 #### [NEW] [Redis Cache Service](file:///d:/SercurityVideo/backend/src/services/cache.service.js)

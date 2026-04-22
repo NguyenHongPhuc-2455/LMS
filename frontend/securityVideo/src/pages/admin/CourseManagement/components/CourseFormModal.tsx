@@ -52,7 +52,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                     </Col>
                     <Col span={12}>
                         <Form.Item name="level" label="Trình độ" initialValue="Cơ bản">
-                            <Select>
+                            <Select showSearch={false}>
                                 <Option value="Cơ bản">Cơ bản</Option>
                                 <Option value="Trung cấp">Trung cấp</Option>
                                 <Option value="Nâng cao">Nâng cao</Option>
@@ -66,7 +66,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                 </Form.Item>
 
                 <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false}>
-                    <Select>
+                    <Select showSearch={false}>
                         <Option value={false}>Công khai (Tự động cấp quyền)</Option>
                         <Option value={true}>Riêng tư (Cần phê duyệt)</Option>
                     </Select>

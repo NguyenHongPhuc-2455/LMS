@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { userService } from '../../services/user.service';
 import { Layout, Input, Avatar, Dropdown, Space, Typography, Badge, Popover, List, Button, Empty } from 'antd';
-import { SearchOutlined, UserOutlined, SettingOutlined, LogoutOutlined, BellOutlined, BookOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, MessageOutlined } from '@ant-design/icons';
+import { SearchOutlined, UserOutlined, SettingOutlined, LogoutOutlined, BellOutlined, BookOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, MessageOutlined, DownOutlined } from '@ant-design/icons';
 import { useNotifications, type Notification } from '../../hooks/useNotifications';
 import { notification as antdNotification } from 'antd';
 import { socketService } from '../../services/socket';
@@ -29,6 +30,24 @@ const AppHeader: React.FC = () => {
         deleteNotification,
         deleteAllNotifications
     } = useNotifications(user?.id);
+
+    const [profile, setProfile] = React.useState<any>(user);
+
+    React.useEffect(() => {
+        const fetchProfile = async () => {
+            if (user) {
+                try {
+                    const data = await userService.getProfile();
+                    setProfile(data);
+                    // Cập nhật lại localStorage để các lần sau không bị lag
+                    localStorage.setItem('user', JSON.stringify(data));
+                } catch (e) {
+                    console.error("Failed to fetch profile in header", e);
+                }
+            }
+        };
+        fetchProfile();
+    }, []);
 
     // Lắng nghe Toast thông báo (riêng cho AppHeader)
     useEffect(() => {
@@ -162,11 +181,13 @@ const AppHeader: React.FC = () => {
                 setSearchTerm('');
                 navigate('/course');
             }}>
-                <img src="/logo/logo.png" alt="Logo" className={styles.logoImg} />
+                <img src="/logo/logo.svg" alt="Logo" className={styles.logoImg} />
             </div>
 
-            {/* Middle: Search */}
-            <div className={styles.headerSearchMiddle}>
+            <div></div>
+
+            {/* Right: User */}
+            <Space size={24}>
                 <div className={styles.searchInputWrapper}>
                     <Input
                         placeholder="Tìm kiếm khóa học, bài viết, video, ..."
@@ -176,10 +197,6 @@ const AppHeader: React.FC = () => {
                         className={styles.appSearchInput}
                     />
                 </div>
-            </div>
-
-            {/* Right: User */}
-            <Space size={24}>
                 <Popover
                     content={notificationContent}
                     trigger="click"
@@ -195,12 +212,18 @@ const AppHeader: React.FC = () => {
                 </Popover>
 
                 <Dropdown menu={userMenuItems} trigger={['click']}>
-                    <Avatar
-                        src={user?.avatar}
-                        icon={<UserOutlined />}
-                        className={styles.headerUserAvatar}
-                        size={38}
-                    />
+                    <div className={styles.userProfileTrigger}>
+                        <Avatar
+                            src={user?.avatar}
+                            icon={<UserOutlined />}
+                            className={styles.headerUserAvatar}
+                            size={38}
+                        />
+                        <Text strong className={styles.headerUserName}>
+                            {profile?.full_name || profile?.username || 'User'}
+                        </Text>
+                        <DownOutlined className={styles.chevronIcon} />
+                    </div>
                 </Dropdown>
             </Space>
         </Header>

@@ -15,7 +15,7 @@ const AppFooter: React.FC = () => {
                 <Col lg={6} md={12} span={24}>
                     <Space orientation="vertical" size={16}>
                         <div className={styles.footerLogoWrapper}>
-                            <img src="/logo/logo.png" alt="Logo" className={styles.footerLogo} />
+                            <img src="/logo/logo.svg" alt="Logo" className={styles.footerLogo} />
                         </div>
                         <Space orientation="vertical" size={8}>
                             <Text className={styles.footerContactText}>Điện thoại: 0246.329.1102</Text>

@@ -235,6 +235,16 @@ export default function LessonManagement() {
                     <Title level={4} className={styles.headerTitle}>Quản lý Bài Giảng</Title>
                     <Text type="secondary">Cập nhật nội dung video, trắc nghiệm và tài liệu học tập</Text>
                 </div>
+            </div>
+
+            <LessonFilter
+                courses={courses}
+                sections={sections}
+                selectedCourseId={selectedCourseId}
+                selectedSectionId={selectedSectionId}
+                onCourseChange={setSelectedCourseId}
+                onSectionChange={setSelectedSectionId}
+            >
                 <Button
                     type="primary"
                     disabled={!selectedSectionId}
@@ -249,19 +259,11 @@ export default function LessonManagement() {
                         setIsModalOpen(true);
                     }}
                     icon={<Plus size={16} />}
+                    className={styles.adminAddButton}
                 >
                     Đăng bài giảng mới
                 </Button>
-            </div>
-
-            <LessonFilter
-                courses={courses}
-                sections={sections}
-                selectedCourseId={selectedCourseId}
-                selectedSectionId={selectedSectionId}
-                onCourseChange={setSelectedCourseId}
-                onSectionChange={setSelectedSectionId}
-            />
+            </LessonFilter>
 
             <Card className="glass-card">
                 {!selectedSectionId ? (

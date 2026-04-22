@@ -49,6 +49,10 @@ export default function SectionTable({
         {
             title: 'Tiêu đề chương',
             dataIndex: 'title',
+            sorter: (a: Section, b: Section) => a.title.localeCompare(b.title),
+            filters: sections.map(s => ({ text: s.title, value: s.id })),
+            filterSearch: true,
+            onFilter: (value: any, record: Section) => record.id === value,
             render: (text: string, record: Section) => (
                 <span
                     className={styles.sectionTitleLink}
@@ -84,6 +88,21 @@ export default function SectionTable({
             loading={loading}
             rowKey="id"
             columns={columns}
+            pagination={{
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+                defaultPageSize: 10,
+                selectProps: { showSearch: false },
+                itemRender: (current: number, type: string, originalElement: any) => {
+                    if (type === 'page') {
+                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                    }
+                    return originalElement;
+                }
+            } as any}
+            scroll={{ y: 500 }}
+            virtual
+            bordered
         />
     );
 }

@@ -181,16 +181,20 @@ export default function ProgramManagement() {
                     <Title level={4} className={styles.title}>Quản lý Chương trình học</Title>
                     <Text type="secondary">Gom nhiều khóa học thành lộ trình đào tạo</Text>
                 </div>
-                <Button type="primary" icon={<Plus size={16} />}
-                    onClick={() => { setEditingProgram(null); setIsModalOpen(true); }}>
-                    Chương trình mới
-                </Button>
             </div>
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
                     <Input placeholder="Tìm kiếm chương trình..." prefix={<SearchOutlined />}
                         value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} size="small" />
+                    <Button
+                        type="primary"
+                        icon={<Plus size={16} />}
+                        onClick={() => { setEditingProgram(null); setIsModalOpen(true); }}
+                        className={styles.adminAddButton}
+                    >
+                        Chương trình mới
+                    </Button>
                 </div>
                 <ProgramTable
                     programs={filtered}
