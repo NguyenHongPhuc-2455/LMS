@@ -8,7 +8,7 @@ import {
 import {
   CourseDetail, CourseLearning, CourseList,
   MyCourses, MyPrograms,
-  Profile, ProgramDetail, ProgramList
+  Profile, ProgramDetail, ProgramList, Contact
 } from '@/pages/client';
 import { MainLayout, AdminLayout } from '@/components';
 
@@ -35,7 +35,7 @@ function App() {
           borderRadius: 12,
           colorBgContainer: '#ffffff',
           colorBgLayout: '#f8fafc',
-          fontFamily: "'Outfit', 'Inter', sans-serif",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         },
       }}
     >
@@ -59,6 +59,7 @@ function App() {
               <Route path="/programs" element={<ProgramList />} />
               <Route path="/programs/:id" element={<ProgramDetail />} />
               <Route path="/my-programs" element={<MyPrograms />} />
+              <Route path="/contact" element={<Contact />} />
             </Route>
 
             {/* Admin Routes with DashStack Layout */}

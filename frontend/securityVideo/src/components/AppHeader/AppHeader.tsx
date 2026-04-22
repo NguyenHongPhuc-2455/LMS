@@ -61,7 +61,8 @@ const AppHeader: React.FC = () => {
     }, [user?.id]);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         navigate('/login');
     };
@@ -187,7 +188,7 @@ const AppHeader: React.FC = () => {
                     getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                 >
                     <div title="Thông báo" className={styles.headerNotifTrigger}>
-                        <Badge dot={unreadCount > 0} offset={[2, 0]}>
+                        <Badge count={unreadCount} offset={[2, 0]}>
                             <BellOutlined />
                         </Badge>
                     </div>

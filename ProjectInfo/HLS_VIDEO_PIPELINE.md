@@ -25,6 +25,12 @@ Tài liệu này giải thích chi tiết cách hệ thống **chuyển đổi f
 5. Gọi `videoService.processVideoToHLS(lessonId, filePath)` chạy **ngầm trong background**.
 6. Trả về `202 Accepted` ngay lập tức (không chờ FFmpeg xong).
 
+### 1.1 Các hình thức Source khác (Không băm)
+Nếu Admin dán **Link** trực tiếp:
+- **YouTube**: Phát qua VideoJs-Youtube.
+- **MP4 Link**: Phát trực tiếp qua trình phát link server.
+- **HLS Link (.m3u8)**: Phát qua Shaka Player (Giữ nguyên link nếu là link ngoại `http`, tự thêm host nếu là link nội bộ).
+
 ```javascript
 // video.controller.js
 const lesson = await prisma.lesson.create({
@@ -86,6 +92,13 @@ const ffmpegArgs = [
 ];
 ```
 
+### 2.4 Cơ chế giảm dung lượng (Compression & Scaling)
+Hệ thống không chỉ băm mà còn nén video để tiết kiệm dung lượng server:
+- **Chuẩn hóa độ phân giải (`scale=1280:720`)**: Tự động hạ độ phân giải về 720p (HD). Nếu upload video 4K hoặc 1080p, file sẽ được thu nhỏ để giảm tải.
+- **Codec H.264 (`libx264`)**: Chuẩn nén phổ biến nhất, cho chất lượng tốt ở dung lượng thấp.
+- **Tham số CRF (`-crf 26`)**: Quyết định mức độ nén. CRF=26 là mức nén tối ưu (kích thước file giảm từ 50-80% so với gốc) mà mắt thường vẫn thấy sắc nét.
+- **Nén âm thanh (`aac`, `128k`)**: Chuyển đổi audio sang AAC 128kbps để tiết kiệm bộ nhớ.
+
 ### 2.4 Kết quả sau khi FFmpeg chạy xong
 
 Thư mục `backend/public/hls/{lessonId}/` sẽ chứa:
@@ -101,6 +114,15 @@ backend/public/hls/38/
 ```
 
 > **Lưu ý**: File `enc.key` và `enc.keyinfo` bị **xóa ngay** sau khi FFmpeg xong. Key chỉ còn tồn tại trong DB.
+
+### 2.5 Cơ chế Băm theo yêu cầu (Lazy Transcoding)
+**File**: `video.service.js` → `ensureHLS()`
+
+Nếu một bải học có `source_url` (link gốc) nhưng chưa có file HLS vật lý trên ổ cứng (do bị xóa hoặc chưa băm):
+1. Khi học viên truy cập, Backend gọi `ensureHLS`.
+2. Hệ thống tự động tải file từ `source_url` về thư mục tạm.
+3. Kích hoạt quy trình băm HLS ngầm.
+4. Trình duyệt nhận mã `202 Processing` và tự động retry sau vài giây cho đến khi `master.m3u8` xuất hiện.
 
 ---
 
@@ -189,16 +211,24 @@ Shaka Player sử dụng **Request Filter** để tự động gắn Token vào 
 
 ```typescript
 player.getNetworkingEngine().registerRequestFilter((type, request) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        request.headers['Authorization'] = `Bearer ${token}`;
+    const uri = request.uris[0];
+    // Chỉ gắn Token nếu là request tới Server của mình (localhost:5000)
+    const isInternal = uri.startsWith('http://localhost:5000') || uri.startsWith('/');
+
+    if (isInternal) {
+        const token = localStorage.getItem('accessToken');
+        if (token) request.headers['Authorization'] = `Bearer ${token}`;
+        request.allowCrossSiteCredentials = true;
     }
-    // Thêm timestamp chống cache
-    if (type === MANIFEST || request.uris[0].includes('/key/')) {
-        request.uris[0] += '?t=' + Date.now();
+
+    // Thêm timestamp chống cache cho Manifest và Key
+    if (type === MANIFEST || uri.includes('/key/')) {
+        request.uris[0] += (uri.includes('?') ? '&' : '?') + 't=' + Date.now();
     }
 });
 ```
+
+> **Tại sao cần IsInternal?** Nếu không kiểm tra, Shaka sẽ gửi Authorization Header sang cả các server ngoại (như YouTube hay link HLS ngoài), dẫn đến lỗi CORS hoặc bị từ chối kết nối.
 
 ### 5.3 Backend trả Key
 

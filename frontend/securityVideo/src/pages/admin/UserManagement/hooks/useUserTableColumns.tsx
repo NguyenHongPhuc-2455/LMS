@@ -25,7 +25,7 @@ interface UserData {
     created_at: string;
     updated_at: string;
     enrollments_count: number;
-    enrolled_courses: string[];
+    enrolled_courses: { id: number; title: string }[];
 }
 
 type DataIndex = keyof UserData;

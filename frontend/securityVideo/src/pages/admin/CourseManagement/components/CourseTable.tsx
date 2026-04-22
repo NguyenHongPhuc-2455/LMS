@@ -1,4 +1,4 @@
-import { Table, Space, Typography, Badge, Tag, Button, Popconfirm, DatePicker } from 'antd';
+import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select } from 'antd';
 import { CalendarOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -25,9 +25,10 @@ interface CourseTableProps {
     onEdit: (course: Course) => void;
     onDelete: (id: number) => void;
     onNavigateToSections: (id: number) => void;
+    onStatusChange: (id: number, isPrivate: boolean) => void;
 }
 
-export default function CourseTable({ courses, loading, onEdit, onDelete, onNavigateToSections }: CourseTableProps) {
+export default function CourseTable({ courses, loading, onEdit, onDelete, onNavigateToSections, onStatusChange }: CourseTableProps) {
     const columns = [
         {
             title: 'Khóa học',
@@ -55,16 +56,30 @@ export default function CourseTable({ courses, loading, onEdit, onDelete, onNavi
         {
             title: 'Trạng thái',
             dataIndex: 'is_private',
-            width: 120,
+            width: 140,
             filters: [
                 { text: 'RIÊNG TƯ', value: true },
                 { text: 'CÔNG KHAI', value: false },
             ],
             onFilter: (value: any, record: Course) => record.is_private === value,
-            render: (isPrivate: boolean) => (
-                <Tag color={isPrivate ? 'purple' : 'green'} className={styles.statusTag}>
-                    {isPrivate ? 'RIÊNG TƯ' : 'CÔNG KHAI'}
-                </Tag>
+            render: (isPrivate: boolean, record: Course) => (
+                <Select
+                    value={isPrivate}
+                    onChange={(val) => onStatusChange(record.id, val)}
+                    className={styles.statusSelect}
+                    size="small"
+                    popupClassName={styles.statusPopup}
+                    options={[
+                        {
+                            value: true,
+                            label: 'RIÊNG TƯ'
+                        },
+                        {
+                            value: false,
+                            label: 'CÔNG KHAI'
+                        }
+                    ]}
+                />
             )
         },
         {

@@ -1,40 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { List, Avatar, Button, Input, message, Typography, Space, Popconfirm } from 'antd';
-import { SendOutlined, MessageOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { List, message, Typography } from 'antd';
+import { MessageOutlined } from '@ant-design/icons';
 import { commentService } from '../../services/comment.service';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
-
-dayjs.extend(relativeTime);
-dayjs.locale('vi');
+import type { Comment, User } from './types';
+import CommentInput from './components/CommentInput';
+import CommentItem from './components/CommentItem';
 import styles from './CommentSection.module.scss';
 
-
-const { Title, Text } = Typography;
-const { TextArea } = Input;
-
-interface User {
-    id: number;
-    full_name: string;
-    avatar: string;
-    username: string;
-}
-
-interface Comment {
-    id: number;
-    content: string;
-    user_id: number;
-    lesson_id: number;
-    parent_id: number | null;
-    created_at: string;
-    user: User;
-    replies?: Comment[];
-}
+const { Title } = Typography;
 
 interface CommentSectionProps {
     lessonId: number;
-    currentUser: any;
+    currentUser: User | null;
 }
 
 const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }) => {
@@ -42,15 +19,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [content, setContent] = useState('');
-    const [replyTo, setReplyTo] = useState<number | null>(null);
-    const [replyContent, setReplyContent] = useState('');
     const [expandedComments, setExpandedComments] = useState<number[]>([]);
-
-    const toggleExpand = (id: number) => {
-        setExpandedComments(prev =>
-            prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
-        );
-    };
 
     const fetchComments = useCallback(async () => {
         setLoading(true);
@@ -59,7 +28,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
             setComments(data);
         } catch (error: any) {
             console.error('Fetch comments error:', error);
-            // message.error('Không thể tải bình luận');
         } finally {
             setLoading(false);
         }
@@ -68,9 +36,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
     useEffect(() => {
         if (lessonId) {
             fetchComments();
-            setReplyTo(null);
             setContent('');
-            setExpandedComments([]); // Reset expansion when lesson changes
+            setExpandedComments([]);
         }
     }, [lessonId, fetchComments]);
 
@@ -96,18 +63,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                     if (parentIds.length > 0) {
                         setExpandedComments(prev => [...new Set([...prev, ...parentIds])]);
                     }
-                    // Đợi DOM render xong các comment con mới scroll
                     setTimeout(() => {
                         const el = document.getElementById(`comment-${targetId}`);
                         if (el) {
                             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            // Highlight hiệu ứng nhẹ
                             const originalBg = el.style.background;
                             el.style.transition = 'background 0.5s';
-                            el.style.background = '#fef9c3'; // Vàng nhạt highlight
+                            el.style.background = '#fef9c3'; 
                             setTimeout(() => {
                                 el.style.background = originalBg;
-                                // Xóa hash khỏi URL để không bị highlight lại nếu quay lại bài học này
                                 if (window.location.hash === hash) {
                                     window.history.replaceState(null, '', window.location.pathname + window.location.search);
                                 }
@@ -119,9 +83,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
         }
     }, [comments]);
 
-    const handleSubmit = async (parentId?: number) => {
-        const text = parentId ? replyContent : content;
-        if (!text.trim()) return;
+    const handleSubmit = async (parentId?: number, text?: string) => {
+        const finalContent = text || content;
+        if (!finalContent.trim()) return;
 
         if (!currentUser) {
             message.warning('Vui lòng đăng nhập để bình luận');
@@ -132,15 +96,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
         try {
             await commentService.create({
                 lesson_id: lessonId,
-                content: text,
+                content: finalContent,
                 parent_id: parentId
             });
             message.success('Đã gửi bình luận');
             if (parentId) {
-                setReplyTo(null);
-                setReplyContent('');
-                // Tự động mở rộng nếu đang bị ẩn
-                if (parentId && !expandedComments.includes(parentId)) {
+                if (!expandedComments.includes(parentId)) {
                     setExpandedComments(prev => [...prev, parentId]);
                 }
             } else {
@@ -164,112 +125,19 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
         }
     };
 
-    const renderCommentItem = (item: Comment, level = 0) => {
-        const isAdmin = currentUser?.roles?.includes('admin');
-        const isOwner = currentUser?.id === item.user_id;
-        const isExpanded = expandedComments.includes(item.id);
+    const handleUpdate = async (id: number, updatedContent: string) => {
+        try {
+            await commentService.update(id, { content: updatedContent });
+            message.success('Đã cập nhật bình luận');
+            fetchComments();
+        } catch (error: any) {
+            message.error('Lỗi khi cập nhật bình luận');
+        }
+    };
 
-        return (
-            <div key={item.id} id={`comment-${item.id}`} className={`${styles.commentItem} ${level > 0 ? styles.reply : ''}`}>
-                <div className={styles.commentItemContent}>
-                    <Avatar
-                        src={item.user.avatar}
-                        icon={<UserOutlined />}
-                        size={level > 0 ? 'small' : 'default'}
-                    />
-                    <div className={styles.commentBody}>
-                        <div className={styles.commentItemHeader}>
-                            <Space size={8}>
-                                <Text strong className={styles.commentAuthorName}>{item.user.full_name || item.user.username}</Text>
-                                <Text type="secondary" className={styles.commentTime}>
-                                    {dayjs(item.created_at).fromNow()}
-                                </Text>
-                            </Space>
-                            {(isOwner || isAdmin) && (
-                                <Popconfirm
-                                    title="Xóa bình luận"
-                                    description="Bạn có chắc chắn muốn xóa bình luận này?"
-                                    onConfirm={() => handleDelete(item.id)}
-                                    okText="Xóa"
-                                    cancelText="Hủy"
-                                >
-                                    <Button type="text" danger icon={<DeleteOutlined />} size="small" />
-                                </Popconfirm>
-                            )}
-                        </div>
-                        <Text className={styles.commentText}>{item.content}</Text>
-
-                        <div className={styles.commentActions}>
-                            <Button
-                                type="text"
-                                size="small"
-                                icon={<MessageOutlined />}
-                                onClick={() => {
-                                    if (replyTo === item.id) {
-                                        setReplyTo(null);
-                                    } else {
-                                        setReplyTo(item.id);
-                                        setReplyContent('');
-                                    }
-                                }}
-                                className={styles.commentReplyBtn}
-                            >
-                                Phản hồi
-                            </Button>
-                        </div>
-
-                        {replyTo === item.id && (
-                            <div className={styles.commentReplyInputWrapper}>
-                                <TextArea
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    placeholder={`Phản hồi tới ${item.user.full_name || item.user.username}...`}
-                                    autoSize={{ minRows: 2, maxRows: 4 }}
-                                    className={styles.replyTextarea}
-                                />
-                                <Space>
-                                    <Button
-                                        type="primary"
-                                        size="small"
-                                        onClick={() => handleSubmit(item.id)}
-                                        loading={submitting}
-                                        icon={<SendOutlined />}
-                                    >
-                                        Gửi
-                                    </Button>
-                                    <Button size="small" onClick={() => setReplyTo(null)}>Hủy</Button>
-                                </Space>
-                            </div>
-                        )}
-
-                        {item.replies && item.replies.length > 0 && (
-                            <div className={`${styles.repliesContainer} ${level < 1 ? styles.level0 : ''}`}>
-                                {!isExpanded ? (
-                                    <Button
-                                        type="text"
-                                        onClick={() => toggleExpand(item.id)}
-                                        className={styles.viewRepliesBtn}
-                                    >
-                                        <div className={styles.btnLine}></div>
-                                        Xem {item.replies.length} phản hồi...
-                                    </Button>
-                                ) : (
-                                    <>
-                                        {item.replies.map(reply => renderCommentItem(reply, level + 1))}
-                                        <Button
-                                            type="text"
-                                            onClick={() => toggleExpand(item.id)}
-                                            className={styles.hideRepliesBtn}
-                                        >
-                                            Ẩn phản hồi
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+    const toggleExpand = (id: number) => {
+        setExpandedComments(prev =>
+            prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
         );
     };
 
@@ -279,31 +147,28 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                 <MessageOutlined /> Bình luận ({comments.length + comments.reduce((acc, curr) => acc + (curr.replies?.length || 0), 0)})
             </Title>
 
-            <div className={styles.commentInputWrapper}>
-                <TextArea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Bạn có thắc mắc gì về bài học này không?"
-                    autoSize={{ minRows: 3, maxRows: 6 }}
-                    className={styles.commentTextarea}
-                />
-                <div className={styles.commentSubmitBtnWrapper}>
-                    <Button
-                        type="primary"
-                        icon={<SendOutlined />}
-                        onClick={() => handleSubmit()}
-                        loading={submitting}
-                        className={styles.commentSubmitBtn}
-                    >
-                        Gửi câu hỏi
-                    </Button>
-                </div>
-            </div>
+            <CommentInput
+                value={content}
+                onChange={setContent}
+                onSubmit={() => handleSubmit()}
+                submitting={submitting}
+            />
 
             <List
                 loading={loading}
                 dataSource={comments}
-                renderItem={(item) => renderCommentItem(item)}
+                renderItem={(item) => (
+                    <CommentItem
+                        item={item}
+                        currentUser={currentUser}
+                        expandedComments={expandedComments}
+                        toggleExpand={toggleExpand}
+                        onDelete={handleDelete}
+                        onUpdate={handleUpdate}
+                        onReply={handleSubmit}
+                        submitting={submitting}
+                    />
+                )}
                 locale={{ emptyText: 'Chưa có bình luận nào cho bài học này.' }}
             />
         </div>
@@ -311,5 +176,3 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
 };
 
 export default CommentSection;
-
-

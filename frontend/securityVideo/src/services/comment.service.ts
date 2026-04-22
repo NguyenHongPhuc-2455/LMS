@@ -12,5 +12,9 @@ export const commentService = {
     delete: async (id: number) => {
         const response = await api.delete(`/comments/${id}`);
         return response.data;
+    },
+    update: async (id: number, data: { content: string }) => {
+        const response = await api.put(`/comments/${id}`, data);
+        return response.data;
     }
 };

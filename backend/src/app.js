@@ -17,9 +17,11 @@ const programRoutes = require('./routes/program.routes');
 const programRequestRoutes = require('./routes/programRequest.routes');
 const sectionRoutes = require('./routes/section.routes');
 
+const { globalLimiter } = require('./middlewares/rateLimiter');
+
 const app = express();
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'];
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -33,7 +35,11 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
 app.use(express.json());
+
+// Global Rate Limiting - Move AFTER CORS
+app.use(globalLimiter);
 
 // Ép cấu hình chèn Headers cho luồng HLS m3u8/ts để chống lại bảo mật khắt khe của trình duyệt
 app.use('/public', express.static(path.join(__dirname, '../public'), {

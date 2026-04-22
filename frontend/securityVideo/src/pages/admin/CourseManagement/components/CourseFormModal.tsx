@@ -101,6 +101,10 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                     <Input.TextArea rows={3} />
                 </Form.Item>
 
+                <Form.Item name="requirements" label="Yêu cầu (Mỗi dòng một ý)">
+                    <Input.TextArea rows={3} />
+                </Form.Item>
+
                 <Button type="primary" htmlType="submit" block size="large">Hoàn tất</Button>
             </Form>
         </Modal>

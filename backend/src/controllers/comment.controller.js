@@ -34,3 +34,12 @@ exports.deleteComment = catchAsync(async (req, res) => {
     await commentService.deleteComment(id, userId, isAdmin);
     res.json({ message: 'Đã xóa bình luận' });
 });
+
+exports.updateComment = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { content } = req.body;
+
+    const comment = await commentService.updateComment(id, userId, { content });
+    res.json(comment);
+});

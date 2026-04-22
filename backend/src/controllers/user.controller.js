@@ -5,19 +5,38 @@ const hashPassword = (password) => crypto.createHash('sha256').update(password).
 
 exports.getUsers = async (req, res) => {
     try {
-        const users = await prisma.user.findMany({
-            where: { deleted_at: null },
-            include: {
-                user_roles: { include: { role: true } },
-                enrollments: {
-                    include: {
-                        course: { select: { title: true } }
-                    }
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const skip = (page - 1) * limit;
+
+        const where = {
+            deleted_at: null,
+            OR: [
+                { username: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+                { full_name: { contains: search, mode: 'insensitive' } }
+            ]
+        };
+
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                include: {
+                    user_roles: { include: { role: true } },
+                    enrollments: {
+                        include: {
+                            course: { select: { title: true } }
+                        }
+                    },
+                    _count: { select: { enrollments: true } }
                 },
-                _count: { select: { enrollments: true } }
-            },
-            orderBy: { id: 'desc' }
-        });
+                skip,
+                take: limit,
+                orderBy: { id: 'desc' }
+            }),
+            prisma.user.count({ where })
+        ]);
 
         // Flatten roles for easier frontend consumption
         const safeUsers = users.map(u => {
@@ -26,11 +45,47 @@ exports.getUsers = async (req, res) => {
                 ...data,
                 roles: user_roles.map(ur => ur.role),
                 enrollments_count: u._count.enrollments,
-                enrolled_courses: enrollments.map(e => e.course.title)
+                enrolled_courses: enrollments.map(e => ({ id: e.course_id, title: e.course.title }))
             };
         });
 
-        res.json(safeUsers);
+        res.json({
+            users: safeUsers,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.revokeCourseAccess = async (req, res) => {
+    try {
+        const { userId, courseId } = req.body;
+        if (!userId || !courseId) {
+            return res.status(400).json({ error: 'Thiếu thông tin người dùng hoặc khóa học' });
+        }
+
+        // 1. Xóa Enrollment
+        await prisma.enrollment.deleteMany({
+            where: {
+                user_id: parseInt(userId),
+                course_id: parseInt(courseId)
+            }
+        });
+
+        // 2. Cập nhật Request tương ứng (nếu có)
+        await prisma.courseRequest.updateMany({
+            where: {
+                user_id: parseInt(userId),
+                course_id: parseInt(courseId),
+                status: 'APPROVED'
+            },
+            data: { status: 'REJECTED' }
+        });
+
+        res.json({ message: 'Đã thu hồi quyền truy cập khóa học thành công' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

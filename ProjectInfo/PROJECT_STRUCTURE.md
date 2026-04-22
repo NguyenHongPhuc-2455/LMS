@@ -34,7 +34,7 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   ├── routes/                # Luồng API
 │   │   │   ├── comment.routes.js      # /api/comments/*
 │   │   │   └── notification.routes.js # /api/notifications/*
-│   │   ├── middlewares/           # Auth, Upload, Error Handler
+│   │   ├── middlewares/           # Auth, Upload, validate, rateLimiter, Error Handler
 │   │   ├── utils/                 # ApiError, catchAsync, socket.js
 │   │   └── app.js                 # Cấu hình Express
 │   ├── scripts/                   # Các script quản lý database, seed dữ liệu
@@ -45,7 +45,7 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   ├── styles/                # Global Style System (Variables, Mixins, Global SCSS)
 │   │   ├── components/            # Modular Components (Sử dụng Absolute Import @/components)
 │   │   ├── hooks/                 # Custom React Hooks
-│   │   ├── pages/                 # Phân chia theo vai trò (Admin/Client)
+│   │   ├── pages/                 # Phân chia theo vai trò (Admin/Client/Contact)
 │   │   ├── services/              # API Client (axios instances)
 │   │   ├── App.tsx                # SPA Routing & Absolute Imports Config
 │   │   └── main.tsx               # Entry point nạp global styles

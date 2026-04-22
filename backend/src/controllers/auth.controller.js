@@ -6,21 +6,7 @@ const hashPassword = (password) => crypto.createHash('sha256').update(password).
 
 exports.register = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
-
-        // Validation cơ bản
-        if (!username || !email || !password) return res.status(400).json({ error: 'Vui lòng nhập đủ thông tin' });
-
-        // Validate Email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) return res.status(400).json({ error: 'Email không hợp lệ' });
-
-        // Validate Username
-        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-        if (!usernameRegex.test(username)) return res.status(400).json({ error: 'Username phải từ 3-20 ký tự và không có ký tự đặc biệt' });
-
-        // Validate Password
-        if (password.length < 6) return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 6 ký tự' });
+        const { username, email, password, full_name } = req.body;
 
         const existingUser = await prisma.user.findFirst({
             where: { OR: [{ username }, { email }] }
@@ -37,6 +23,7 @@ exports.register = async (req, res) => {
             data: {
                 username,
                 email,
+                full_name,
                 password_hash: hashPassword(password),
                 user_roles: {
                     create: { role_id: studentRole.id }
@@ -47,6 +34,16 @@ exports.register = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Lỗi server: ' + error.message });
     }
+};
+
+const generateTokens = (payload) => {
+    const defaultSecret = 'super_secret_key_123';
+    const secret = process.env.JWT_SECRET || defaultSecret;
+
+    const accessToken = jwt.sign(payload, secret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign(payload, secret, { expiresIn: '7d' });
+
+    return { accessToken, refreshToken };
 };
 
 exports.login = async (req, res) => {
@@ -62,14 +59,45 @@ exports.login = async (req, res) => {
         }
 
         const roleNames = user.user_roles.map(ur => ur.role.name);
+        const payload = { id: user.id, username: user.username, roles: roleNames };
+
+        const { accessToken, refreshToken } = generateTokens(payload);
+
+        res.json({
+            message: 'Đăng nhập thành công',
+            accessToken,
+            refreshToken,
+            user: { id: user.id, username: user.username, roles: roleNames }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Lỗi server: ' + error.message });
+    }
+};
+
+exports.refresh = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(401).json({ error: 'Refresh Token là bắt buộc' });
+        }
 
         const defaultSecret = 'super_secret_key_123';
-        const token = jwt.sign(
-            { id: user.id, username: user.username, roles: roleNames },
-            process.env.JWT_SECRET || defaultSecret,
-            { expiresIn: '1d' }
-        );
-        res.json({ message: 'Đăng nhập thành công', token, user: { id: user.id, username: user.username, roles: roleNames } });
+        const secret = process.env.JWT_SECRET || defaultSecret;
+
+        // Verify Refresh Token
+        let payload;
+        try {
+            payload = jwt.verify(refreshToken, secret);
+        } catch (err) {
+            return res.status(403).json({ error: 'Refresh Token không hợp lệ hoặc đã hết hạn' });
+        }
+
+        // Tạo Access Token mới (Xóa các field iat và exp cũ của payload)
+        const newPayload = { id: payload.id, username: payload.username, roles: payload.roles };
+        const accessToken = jwt.sign(newPayload, secret, { expiresIn: '15m' });
+
+        res.json({ accessToken });
     } catch (error) {
         res.status(500).json({ error: 'Lỗi server: ' + error.message });
     }

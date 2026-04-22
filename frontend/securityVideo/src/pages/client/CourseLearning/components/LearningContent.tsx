@@ -77,6 +77,7 @@ export default function LearningContent({
                 content={activeLesson?.content}
                 isExpanded={isExpanded}
                 setIsExpanded={setIsExpanded}
+                type={activeLesson?.type}
             />
 
             <LessonAttachment

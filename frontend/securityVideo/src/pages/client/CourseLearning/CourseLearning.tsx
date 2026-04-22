@@ -128,6 +128,10 @@ export default function CourseLearning() {
         if (!location.hash) {
             window.scrollTo({ top: 0, behavior: 'auto' });
         }
+        // Đồng bộ URL với bài học hiện tại để tránh việc fetchDetail làm nhảy bài
+        if (activeLesson?.id && initialLessonId !== activeLesson.id.toString()) {
+            navigate(`/course/${id}/learning?lessonId=${activeLesson.id}`, { replace: true });
+        }
     }, [activeLesson?.id]);
 
     useEffect(() => {
@@ -150,12 +154,16 @@ export default function CourseLearning() {
 
     const handleNextLesson = () => {
         if (!course || !activeLesson) return;
+
+        // 1. Thông báo hoàn thành bài học
+        message.success({
+            content: 'Chúc mừng! Bạn đã hoàn thành bài học và bài tiếp theo đã được mở khóa.',
+            duration: 4,
+            key: 'lesson-complete'
+        });
+
+        // 2. Tải lại dữ liệu bài học để cập nhật trạng thái tích xanh và mở khóa trên Sidebar
         fetchDetail();
-        const allLessons = course.sections.flatMap(s => s.lessons);
-        const currentIndex = allLessons.findIndex(l => l.id === activeLesson.id);
-        if (currentIndex === allLessons.length - 1) {
-            message.success('Bạn đã hoàn thành toàn bộ khóa học!');
-        }
     };
 
     if (loading) return <div className={styles.learningLoading}><Skeleton active /></div>;

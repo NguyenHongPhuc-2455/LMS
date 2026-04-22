@@ -3,7 +3,13 @@
 Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về mặc định là **JSON**.
 
 - **Base URL**: `http://localhost:5000/api`
-- **Authentication**: Sử dụng Bearer Token (`Authorization: Bearer <token>`) cho các Endpoint yêu cầu đăng nhập.
+- **Authentication**: Sử dụng Bearer Token (`Authorization: Bearer <accessToken>`).
+- **Token Strategy**: 
+    - `accessToken`: Hết hạn sau 15 phút. Dùng để truy cập tài nguyên.
+    - `refreshToken`: Hết hạn sau 7 ngày. Dùng để lấy `accessToken` mới khi hết hạn.
+- **Rate Limiting**: 
+    - Toàn hệ thống: Tối đa 100 req / 15 phút / IP.
+    - Auth (Login/Register): Tối đa 20 req / 1 giờ / IP.
 
 ---
 
@@ -13,6 +19,8 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | :--- | :--- | :--- | :--- |
 | POST | `/register` | Đăng ký tài khoản | `{ username, email, password }` |
 | POST | `/login` | Đăng nhập hệ thống | `{ email, password }` |
+| POST | `/refresh-token` | Lấy Access Token mới bằng Refresh Token | `{ refreshToken }` |
+| POST | `/logout` | Đăng xuất (xóa Refresh Token khỏi DB) | `{ refreshToken }` |
 
 ---
 
@@ -149,4 +157,5 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 - `401 Unauthorized`: Token sai hoặc hết hạn.
 - `403 Forbidden`: Không có quyền truy cập.
 - `404 Not Found`: Không tìm thấy tài nguyên.
+- `429 Too Many Requests`: Vượt quá giới hạn Rate Limit.
 - `500 Server Error`: Lỗi hệ thống.

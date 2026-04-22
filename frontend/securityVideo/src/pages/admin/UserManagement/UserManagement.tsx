@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
     Button, Space, Tag,
-    message, Typography, Card, Modal
+    message, Typography, Card, Modal, Input
 } from 'antd';
 import {
     DeleteOutlined, SaveOutlined, CloseOutlined,
-    PlusOutlined, EditOutlined, UsergroupAddOutlined
+    PlusOutlined, EditOutlined, UsergroupAddOutlined, SearchOutlined
 } from '@ant-design/icons';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../../services/user.service';
 import styles from './UserManagement.module.scss';
 
@@ -18,33 +19,52 @@ import UserFormModal from './components/UserFormModal';
 
 const { Title, Text } = Typography;
 
-interface RoleData {
+export interface RoleData {
     id: number;
     name: string;
     description: string;
 }
 
-interface UserData {
+export interface UserData {
     id: number;
     username: string;
     email: string;
-    full_name: string;
-    avatar?: string;
-    phone?: string;
-    dob?: string;
-    gender?: string;
-    bio?: string;
-    roles: RoleData[];
+    full_name: string | null;
+    avatar: string | null;
+    phone: string | null;
     created_at: string;
-    updated_at: string;
+    roles: RoleData[];
     enrollments_count: number;
-    enrolled_courses: string[];
+    enrolled_courses: { id: number; title: string }[];
 }
 
 export default function UserManagement() {
-    const [users, setUsers] = useState<UserData[]>([]);
-    const [roles, setRoles] = useState<RoleData[]>([]);
-    const [loading, setLoading] = useState(false);
+    // Pagination & Search State
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [search, setSearch] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
+
+    // React Query
+    const { data: usersData, isLoading: usersLoading } = useQuery({
+        queryKey: ['users', page, pageSize, search],
+        queryFn: () => userService.getAll({ page, limit: pageSize, search }),
+        placeholderData: (previousData) => previousData,
+    });
+
+    const { data: rolesData } = useQuery({
+        queryKey: ['roles'],
+        queryFn: userService.getRoles,
+        staleTime: Infinity, // Role dữ liệu tĩnh, không cần fetch lại thường xuyên
+    });
+
+    const users = usersData?.users || [];
+    const total = usersData?.total || 0;
+    const roles = rolesData || [];
+    const loading = usersLoading || actionLoading;
+
+    // React Query Client for invalidation
+    const queryClient = useQueryClient();
 
     // Selection & Edit State
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -56,26 +76,6 @@ export default function UserManagement() {
     const [isBatchEditMode, setIsBatchEditMode] = useState(false);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [usersData, rolesData] = await Promise.all([
-                userService.getAll(),
-                userService.getRoles()
-            ]);
-            setUsers(usersData);
-            setRoles(rolesData);
-        } catch (error: any) {
-            message.error('Lỗi khi tải dữ liệu hệ thống');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const resetStates = () => {
         setEditingKeys([]);
@@ -93,17 +93,15 @@ export default function UserManagement() {
                 content: 'Hành động này không thể hoàn tác.',
                 onOk: async () => {
                     try {
-                        setLoading(true);
-                        for (const key of selectedRowKeys) {
-                            await userService.delete(Number(key));
-                        }
+                        setActionLoading(true);
+                        await userService.deleteBatch(selectedRowKeys as number[]);
                         message.success(`Đã xóa thành công ${selectedRowKeys.length} thành viên`);
+                        queryClient.invalidateQueries({ queryKey: ['users'] });
                         resetStates();
-                        await fetchData();
                     } catch (e: any) {
                         message.error('Lỗi khi xóa một số thành viên');
                     } finally {
-                        setLoading(false);
+                        setActionLoading(false);
                     }
                 }
             });
@@ -117,22 +115,22 @@ export default function UserManagement() {
             return;
         }
 
-        setLoading(true);
+        setActionLoading(true);
         try {
+            // Chuyển đổi dữ liệu batch edit phù hợp với API
             const payload = Object.entries(editData).map(([id, data]) => ({
-                id,
+                id: parseInt(id),
                 ...data
             }));
 
-            await userService.batchUpdate({ users: payload });
-
-            message.success(`Đã cập nhật ${payload.length} thành viên thành công`);
+            await userService.updateBatch(payload);
+            message.success('Đã lưu thay đổi hàng loạt');
+            queryClient.invalidateQueries({ queryKey: ['users'] });
             resetStates();
-            await fetchData();
         } catch (error: any) {
             message.error(error.response?.data?.error || 'Lỗi lưu thay đổi');
         } finally {
-            setLoading(false);
+            setActionLoading(false);
         }
     };
 
@@ -158,15 +156,28 @@ export default function UserManagement() {
 
     const handleCreateFinish = async (values: any) => {
         try {
-            setLoading(true);
+            setActionLoading(true);
             await userService.create(values);
             message.success('Tạo người dùng mới thành công');
             setIsCreateModalOpen(false);
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ['users'] });
         } catch (error: any) {
             message.error(error.response?.data?.error || 'Lỗi lưu dữ liệu');
         } finally {
-            setLoading(false);
+            setActionLoading(false);
+        }
+    };
+
+    const handleRevokeAccess = async (userId: number, courseId: number) => {
+        try {
+            setActionLoading(true);
+            await userService.revokeCourse(userId, courseId);
+            message.success('Đã thu hồi quyền truy cập khóa học thành công');
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        } catch (error: any) {
+            message.error(error.response?.data?.error || 'Lỗi khi thu hồi quyền truy cập');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -204,7 +215,23 @@ export default function UserManagement() {
                         )}
                     </div>
 
-                    <Space>
+                    <Space className={styles.searchBarWrapper}>
+                        <Input
+                            placeholder="Tìm kiếm theo tên, email hoặc username..."
+                            prefix={<SearchOutlined className={styles.searchIcon} />}
+                            onPressEnter={e => {
+                                setSearch(e.currentTarget.value);
+                                setPage(1);
+                            }}
+                            onChange={e => {
+                                if (e.target.value === '') {
+                                    setSearch('');
+                                    setPage(1);
+                                }
+                            }}
+                            className={styles.searchBar}
+                            allowClear
+                        />
                         {(editingKeys.length > 0 || isDeleteMode || isBatchEditMode) ? (
                             <Space>
                                 {isBatchEditMode ? (
@@ -269,6 +296,19 @@ export default function UserManagement() {
                         isBatchEditMode={isBatchEditMode}
                         selectedRowKeys={selectedRowKeys}
                         onSelectChange={setSelectedRowKeys}
+                        onRevokeAccess={handleRevokeAccess}
+                        pagination={{
+                            current: page,
+                            pageSize: pageSize,
+                            total: total,
+                            onChange: (p, s) => {
+                                setPage(p);
+                                setPageSize(s);
+                            },
+                            showSizeChanger: true,
+                            pageSizeOptions: ['10', '20', '50', '100'],
+                            selectProps: { showSearch: false }
+                        }}
                     />
                 </div>
             </Card>
