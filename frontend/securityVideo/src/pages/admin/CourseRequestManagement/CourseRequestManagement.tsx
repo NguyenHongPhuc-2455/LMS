@@ -116,9 +116,6 @@ export default function CourseRequestManagement() {
             ),
             children: (
                 <div>
-                    <Tag color="blue" style={{ marginBottom: 16 }}>
-                        Ghi chú: Khi duyệt lộ trình, toàn bộ khóa học bên trong sẽ được tự động mở khóa.
-                    </Tag>
                     <RequestTabContent
                         type="program"
                         data={programRequests}

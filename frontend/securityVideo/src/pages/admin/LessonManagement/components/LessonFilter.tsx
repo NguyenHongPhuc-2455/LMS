@@ -1,3 +1,4 @@
+import React from 'react';
 import { Card, Space, Select, Typography } from 'antd';
 import styles from '../LessonManagement.module.scss';
 
@@ -18,33 +19,37 @@ export default function LessonFilter({
     selectedCourseId,
     selectedSectionId,
     onCourseChange,
-    onSectionChange
-}: LessonFilterProps) {
+    onSectionChange,
+    children
+}: LessonFilterProps & { children?: React.ReactNode }) {
     return (
         <Card className={`glass-card ${styles.filterCard}`}>
-            <Space size={24}>
-                <Space>
-                    <Text strong>Khóa học:</Text>
-                    <Select
-                        placeholder="Chọn khóa học..."
-                        className={styles.filterSelect}
-                        onChange={onCourseChange}
-                        value={selectedCourseId}
-                        options={courses.map(c => ({ value: c.id, label: c.title }))}
-                    />
+            <div className={styles.filterWrapper}>
+                <Space size={24}>
+                    <Space>
+                        <Text strong>Khóa học:</Text>
+                        <Select
+                            placeholder="Chọn khóa học..."
+                            className={styles.filterSelect}
+                            onChange={onCourseChange}
+                            value={selectedCourseId}
+                            options={courses.map(c => ({ value: c.id, label: c.title }))}
+                        />
+                    </Space>
+                    <Space>
+                        <Text strong>Chương:</Text>
+                        <Select
+                            placeholder="Chọn chương..."
+                            className={styles.filterSelect}
+                            disabled={!selectedCourseId}
+                            onChange={onSectionChange}
+                            value={selectedSectionId}
+                            options={sections.map(s => ({ value: s.id, label: s.title }))}
+                        />
+                    </Space>
                 </Space>
-                <Space>
-                    <Text strong>Chương:</Text>
-                    <Select
-                        placeholder="Chọn chương..."
-                        className={styles.filterSelect}
-                        disabled={!selectedCourseId}
-                        onChange={onSectionChange}
-                        value={selectedSectionId}
-                        options={sections.map(s => ({ value: s.id, label: s.title }))}
-                    />
-                </Space>
-            </Space>
+                {children}
+            </div>
         </Card>
     );
 }

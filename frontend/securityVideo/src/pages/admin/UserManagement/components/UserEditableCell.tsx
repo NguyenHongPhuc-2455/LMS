@@ -36,6 +36,7 @@ export default function UserEditableCell({
                     defaultValue={record.roles[0]?.id}
                     className="full-width"
                     size="small"
+                    showSearch={false}
                     onChange={(val) => onUpdate(record.id, 'role_id', val)}
                     options={roles.map(r => ({ value: r.id, label: r.name.toUpperCase() }))}
                 />
@@ -47,6 +48,7 @@ export default function UserEditableCell({
                     defaultValue={currentText}
                     className="full-width"
                     size="small"
+                    showSearch={false}
                     onChange={(val) => onUpdate(record.id, 'gender', val)}
                     options={[
                         { value: 'Nam', label: 'Nam' },

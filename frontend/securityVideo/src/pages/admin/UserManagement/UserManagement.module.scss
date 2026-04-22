@@ -24,9 +24,19 @@
         }
 
         .ant-table-thead>tr>th {
-            background: #fafafa;
-            color: $text-muted;
             border-bottom: 1px solid $border-color;
+
+            &.ant-table-column-has-sorters:hover {
+                background: #B8121A !important;
+
+                :global(.ant-table-column-sorter) {
+                    color: #ffec3d !important;
+                }
+            }
+
+            &.ant-table-column-sort {
+                background: #B8121A !important;
+            }
         }
 
         .ant-table-tbody>tr>td {
@@ -57,10 +67,6 @@
             z-index: 100;
         }
 
-        .ant-table-thead>tr>th.ant-table-cell-fix-left,
-        .ant-table-thead>tr>th.ant-table-cell-fix-right {
-            background: #fafafa;
-        }
 
         .ant-table-tbody>tr.ant-table-row:hover>td.ant-table-cell-fix-left,
         .ant-table-tbody>tr.ant-table-row:hover>td.ant-table-cell-fix-right {
@@ -154,6 +160,42 @@
 .saveBatchBtn {
     background: #10b981;
     border-color: #10b981;
+}
+
+.headerTitle {
+    margin-bottom: 0 !important;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.adminAddButton {
+    background-color: #12B76A !important;
+    border-color: #12B76A !important;
+    border-radius: 8px !important;
+    color: white !important;
+    height: 32px !important;
+    padding: 0 16px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    line-height: 1 !important;
+
+    &:hover {
+        background-color: #0e9657 !important;
+        border-color: #0e9657 !important;
+    }
+
+    :global(.anticon),
+    :global(.lucide) {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        transform: translateY(1px);
+    }
 }
 
 .tableWrapper {

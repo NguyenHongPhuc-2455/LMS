@@ -34,6 +34,12 @@ export default function LessonTable({ lessons, loading, onEdit, onDelete }: Less
         {
             title: 'Phân loại',
             dataIndex: 'type',
+            filters: [
+                { text: 'Trắc nghiệm', value: 'QUIZ' },
+                { text: 'Video/Tài liệu', value: 'VIDEO' },
+                { text: 'TÀI LIỆU', value: 'DOCUMENT' },
+            ],
+            onFilter: (v: any, r: Lesson) => r.type === v,
             render: (t: string) => t === 'QUIZ' ? <Badge status="warning" text="Trắc nghiệm" /> : <Badge status="processing" text="Video/Tài liệu" />
         },
         {
@@ -57,6 +63,21 @@ export default function LessonTable({ lessons, loading, onEdit, onDelete }: Less
             loading={loading}
             rowKey="id"
             columns={columns}
+            pagination={{
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+                defaultPageSize: 10,
+                selectProps: { showSearch: false },
+                itemRender: (current: number, type: string, originalElement: any) => {
+                    if (type === 'page') {
+                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                    }
+                    return originalElement;
+                }
+            } as any}
+            scroll={{ y: 500 }}
+            virtual
+            bordered
         />
     );
 }

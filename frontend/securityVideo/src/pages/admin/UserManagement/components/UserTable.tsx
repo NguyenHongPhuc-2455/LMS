@@ -305,7 +305,9 @@ export default function UserTable({
                 rowSelection={rowSelection}
                 pagination={pagination}
                 rowClassName={(record) => editingKeys.includes(record.id) ? `${styles.editableRow} ${styles.active}` : 'premium-row'}
-                scroll={{ x: 1800 }}
+                scroll={{ x: 1800, y: 600 }}
+                virtual
+                bordered
             />
 
             <Modal

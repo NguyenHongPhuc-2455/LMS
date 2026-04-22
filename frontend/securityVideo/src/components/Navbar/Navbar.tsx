@@ -155,7 +155,7 @@ export default function Navbar() {
                 className={styles.navbarLogoSection}
                 onClick={() => navigate('/')}
             >
-                <img src="/logo/logo.png" alt="Logo" className={styles.logoImg} />
+                <img src="/logo/logo.svg" alt="Logo" className={styles.logoImg} />
             </div>
 
             {/* Navigation Menu */}

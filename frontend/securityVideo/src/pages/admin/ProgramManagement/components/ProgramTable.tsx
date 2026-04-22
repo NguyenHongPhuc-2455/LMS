@@ -41,6 +41,10 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
         {
             title: 'Chương trình học',
             key: 'info',
+            width: 350,
+            filters: programs.map(p => ({ text: p.title, value: p.id })),
+            filterSearch: true,
+            onFilter: (value: any, p: Program) => p.id === value,
             render: (p: Program) => (
                 <div className={styles.programInfoCell}>
                     <img src={p.thumbnail || 'https://via.placeholder.com/80x45'} className={styles.programThumb} alt="thumbnail" />
@@ -55,11 +59,23 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             title: 'Trạng thái',
             key: 'status',
             width: 160,
+            filters: [
+                { text: 'DRAFT', value: 'DRAFT' },
+                { text: 'PUBLISHED', value: 'PUBLISHED' },
+                { text: 'ARCHIVED', value: 'ARCHIVED' },
+                { text: 'CÔNG KHAI', value: false },
+                { text: 'RIÊNG TƯ', value: true },
+            ],
+            onFilter: (value: any, p: Program) => {
+                if (typeof value === 'boolean') return p.is_private === value;
+                return p.status === value;
+            },
             render: (p: Program) => (
                 <Space direction="vertical" size={4} style={{ width: '100%' }}>
                     <Select
                         size="small"
                         value={p.status}
+                        showSearch={false}
                         onChange={async (val) => {
                             try {
                                 await programService.update(p.id, { status: val });
@@ -79,6 +95,7 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
                     <Select
                         size="small"
                         value={p.is_private}
+                        showSearch={false}
                         onChange={async (val) => {
                             try {
                                 await programService.update(p.id, { is_private: val });
@@ -146,7 +163,21 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             columns={columns}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 8 }}
+            pagination={{
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+                defaultPageSize: 10,
+                selectProps: { showSearch: false },
+                itemRender: (current: number, type: string, originalElement: any) => {
+                    if (type === 'page') {
+                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                    }
+                    return originalElement;
+                }
+            } as any}
+            scroll={{ y: 600 }}
+            virtual
+            bordered
         />
     );
 }

@@ -37,6 +37,12 @@ function App() {
           colorBgLayout: '#f8fafc',
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         },
+        components: {
+          Menu: {
+            itemSelectedColor: '#C72127',
+            itemSelectedBg: 'rgba(199, 33, 39, 0.05)',
+          },
+        },
       }}
     >
       <AntdApp>

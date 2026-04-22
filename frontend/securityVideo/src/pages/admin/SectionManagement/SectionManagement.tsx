@@ -5,7 +5,7 @@ import { contentService } from '../../../services/content.service';
 
 import { Plus } from 'lucide-react';
 import {
-    Card, Button, Select, Typography,
+    Card, Button, Select, Typography, Space,
     message
 } from 'antd';
 import styles from './SectionManagement.module.scss';
@@ -109,33 +109,36 @@ export default function SectionManagement() {
                     <Title level={4} className={styles.headerTitle}>Quản lý Chương Học</Title>
                     <Text type="secondary">Phân bổ cấu trúc bài học cho từng khóa</Text>
                 </div>
-                <Button
-                    type="primary"
-                    disabled={!selectedCourseId}
-                    onClick={() => { setEditingId(null); setEditingSection(null); setIsModalOpen(true); }}
-                    icon={<Plus size={16} />}
-                >
-                    Thêm chương mới
-                </Button>
             </div>
 
             <Card className="glass-card">
                 <div className={styles.courseSelectorWrapper}>
-                    <Text strong>Chọn khóa học:</Text>
-                    <Select
-                        showSearch
-                        placeholder="Chọn khóa học để xem chương..."
-                        className={styles.courseSelect}
-                        size="small"
-                        value={selectedCourseId}
-                        onChange={(v) => setSelectedCourseId(v)}
-                        optionFilterProp="children"
-                        filterOption={(input, option) =>
-                            (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
-                        }
+                    <Space size={12}>
+                        <Text strong>Chọn khóa học:</Text>
+                        <Select
+                            showSearch
+                            placeholder="Chọn khóa học để xem chương..."
+                            className={styles.courseSelect}
+                            size="small"
+                            value={selectedCourseId}
+                            onChange={(v) => setSelectedCourseId(v)}
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
+                            }
+                        >
+                            {courses.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
+                        </Select>
+                    </Space>
+                    <Button
+                        type="primary"
+                        disabled={!selectedCourseId}
+                        onClick={() => { setEditingId(null); setEditingSection(null); setIsModalOpen(true); }}
+                        icon={<Plus size={16} />}
+                        className={styles.adminAddButton}
                     >
-                        {courses.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
-                    </Select>
+                        Thêm chương mới
+                    </Button>
                 </div>
 
                 <SectionTable

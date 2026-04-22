@@ -8,157 +8,150 @@
     border-right: 1px solid #E0E0E0;
     background: #FFFFFF;
     overflow: auto;
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    height: calc(100vh - 66px);
+    position: sticky;
+    top: 66px;
     z-index: 100;
-}
-
-.adminLogoSection {
-    height: 70px;
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #F1F5F9;
-    gap: 16px;
-
-    &.collapsed {
-        justify-content: center;
-        padding: 0;
-    }
-
-    &.expanded {
-        justify-content: flex-start;
-        padding: 0 28px;
-    }
-}
-
-.sidebarToggleIcon {
-    font-size: 20px;
-    cursor: pointer;
-    color: #718096;
-}
-
-.adminLogoImg {
-    height: 40px;
-    object-fit: contain;
 }
 
 .adminMenu {
     border-right: 0;
-    padding: 0 10px;
+    padding: 10px;
 }
 
 .adminMainLayout {
     transition: all 0.2s ease 0s;
-}
-
-.adminHeader {
-    padding: 0 24px;
-    background: #FFFFFF;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #E0E0E0;
-    height: 70px;
-    position: sticky;
-    top: 0;
-    z-index: 99;
+    flex-direction: row;
 }
 
-.headerSearchWrapper {
-    position: relative;
-    width: 380px;
-}
+.adminAddButton {
+    background-color: #12B76A !important;
+    border-color: #12B76A !important;
+    border-radius: 8px !important;
+    color: white !important;
+    height: 32px !important;
+    padding: 0 16px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    line-height: 1 !important;
 
-.adminSearchInput {
-    border-radius: 20px;
-    background: #FFF;
-    border: 2px solid #e8e8e8;
-    padding: 6px 18px;
-    height: 40px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    box-shadow: none;
-
-    :global {
-        .ant-input-prefix {
-            margin-right: 8px;
-
-            .anticon {
-                color: #757575;
-                font-size: 18px;
-            }
-        }
-    }
-}
-
-.headerActions {
-    display: flex;
-    align-items: center;
-}
-
-.notificationIcon {
-    font-size: 20px;
-    color: #718096;
-    cursor: pointer;
-}
-
-.languageSelector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-
-    .langIcon {
-        font-size: 20px;
-        color: #718096;
+    &:hover {
+        background-color: #0e9657 !important;
+        border-color: #0e9657 !important;
     }
 
-    .langText {
-        font-weight: 500;
-        color: #4A5568;
+    :global(.anticon),
+    :global(.lucide) {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        transform: translateY(1px); // Đôi khi cần nhích xuống 1px để cân mắt
     }
-
-    .langArrow {
-        font-size: 10px;
-        color: #A0AEC0;
-    }
-}
-
-.userProfileDropdown {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.userInfo {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-}
-
-.userName {
-    font-weight: 600;
-    color: #2D3748;
-}
-
-.userRole {
-    font-size: 12px;
-    color: #A0AEC0;
-    text-transform: capitalize;
-}
-
-.userArrow {
-    font-size: 10px;
-    color: #A0AEC0;
 }
 
 .adminContent {
     padding: 24px 30px;
     min-height: 280px;
+
+    :global {
+        .ant-table-thead>tr>th {
+            background: #B8121A !important;
+            color: #ffffff !important;
+            border-bottom: 1px solid #E0E0E0;
+
+            &.ant-table-column-has-sorters:hover {
+                background: #B8121A !important;
+
+                .ant-table-column-sorter {
+                    color: #ffec3d !important;
+                }
+            }
+
+            &.ant-table-column-sort {
+                background: #B8121A !important;
+            }
+
+            .ant-table-column-sorter {
+                color: #ffffff;
+            }
+        }
+
+        .ant-table {
+            border: 1px solid #E0E0E0 !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+
+            .ant-table-thead>tr>th {
+                border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+
+                &:last-child {
+                    border-right: none !important;
+                }
+            }
+
+            .ant-table-tbody>tr>td {
+                border-right: 1px solid #E0E0E0 !important;
+
+                &:last-child {
+                    border-right: none !important;
+                }
+            }
+        }
+
+        .ant-pagination {
+
+            .ant-pagination-item,
+            .ant-pagination-prev,
+            .ant-pagination-next,
+            .ant-pagination-jump-prev,
+            .ant-pagination-jump-next {
+                border-radius: 8px !important;
+                border: 1px solid #e2e8f0 !important;
+                background: #f8fafc !important;
+                min-width: 38px !important;
+                height: 38px !important;
+                line-height: 36px !important;
+
+                a {
+                    color: #64748b !important;
+                    font-weight: 500;
+                    display: block;
+                }
+
+                &:hover {
+                    border-color: #B8121A !important;
+
+                    a {
+                        color: #B8121A !important;
+                    }
+                }
+            }
+
+            .ant-pagination-item-active {
+                background: #B8121A !important;
+                border-color: #B8121A !important;
+
+                a {
+                    color: #ffffff !important;
+                }
+
+                &:hover {
+                    a {
+                        color: #ffffff !important;
+                    }
+                }
+            }
+
+            .ant-pagination-disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+    }
 }
 
 // Notification Popover Styles

@@ -68,6 +68,7 @@ export default function CourseTable({ courses, loading, onEdit, onDelete, onNavi
                     onChange={(val) => onStatusChange(record.id, val)}
                     className={styles.statusSelect}
                     size="small"
+                    showSearch={false}
                     popupClassName={styles.statusPopup}
                     options={[
                         {
@@ -169,7 +170,21 @@ export default function CourseTable({ courses, loading, onEdit, onDelete, onNavi
             columns={columns}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 8 }}
+            pagination={{
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showSizeChanger: true,
+                defaultPageSize: 10,
+                selectProps: { showSearch: false },
+                itemRender: (current: number, type: string, originalElement: any) => {
+                    if (type === 'page') {
+                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                    }
+                    return originalElement;
+                }
+            } as any}
+            scroll={{ y: 600 }}
+            virtual
+            bordered
         />
     );
 }

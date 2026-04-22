@@ -44,7 +44,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
             // 1. Duration hợp lệ (> 5s)
             // 2. Đã xem tối thiểu 5s (tránh lỗi nhảy bài ngay khi load)
             // 3. Đã xem trên 99% (gần như hết video)
-            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.99) {
+            if (duration > 5 && currentTime > 5 && currentTime / duration >= 1) {
                 handleComplete();
             }
         }, 1000);
