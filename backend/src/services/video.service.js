@@ -69,14 +69,14 @@ const processVideoToHLS = async (lessonId, inputPath) => {
             masterPlaylist
         ];
 
-        console.log(`🎬 Processing Video: Lesson ${lessonId}`);
+        console.log(`Processing Video: Lesson ${lessonId}`);
         const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
         ffmpegProcess.stderr.on('data', (data) => {
             const output = data.toString();
             if (output.includes('frame=')) {
                 const progress = output.substring(output.lastIndexOf('frame=')).split('\n')[0];
-                process.stdout.write(`\r⏳ Progress [Lesson ${lessonId}]: ${progress}`);
+                process.stdout.write(`\rProgress [Lesson ${lessonId}]: ${progress}`);
             }
         });
 
@@ -97,9 +97,9 @@ const processVideoToHLS = async (lessonId, inputPath) => {
                         duration: duration
                     }
                 });
-                console.log(`✅ Video ${lessonId} optimized and secured.`);
+                console.log(`Video ${lessonId} optimized and secured.`);
             } else {
-                console.error(`❌ FFmpeg failed with code ${code}`);
+                console.error(`FFmpeg failed with code ${code}`);
             }
         });
     } catch (error) {
@@ -145,7 +145,7 @@ const deleteVideoFiles = async (lessonId) => {
         const lessonDir = path.join(HLS_OUTPUT_DIR, lessonId.toString());
         if (fs.existsSync(lessonDir)) {
             fs.rmSync(lessonDir, { recursive: true, force: true });
-            console.log(`🗑️ Deleted HLS folder for lesson ${lessonId}`);
+            console.log(`Deleted HLS folder for lesson ${lessonId}`);
         }
 
         // 3. Xóa file đính kèm (nếu có)
@@ -154,11 +154,11 @@ const deleteVideoFiles = async (lessonId) => {
             const attachmentPath = path.join(__dirname, '../../', lesson.attachment_url);
             if (fs.existsSync(attachmentPath)) {
                 fs.unlinkSync(attachmentPath);
-                console.log(`🗑️ Deleted attachment for lesson ${lessonId}: ${lesson.attachment_url}`);
+                console.log(`Deleted attachment for lesson ${lessonId}: ${lesson.attachment_url}`);
             }
         }
     } catch (error) {
-        console.error(`❌ Error deleting files for lesson ${lessonId}:`, error);
+        console.error(`Error deleting files for lesson ${lessonId}:`, error);
     }
 };
 
@@ -184,7 +184,7 @@ const ensureHLS = async (lessonId) => {
         throw new ApiError(404, 'Video source not found and HLS files are missing');
     }
 
-    console.log(`📡 Catching on-demand transcoding for Lesson ${lessonId}...`);
+    console.log(`Catching on-demand transcoding for Lesson ${lessonId}...`);
 
     // 3. Tải file về bộ nhớ tạm
     const tempInputPath = path.join(__dirname, `../../uploads/temp_${lessonId}_${Date.now()}.mp4`);

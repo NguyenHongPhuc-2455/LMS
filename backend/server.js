@@ -11,8 +11,8 @@ socketUtils.init(server);
 
 server.listen(PORT, () => {
     console.log(`\n========================================`);
-    console.log(`🚀 Backend đang chạy tại http://localhost:${PORT}`);
-    console.log(`🛡️ Middleware chống tải và nhận dạng Token đã được gắn!`);
-    console.log(`🔌 Socket.io đã sẵn sàng!`);
+    console.log(`Backend đang chạy tại http://localhost:${PORT}`);
+    console.log(`Middleware chống tải và nhận dạng Token đã được gắn!`);
+    console.log(`Socket.io đã sẵn sàng!`);
     console.log(`========================================\n`);
 });

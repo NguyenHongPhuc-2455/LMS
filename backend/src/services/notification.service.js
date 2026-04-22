@@ -29,7 +29,7 @@ exports.createNotificationAsync = (data) => {
         try {
             await exports.createNotification(data);
         } catch (error) {
-            console.error('❌ Lỗi tạo thông báo ngầm:', error);
+            console.error('Lỗi tạo thông báo ngầm:', error);
         }
     });
 };

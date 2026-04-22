@@ -15,18 +15,18 @@ exports.init = (server) => {
     });
 
     io.on('connection', (socket) => {
-        console.log(`🔌 Một client đã kết nối: ${socket.id}`);
+        console.log(`Một client đã kết nối: ${socket.id}`);
 
         // Đăng ký user khi connect
         socket.on('register', (userId) => {
             if (userId) {
                 userSockets.set(userId.toString(), socket.id);
-                console.log(`👤 User ${userId} đã đăng ký socket ${socket.id}`);
+                console.log(`User ${userId} đã đăng ký socket ${socket.id}`);
             }
         });
 
         socket.on('disconnect', () => {
-            console.log(`🔌 Client ngắt kết nối: ${socket.id}`);
+            console.log(`Client ngắt kết nối: ${socket.id}`);
             // Dọn dẹp map khi user ngắt kết nối
             for (const [userId, socketId] of userSockets.entries()) {
                 if (socketId === socket.id) {
@@ -45,9 +45,9 @@ exports.emitToUser = (userId, event, data) => {
     const socketId = userSockets.get(userId.toString());
     if (socketId) {
         io.to(socketId).emit(event, data);
-        console.log(`📢 Đã gửi event '${event}' tới user ${userId}`);
+        console.log(`Đã gửi event '${event}' tới user ${userId}`);
     } else {
-        console.log(`⚠️ Không tìm thấy socketId cho user ${userId}`);
+        console.log(`Không tìm thấy socketId cho user ${userId}`);
     }
 };
 
@@ -77,11 +77,11 @@ exports.emitToAdmins = async (event, data) => {
             const socketId = userSockets.get(admin.id.toString());
             if (socketId) {
                 io.to(socketId).emit(event, data);
-                console.log(`📢 Đã gửi event '${event}' tới Admin ${admin.id}`);
+                console.log(`Đã gửi event '${event}' tới Admin ${admin.id}`);
             }
         });
     } catch (error) {
-        console.error('❌ Lỗi khi gửi broadcast tới Admins:', error);
+        console.error('Lỗi khi gửi broadcast tới Admins:', error);
     }
 };
 
