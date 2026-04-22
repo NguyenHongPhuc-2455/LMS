@@ -76,14 +76,29 @@
 
 .sectionHeader {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 22px;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .headerLeftContainer {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
     .sectionTitle {
-        margin: 0;
-        font-size: 24px;
+        margin: 0 !important;
+        font-weight: 700;
         color: #1e293b;
+    }
+
+    .statusTag {
+        margin: 0;
+        border-radius: 6px;
+        font-weight: 600;
+        padding: 4px 12px;
     }
 }
 

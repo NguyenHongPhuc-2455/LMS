@@ -76,9 +76,9 @@ Dự án hệ thống quản lý học tập (LMS) tập trung vào bảo mật 
 ---
 
 ## 📂 Công nghệ sử dụng
-- **Backend**: Node.js, Express, Prisma ORM, PostgreSQL.
-- **Frontend**: React (Vite), TypeScript, Ant Design.
-- **Xử lý Video**: FFmpeg cục bộ.
+- **Backend**: Node.js, Express, Prisma ORM, PostgreSQL, **Rate Limiting**, **Refresh Token Strategy**.
+- **Frontend**: React (Vite), TypeScript, Ant Design, **React Query (TanStack)**.
+- **Xử lý Video**: FFmpeg cục bộ (AES-128 Encryption).
 - **Thanh toán**: VNPay SDK.
 
 ---

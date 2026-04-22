@@ -16,7 +16,8 @@ export default function Login() {
         setLoading(true);
         try {
             const data = await authService.login(values);
-            localStorage.setItem('token', data.token);
+            localStorage.setItem('accessToken', data.accessToken);
+            localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
             message.success('Chào mừng bạn quay trở lại!');
             if (data.user.roles?.includes('admin')) {
@@ -25,7 +26,7 @@ export default function Login() {
                 navigate('/course');
             }
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Sai tài khoản hoặc mật khẩu');
+            message.error(error.response?.data?.error || 'username hoặc mật khẩu không đúng');
         } finally {
             setLoading(false);
         }

@@ -1,0 +1,62 @@
+# Kế hoạch Tối ưu hóa dự án (Advanced Optimization Phase)
+
+Kế hoạch này tập trung vào việc nâng cấp hiệu năng, bảo mật và trải nghiệm người dùng (UX) để dự án đạt chuẩn Production chuyên nghiệp.
+
+## Proposed Changes
+
+---
+
+### 🚀 1. Hiệu năng Frontend (Frontend Performance)
+Tối ưu hóa tốc độ tải trang ban đầu và giảm kích thước Bundle.
+
+#### [MODIFY] [App.tsx](file:///d:/SercurityVideo/frontend/securityVideo/src/App.tsx)
+- Triển khai **Code Splitting** bằng `React.lazy` và `Suspense` cho tất cả các Route. Điều này giúp giảm thời gian tải trang đầu tiên (FCP) xuống đáng kể.
+
+#### [NEW] [OptimizedImage.tsx](file:///d:/SercurityVideo/frontend/securityVideo/src/components/OptimizedImage/OptimizedImage.tsx)
+- Tạo component chuyên dụng để xử lý **Lazy Loading Image** và hiển thị Placeholder cho các Thumbnail khóa học.
+
+---
+
+### 🛡️ 2. Hiệu năng & Bảo mật Backend (Backend Resilience)
+Tăng tốc độ truy vấn và gia cố hàng rào bảo mật.
+
+#### [NEW] [Redis Cache Service](file:///d:/SercurityVideo/backend/src/services/cache.service.js)
+- Tích hợp **Redis** để lưu trữ Cache cho các truy vấn nặng như: Danh sách khóa học, Metadata bài học. Giảm tải cho PostgreSQL.
+
+#### [MODIFY] [app.js](file:///d:/SercurityVideo/backend/src/app.js)
+- Cấu hình **Helmet.js** để thiết lập Content Security Policy (CSP), chống lại các lỗi XSS.
+- Triển khai **Compression** (Gzip) để nén dữ liệu JSON trả về.
+
+---
+
+### 🎥 3. Nâng cấp Video HLS (Video Experience)
+Cải thiện khả năng xem video trong điều kiện mạng yếu.
+
+#### [MODIFY] [video.service.js](file:///d:/SercurityVideo/backend/src/services/video.service.js)
+- Nâng cấp script FFmpeg để hỗ trợ **Adaptive Bitrate Streaming (ABR)**. Tạo ra nhiều phiên bản độ phân giải (360p, 720p, 1080p).
+
+#### [MODIFY] [VideoPlayer.tsx](file:///d:/SercurityVideo/frontend/securityVideo/src/components/VideoPlayer/VideoPlayer.tsx)
+- Cấu hình **Shaka Player** để tự động nhảy chất lượng video dựa trên tốc độ mạng.
+
+---
+
+### 🎨 4. Trải nghiệm người dùng (UX/UI Enhancements)
+Tăng cường tính năng tương tác.
+
+#### [NEW] [Search System]
+- Triển khai **Debounce Search** với gợi ý kết quả ngay lập tức (Autocomplete) tại Header.
+
+#### [NEW] [Dark Mode Support]
+- Tích hợp chế độ **Dark Mode** sử dụng `algorithm: theme.darkAlgorithm` của Ant Design.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Sử dụng **Lighthouse** để đo lường chỉ số Performance (Mục tiêu > 90 điểm).
+- Test tải bằng **Artillery** cho Redis Cache.
+
+### Manual Verification
+- Kiểm tra việc chuyển đổi chất lượng video HLS trong DevTools.
+- Kiểm tra giao diện Dark Mode.

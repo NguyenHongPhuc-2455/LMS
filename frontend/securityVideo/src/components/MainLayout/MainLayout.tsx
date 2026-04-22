@@ -13,7 +13,7 @@ const { Content } = Layout;
  */
 const MainLayout: React.FC = () => {
     // Check Auth - Nếu chưa login thì văng ra login
-    const isAuthenticated = !!localStorage.getItem('token');
+    const isAuthenticated = !!localStorage.getItem('accessToken');
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;

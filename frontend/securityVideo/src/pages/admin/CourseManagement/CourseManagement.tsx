@@ -88,6 +88,16 @@ export default function CourseManagement() {
         }
     };
 
+    const handleStatusChange = async (id: number, isPrivate: boolean) => {
+        try {
+            await courseService.update(id, { is_private: isPrivate });
+            message.success('Đã cập nhật trạng thái khóa học');
+            fetchData();
+        } catch (e) {
+            message.error('Lỗi khi cập nhật trạng thái');
+        }
+    };
+
     const handleDelete = async (id: number) => {
         try {
             await courseService.delete(id);
@@ -125,6 +135,7 @@ export default function CourseManagement() {
                     courses={filteredCourses}
                     loading={loading}
                     onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
+                    onStatusChange={handleStatusChange}
                     onDelete={handleDelete}
                     onNavigateToSections={(id) => navigate(`/admin/sections?courseId=${id}`)}
                 />

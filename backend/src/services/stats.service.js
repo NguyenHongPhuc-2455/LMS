@@ -18,9 +18,15 @@ const getDashboardStats = async () => {
 
         const totalEnrollments = await prisma.enrollment.count();
 
-        const pendingRequests = await prisma.courseRequest.count({
+        const coursePending = await prisma.courseRequest.count({
             where: { status: 'PENDING' }
         });
+
+        const programPending = await prisma.programRequest.count({
+            where: { status: 'PENDING' }
+        });
+
+        const pendingRequests = coursePending + programPending;
 
         // 2. Enrollment Trend (Last 7 days)
         const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -94,6 +100,25 @@ const getDashboardStats = async () => {
     }
 };
 
+const emitPendingRequestsCountToAdmins = async () => {
+    try {
+        const socketUtils = require('../utils/socket');
+        const coursePending = await prisma.courseRequest.count({
+            where: { status: 'PENDING' }
+        });
+
+        const programPending = await prisma.programRequest.count({
+            where: { status: 'PENDING' }
+        });
+
+        const total = coursePending + programPending;
+        await socketUtils.emitToAdmins('updatePendingRequestCount', { count: total });
+    } catch (error) {
+        console.error('Error emitting pending requests count:', error);
+    }
+};
+
 module.exports = {
-    getDashboardStats
+    getDashboardStats,
+    emitPendingRequestsCountToAdmins
 };

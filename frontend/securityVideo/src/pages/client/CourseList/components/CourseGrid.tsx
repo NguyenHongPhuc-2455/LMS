@@ -12,6 +12,7 @@ interface CourseGridProps {
     currentPage: number;
     pageSize: number;
     setCurrentPage: (page: number) => void;
+    renderExtra?: React.ReactNode;
 }
 
 export default function CourseGrid({
@@ -20,7 +21,8 @@ export default function CourseGrid({
     courses,
     currentPage,
     pageSize,
-    setCurrentPage
+    setCurrentPage,
+    renderExtra
 }: CourseGridProps) {
     const displayedCourses = courses.slice(
         (currentPage - 1) * pageSize,
@@ -33,8 +35,11 @@ export default function CourseGrid({
     return (
         <div className={styles.courseSection}>
             <div className={styles.sectionHeader}>
-                <Title level={2} className={styles.sectionTitle}>{title}</Title>
-                {tagLabel && <Tag color="error" className={styles.statusTag}>{tagLabel}</Tag>}
+                <div className={styles.headerLeftContainer}>
+                    <Title level={2} className={styles.sectionTitle}>{title}</Title>
+                    {tagLabel && <Tag color="error" className={styles.statusTag}>{tagLabel}</Tag>}
+                </div>
+                {renderExtra && <div className={styles.headerExtra}>{renderExtra}</div>}
             </div>
 
             <div className={styles.courseGrid}>

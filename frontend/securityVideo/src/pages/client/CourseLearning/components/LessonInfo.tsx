@@ -9,12 +9,13 @@ interface LessonInfoProps {
     content: string;
     isExpanded: boolean;
     setIsExpanded: (expanded: boolean) => void;
+    type?: string;
 }
 
-export default function LessonInfo({ title, content, isExpanded, setIsExpanded }: LessonInfoProps) {
+export default function LessonInfo({ title, content, isExpanded, setIsExpanded, type }: LessonInfoProps) {
     return (
         <>
-            <Title level={2} className={styles.courseMainTitle}>{title}</Title>
+            {type !== 'QUIZ' && <Title level={2} className={styles.courseMainTitle}>{title}</Title>}
 
             {content && (
                 <div className={styles.lessonContentCard}>

@@ -1,5 +1,6 @@
-import { Table, Space, Typography, Badge, Avatar, Input } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Table, Space, Typography, Badge, Avatar, Input, Popconfirm, Button, Modal } from 'antd';
+import { UserOutlined, SearchOutlined, UsergroupAddOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import styles from '../UserManagement.module.scss';
 
@@ -28,7 +29,7 @@ interface UserData {
     created_at: string;
     updated_at: string;
     enrollments_count: number;
-    enrolled_courses: string[];
+    enrolled_courses: { id: number; title: string }[];
 }
 
 interface UserTableProps {
@@ -43,6 +44,8 @@ interface UserTableProps {
     isBatchEditMode: boolean;
     selectedRowKeys: React.Key[];
     onSelectChange: (keys: React.Key[]) => void;
+    onRevokeAccess: (userId: number, courseId: number) => void;
+    pagination?: any;
 }
 
 export default function UserTable({
@@ -56,8 +59,13 @@ export default function UserTable({
     isDeleteMode,
     isBatchEditMode,
     selectedRowKeys,
-    onSelectChange
+    onSelectChange,
+    onRevokeAccess,
+    pagination
 }: UserTableProps) {
+    const [courseModalVisible, setCourseModalVisible] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+    const [courseSearchText, setCourseSearchText] = useState('');
 
     const startRowEditing = (record: UserData) => {
         if (isDeleteMode || isBatchEditMode) return;
@@ -247,6 +255,30 @@ export default function UserTable({
             width: 180,
             sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
             render: (text) => new Date(text).toLocaleString()
+        },
+        {
+            title: 'Khóa học đã đăng ký',
+            key: 'enrolled_courses',
+            width: 200,
+            render: (_, record) => (
+                <div className={styles.enrollmentCell}>
+                    {record.enrolled_courses.length > 0 ? (
+                        <Button
+                            type="link"
+                            onClick={() => {
+                                setSelectedUserId(record.id);
+                                setCourseModalVisible(true);
+                            }}
+                            className={styles.manageLink}
+                        >
+                            <BookOutlined style={{ marginRight: 8 }} />
+                            {record.enrolled_courses.length} khóa học
+                        </Button>
+                    ) : (
+                        <Text type="secondary">Chưa đăng ký</Text>
+                    )}
+                </div>
+            )
         }
     ];
 
@@ -256,16 +288,88 @@ export default function UserTable({
         columnWidth: 50,
     } : undefined;
 
+    // Derive selectedUser from users prop to ensure reactivity
+    const selectedUser = users.find(u => u.id === selectedUserId);
+
+    const filteredUserCourses = selectedUser?.enrolled_courses.filter(c =>
+        c.title.toLowerCase().includes(courseSearchText.toLowerCase())
+    ) || [];
+
     return (
-        <Table
-            columns={columns}
-            dataSource={users}
-            rowKey="id"
-            loading={loading}
-            rowSelection={rowSelection}
-            pagination={{ pageSize: 10 }}
-            rowClassName={(record) => editingKeys.includes(record.id) ? `${styles.editableRow} ${styles.active}` : 'premium-row'}
-            scroll={{ x: 1800 }}
-        />
+        <>
+            <Table
+                columns={columns}
+                dataSource={users}
+                rowKey="id"
+                loading={loading}
+                rowSelection={rowSelection}
+                pagination={pagination}
+                rowClassName={(record) => editingKeys.includes(record.id) ? `${styles.editableRow} ${styles.active}` : 'premium-row'}
+                scroll={{ x: 1800 }}
+            />
+
+            <Modal
+                title={
+                    <Space>
+                        <UsergroupAddOutlined />
+                        <span>Quản lý khóa học: <Text strong>{selectedUser?.full_name || selectedUser?.username}</Text></span>
+                    </Space>
+                }
+                open={courseModalVisible}
+                onCancel={() => {
+                    setCourseModalVisible(false);
+                    setCourseSearchText('');
+                    setSelectedUserId(null);
+                }}
+                footer={null}
+                width={600}
+                className="premium-modal"
+            >
+                <div style={{ marginBottom: 16 }}>
+                    <Input
+                        placeholder="Tìm kiếm khóa học của học viên..."
+                        prefix={<SearchOutlined />}
+                        value={courseSearchText}
+                        onChange={e => setCourseSearchText(e.target.value)}
+                        allowClear
+                    />
+                </div>
+                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {filteredUserCourses.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {filteredUserCourses.map(course => (
+                                <div key={course.id} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '12px',
+                                    background: 'rgba(0,0,0,0.02)',
+                                    borderRadius: '8px',
+                                    border: '1px solid rgba(0,0,0,0.05)'
+                                }}>
+                                    <Text strong>{course.title}</Text>
+                                    <Popconfirm
+                                        title="Thu hồi quyền truy cập"
+                                        description="Học viên sẽ không còn thấy khóa học này trong danh sách của họ."
+                                        onConfirm={() => {
+                                            onRevokeAccess(selectedUserId!, course.id);
+                                        }}
+                                        okText="Thu hồi"
+                                        cancelText="Hủy"
+                                        okButtonProps={{ danger: true }}
+                                    >
+                                        <Button danger size="small" icon={<DeleteOutlined />}>Thu hồi</Button>
+                                    </Popconfirm>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <Text type="secondary">Không tìm thấy khóa học nào phù hợp</Text>
+                        </div>
+                    )}
+                </div>
+            </Modal>
+        </>
     );
 }

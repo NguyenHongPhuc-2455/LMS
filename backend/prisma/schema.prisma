@@ -49,6 +49,8 @@ model User {
   program_enrollments   ProgramEnrollment[]
   program_requests      ProgramRequest[]
 
+  @@index([full_name])
+  @@index([deleted_at])
   @@map("users")
 }
 
@@ -107,6 +109,8 @@ model Course {
   requests        CourseRequest[]
   program_courses ProgramCourse[]
 
+  @@index([status])
+  @@index([instructor_id])
   @@map("courses")
 }
 
@@ -128,6 +132,8 @@ model CourseRequest {
   user        User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   course      Course        @relation(fields: [course_id], references: [id], onDelete: Cascade)
 
+  @@index([status])
+  @@index([created_at])
   @@map("course_requests")
 }
 
@@ -155,6 +161,7 @@ model Lesson {
   title       String     @db.VarChar(255)
   type        LessonType @default(VIDEO)
   video_url   String?    @db.VarChar(255) // manifest_url cũ
+  source_url  String?    @db.VarChar(500) // URL video gốc từ server công ty
   content     String?    @db.Text         // Nội dung bài học (Markdown/Text)
   
   // Tài liệu đính kèm (PDF)
@@ -243,6 +250,8 @@ model Notification {
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id, is_read])
+  @@index([created_at])
   @@map("notifications")
 }
 
@@ -260,6 +269,8 @@ model Comment {
   parent  Comment?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
   replies Comment[] @relation("CommentReplies")
 
+  @@index([lesson_id])
+  @@index([created_at])
   @@map("comments")
 }
 

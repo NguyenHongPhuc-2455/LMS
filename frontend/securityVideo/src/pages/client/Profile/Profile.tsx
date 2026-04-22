@@ -32,7 +32,8 @@ const Profile: React.FC = () => {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         window.location.href = '/login';
     };

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.1",
+    "@tanstack/react-query": "^5.99.2",
     "@types/react-highlight-words": "^0.20.1",
     "@types/video.js": "^7.3.58",
     "antd": "^6.3.5",

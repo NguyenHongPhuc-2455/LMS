@@ -12,4 +12,7 @@ router.post('/', authMiddleware.verifyToken, commentController.createComment);
 // Xóa bình luận (Cần login)
 router.delete('/:id', authMiddleware.verifyToken, commentController.deleteComment);
 
+// Sửa bình luận (Cần login)
+router.put('/:id', authMiddleware.verifyToken, commentController.updateComment);
+
 module.exports = router;

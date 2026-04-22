@@ -22,6 +22,19 @@ exports.createNotification = async ({ userId, title, message, type, link }) => {
 };
 
 /**
+ * Tạo thông báo bất đồng bộ (Không chặn luồng chính)
+ */
+exports.createNotificationAsync = (data) => {
+    setImmediate(async () => {
+        try {
+            await exports.createNotification(data);
+        } catch (error) {
+            console.error('❌ Lỗi tạo thông báo ngầm:', error);
+        }
+    });
+};
+
+/**
  * Lấy danh sách thông báo của người dùng
  */
 exports.getNotificationsByUserId = async (userId) => {

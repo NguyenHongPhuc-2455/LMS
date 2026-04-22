@@ -7,6 +7,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const upload = multer({ dest: 'uploads/' });
 
 router.get('/', authMiddleware.verifyToken, videoController.getVideos);
+router.get('/manifest/:id', authMiddleware.verifyToken, videoController.getManifest);
 
 // Upload video cho một Lesson cụ thể
 router.post('/upload', authMiddleware.verifyToken, upload.single('video'), videoController.uploadVideo);

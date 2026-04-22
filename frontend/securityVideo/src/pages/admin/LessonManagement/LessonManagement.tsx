@@ -135,7 +135,7 @@ export default function LessonManagement() {
                     message.success('Đã tạo bài trắc nghiệm!');
                 }
             } else {
-                if (editingLesson) {
+                if (editingLesson?.id) {
                     await videoService.update(editingLesson.id, {
                         title: values.title,
                         section_id: values.section_id,
@@ -239,7 +239,11 @@ export default function LessonManagement() {
                     type="primary"
                     disabled={!selectedSectionId}
                     onClick={() => {
-                        setEditingLesson(null);
+                        const nextOrder = lessons.length > 0 ? Math.max(...lessons.map(l => l.order || 0)) + 1 : 1;
+                        setEditingLesson({
+                            order: nextOrder,
+                            section_id: selectedSectionId
+                        });
                         setEditingQuizId(null);
                         setLessonType('VIDEO');
                         setIsModalOpen(true);

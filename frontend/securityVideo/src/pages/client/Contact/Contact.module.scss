@@ -1,0 +1,141 @@
+.contactContainer {
+    padding: 40px 5%;
+    min-height: calc(100vh - 150px);
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    animation: fadeIn 0.8s ease-out;
+}
+
+.contactHeader {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+
+    .title {
+        font-size: 42px;
+        font-weight: 800;
+        margin-bottom: 16px;
+        color: #1e293b;
+    }
+
+    .subtitle {
+        font-size: 18px;
+        color: #64748b;
+    }
+}
+
+.contentWrapper {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 32px;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.infoSection {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.infoCard {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+    }
+
+    .cardIcon {
+        font-size: 32px;
+        color: #6366f1;
+        margin-bottom: 20px;
+    }
+
+    .cardTitle {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .cardContent {
+        color: #64748b;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+}
+
+.socialLinks {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+
+    .socialIcon {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: white;
+        border-radius: 12px;
+        color: #6366f1;
+        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+
+        &:hover {
+            background: #6366f1;
+            color: white;
+            transform: scale(1.1);
+        }
+    }
+}
+
+.formSection {
+    background: white;
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+
+    .formTitle {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .formSubtitle {
+        color: #94a3b8;
+        margin-bottom: 32px;
+        display: block;
+    }
+}
+
+.submitBtn {
+    height: 50px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    margin-top: 10px;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

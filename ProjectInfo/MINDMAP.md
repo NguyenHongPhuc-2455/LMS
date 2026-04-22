@@ -8,9 +8,10 @@ Tài liệu này trình bày sơ đồ tư duy (Mind Map) về các thành phầ
 mindmap
     root((RitaVo LMS))
       Bảo Mật["Bảo Mật (Security)"]
-        JWT Authentication
+        JWT Authentication (Access & Refresh Token rotation)
         RBAC["RBAC (Admin, Instructor, Student)"]
         HLS Encryption["HLS Encryption (AES-128)"]
+        Rate Limiting["Rate Limiting (Global & Auth)"]
         Secure Video Keys in DB
       Cấu Trúc Frontend["Cấu Trúc Frontend (Modular Architecture)"]
         Folder-based Components["1 Folder = 1 Component + Style"]
@@ -36,6 +37,10 @@ mindmap
         Socket.io Push
         Comment Reply Alerts
         Click to Navigate["Scroll & Highlight"]
+      Liên Hệ["Liên Hệ (Contact)"]
+        Premium Contact Page
+        Glassmorphism Design
+        Feedback Form
 ```
 
 
@@ -74,6 +79,7 @@ Giao diện React hiện đại:
 - [x] Hệ thống bình luận bài học (Facebook-style 2 cấp)
 - [x] Thông báo Realtime khi có phản hồi (Socket.io)
 - [x] Click thông báo để nhảy tới bình luận cụ thể
+- [x] Trang Liên hệ (Contact) chuyên nghiệp
 - [ ] Tích hợp Livestream dạy học trực tuyến.
 - [ ] App Mobile (React Native) sử dụng chung Backend API.
 - [ ] Hệ thống AI gợi ý khóa học dựa trên hành vi học tập.

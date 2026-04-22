@@ -13,7 +13,7 @@ const AdminLayout: React.FC = () => {
     const [collapsed, setCollapsed] = useState(false);
 
     // Kiểm tra Auth & Role
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
 

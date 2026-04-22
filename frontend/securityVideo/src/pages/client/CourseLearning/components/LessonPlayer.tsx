@@ -1,6 +1,6 @@
 import { Typography, Skeleton } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
-import { VideoPlayer, VideoJsPlayer, QuizPlayer } from '../../../../components';
+import { VideoPlayer, VideoJsPlayer, QuizPlayer, ServerLinkPlayer } from '../../../../components';
 import styles from '../CourseLearning.module.scss';
 
 const { Title, Text } = Typography;
@@ -43,10 +43,14 @@ export default function LessonPlayer({
         }
 
         if (activeLesson.video_url.includes('.m3u8')) {
+            const isAbsolute = activeLesson.video_url.startsWith('http');
+            const finalSrc = isAbsolute ? activeLesson.video_url : `http://localhost:5000${activeLesson.video_url}`;
+
             return (
                 <VideoPlayer
+                    key={activeLesson.id}
                     ref={videoPlayerRef}
-                    src={`http://localhost:5000${activeLesson.video_url}`}
+                    src={finalSrc}
                     lessonId={activeLesson.id}
                     onEnded={handleNextLesson}
                     onPlay={() => setIsVideoPlaying(true)}
@@ -55,15 +59,35 @@ export default function LessonPlayer({
             );
         }
 
+        const isYouTube = activeLesson.video_url.includes('youtube.com') || activeLesson.video_url.includes('youtu.be');
+
+        if (isYouTube) {
+            return (
+                <VideoJsPlayer
+                    key={activeLesson.id}
+                    ref={videoPlayerRef as any}
+                    src={activeLesson.video_url}
+                    lessonId={activeLesson.id}
+                    onEnded={handleNextLesson}
+                    onPlay={() => setIsVideoPlaying(true)}
+                    onPause={() => setIsVideoPlaying(false)}
+                />
+            );
+        }
+
+        // Trường hợp link trực tiếp từ server (ví dụ MP4) hoặc link ngoài không phải Youtube
+        const isAbsolute = activeLesson.video_url.startsWith('http');
+        const finalSrc = isAbsolute ? activeLesson.video_url : `http://localhost:5000${activeLesson.video_url}`;
+
         return (
-            <VideoJsPlayer
+            <ServerLinkPlayer
+                key={activeLesson.id}
                 ref={videoPlayerRef as any}
-                src={activeLesson.video_url}
+                src={finalSrc}
                 lessonId={activeLesson.id}
                 onEnded={handleNextLesson}
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}
-                isCompletedInit={activeLesson.isCompleted}
             />
         );
     }

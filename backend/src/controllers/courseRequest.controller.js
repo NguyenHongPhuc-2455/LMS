@@ -2,6 +2,7 @@ const prisma = require('../configs/prisma');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 const notificationService = require('../services/notification.service');
+const statsService = require('../services/stats.service');
 
 /**
  * Gửi yêu cầu tham gia khóa học private
@@ -78,7 +79,7 @@ exports.requestAccess = catchAsync(async (req, res) => {
         });
 
         for (const admin of admins) {
-            await notificationService.createNotification({
+            notificationService.createNotificationAsync({
                 userId: admin.id,
                 title: 'Yêu cầu phê duyệt khóa học mới',
                 message: `Học viên ${student.full_name || student.username} đã gửi yêu cầu tham gia khóa học "${course.title}".`,
@@ -86,6 +87,9 @@ exports.requestAccess = catchAsync(async (req, res) => {
                 link: `/admin/requests`
             });
         }
+
+        // Cập nhật số lượng cho Admin
+        await statsService.emitPendingRequestsCountToAdmins();
     } catch (error) {
         console.error('❌ Lỗi khi gửi thông báo cho Admin:', error);
     }
@@ -174,13 +178,16 @@ exports.approveRequest = catchAsync(async (req, res) => {
         select: { title: true }
     });
 
-    await notificationService.createNotification({
+    notificationService.createNotificationAsync({
         userId: request.user_id,
         title: 'Yêu cầu được phê duyệt',
         message: `Yêu cầu tham gia khóa học "${course.title}" của bạn đã được phê duyệt.`,
         type: 'COURSE_APPROVAL',
         link: `/course/${request.course_id}`
     });
+
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
 
     res.json({ message: 'Đã phê duyệt và cấp quyền truy cập khóa học', data: updatedRequest });
 });
@@ -211,13 +218,16 @@ exports.rejectRequest = catchAsync(async (req, res) => {
         select: { title: true }
     });
 
-    await notificationService.createNotification({
+    notificationService.createNotificationAsync({
         userId: request.user_id,
         title: 'Yêu cầu bị từ chối',
         message: `Yêu cầu tham gia khóa học "${course.title}" của bạn đã bị từ chối.`,
         type: 'COURSE_REJECTION',
         link: `/course/${request.course_id}`
     });
+
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
 
     res.json({ message: 'Đã từ chối yêu cầu truy cập', data: updatedRequest });
 });
@@ -243,7 +253,7 @@ exports.approveBulk = catchAsync(async (req, res) => {
             create: { user_id: request.user_id, course_id: request.course_id }
         });
 
-        await notificationService.createNotification({
+        notificationService.createNotificationAsync({
             userId: request.user_id,
             title: 'Yêu cầu được phê duyệt',
             message: `Yêu cầu tham gia khóa học "${request.course.title}" của bạn đã được phê duyệt.`,
@@ -251,6 +261,9 @@ exports.approveBulk = catchAsync(async (req, res) => {
             link: `/course/${request.course_id}`
         });
     }
+
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
 
     res.json({ message: `Đã phê duyệt ${requests.length} yêu cầu` });
 });
@@ -270,7 +283,7 @@ exports.rejectBulk = catchAsync(async (req, res) => {
             data: { status: 'REJECTED' }
         });
 
-        await notificationService.createNotification({
+        notificationService.createNotificationAsync({
             userId: request.user_id,
             title: 'Yêu cầu bị từ chối',
             message: `Yêu cầu tham gia khóa học "${request.course.title}" của bạn đã bị từ chối.`,
@@ -278,6 +291,9 @@ exports.rejectBulk = catchAsync(async (req, res) => {
             link: `/course/${request.course_id}`
         });
     }
+
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
 
     res.json({ message: `Đã từ chối ${requests.length} yêu cầu` });
 });

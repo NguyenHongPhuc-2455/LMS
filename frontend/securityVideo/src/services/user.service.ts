@@ -1,8 +1,8 @@
 import api from "./api";
 
 export const userService = {
-    getAll: async () => {
-        const response = await api.get('/users');
+    getAll: async (params?: { page: number; limit: number; search?: string }) => {
+        const response = await api.get('/users', { params });
         return response.data;
     },
     getRoles: async () => {
@@ -29,8 +29,16 @@ export const userService = {
         const response = await api.post('/users', data);
         return response.data;
     },
-    batchUpdate: async (payload: any) => {
-        const response = await api.post('/users/batch-update', payload);
+    updateBatch: async (users: any[]) => {
+        const response = await api.post('/users/batch-update', { users });
+        return response.data;
+    },
+    deleteBatch: async (ids: number[]) => {
+        const response = await api.delete('/users/batch', { data: { ids } });
+        return response.data;
+    },
+    revokeCourse: async (userId: number, courseId: number) => {
+        const response = await api.post('/users/revoke-course', { userId, courseId });
         return response.data;
     }
 };

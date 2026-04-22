@@ -14,5 +14,6 @@ router.post('/', authMiddleware.verifyToken, authMiddleware.isAdmin, userControl
 router.put('/:id', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.updateUser);
 router.post('/batch-update', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.batchUpdateUsers);
 router.delete('/:id', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.deleteUser);
+router.post('/revoke-course', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.revokeCourseAccess);
 
 module.exports = router;

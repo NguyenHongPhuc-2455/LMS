@@ -1,9 +1,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import shaka from 'shaka-player';
 import { contentService } from '../../services/content.service';
-import { message } from 'antd';
 import styles from './VideoPlayer.module.scss';
-
 
 interface VideoPlayerProps {
     src: string;
@@ -21,20 +19,61 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
+    const progressIntervalRef = useRef<any>(null);
 
-    // Cơ chế chống tua (Anti-Seek) ổn định
-    const lastTimeRef = useRef(0);
-
-    // Expose methods to parent
     useImperativeHandle(ref, () => ({
         reset: () => {
             if (videoRef.current) {
                 videoRef.current.currentTime = 0;
-                lastTimeRef.current = 0;
                 videoRef.current.play().catch(() => { });
             }
         }
     }));
+
+    // Hàm kiểm tra tiến độ chủ động
+    const startProgressCheck = () => {
+        stopProgressCheck();
+        progressIntervalRef.current = setInterval(() => {
+            const video = videoRef.current;
+            if (!video || video.paused || hasTriggeredEndRef.current) return;
+
+            const currentTime = video.currentTime;
+            const duration = video.duration;
+
+            // Chỉ xác nhận hoàn thành nếu:
+            // 1. Duration hợp lệ (> 5s)
+            // 2. Đã xem tối thiểu 5s (tránh lỗi nhảy bài ngay khi load)
+            // 3. Đã xem trên 99% (gần như hết video)
+            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.99) {
+                handleComplete();
+            }
+        }, 1000);
+    };
+
+    const stopProgressCheck = () => {
+        if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+        }
+    };
+
+    const handleComplete = async () => {
+        if (hasTriggeredEndRef.current || !lessonId) return;
+        hasTriggeredEndRef.current = true;
+        stopProgressCheck();
+
+        // Tự động dừng video khi hoàn thành
+        if (videoRef.current) {
+            videoRef.current.pause();
+        }
+
+        try {
+            await contentService.completeLesson(lessonId);
+            if (onEnded) onEnded();
+        } catch (e) {
+            console.error('Lỗi báo cáo tiến độ');
+        }
+    };
 
     useEffect(() => {
         const video = videoRef.current;
@@ -48,38 +87,45 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         player.attach(video);
 
         player.getNetworkingEngine()?.registerRequestFilter((type, request) => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                request.headers['Authorization'] = `Bearer ${token}`;
+            const uri = request.uris[0];
+            const isInternal = uri.startsWith('http://localhost:5000') || uri.startsWith('/');
+
+            if (isInternal) {
+                const token = localStorage.getItem('accessToken');
+                if (token) request.headers['Authorization'] = `Bearer ${token}`;
+                request.allowCrossSiteCredentials = true;
             }
 
-            if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST || request.uris[0].includes('/key/')) {
-                request.uris[0] += (request.uris[0].includes('?') ? '&' : '?') + 't=' + Date.now();
+            if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST || uri.includes('/key/')) {
+                request.uris[0] += (uri.includes('?') ? '&' : '?') + 't=' + Date.now();
             }
-
-            request.allowCrossSiteCredentials = true;
         });
 
         return () => {
+            stopProgressCheck();
             if (player) player.destroy();
+            if (video) {
+                video.pause();
+                video.src = '';
+                video.load();
+            }
         };
     }, []);
 
     useEffect(() => {
         let isStillMounted = true;
         hasTriggeredEndRef.current = false;
-        lastTimeRef.current = 0; // Reset khi đổi video
 
         const loadVideo = async () => {
             if (playerRef.current && src) {
                 try {
                     await playerRef.current.load(src);
-                    // if (isStillMounted && videoRef.current) {
-                    //     videoRef.current.play().catch(e => console.warn('Autoplay blocked:', e));
-                    // }
+                    if (isStillMounted && videoRef.current) {
+                        videoRef.current.play().catch(() => { });
+                    }
                 } catch (e: any) {
                     if (isStillMounted && e.code !== shaka.util.Error.Code.LOAD_INTERRUPTED) {
-                        console.error('❌ Shaka Player Error:', e);
+                        console.error('❌ Shaka Error:', e);
                     }
                 }
             }
@@ -89,43 +135,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         return () => { isStillMounted = false; };
     }, [src]);
 
-    const reportProgress = async () => {
-        if (!lessonId) return;
-        try {
-            await contentService.completeLesson(lessonId);
-        } catch (e) {
-            console.error('Lỗi báo cáo tiến độ');
-        }
-    };
-
-    const handleTimeUpdate = () => {
-        const video = videoRef.current;
-        if (!video || hasTriggeredEndRef.current) return;
-
-        // Logic chống tua siêu ổn định dùng Delta
-        const delta = video.currentTime - lastTimeRef.current;
-
-        // Nếu nhảy vọt hơn 1.2 giây (tua nhanh)
-        if (delta > 1.2) {
-            video.currentTime = lastTimeRef.current;
-            message.warning({
-                content: 'Vui lòng không tua nhanh video!',
-                key: 'anti-seek',
-                duration: 2
-            });
-        } else {
-            // Xem bình thường hoặc tua lùi
-            lastTimeRef.current = video.currentTime;
-        }
-
-        // Báo cáo hoàn thành khi đạt 95%
-        if (video.duration > 0 && video.currentTime / video.duration >= 0.95) {
-            hasTriggeredEndRef.current = true;
-            reportProgress();
-            if (onEnded) onEnded();
-        }
-    };
-
     return (
         <div className={styles.videoPlayerContainer}>
             <video
@@ -134,21 +143,18 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
                 crossOrigin="anonymous"
                 controlsList="nodownload"
                 className={styles.videoElement}
-                onTimeUpdate={handleTimeUpdate}
-                onPlay={onPlay}
-                onPause={onPause}
-                onEnded={() => {
-                    if (!hasTriggeredEndRef.current) {
-                        hasTriggeredEndRef.current = true;
-                        reportProgress();
-                        if (onEnded) onEnded();
-                    }
+                onPlay={() => {
+                    startProgressCheck();
+                    onPlay?.();
                 }}
+                onPause={() => {
+                    stopProgressCheck();
+                    onPause?.();
+                }}
+                onEnded={handleComplete}
             ></video>
         </div>
     );
 });
 
 export default VideoPlayer;
-
-

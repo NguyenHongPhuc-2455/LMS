@@ -1,0 +1,47 @@
+.commentInputWrapper {
+    margin-bottom: 24px;
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #f1f3f5;
+}
+
+.commentTextarea {
+    border-radius: 8px !important;
+    border-color: #e9ecef !important;
+    padding: 12px !important;
+    margin-bottom: 12px;
+
+    &:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+    }
+}
+
+.submitBtnWrapper {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.submitBtn {
+    border-radius: 6px;
+    font-weight: 500;
+    height: 38px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+// Reply specific styles
+.replyInputWrapper {
+    margin-top: 12px;
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 2px solid #e9ecef;
+}
+
+.replyTextarea {
+    margin-bottom: 8px;
+    border-radius: 6px !important;
+}

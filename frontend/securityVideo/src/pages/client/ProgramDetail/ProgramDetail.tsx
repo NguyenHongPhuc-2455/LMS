@@ -51,7 +51,7 @@ export default function ProgramDetail() {
     const [enrolling, setEnrolling] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
 
     const fetchDetail = async () => {
         try {

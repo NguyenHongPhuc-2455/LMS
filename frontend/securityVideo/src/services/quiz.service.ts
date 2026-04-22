@@ -5,12 +5,12 @@ export const quizService = {
         const response = await api.get(`/quizzes/lesson/${lessonId}`);
         return response.data;
     },
-    submit: async (lessonId: number, answers: any) => {
-        const response = await api.post(`/quizzes/submit/${lessonId}`, { answers });
+    submit: async (quizId: number, answers: any) => {
+        const response = await api.post(`/quizzes/${quizId}/submit`, { answers });
         return response.data;
     },
     create: async (data: any) => {
-        const response = await api.post('/quizzes/create', data); // Wait, backend use /quizzes/create? Let's check.
+        const response = await api.post('/quizzes', data);
         return response.data;
     },
     update: async (quizId: number, data: any) => {

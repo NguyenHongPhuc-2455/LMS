@@ -37,7 +37,8 @@ export default function Navbar() {
     const isAdmin = user?.roles?.includes('admin');
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         navigate('/login');
     };
@@ -173,7 +174,7 @@ export default function Navbar() {
                     placement="bottomRight"
                     overlayClassName="notification-popover"
                 >
-                    <Badge dot={unreadCount > 0} offset={[-4, 4]}>
+                    <Badge count={unreadCount} offset={[-4, 4]}>
                         <Button
                             type="text"
                             icon={<BellOutlined />}

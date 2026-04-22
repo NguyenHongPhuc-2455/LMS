@@ -135,6 +135,25 @@ class CommentService {
             where: { id: parseInt(commentId) }
         });
     }
+
+    async updateComment(commentId, userId, data) {
+        const comment = await prisma.comment.findUnique({
+            where: { id: parseInt(commentId) }
+        });
+
+        if (!comment) {
+            throw new Error('Không tìm thấy bình luận');
+        }
+
+        if (comment.user_id !== userId) {
+            throw new Error('Bạn không có quyền sửa bình luận này');
+        }
+
+        return await prisma.comment.update({
+            where: { id: parseInt(commentId) },
+            data: { content: data.content }
+        });
+    }
 }
 
 module.exports = new CommentService();

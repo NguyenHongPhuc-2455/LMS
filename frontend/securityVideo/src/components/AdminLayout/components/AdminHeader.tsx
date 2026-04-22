@@ -37,7 +37,8 @@ export default function AdminHeader({ user, userRoles }: AdminHeaderProps) {
     } = useNotifications(user?.id);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         navigate('/login');
     };

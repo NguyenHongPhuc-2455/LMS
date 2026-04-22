@@ -2,6 +2,7 @@ const prisma = require('../configs/prisma');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 const notificationService = require('../services/notification.service');
+const statsService = require('../services/stats.service');
 
 /**
  * Gửi yêu cầu tham gia chương trình học private
@@ -86,6 +87,9 @@ exports.requestAccess = catchAsync(async (req, res) => {
                 link: `/admin/requests`
             });
         }
+
+        // Cập nhật số lượng cho Admin
+        await statsService.emitPendingRequestsCountToAdmins();
     } catch (error) {
         console.error('❌ Lỗi khi gửi thông báo cho Admin:', error);
     }
@@ -197,6 +201,9 @@ exports.approveRequest = catchAsync(async (req, res) => {
         link: `/programs/${request.program_id}`
     });
 
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
+
     res.json({ message: 'Đã phê duyệt lộ trình và mở khóa toàn bộ khóa học liên quan', data: updatedRequest });
 });
 
@@ -229,6 +236,9 @@ exports.rejectRequest = catchAsync(async (req, res) => {
         type: 'PROGRAM_REJECTION',
         link: `/programs/${request.program_id}`
     });
+
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
 
     res.json({ message: 'Đã từ chối yêu cầu truy cập lộ trình', data: updatedRequest });
 });
@@ -277,6 +287,9 @@ exports.approveBulk = catchAsync(async (req, res) => {
         });
     }
 
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
+
     res.json({ message: `Đã phê duyệt ${requests.length} yêu cầu lộ trình` });
 });
 
@@ -303,6 +316,9 @@ exports.rejectBulk = catchAsync(async (req, res) => {
             link: `/programs/${request.program_id}`
         });
     }
+
+    // Cập nhật số lượng cho Admin
+    await statsService.emitPendingRequestsCountToAdmins();
 
     res.json({ message: `Đã từ chối ${requests.length} yêu cầu lộ trình` });
 });

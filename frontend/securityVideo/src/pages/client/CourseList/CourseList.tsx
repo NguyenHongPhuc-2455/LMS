@@ -77,11 +77,6 @@ export default function CourseList() {
 
     return (
         <div className={styles.courseListContainer}>
-            <div className={styles.sectionHeaderCombined}>
-                <div style={{ flex: 1 }}></div>
-                <CourseFilter sortBy={sortBy} setSortBy={setSortBy} />
-            </div>
-
             <CourseGrid
                 title="Khóa học Riêng tư (Cần phê duyệt)"
                 tagLabel="Yêu cầu"
@@ -89,6 +84,7 @@ export default function CourseList() {
                 currentPage={currentPagePrivate}
                 pageSize={pageSize}
                 setCurrentPage={setCurrentPagePrivate}
+                renderExtra={<CourseFilter sortBy={sortBy} setSortBy={setSortBy} />}
             />
 
             <CourseGrid
@@ -105,4 +101,3 @@ export default function CourseList() {
         </div>
     );
 }
-
