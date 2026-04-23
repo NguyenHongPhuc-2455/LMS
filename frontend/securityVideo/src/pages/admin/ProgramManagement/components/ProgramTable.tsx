@@ -39,7 +39,7 @@ interface ProgramTableProps {
 export default function ProgramTable({ programs, loading, onEdit, onDelete, onOpenCourseDrawer, onRefresh }: ProgramTableProps) {
     const columns = [
         {
-            title: 'Chương trình học',
+            title: 'Lộ trình học',
             key: 'info',
             width: 350,
             filters: programs.map(p => ({ text: p.title, value: p.id })),
@@ -149,7 +149,7 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             render: (p: Program) => (
                 <Space>
                     <Button type="text" icon={<Edit size={16} />} onClick={() => onEdit(p)} />
-                    <Popconfirm title="Xóa chương trình học này?" onConfirm={() => onDelete(p.id)}>
+                    <Popconfirm title="Xóa Lộ trình học này?" onConfirm={() => onDelete(p.id)}>
                         <Button type="text" danger icon={<Trash2 size={16} />} />
                     </Popconfirm>
                 </Space>

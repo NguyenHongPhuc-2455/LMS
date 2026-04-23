@@ -1,4 +1,4 @@
-import { Modal, Form, Segmented, Divider, Button } from 'antd';
+import { Modal, Form, Segmented, Button } from 'antd';
 import { ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import styles from '../LessonManagement.module.scss';
@@ -54,12 +54,26 @@ export default function LessonFormModal({
             title={editingId ? "Chỉnh sửa Bài Giảng" : "Đăng Bài Giảng Mới"}
             open={open}
             onCancel={onCancel}
-            footer={null}
-            width={800}
+            footer={[
+                <Button key="cancel" onClick={onCancel}>
+                    Hủy bỏ
+                </Button>,
+                <Button
+                    key="submit"
+                    type="primary"
+                    icon={lessonType === 'VIDEO' ? <ShieldCheck size={18} /> : undefined}
+                    onClick={() => form.submit()}
+                    size="large"
+                >
+                    {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Bắt đầu băm video HLS" : "Lưu bài trắc nghiệm")}
+                </Button>
+            ]}
+            width={1000}
+            style={{ top: 100 }}
             destroyOnClose
         >
             {!editingId && (
-                <div className={styles.segmentedWrapper}>
+                <div className={styles.segmentedWrapper} style={{ marginBottom: 16 }}>
                     <Segmented
                         options={[
                             { label: 'Video bài học', value: 'VIDEO' },
@@ -71,27 +85,24 @@ export default function LessonFormModal({
                 </div>
             )}
 
-            <Form form={form} layout="vertical" onFinish={handleFinish}>
-                {lessonType === 'VIDEO' ? (
-                    <VideoLessonForm
-                        sections={sections}
-                        videoSourceType={videoSourceType}
-                        setVideoSourceType={setVideoSourceType}
-                        setSelectedFile={setSelectedFile}
-                        setAttachmentFile={setAttachmentFile}
-                        selectedFile={selectedFile}
-                        attachmentFile={attachmentFile}
-                        editingId={editingId}
-                    />
-                ) : (
-                    <QuizLessonForm sections={sections} form={form} />
-                )}
-
-                <Divider />
-                <Button type="primary" htmlType="submit" block size="large" icon={lessonType === 'VIDEO' ? <ShieldCheck size={18} /> : undefined}>
-                    {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Bắt đầu băm video HLS" : "Lưu bài trắc nghiệm")}
-                </Button>
-            </Form>
+            <div className={styles.modalBodyScroll}>
+                <Form form={form} layout="vertical" onFinish={handleFinish}>
+                    {lessonType === 'VIDEO' ? (
+                        <VideoLessonForm
+                            sections={sections}
+                            videoSourceType={videoSourceType}
+                            setVideoSourceType={setVideoSourceType}
+                            setSelectedFile={setSelectedFile}
+                            setAttachmentFile={setAttachmentFile}
+                            selectedFile={selectedFile}
+                            attachmentFile={attachmentFile}
+                            editingId={editingId}
+                        />
+                    ) : (
+                        <QuizLessonForm sections={sections} form={form} />
+                    )}
+                </Form>
+            </div>
         </Modal>
     );
 }

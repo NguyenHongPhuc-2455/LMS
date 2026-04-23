@@ -6,4 +6,5 @@ export { default as ProgramManagement } from './ProgramManagement/ProgramManagem
 export { default as SectionManagement } from './SectionManagement/SectionManagement';
 
 export { default as UserManagement } from './UserManagement/UserManagement';
-        
+export { default as CourseProgress } from './CourseProgress/CourseProgress';
+export { default as CategoryManagement } from './CategoryManagement/CategoryManagement';

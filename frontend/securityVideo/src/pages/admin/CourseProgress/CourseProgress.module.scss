@@ -1,0 +1,35 @@
+.container {
+    padding: 10px;
+}
+
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.headerTitle {
+    margin-bottom: 0 !important;
+    color: #1e293b;
+}
+
+.courseSelectorWrapper {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+:global {
+    .ant-table-wrapper {
+        .ant-table-thead>tr>th {
+            font-weight: 600;
+        }
+    }
+
+    .page-number {
+        font-family: monospace;
+        font-weight: 600;
+    }
+}

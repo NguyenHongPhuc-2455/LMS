@@ -15,8 +15,13 @@ Tài liệu này quy định các chuẩn mực về code, cấu trúc và quy t
 - **Hooks**: Luôn bắt đầu bằng `use` (VD: `useAuth.ts`).
 - **Interfaces/Types**: Sử dụng `PascalCase` (VD: `interface UserData`).
 - **Folder Organization**: 
-  - Admin: Các trang quản trị đặt tại `src/pages/admin/`.
-  - Client: Các trang người dùng đặt tại `src/pages/client/`.
+   - Admin: Các trang quản trị đặt tại `src/pages/admin/`.
+   - Client: Các trang người dùng đặt tại `src/pages/client/`.
+ - **Admin UI Standards**:
+   - Layout: Tiêu đề trang và mô tả phải nằm **NGOÀI** thẻ `Card`.
+   - Spacing: Toàn bộ container sử dụng padding `10px`.
+   - Spacing: Header trang (Title -> Card) sử dụng `margin-bottom: 20px`.
+   - Palette: Màu chủ đạo `#C72127` (RitaVo Red).
 
 ---
 
@@ -92,3 +97,13 @@ exports.getDetail = catchAsync(async (req, res) => {
 ### CommentSection Component
 - Mỗi bình luận có `id="comment-{id}"` cho scroll targeting.
 - Render đệ quy qua `renderCommentItem(item, level)`.
+
+---
+
+## 🎨 8. Admin Dashboard UI Sync (Standardization)
+
+Mọi trang Quản trị mới phải tuân thủ cấu trúc Layout thống nhất:
+1. **Container Wrapper**: Div ngoài cùng có `padding: 10px`.
+2. **Page Header**: Nằm ngoài Card, chứa `Title (level 4)` và `Text (secondary)`. Khoảng cách xuống Card là `20px`.
+3. **Card Body**: Thẻ Card chính của trang, không nên dùng lằn ngang (divider) phân tách header trong Card.
+4. **Toolbar Actions**: Thanh lọc (Filter) và nút Thêm mới (Add) đặt cùng hàng `space-between` trên đầu Card.

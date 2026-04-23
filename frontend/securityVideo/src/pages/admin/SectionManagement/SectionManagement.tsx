@@ -144,7 +144,6 @@ export default function SectionManagement() {
                 <SectionTable
                     sections={sections}
                     loading={loading}
-                    courseSelected={!!selectedCourseId}
                     onEdit={(s) => { setEditingId(s.id); setEditingSection(s); setIsModalOpen(true); }}
                     onDelete={handleDelete}
                     onNavigateLessons={(sid) => navigate(`/admin/lessons?courseId=${selectedCourseId}&sectionId=${sid}`)}

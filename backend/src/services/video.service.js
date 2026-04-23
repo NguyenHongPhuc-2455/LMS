@@ -15,24 +15,44 @@ ffmpeg.setFfprobePath(ffprobePath);
 const HLS_OUTPUT_DIR = path.join(__dirname, '../../public/hls');
 if (!fs.existsSync(HLS_OUTPUT_DIR)) fs.mkdirSync(HLS_OUTPUT_DIR, { recursive: true });
 
+// Biến in-memory để theo dõi các bài học đang trong quá trình băm video
+// Giúp tránh Race Condition khi nhiều người cùng truy cập một lúc
+const processingLessons = new Set();
+
+/**
+ * Lấy thời lượng video bằng ffprobe
+ * @param {string} source - Có thể là đường dẫn file cục bộ hoặc URL từ xa
+ */
+const getDuration = async (source) => {
+    try {
+        const metadata = await new Promise((resolve, reject) => {
+            ffmpeg.ffprobe(source, (err, data) => {
+                if (err) reject(err);
+                else resolve(data);
+            });
+        });
+        return Math.round(metadata.format.duration || 0);
+    } catch (err) {
+        console.error(`Lỗi ffprobe cho ${source}:`, err.message);
+        return 0;
+    }
+};
+
 /**
  * Xử lý Video sang HLS với mã hóa AES-128
  */
 const processVideoToHLS = async (lessonId, inputPath) => {
+    // Nếu đang băm rồi thì không băm nữa
+    if (processingLessons.has(lessonId)) {
+        console.log(`Lesson ${lessonId} is already being processed. Skipping...`);
+        return;
+    }
+
     try {
+        processingLessons.add(lessonId);
+
         // 0. Lấy thông tin thời lượng video
-        let duration = 0;
-        try {
-            const metadata = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(inputPath, (err, data) => {
-                    if (err) reject(err);
-                    else resolve(data);
-                });
-            });
-            duration = Math.round(metadata.format.duration || 0);
-        } catch (err) {
-            console.error('Lỗi lấy metadata video:', err);
-        }
+        const duration = await getDuration(inputPath);
         const lessonDir = path.join(HLS_OUTPUT_DIR, lessonId.toString());
         if (!fs.existsSync(lessonDir)) fs.mkdirSync(lessonDir, { recursive: true });
 
@@ -56,7 +76,6 @@ const processVideoToHLS = async (lessonId, inputPath) => {
             '-map', '0:v:0',
             '-map', '0:a:0?',
             '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
-            // '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
             '-c:v', 'libx264',
             '-preset', 'veryfast',
             '-crf', '26',
@@ -101,9 +120,13 @@ const processVideoToHLS = async (lessonId, inputPath) => {
             } else {
                 console.error(`FFmpeg failed with code ${code}`);
             }
+
+            // Xóa khỏi danh sách đang xử lý
+            processingLessons.delete(lessonId);
         });
     } catch (error) {
         console.error('Video Service Error:', error);
+        processingLessons.delete(lessonId);
     }
 };
 
@@ -174,7 +197,13 @@ const ensureHLS = async (lessonId) => {
         return true;
     }
 
-    // 2. Nếu chưa có, lấy source_url để băm
+    // 2. Kiểm tra nếu bài học đang được xử lý bởi tiến trình khác
+    if (processingLessons.has(lessonId)) {
+        console.log(`Lesson ${lessonId} is currently being transcoded by another process.`);
+        return false;
+    }
+
+    // 3. Nếu chưa có và không băm, lấy source_url để băm
     const lesson = await prisma.lesson.findUnique({
         where: { id: parseInt(lessonId) },
         select: { source_url: true }
@@ -233,5 +262,6 @@ module.exports = {
     getVideos,
     getVideoKey,
     deleteVideoFiles,
-    ensureHLS
+    ensureHLS,
+    getDuration
 };

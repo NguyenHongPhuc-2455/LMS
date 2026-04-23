@@ -48,6 +48,7 @@ model User {
   instructed_programs   LearningProgram[]   @relation("ProgramInstructor")
   program_enrollments   ProgramEnrollment[]
   program_requests      ProgramRequest[]
+  learning_sessions     LearningSession[]
 
   @@index([full_name])
   @@index([deleted_at])
@@ -412,5 +413,19 @@ model StudentAnswer {
   question Question    @relation(fields: [question_id], references: [id], onDelete: Cascade)
   option   Option      @relation(fields: [option_id], references: [id], onDelete: Cascade)
   @@map("student_answers")
+}
+
+model LearningSession {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  lesson_id   Int?     // Đôi khi chỉ cần biết đang học khóa nào
+  course_id   Int?     // Thêm course_id để thống kê theo khóa dễ hơn
+  duration    Int      @default(0) // Giây
+  date        DateTime @default(now()) @db.Date // Chỉ lưu ngày
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, course_id, date]) // Một ngày một khóa học chỉ có 1 bản ghi tổng hợp
+  @@map("learning_sessions")
 }
 

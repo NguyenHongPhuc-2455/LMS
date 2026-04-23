@@ -1,4 +1,5 @@
-import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select } from 'antd';
+import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space } from 'antd';
+import { FileText, Video, UploadCloud } from 'lucide-react';
 import styles from '../LessonManagement.module.scss';
 
 const { Text } = Typography;
@@ -25,54 +26,110 @@ export default function VideoLessonForm({
     editingId
 }: VideoLessonFormProps) {
     return (
-        <>
-            <Form.Item name="section_id" label="Chương học" rules={[{ required: true }]}>
-                <Select options={sections.map(s => ({ value: s.id, label: s.title }))} />
-            </Form.Item>
+        <div style={{ padding: '4px' }}>
+            <Row gutter={32}>
+                {/* Cột trái */}
+                <Col span={12}>
+                    <Form.Item name="section_id" label="Chương học" rules={[{ required: true }]}>
+                        <Select options={sections.map(s => ({ value: s.id, label: s.title }))} placeholder="Chọn chương bọc cho bài giảng" />
+                    </Form.Item>
 
-            <Row gutter={16}>
-                <Col span={18}>
-                    <Form.Item name="title" label="Tiêu đề bài giảng" rules={[{ required: true }]}>
-                        <Input />
+                    <Row gutter={12}>
+                        <Col span={10}>
+                            <Form.Item name="title" label="Tiêu đề bài giảng" rules={[{ required: true }]}>
+                                <Input placeholder="Ví dụ: Giới thiệu khóa học" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={7}>
+                            <Form.Item label="Thời lượng">
+                                <Space.Compact style={{ width: '100%' }}>
+                                    <Form.Item name="duration_min" noStyle>
+                                        <InputNumber min={0} placeholder="Phút" style={{ width: '50%' }} />
+                                    </Form.Item>
+                                    <Form.Item name="duration_sec" noStyle>
+                                        <InputNumber min={0} max={59} placeholder="Giây" style={{ width: '50%' }} />
+                                    </Form.Item>
+                                </Space.Compact>
+                            </Form.Item>
+                        </Col>
+                        <Col span={7}>
+                            <Form.Item name="order" label="Thứ tự hiển thị">
+                                <InputNumber min={0} style={{ width: '100%' }} />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Form.Item name="content" label="Nội dung văn bản">
+                        <Input.TextArea rows={6} placeholder="Nhập nội dung văn bản của bài học hoặc hướng dẫn..." />
                     </Form.Item>
                 </Col>
-                <Col span={6}>
-                    <Form.Item name="order" label="Thứ tự hiển thị">
-                        <InputNumber min={0} style={{ width: '100%' }} />
-                    </Form.Item>
+
+                {/* Cột phải */}
+                <Col span={12}>
+                    <div className={styles.attachmentWrapper}>
+                        <Text strong className={styles.attachmentTitle}>
+                            <FileText size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                            Tài liệu đính kèm (PDF - Tùy chọn)
+                        </Text>
+                        <Upload
+                            beforeUpload={(file) => {
+                                setAttachmentFile(file);
+                                return false;
+                            }}
+                            showUploadList={false}
+                            accept="application/pdf"
+                        >
+                            <Button icon={<UploadCloud size={16} />} block style={{ height: 45, borderRadius: 8 }}>
+                                {attachmentFile ? attachmentFile.name : "Chọn tệp PDF"}
+                            </Button>
+                        </Upload>
+                    </div>
+
+                    {!editingId && (
+                        <div className={styles.videoSourceWrapper} style={{ marginTop: 24 }}>
+                            <Text strong className={styles.attachmentTitle}>
+                                <Video size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                                Nguồn Bài Giảng
+                            </Text>
+                            <Radio.Group
+                                value={videoSourceType}
+                                onChange={e => setVideoSourceType(e.target.value)}
+                                className={styles.videoSourceRadio}
+                                optionType="button"
+                                buttonStyle="solid"
+                                style={{ width: '100%', marginBottom: 16 }}
+                            >
+                                <Radio.Button value="UPLOAD" style={{ width: '50%', textAlign: 'center' }}>HLS Upload</Radio.Button>
+                                <Radio.Button value="LINK" style={{ width: '50%', textAlign: 'center' }}>External Link</Radio.Button>
+                            </Radio.Group>
+
+                            <div style={{ marginTop: 16 }}>
+                                {videoSourceType === 'UPLOAD' ? (
+                                    <div>
+                                        <Upload
+                                            beforeUpload={(file) => {
+                                                setSelectedFile(file);
+                                                return false;
+                                            }}
+                                            showUploadList={false}
+                                            accept="video/mp4"
+                                        >
+                                            <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 8 }}>
+                                                {selectedFile ? selectedFile.name : "Nhấn để tải lên Video (MP4)"}
+                                            </Button>
+                                        </Upload>
+                                        {selectedFile && <Text type="success" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>✓ Sẵn sàng để băm video</Text>}
+                                    </div>
+                                ) : (
+                                    <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>
+                                        <Input placeholder="Ví dụ: https://www.youtube.com/watch?v=..." style={{ height: 40 }} />
+                                    </Form.Item>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </Col>
             </Row>
-
-            <Form.Item name="content" label="Nội dung văn bản">
-                <Input.TextArea rows={4} />
-            </Form.Item>
-
-            <div className={styles.attachmentWrapper}>
-                <Text strong className={styles.attachmentTitle}>Tài liệu đính kèm (PDF - Tùy chọn)</Text>
-                <input type="file" accept="application/pdf" onChange={e => setAttachmentFile(e.target.files?.[0] || null)} />
-                {attachmentFile && <Text type="success" className={styles.attachmentSuccess}><br />✓ {attachmentFile.name}</Text>}
-            </div>
-
-            {!editingId && (
-                <div className={styles.videoSourceWrapper}>
-                    <Radio.Group value={videoSourceType} onChange={e => setVideoSourceType(e.target.value)} className={styles.videoSourceRadio}>
-                        <Radio value="UPLOAD">Upload Video MP4 (HLS)</Radio>
-                        <Radio value="LINK">Dùng Link (Youtube/Server)</Radio>
-                    </Radio.Group>
-
-                    {videoSourceType === 'UPLOAD' ? (
-                        <div>
-                            <Text strong className={styles.attachmentTitle}>Tệp Video (MP4 - Bắt buộc)</Text>
-                            <input type="file" accept="video/mp4" onChange={e => setSelectedFile(e.target.files?.[0] || null)} />
-                            {selectedFile && <Text type="success" className={styles.attachmentSuccess}><br />✓ {selectedFile.name}</Text>}
-                        </div>
-                    ) : (
-                        <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>
-                            <Input placeholder="Ví dụ: https://www.youtube.com/watch?v=..." />
-                        </Form.Item>
-                    )}
-                </div>
-            )}
-        </>
+        </div>
     );
 }

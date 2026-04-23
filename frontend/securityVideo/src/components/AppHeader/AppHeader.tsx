@@ -25,6 +25,9 @@ const AppHeader: React.FC = () => {
         notifications,
         unreadCount,
         loading,
+        loadingMore,
+        hasMore,
+        loadMore,
         markAsRead,
         markAllAsRead,
         deleteNotification,
@@ -170,6 +173,21 @@ const AppHeader: React.FC = () => {
                     </List.Item>
                 )}
                 className={styles.notificationList}
+                loadMore={
+                    hasMore && notifications.length > 0 && (
+                        <div className={styles.loadMoreWrapper}>
+                            <Button
+                                type="link"
+                                size="small"
+                                onClick={loadMore}
+                                loading={loadingMore}
+                                className={styles.loadMoreBtn}
+                            >
+                                Tải thêm
+                            </Button>
+                        </div>
+                    )
+                }
             />
         </div>
     );
@@ -177,10 +195,7 @@ const AppHeader: React.FC = () => {
     return (
         <Header className={styles.appHeaderContainer}>
             {/* Left: Logo */}
-            <div className={styles.appHeaderLogo} onClick={() => {
-                setSearchTerm('');
-                navigate('/course');
-            }}>
+            <div className={styles.appHeaderLogo}>
                 <img src="/logo/logo.svg" alt="Logo" className={styles.logoImg} />
             </div>
 

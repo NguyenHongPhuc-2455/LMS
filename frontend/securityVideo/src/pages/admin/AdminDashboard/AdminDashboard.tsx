@@ -11,18 +11,13 @@ import PopularCourses from './components/PopularCourses';
 const { Title } = Typography;
 
 const data_placeholder = [
-    { name: '5k', enrollments: 20 },
-    { name: '10k', enrollments: 40 },
-    { name: '15k', enrollments: 30 },
-    { name: '20k', enrollments: 80 },
-    { name: '25k', enrollments: 45 },
-    { name: '30k', enrollments: 50 },
-    { name: '35k', enrollments: 25 },
-    { name: '40k', enrollments: 70 },
-    { name: '45k', enrollments: 60 },
-    { name: '50k', enrollments: 50 },
-    { name: '55k', enrollments: 40 },
-    { name: '60k', enrollments: 55 }
+    { name: '17/04', enrollments: 0 },
+    { name: '18/04', enrollments: 0 },
+    { name: '19/04', enrollments: 0 },
+    { name: '20/04', enrollments: 0 },
+    { name: '21/04', enrollments: 1 },
+    { name: '22/04', enrollments: 0 },
+    { name: '23/04', enrollments: 2 }
 ];
 
 export default function AdminDashboard() {
@@ -48,7 +43,7 @@ export default function AdminDashboard() {
     return (
         <div>
             <Title level={2} className={styles.adminDashboardTitle}>
-                Dashboard
+                Tổng quan
             </Title>
 
             <StatSummary stats={stats} />

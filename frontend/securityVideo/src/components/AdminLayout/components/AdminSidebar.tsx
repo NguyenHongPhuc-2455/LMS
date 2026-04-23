@@ -7,7 +7,9 @@ import {
     MenuFoldOutlined,
     PlaySquareOutlined,
     ApartmentOutlined,
-    CheckOutlined
+    CheckOutlined,
+    LineChartOutlined,
+    TagsOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
@@ -56,32 +58,43 @@ export default function AdminSidebar() {
         {
             key: '/admin',
             icon: <PieChartOutlined />,
-            label: 'Dashboard',
+            label: 'Tổng quan',
         },
         {
             key: '/admin/courses',
             icon: <BookOutlined />,
-            label: 'Khóa học',
+            label: 'Quản lý khóa học',
         },
         {
             key: '/admin/sections',
             icon: <MenuFoldOutlined />,
-            label: 'Chương học',
+            label: 'Quản lý chương học',
         },
         {
             key: '/admin/lessons',
             icon: <PlaySquareOutlined />,
-            label: 'Bài giảng',
+            label: 'Quản lý bài giảng',
         },
         {
             key: '/admin/programs',
             icon: <ApartmentOutlined />,
-            label: 'Chương trình học',
+            label: 'Quản lý lộ trình học',
+        },
+        {
+            key: '/admin/categories',
+            icon: <TagsOutlined />,
+            label: 'Quản lý danh mục',
+        },
+        {
+            key: '/admin/progress',
+
+            icon: <LineChartOutlined />,
+            label: 'Quản lý tiến độ học tập',
         },
         {
             key: '/admin/users',
             icon: <UserOutlined />,
-            label: 'Học viên',
+            label: 'Quản lý học viên',
         },
         {
             key: '/admin/requests',

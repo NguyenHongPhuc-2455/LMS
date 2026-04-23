@@ -13,7 +13,7 @@ export default function CourseCurriculum({ sections, totalLessons }: CourseCurri
     const totalDuration = sections.reduce((acc, s) => acc + (s.lessons?.reduce((lacc: number, l: any) => lacc + (l.duration || 0), 0) || 0), 0);
     const h = Math.floor(totalDuration / 3600);
     const m = Math.floor((totalDuration % 3600) / 60);
-    const durationStr = h > 0 ? `${h} giờ ${m} phút` : `${m} phút`;
+    // const durationStr = h > 0 ? `${h} giờ ${m} phút` : `${m} phút`;
 
     return (
         <div className={styles.infoSection}>
@@ -21,7 +21,8 @@ export default function CourseCurriculum({ sections, totalLessons }: CourseCurri
                 <Title level={4} style={{ margin: 0 }}>Nội dung khóa học</Title>
             </div>
             <Text type="secondary" className={styles.sectionStats}>
-                {sections.length} chương • {totalLessons} bài học • Thời lượng {durationStr}
+                {/* {sections.length} chương • {totalLessons} bài học • Thời lượng {durationStr} */}
+                {sections.length} chương • {totalLessons} bài học
             </Text>
 
             <Collapse

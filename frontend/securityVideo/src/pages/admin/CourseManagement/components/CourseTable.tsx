@@ -14,6 +14,7 @@ interface Course {
     thumbnail: string;
     is_private: boolean;
     level: string;
+    category_id?: number | null;
     created_at: string;
     updated_at: string;
     _count?: { sections: number, enrollments: number };
@@ -21,18 +22,30 @@ interface Course {
 
 interface CourseTableProps {
     courses: Course[];
+    categories: any[];
     loading: boolean;
     onEdit: (course: Course) => void;
     onDelete: (id: number) => void;
     onNavigateToSections: (id: number) => void;
     onStatusChange: (id: number, isPrivate: boolean) => void;
+    onCategoryChange: (id: number, categoryId: number | null) => void;
 }
 
-export default function CourseTable({ courses, loading, onEdit, onDelete, onNavigateToSections, onStatusChange }: CourseTableProps) {
+export default function CourseTable({
+    courses,
+    categories,
+    loading,
+    onEdit,
+    onDelete,
+    onNavigateToSections,
+    onStatusChange,
+    onCategoryChange
+}: CourseTableProps) {
     const columns = [
         {
             title: 'Khóa học',
             key: 'info',
+            sorter: (a: Course, b: Course) => a.title.localeCompare(b.title),
             render: (c: Course) => (
                 <Space
                     size={12}
@@ -52,6 +65,28 @@ export default function CourseTable({ courses, loading, onEdit, onDelete, onNavi
                 { text: 'Nâng cao', value: 'Nâng cao' },
             ],
             onFilter: (value: any, record: Course) => record.level === value,
+        },
+        {
+            title: 'Danh mục',
+            key: 'category',
+            width: 180,
+            filters: categories.map(cat => ({ text: cat.name, value: cat.id })),
+            onFilter: (value: any, record: Course) => record.category_id === value,
+            render: (c: Course) => (
+                <Select
+                    value={c.category_id}
+                    onChange={(val) => onCategoryChange(c.id, val)}
+                    placeholder="Chưa phân loại"
+                    style={{ width: '100%' }}
+                    size="small"
+                    allowClear
+                    className={styles.statusSelect}
+                    options={categories.map(cat => ({
+                        value: cat.id,
+                        label: cat.name
+                    }))}
+                />
+            ),
         },
         {
             title: 'Trạng thái',
@@ -87,6 +122,7 @@ export default function CourseTable({ courses, loading, onEdit, onDelete, onNavi
             title: 'Học viên',
             key: 'students',
             width: 100,
+            sorter: (a: Course, b: Course) => (a._count?.enrollments || 0) - (b._count?.enrollments || 0),
             render: (c: Course) => (
                 <Badge
                     count={c._count?.enrollments || 0}

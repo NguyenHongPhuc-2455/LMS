@@ -42,8 +42,8 @@
     }
 }
 
-.filterCard {
-    margin-bottom: 20px;
+.lessonFilterContainer {
+    margin-bottom: 12px;
 }
 
 .filterWrapper {
@@ -139,4 +139,37 @@
 
 .fullWidth {
     width: 100%;
+}
+
+.quizQuestionsScrollArea {
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.modalBodyScroll {
+    height: 60vh;
+    overflow-y: auto;
+    padding: 0 4px;
+
+    // Tùy chỉnh thanh cuộn cho đẹp
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
 }

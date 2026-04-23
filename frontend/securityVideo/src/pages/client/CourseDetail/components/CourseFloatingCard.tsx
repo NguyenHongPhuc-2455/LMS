@@ -35,15 +35,15 @@ export default function CourseFloatingCard({ course, totalLessons, renderActionB
                         {[
                             { icon: <ExperimentOutlined />, text: `Trình độ ${course.level || 'Cơ bản'}` },
                             { icon: <PlaySquareOutlined />, text: `Tổng số ${totalLessons} bài học` },
-                            {
-                                icon: <ClockCircleOutlined />,
-                                text: `Thời lượng ${(() => {
-                                    const totalSeconds = course.sections.reduce((acc: number, s: any) => acc + (s.lessons?.reduce((lacc: number, l: any) => lacc + (l.duration || 0), 0) || 0), 0);
-                                    const h = Math.floor(totalSeconds / 3600);
-                                    const m = Math.floor((totalSeconds % 3600) / 60);
-                                    return h > 0 ? `${h} giờ ${m} phút` : `${m} phút`;
-                                })()}`
-                            },
+                            // {
+                            //     icon: <ClockCircleOutlined />,
+                            //     text: `Thời lượng ${(() => {
+                            //         const totalSeconds = course.sections.reduce((acc: number, s: any) => acc + (s.lessons?.reduce((lacc: number, l: any) => lacc + (l.duration || 0), 0) || 0), 0);
+                            //         const h = Math.floor(totalSeconds / 3600);
+                            //         const m = Math.floor((totalSeconds % 3600) / 60);
+                            //         return h > 0 ? `${h} giờ ${m} phút` : `${m} phút`;
+                            //     })()}`
+                            // },
                             { icon: <GlobalOutlined />, text: "Học mọi lúc, mọi nơi" }
                         ].map((item, i) => (
                             <li key={i} className={styles.infoItem}>

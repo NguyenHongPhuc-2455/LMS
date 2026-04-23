@@ -40,24 +40,27 @@ export default function Login() {
             <div className={styles.authWrapper}>
                 {/* Left Side: Form */}
                 <div className={styles.authSideForm}>
-                    <Title level={2} className={styles.sideTitle}>Log in</Title>
+                    <div className={styles.authLogoWrapper}>
+                        <img src="/logo/logo.svg" alt="RitaVo Logo" className={styles.authLogo} />
+                    </div>
+                    <Title level={2} className={styles.sideTitle}>Đăng nhập</Title>
                     <Form layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
-                        <Form.Item name="username" rules={[{ required: true, message: 'Nhập tài khoản!' }]}>
-                            <Input prefix={<UserOutlined className={styles.authInputPrefix} />} placeholder="Username" />
+                        <Form.Item name="username" rules={[{ required: true, message: 'Vui lòng nhập tài khoản!' }]}>
+                            <Input prefix={<UserOutlined className={styles.authInputPrefix} />} placeholder="Tên đăng nhập" />
                         </Form.Item>
 
-                        <Form.Item name="password" rules={[{ required: true, message: 'Nhập mật khẩu!' }]}>
-                            <Input.Password prefix={<LockOutlined className={styles.authInputPrefix} />} placeholder="Password" />
+                        <Form.Item name="password" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}>
+                            <Input.Password prefix={<LockOutlined className={styles.authInputPrefix} />} placeholder="Mật khẩu" />
                         </Form.Item>
 
                         <div className={styles.formExtras}>
-                            <Checkbox>Remember me</Checkbox>
-                            <Link to="#" className={styles.forgotLink}>forgot password?</Link>
+                            <Checkbox>Ghi nhớ đăng nhập</Checkbox>
+                            <Link to="#" className={styles.forgotLink}>Quên mật khẩu?</Link>
                         </div>
 
                         <Form.Item>
                             <Button type="primary" htmlType="submit" className={styles.btnTheme} block loading={loading}>
-                                Log in
+                                Đăng nhập ngay
                             </Button>
                         </Form.Item>
 
@@ -66,10 +69,10 @@ export default function Login() {
 
                 {/* Right Side: Info Area */}
                 <div className={styles.authSideInfo}>
-                    <Title level={1} className={styles.infoTitle}>Welcome Back!</Title>
-                    <Text className={styles.infoDesc}>Please enter your details<br />Don't have an account?</Text>
+                    <Title level={1} className={styles.infoTitle}>Chào mừng!</Title>
+                    <Text className={styles.infoDesc}>Hệ thống học tập trực tuyến dành cho nhân viên RitaVõ.<br />Bạn chưa có tài khoản?</Text>
                     <Link to="/register">
-                        <Button className={styles.btnOutline}>Sign Up</Button>
+                        <Button className={styles.btnOutline}>Đăng ký ngay</Button>
                     </Link>
                 </div>
             </div>

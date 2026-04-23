@@ -33,7 +33,7 @@ export default function MyPrograms() {
                 setPrograms(data);
 
             } catch {
-                message.error('Lỗi khi tải chương trình học của bạn');
+                message.error('Lỗi khi tải Lộ trình học của bạn');
             } finally {
                 setLoading(false);
             }
@@ -50,17 +50,17 @@ export default function MyPrograms() {
     return (
         <div className={styles.myProgramsContainer}>
             <div className={styles.pageHeader}>
-                <Title level={3} className={styles.headerTitle}>Chương trình học của tôi</Title>
+                <Title level={3} className={styles.headerTitle}>Lộ trình học của tôi</Title>
                 <Text type="secondary">Tất cả lộ trình bạn đã đăng ký</Text>
             </div>
 
             {programs.length === 0 ? (
                 <Empty
-                    description="Bạn chưa đăng ký chương trình học nào"
+                    description="Bạn chưa đăng ký Lộ trình học nào"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                 >
                     <Button type="primary" onClick={() => navigate('/programs')}>
-                        Khám phá chương trình học
+                        Khám phá Lộ trình học
                     </Button>
                 </Empty>
             ) : (

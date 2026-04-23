@@ -6,6 +6,7 @@ import {
 import { type VideoPlayerRef } from '../../../components';
 
 import { courseService } from '../../../services/course.service';
+import { statsService } from '../../../services/stats.service';
 import { useTabFocusWarning } from '../../../hooks/useTabFocusWarning';
 
 // New specialized components
@@ -63,11 +64,11 @@ export default function CourseLearning() {
 
     const videoPlayerRef = useRef<VideoPlayerRef>(null);
 
-    // Kích hoạt cảnh báo chuyển Tab & Reset video nếu vi phạm lần 2
+    // Tạm thời tắt tính năng chống chuyển tab theo yêu cầu người dùng
     useTabFocusWarning(
         'Cảnh báo tập trung!',
         'Hệ thống phát hiện bạn vừa rời khỏi trình duyệt. Vui lòng tập trung hoàn thành bài học.',
-        isVideoPlaying,
+        false, // isVideoPlaying -> false
         () => {
             if (activeLesson?.type === 'VIDEO') {
                 videoPlayerRef.current?.reset();
@@ -151,6 +152,24 @@ export default function CourseLearning() {
             setTimeout(() => tryScroll(), 500);
         }
     }, [location.hash, activeLesson?.id]);
+
+    // Heartbeat tracking for learning time
+    useEffect(() => {
+        if (!activeLesson || !id) return;
+
+        const TRACK_INTERVAL = 30000; // 30 seconds
+        const timer = setInterval(() => {
+            // Chỉ bắt đầu track nếu bài học không phải là một video đang bị tạm dừng (optional optimization)
+            // Ở đây ta cứ track nếu user đang ở trong trang này.
+            statsService.trackLearningTime({
+                courseId: parseInt(id),
+                lessonId: activeLesson.id,
+                duration: 30
+            }).catch(err => console.error('Failed to track learning time:', err));
+        }, TRACK_INTERVAL);
+
+        return () => clearInterval(timer);
+    }, [activeLesson?.id, id]);
 
     const handleNextLesson = () => {
         if (!course || !activeLesson) return;

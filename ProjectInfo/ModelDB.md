@@ -29,6 +29,8 @@ payments: Lưu vết giao dịch (mã giao dịch từ Stripe/PayPal/Momo, phư�
 
 coupons: Mã giảm giá (code, discount_percent, expiry_date).
 
+course_requests / program_requests: Quản lý yêu cầu tham gia nội dung riêng tư (pending/approved/rejected).
+
 4. Nhóm Tiến độ học tập & Tương tác (Learning Progress & Interaction)
 Theo dõi xem học viên đã học đến đâu và họ đánh giá khóa học thế nào.
 
@@ -100,7 +102,10 @@ Một số lưu ý "chuẩn chỉ" khi thiết kế:
 
 2. Trạng thái (Status): Các cột như status nên dùng kiểu dữ liệu ENUM hoặc TINYINT để tối ưu hiệu suất (ví dụ: 0: Draft, 1: Published).
 
-3. Lưu trữ Video: Tuyệt đối không lưu file video trực tiếp (.mp4) thành một khối lớn tải về được. Hệ thống hiện tại ép buộc luồng xử lý: Video upload lên -> Băm thành định dạng HLS (.m3u8 và nhiều đoạn .ts nhỏ) có mã hóa AES-128 -> Lưu path HLS vào database. Không sử dụng và không hỗ trợ video ngoại tuyến từ YouTube/Vimeo/S3 để đảm bảo kiểm soát bảo mật và chống tua tuyệt đối.
+3. Lưu trữ Video: Dự án hỗ trợ cơ chế đa nguồn (Multi-source). 
+- **HLS**: Video upload lên -> Băm thành định dạng HLS (.m3u8 và nhiều đoạn .ts nhỏ) có mã hóa AES-128 -> Lưu path HLS vào database. Đây là phương thức bảo mật cao nhất, hỗ trợ chặn tua và bảo vệ bản quyền.
+- **YouTube/External**: Hệ thống hỗ trợ nhúng video từ YouTube hoặc link trực tiếp (.mp4). Player tự động nhận diện và áp dụng cơ chế tracking phù hợp.
+- **Tiến độ (Tracking)**: Hệ thống theo dõi thời gian thực. Khi học viên xem đạt **99%** thời lượng, bài học sẽ tự động được đánh dấu hoàn thành để mở bài tiếp theo.
 
 4. Tính toàn vẹn: Sử dụng Foreign Keys (Khóa ngoại) để đảm bảo không có bài học nào "mồ côi" không thuộc về khóa học nào.
 

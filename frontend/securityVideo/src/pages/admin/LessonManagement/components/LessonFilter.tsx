@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Space, Select, Typography } from 'antd';
+import { Space, Select, Typography } from 'antd';
 import styles from '../LessonManagement.module.scss';
 
 const { Text } = Typography;
@@ -23,7 +23,7 @@ export default function LessonFilter({
     children
 }: LessonFilterProps & { children?: React.ReactNode }) {
     return (
-        <Card className={`glass-card ${styles.filterCard}`}>
+        <div className={styles.lessonFilterContainer}>
             <div className={styles.filterWrapper}>
                 <Space size={24}>
                     <Space>
@@ -50,6 +50,6 @@ export default function LessonFilter({
                 </Space>
                 {children}
             </div>
-        </Card>
+        </div>
     );
 }
