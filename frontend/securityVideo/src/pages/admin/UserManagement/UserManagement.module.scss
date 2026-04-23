@@ -129,16 +129,11 @@
     }
 }
 
-.userListCard {
-    padding: 0;
-}
-
-.userListHeader {
-    padding: 20px 24px;
+.searchBarWrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid $border-color;
+    margin-bottom: 20px;
 
     .headerLeft {
         display: flex;
@@ -198,9 +193,6 @@
     }
 }
 
-.tableWrapper {
-    padding: 0 12px 12px 12px;
-}
 
 .userInfoWrapper {
     display: flex;

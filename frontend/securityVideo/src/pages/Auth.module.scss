@@ -1,6 +1,6 @@
-$auth-bg-light: #f0f4ff;
-$auth-blob-1: rgba(99, 102, 241, 0.15);
-$auth-blob-2: rgba(168, 85, 247, 0.15);
+$auth-bg-light: #f8fafc;
+$auth-blob-1: rgba(199, 33, 39, 0.08);
+$auth-blob-2: rgba(184, 18, 26, 0.08);
 
 .authContainer {
     min-height: 100vh;
@@ -81,6 +81,17 @@ $auth-blob-2: rgba(168, 85, 247, 0.15);
         font-weight: 800;
         letter-spacing: -0.02em;
         @include premium-text;
+    }
+
+    .authLogoWrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+
+        .authLogo {
+            height: 60px;
+            object-fit: contain;
+        }
     }
 
     :global {
@@ -197,12 +208,12 @@ $auth-blob-2: rgba(168, 85, 247, 0.15);
     height: 52px !important;
     font-weight: 700 !important;
     font-size: 16px !important;
-    box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.4) !important;
+    box-shadow: 0 15px 25px -5px rgba(199, 33, 39, 0.3) !important;
     @include transition-standard;
 
     &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 20px 30px -5px rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 20px 30px -5px rgba(199, 33, 39, 0.4) !important;
     }
 }
 

@@ -9,6 +9,17 @@ const getDashboardStats = async (req, res) => {
     }
 };
 
+const getCourseProgress = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const progress = await statsService.getStudentsProgressByCourse(courseId);
+        res.json(progress);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
-    getDashboardStats
+    getDashboardStats,
+    getCourseProgress
 };

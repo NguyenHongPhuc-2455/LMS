@@ -100,6 +100,69 @@ const getDashboardStats = async () => {
     }
 };
 
+const getStudentsProgressByCourse = async (courseId) => {
+    try {
+        const id = parseInt(courseId);
+
+        // 1. Get all lessons in this course to calculate total
+        const lessons = await prisma.lesson.findMany({
+            where: {
+                section: {
+                    course_id: id
+                }
+            },
+            select: { id: true }
+        });
+
+        const lessonIds = lessons.map(l => l.id);
+        const totalLessons = lessonIds.length;
+
+        // 2. Get students enrolled in this course
+        const enrollments = await prisma.enrollment.findMany({
+            where: { course_id: id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true,
+                        username: true,
+                        avatar: true
+                    }
+                }
+            }
+        });
+
+        // 3. Calculate progress for each student
+        const progressData = await Promise.all(enrollments.map(async (e) => {
+            const completedCount = await prisma.lessonCompleted.count({
+                where: {
+                    user_id: e.user_id,
+                    lesson_id: { in: lessonIds }
+                }
+            });
+
+            const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
+
+            return {
+                id: e.user.id,
+                fullName: e.user.full_name || e.user.username,
+                email: e.user.email,
+                avatar: e.user.avatar,
+                completedLessons: completedCount,
+                totalLessons: totalLessons,
+                progressPercent: progressPercent,
+                enrolledAt: e.enrolled_at
+            };
+        }));
+
+        return progressData;
+    } catch (error) {
+        console.error('Error in getStudentsProgressByCourse:', error);
+        throw error;
+    }
+};
+
 const emitPendingRequestsCountToAdmins = async () => {
     try {
         const socketUtils = require('../utils/socket');
@@ -120,5 +183,6 @@ const emitPendingRequestsCountToAdmins = async () => {
 
 module.exports = {
     getDashboardStats,
+    getStudentsProgressByCourse,
     emitPendingRequestsCountToAdmins
 };

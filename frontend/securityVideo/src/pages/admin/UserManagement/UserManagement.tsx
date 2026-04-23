@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import {
     DeleteOutlined, SaveOutlined, CloseOutlined,
-    PlusOutlined, EditOutlined, UsergroupAddOutlined, SearchOutlined
+    PlusOutlined, EditOutlined, SearchOutlined
 } from '@ant-design/icons';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,6 @@ import { userService } from '../../../services/user.service';
 import styles from './UserManagement.module.scss';
 
 // New specialized components
-import UserStatistics from './components/UserStatistics';
 import UserTable from './components/UserTable';
 import UserFormModal from './components/UserFormModal';
 
@@ -190,14 +189,9 @@ export default function UserManagement() {
                 </div>
             </div>
 
-            <UserStatistics users={users} loading={loading} />
-
-            <Card className="glass-card user-list-card">
-                <div className={styles.userListHeader}>
+            <Card className="glass-card">
+                <div className={styles.searchBarWrapper}>
                     <div className={styles.headerLeft}>
-                        <Title level={4} className={styles.headerTitle}>
-                            <UsergroupAddOutlined /> Danh sách thành viên
-                        </Title>
                         {editingKeys.length > 0 && (
                             <Tag color="processing" icon={<EditOutlined />} className="edit-mode-tag">
                                 Đang chỉnh sửa {editingKeys.length} người
@@ -215,7 +209,7 @@ export default function UserManagement() {
                         )}
                     </div>
 
-                    <Space className={styles.searchBarWrapper}>
+                    <Space className={styles.searchBarContainer}>
                         <Input
                             placeholder="Tìm kiếm theo tên, email hoặc username..."
                             prefix={<SearchOutlined className={styles.searchIcon} />}
@@ -284,40 +278,38 @@ export default function UserManagement() {
                     </Space>
                 </div>
 
-                <div className={styles.tableWrapper}>
-                    <UserTable
-                        users={users}
-                        roles={roles}
-                        loading={loading}
-                        editingKeys={editingKeys}
-                        setEditingKeys={setEditingKeys}
-                        editData={editData}
-                        setEditData={setEditData}
-                        isDeleteMode={isDeleteMode}
-                        isBatchEditMode={isBatchEditMode}
-                        selectedRowKeys={selectedRowKeys}
-                        onSelectChange={setSelectedRowKeys}
-                        onRevokeAccess={handleRevokeAccess}
-                        pagination={{
-                            current: page,
-                            pageSize: pageSize,
-                            total: total,
-                            onChange: (p, s) => {
-                                setPage(p);
-                                setPageSize(s);
-                            },
-                            showSizeChanger: true,
-                            pageSizeOptions: ['10', '20', '50', '100'],
-                            selectProps: { showSearch: false },
-                            itemRender: (current: number, type: string, originalElement: any) => {
-                                if (type === 'page') {
-                                    return <a>{current < 10 ? `0${current}` : current}</a>;
-                                }
-                                return originalElement;
+                <UserTable
+                    users={users}
+                    roles={roles}
+                    loading={loading}
+                    editingKeys={editingKeys}
+                    setEditingKeys={setEditingKeys}
+                    editData={editData}
+                    setEditData={setEditData}
+                    isDeleteMode={isDeleteMode}
+                    isBatchEditMode={isBatchEditMode}
+                    selectedRowKeys={selectedRowKeys}
+                    onSelectChange={setSelectedRowKeys}
+                    onRevokeAccess={handleRevokeAccess}
+                    pagination={{
+                        current: page,
+                        pageSize: pageSize,
+                        total: total,
+                        onChange: (p, s) => {
+                            setPage(p);
+                            setPageSize(s);
+                        },
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '20', '50', '100'],
+                        selectProps: { showSearch: false },
+                        itemRender: (current: number, type: string, originalElement: any) => {
+                            if (type === 'page') {
+                                return <a>{current < 10 ? `0${current}` : current}</a>;
                             }
-                        }}
-                    />
-                </div>
+                            return originalElement;
+                        }
+                    }}
+                />
             </Card>
 
             <UserFormModal
@@ -327,7 +319,7 @@ export default function UserManagement() {
                 roles={roles}
                 loading={loading}
             />
-        </div >
+        </div>
     );
 }
 

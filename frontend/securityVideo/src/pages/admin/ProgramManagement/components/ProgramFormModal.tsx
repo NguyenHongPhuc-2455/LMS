@@ -37,7 +37,7 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
 
     return (
         <Modal
-            title={editingId ? 'Chỉnh sửa Chương trình học' : 'Tạo Chương trình học mới'}
+            title={editingId ? 'Chỉnh sửa Lộ trình học' : 'Tạo Lộ trình học mới'}
             open={open}
             onCancel={onCancel}
             footer={null}

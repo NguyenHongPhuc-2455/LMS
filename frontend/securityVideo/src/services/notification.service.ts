@@ -1,8 +1,8 @@
 import api from "./api";
 
 export const notificationService = {
-    getAll: async () => {
-        const response = await api.get('/notifications');
+    getAll: async (page = 1, limit = 10) => {
+        const response = await api.get(`/notifications?page=${page}&limit=${limit}`);
         return response.data;
     },
     markAsRead: async (id: number) => {

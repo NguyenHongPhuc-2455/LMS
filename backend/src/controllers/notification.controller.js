@@ -3,8 +3,12 @@ const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
 exports.getMyNotifications = catchAsync(async (req, res) => {
-    const notifications = await notificationService.getNotificationsByUserId(req.user.id);
-    res.json(notifications);
+    const { page, limit } = req.query;
+    const [notifications, unreadCount] = await Promise.all([
+        notificationService.getNotificationsByUserId(req.user.id, page, limit),
+        notificationService.getUnreadCountByUserId(req.user.id)
+    ]);
+    res.json({ notifications, unreadCount });
 });
 
 exports.markAsRead = catchAsync(async (req, res) => {

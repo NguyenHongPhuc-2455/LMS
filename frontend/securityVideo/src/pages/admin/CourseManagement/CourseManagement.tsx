@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
+import { categoryService, type Category } from '../../../services/category.service';
 
 import {
     Plus
@@ -29,6 +30,7 @@ interface Course {
     intro_video_url?: string;
     learning_outcomes?: string;
     requirements?: string;
+    category_id?: number | null;
     created_at: string;
     updated_at: string;
     _count?: { sections: number, enrollments: number };
@@ -40,15 +42,20 @@ export default function CourseManagement() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
     const [searchText, setSearchText] = useState('');
+    const [categories, setCategories] = useState<Category[]>([]);
     const navigate = useNavigate();
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const data = await courseService.getAll();
-            setCourses(data);
+            const [courseData, catData] = await Promise.all([
+                courseService.getAll(),
+                categoryService.getAllCategories()
+            ]);
+            setCourses(courseData);
+            setCategories(catData);
         } catch (e) {
-            message.error('Lỗi khi tải danh sách khóa học');
+            message.error('Lỗi khi tải dữ liệu');
         } finally {
             setLoading(false);
         }
@@ -106,6 +113,16 @@ export default function CourseManagement() {
         } catch (e) { message.error('Lỗi khi xóa khóa học'); }
     };
 
+    const handleCategoryChange = async (courseId: number, categoryId: number | null) => {
+        try {
+            await courseService.update(courseId, { category_id: categoryId });
+            message.success('Đã cập nhật danh mục khóa học');
+            fetchData();
+        } catch (e) {
+            message.error('Lỗi khi cập nhật danh mục');
+        }
+    };
+
     const filteredCourses = courses.filter(c =>
         c.title.toLowerCase().includes(searchText.toLowerCase())
     );
@@ -140,9 +157,11 @@ export default function CourseManagement() {
                 </div>
                 <CourseTable
                     courses={filteredCourses}
+                    categories={categories}
                     loading={loading}
                     onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
                     onStatusChange={handleStatusChange}
+                    onCategoryChange={handleCategoryChange}
                     onDelete={handleDelete}
                     onNavigateToSections={(id) => navigate(`/admin/sections?courseId=${id}`)}
                 />
@@ -154,6 +173,7 @@ export default function CourseManagement() {
                 onSuccess={handleSave}
                 editingId={editingCourse?.id}
                 initialValues={editingCourse}
+                categories={categories}
             />
         </div>
     );

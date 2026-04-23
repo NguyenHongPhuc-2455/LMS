@@ -15,10 +15,36 @@ exports.verifyToken = (req, res, next) => {
 };
 
 exports.isAdmin = (req, res, next) => {
-    // Với schema mới, roles nằm trong mảng user_roles
     if (req.user && req.user.roles && req.user.roles.includes('admin')) {
         next();
     } else {
         res.status(403).json({ error: 'Chỉ Admin mới có quyền thực hiện hành động này' });
     }
+};
+
+exports.isInstructor = (req, res, next) => {
+    if (req.user && req.user.roles && (req.user.roles.includes('instructor') || req.user.roles.includes('admin'))) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Chỉ Instructor hoặc Admin mới có quyền thực hiện hành động này' });
+    }
+};
+
+/**
+ * Middleware cho phép nhiều vai trò truy cập
+ * @param {string[]} roles Danh sách các vai trò được phép
+ */
+exports.authorize = (roles) => {
+    return (req, res, next) => {
+        if (!req.user || !req.user.roles) {
+            return res.status(403).json({ error: 'Bạn không có quyền truy cập' });
+        }
+
+        const hasRole = roles.some(role => req.user.roles.includes(role));
+        if (hasRole) {
+            next();
+        } else {
+            res.status(403).json({ error: `Hành động này yêu cầu một trong các vai trò: ${roles.join(', ')}` });
+        }
+    };
 };

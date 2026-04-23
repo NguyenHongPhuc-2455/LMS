@@ -43,7 +43,7 @@ export default function ProgramList() {
                 setPrograms(data);
 
             } catch {
-                message.error('Lỗi khi tải danh sách chương trình học');
+                message.error('Lỗi khi tải danh sách Lộ trình học');
             } finally {
                 setLoading(false);
             }
@@ -62,12 +62,12 @@ export default function ProgramList() {
     return (
         <div className={styles.programListContainer}>
             <div className={styles.pageHeader}>
-                <Title level={2} className={styles.headerTitle}>Chương trình học</Title>
+                <Title level={2} className={styles.headerTitle}>Lộ trình học</Title>
                 <Text type="secondary">Lộ trình học tập được thiết kế bài bản từ nhiều khóa học</Text>
             </div>
 
             {programs.length === 0 ? (
-                <Empty description="Chưa có chương trình học nào được phát hành" />
+                <Empty description="Chưa có Lộ trình học nào được phát hành" />
             ) : (
                 <>
                     <div className={styles.programsGrid}>

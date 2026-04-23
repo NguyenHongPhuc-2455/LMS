@@ -7,3 +7,4 @@ export { default as Profile } from './Profile/Profile';
 export { default as ProgramDetail } from './ProgramDetail/ProgramDetail';
 export { default as ProgramList } from './ProgramList/ProgramList';
 export { default as Contact } from './Contact/Contact';
+export { default as CategorizedCourses } from './CategorizedCourses/CategorizedCourses';

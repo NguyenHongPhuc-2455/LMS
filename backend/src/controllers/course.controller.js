@@ -268,3 +268,30 @@ exports.enrollCourse = catchAsync(async (req, res) => {
     });
     res.json({ message: 'Tham gia thành công', data: enrollment });
 });
+
+exports.completeLesson = catchAsync(async (req, res) => {
+    const { lessonId } = req.params;
+    const userId = req.user.id;
+
+    if (!lessonId) throw new ApiError(400, 'Thiếu Lesson ID');
+
+    const completion = await prisma.lessonCompleted.upsert({
+        where: {
+            user_id_lesson_id: {
+                user_id: userId,
+                lesson_id: parseInt(lessonId)
+            }
+        },
+        update: { completed_at: new Date() },
+        create: {
+            user_id: userId,
+            lesson_id: parseInt(lessonId)
+        }
+    });
+
+    res.json({
+        status: 'success',
+        message: 'Lesson marked as completed',
+        data: completion
+    });
+});

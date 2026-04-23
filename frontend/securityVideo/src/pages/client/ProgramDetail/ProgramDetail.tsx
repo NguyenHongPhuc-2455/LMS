@@ -58,7 +58,7 @@ export default function ProgramDetail() {
             const data = await programService.getById(id!);
             setProgram(data);
         } catch {
-            message.error('Không tìm thấy chương trình học');
+            message.error('Không tìm thấy Lộ trình học');
             navigate('/programs');
         } finally {
             setLoading(false);
@@ -74,7 +74,7 @@ export default function ProgramDetail() {
         setEnrolling(true);
         try {
             await programService.enroll(Number(id));
-            message.success('Đăng ký chương trình học thành công! Tất cả khóa học đã được mở.');
+            message.success('Đăng ký Lộ trình học thành công! Tất cả khóa học đã được mở.');
             setProgram(prev => prev ? { ...prev, isEnrolled: true } : prev);
         } catch (err: any) {
             message.error(err?.response?.data?.message || 'Lỗi khi đăng ký');

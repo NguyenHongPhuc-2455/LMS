@@ -40,6 +40,18 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 
 ---
 
+## 📂 2.1 Categories (`/categories`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/` | Lấy toàn bộ danh sách danh mục | ✅ |
+| GET | `/:id` | Chi tiết danh mục | ✅ |
+| POST | `/` | Tạo danh mục mới (Admin) | ✅ (Admin) |
+| PUT | `/:id` | Cập nhật danh mục (Admin) | ✅ (Admin) |
+| DELETE | `/:id` | Xóa danh mục (Admin) | ✅ (Admin) |
+
+---
+
 ## 🎬 3. Videos & Lessons (`/videos`)
 
 | Method | Endpoint | Description | Auth? |
@@ -109,7 +121,9 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
-| GET | `/dashboard` | Tổng quan số liệu hệ thống (Users, Courses, Revenue...) | ✅ (Admin) |
+| GET | `/dashboard` | Tổng quan số liệu hệ thống (Users, Courses...) | ✅ (Admin) |
+| GET | `/course-progress/:courseId` | Lấy chi tiết tiến độ học viên của khóa học | ✅ (Admin) |
+| GET | `/my-progress/:courseId` | Lấy tiến độ của học viên hiện tại | ✅ |
 
 ---
 

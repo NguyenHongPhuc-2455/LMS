@@ -309,6 +309,8 @@ Gán vào <video src="blob:..."> để phát
 | **Anti-Cache** | Key request gắn timestamp `?t=...` để chống cache |
 | **Anti-Download** | `controlsList="nodownload"`, chuột phải bị chặn |
 | **Anti-Seek** | Logic chống tua nhanh (delta > 1.2s bị reset) |
+| **Precise Tracking** | Hệ thống ghi nhận hoàn thành bài học khi xem đạt **99%** thời lượng. |
+| **Multi-Source** | Hỗ trợ YouTube, Direct MP4 bên cạnh HLS, tự động chuyển đổi Player. |
 
 ---
 

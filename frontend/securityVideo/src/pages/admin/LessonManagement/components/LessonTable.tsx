@@ -9,6 +9,7 @@ interface Lesson {
     video_url: string;
     type: 'VIDEO' | 'DOCUMENT' | 'QUIZ';
     order?: number;
+    duration?: number;
 }
 
 interface LessonTableProps {
@@ -20,10 +21,16 @@ interface LessonTableProps {
 
 export default function LessonTable({ lessons, loading, onEdit, onDelete }: LessonTableProps) {
     const columns = [
-        { title: 'ID', dataIndex: 'id', width: 80 },
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            width: 80,
+            sorter: (a: Lesson, b: Lesson) => a.id - b.id
+        },
         {
             title: 'Tên bài giảng',
             dataIndex: 'title',
+            sorter: (a: Lesson, b: Lesson) => a.title.localeCompare(b.title),
             render: (t: string, r: Lesson) => (
                 <Space>
                     {r.type === 'QUIZ' ? <QuestionCircleOutlined className={styles.quizIcon} /> : <PlayCircle size={14} color="#6366f1" />}
@@ -41,6 +48,17 @@ export default function LessonTable({ lessons, loading, onEdit, onDelete }: Less
             ],
             onFilter: (v: any, r: Lesson) => r.type === v,
             render: (t: string) => t === 'QUIZ' ? <Badge status="warning" text="Trắc nghiệm" /> : <Badge status="processing" text="Video/Tài liệu" />
+        },
+        {
+            title: 'Thời lượng',
+            dataIndex: 'duration',
+            sorter: (a: Lesson, b: Lesson) => (a.duration || 0) - (b.duration || 0),
+            render: (d: number) => {
+                if (!d) return '00:00';
+                const m = Math.floor(d / 60);
+                const s = d % 60;
+                return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
         },
         {
             title: 'Hành động',

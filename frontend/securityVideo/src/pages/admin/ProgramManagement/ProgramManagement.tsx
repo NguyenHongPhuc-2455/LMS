@@ -56,7 +56,7 @@ export default function ProgramManagement() {
             const data = await programService.getAll();
             setPrograms(data);
         } catch {
-            message.error('Lỗi khi tải danh sách chương trình học');
+            message.error('Lỗi khi tải danh sách Lộ trình học');
         } finally {
             setLoading(false);
         }
@@ -87,24 +87,24 @@ export default function ProgramManagement() {
             const payload = { ...values, thumbnail: finalThumbnail };
             if (editingProgram) {
                 await programService.update(editingProgram.id, payload);
-                message.success('Đã cập nhật chương trình học!');
+                message.success('Đã cập nhật Lộ trình học!');
             } else {
                 await programService.create(payload);
-                message.success('Đã tạo chương trình học mới!');
+                message.success('Đã tạo Lộ trình học mới!');
             }
 
             setIsModalOpen(false);
             setEditingProgram(null);
             fetchPrograms();
         } catch {
-            message.error('Lỗi khi lưu chương trình học');
+            message.error('Lỗi khi lưu Lộ trình học');
         }
     };
 
     const handleDelete = async (id: number) => {
         try {
             await programService.delete(id);
-            message.success('Đã xóa chương trình học');
+            message.success('Đã xóa Lộ trình học');
             fetchPrograms();
         } catch {
             message.error('Lỗi khi xóa');
@@ -178,7 +178,7 @@ export default function ProgramManagement() {
         <div className={styles.programManagementContainer}>
             <div className={styles.pageHeader}>
                 <div className={styles.headerInfo}>
-                    <Title level={4} className={styles.title}>Quản lý Chương trình học</Title>
+                    <Title level={4} className={styles.title}>Quản lý Lộ trình học</Title>
                     <Text type="secondary">Gom nhiều khóa học thành lộ trình đào tạo</Text>
                 </div>
             </div>

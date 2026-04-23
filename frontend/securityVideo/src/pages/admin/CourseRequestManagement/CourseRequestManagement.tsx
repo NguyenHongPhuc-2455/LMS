@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Tabs, Tag, Typography, message } from 'antd';
+import { Card, Tabs, Typography, message } from 'antd';
 import { BookOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { courseRequestService } from '../../../services/courseRequest.service';
 import { programRequestService } from '../../../services/programRequest.service';
@@ -132,9 +132,13 @@ export default function CourseRequestManagement() {
     ];
 
     return (
-        <div className={styles.courseRequestsContainer} style={{ padding: '24px' }}>
+        <div className={styles.courseRequestsContainer} style={{ padding: '10px' }}>
+            <div style={{ marginBottom: 20 }}>
+                <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Duyệt yêu cầu truy cập</Title>
+                <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của học viên</Typography.Text>
+            </div>
+
             <Card className="glass-card" style={{ borderRadius: '16px' }}>
-                <Title level={2} className={styles.requestCardTitle} style={{ marginBottom: '24px' }}>Phê duyệt yêu cầu truy cập</Title>
                 <Tabs defaultActiveKey="1" items={items} />
             </Card>
         </div>

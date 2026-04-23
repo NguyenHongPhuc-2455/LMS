@@ -1,8 +1,7 @@
-import { Table, Space, Button, Popconfirm, Typography } from 'antd';
-import { Edit, Trash2, FolderOpen } from 'lucide-react';
+import { Table, Space, Button, Popconfirm } from 'antd';
+import { Edit, Trash2 } from 'lucide-react';
 import styles from '../SectionManagement.module.scss';
 
-const { Text } = Typography;
 
 interface Section {
     id: number;
@@ -17,7 +16,6 @@ interface SectionTableProps {
     onEdit: (section: Section) => void;
     onDelete: (id: number) => void;
     onNavigateLessons: (sectionId: number) => void;
-    courseSelected: boolean;
 }
 
 export default function SectionTable({
@@ -25,19 +23,8 @@ export default function SectionTable({
     loading,
     onEdit,
     onDelete,
-    onNavigateLessons,
-    courseSelected
+    onNavigateLessons
 }: SectionTableProps) {
-    if (!courseSelected) {
-        return (
-            <div className={styles.emptySectionWrapper}>
-                <FolderOpen size={40} className={styles.emptyIcon} />
-                <Text type="secondary" className={styles.emptyText}>
-                    Vui lòng chọn một khóa học bên trên để quản lý chương
-                </Text>
-            </div>
-        );
-    }
 
     const columns = [
         {

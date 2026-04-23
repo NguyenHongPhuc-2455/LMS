@@ -35,13 +35,25 @@ exports.createNotificationAsync = (data) => {
 };
 
 /**
- * Lấy danh sách thông báo của người dùng
+ * Lấy danh sách thông báo của người dùng (có phân trang)
  */
-exports.getNotificationsByUserId = async (userId) => {
+exports.getNotificationsByUserId = async (userId, page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
+
     return await prisma.notification.findMany({
         where: { user_id: userId },
         orderBy: { created_at: 'desc' },
-        take: 50 // Giới hạn 50 thông báo gần nhất
+        skip: skip,
+        take: parseInt(limit)
+    });
+};
+
+/**
+ * Đếm số thông báo chưa đọc của người dùng
+ */
+exports.getUnreadCountByUserId = async (userId) => {
+    return await prisma.notification.count({
+        where: { user_id: userId, is_read: false }
     });
 };
 

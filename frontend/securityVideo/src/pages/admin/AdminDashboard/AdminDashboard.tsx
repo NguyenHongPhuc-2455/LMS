@@ -48,7 +48,7 @@ export default function AdminDashboard() {
     return (
         <div>
             <Title level={2} className={styles.adminDashboardTitle}>
-                Dashboard
+                Tổng quan
             </Title>
 
             <StatSummary stats={stats} />

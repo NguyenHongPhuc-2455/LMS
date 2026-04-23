@@ -6,7 +6,7 @@ import { quizService } from '../../../services/quiz.service';
 import { videoService } from '../../../services/video.service';
 
 import {
-    Plus, PlayCircle
+    Plus
 } from 'lucide-react';
 import {
     Card, Button, Typography,
@@ -30,6 +30,7 @@ interface Lesson {
     content?: string;
     type: 'VIDEO' | 'DOCUMENT' | 'QUIZ';
     order?: number;
+    duration?: number;
 }
 
 interface Section {
@@ -121,6 +122,7 @@ export default function LessonManagement() {
     const handleSave = async (values: any, selectedFile: File | null, attachmentFile: File | null): Promise<void> => {
         try {
             let lessonId = editingLesson?.id;
+            const totalDuration = (Number(values.duration_min || 0) * 60) + Number(values.duration_sec || 0);
 
             if (lessonType === 'QUIZ') {
                 if (editingQuizId) {
@@ -140,7 +142,8 @@ export default function LessonManagement() {
                         title: values.title,
                         section_id: values.section_id,
                         content: values.content,
-                        order: values.order
+                        order: values.order,
+                        duration: totalDuration
                     });
                     message.success('Đã cập nhật bài giảng!');
                 } else {
@@ -155,6 +158,9 @@ export default function LessonManagement() {
                     formData.append('section_id', String(values.section_id));
                     formData.append('order', String(values.order || '0'));
                     formData.append('content', values.content || '');
+                    if (totalDuration > 0) {
+                        formData.append('duration', String(totalDuration));
+                    }
 
                     if (videoSourceType === 'UPLOAD') {
                         formData.append('video', selectedFile!);
@@ -214,7 +220,9 @@ export default function LessonManagement() {
             setLessonType('VIDEO');
             setEditingLesson({
                 ...lesson,
-                section_id: selectedSectionId
+                section_id: selectedSectionId,
+                duration_min: lesson.duration ? Math.floor(lesson.duration / 60) : 0,
+                duration_sec: lesson.duration ? (lesson.duration % 60) : 0
             });
         }
         setIsModalOpen(true);
@@ -237,48 +245,41 @@ export default function LessonManagement() {
                 </div>
             </div>
 
-            <LessonFilter
-                courses={courses}
-                sections={sections}
-                selectedCourseId={selectedCourseId}
-                selectedSectionId={selectedSectionId}
-                onCourseChange={setSelectedCourseId}
-                onSectionChange={setSelectedSectionId}
-            >
-                <Button
-                    type="primary"
-                    disabled={!selectedSectionId}
-                    onClick={() => {
-                        const nextOrder = lessons.length > 0 ? Math.max(...lessons.map(l => l.order || 0)) + 1 : 1;
-                        setEditingLesson({
-                            order: nextOrder,
-                            section_id: selectedSectionId
-                        });
-                        setEditingQuizId(null);
-                        setLessonType('VIDEO');
-                        setIsModalOpen(true);
-                    }}
-                    icon={<Plus size={16} />}
-                    className={styles.adminAddButton}
-                >
-                    Đăng bài giảng mới
-                </Button>
-            </LessonFilter>
-
             <Card className="glass-card">
-                {!selectedSectionId ? (
-                    <div className={styles.emptyLessonWrapper}>
-                        <PlayCircle size={40} className={styles.emptyIcon} />
-                        <Text type="secondary" className={styles.emptyText}>Vui lòng chọn Khóa học và Chương để quản lý bài giảng</Text>
-                    </div>
-                ) : (
-                    <LessonTable
-                        lessons={lessons}
-                        loading={loading}
-                        onEdit={startEditing}
-                        onDelete={handleDelete}
-                    />
-                )}
+                <LessonFilter
+                    courses={courses}
+                    sections={sections}
+                    selectedCourseId={selectedCourseId}
+                    selectedSectionId={selectedSectionId}
+                    onCourseChange={setSelectedCourseId}
+                    onSectionChange={setSelectedSectionId}
+                >
+                    <Button
+                        type="primary"
+                        disabled={!selectedSectionId}
+                        onClick={() => {
+                            const nextOrder = lessons.length > 0 ? Math.max(...lessons.map(l => l.order || 0)) + 1 : 1;
+                            setEditingLesson({
+                                order: nextOrder,
+                                section_id: selectedSectionId
+                            });
+                            setEditingQuizId(null);
+                            setLessonType('VIDEO');
+                            setIsModalOpen(true);
+                        }}
+                        icon={<Plus size={16} />}
+                        className={styles.adminAddButton}
+                    >
+                        Đăng bài giảng mới
+                    </Button>
+                </LessonFilter>
+
+                <LessonTable
+                    lessons={lessons}
+                    loading={loading}
+                    onEdit={startEditing}
+                    onDelete={handleDelete}
+                />
             </Card>
 
             <LessonFormModal

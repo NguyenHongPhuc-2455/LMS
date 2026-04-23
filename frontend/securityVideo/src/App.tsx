@@ -3,12 +3,12 @@ import { Login, Register } from '@/pages';
 import {
   AdminDashboard, CourseManagement, CourseRequestManagement,
   LessonManagement, ProgramManagement, SectionManagement,
-  UserManagement
+  UserManagement, CourseProgress, CategoryManagement
 } from '@/pages/admin';
 import {
   CourseDetail, CourseLearning, CourseList,
   MyCourses, MyPrograms,
-  Profile, ProgramDetail, ProgramList, Contact
+  Profile, ProgramDetail, ProgramList, Contact, CategorizedCourses
 } from '@/pages/client';
 import { MainLayout, AdminLayout } from '@/components';
 
@@ -58,6 +58,7 @@ function App() {
             {/* Private SPA Routes with Header */}
             <Route element={<MainLayout />}>
               <Route path="/course" element={<CourseList />} />
+              <Route path="/categories" element={<CategorizedCourses />} />
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course/:id" element={<CourseDetail />} />
               <Route path="/course/:id/learning" element={<CourseLearning />} />
@@ -77,6 +78,8 @@ function App() {
               <Route path="users" element={<UserManagement />} />
               <Route path="requests" element={<CourseRequestManagement />} />
               <Route path="programs" element={<ProgramManagement />} />
+              <Route path="categories" element={<CategoryManagement />} />
+              <Route path="progress" element={<CourseProgress />} />
               <Route path="profile" element={<Profile />} />
             </Route>
 

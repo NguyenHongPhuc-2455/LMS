@@ -38,7 +38,13 @@ export default function SectionFormModal({
             title={editingId ? "Chỉnh sửa Chương" : "Thêm Chương Mới"}
             open={open}
             onCancel={onCancel}
-            footer={null}
+            footer={[
+                <Button key="cancel" onClick={onCancel}>Hủy</Button>,
+                <Button key="submit" type="primary" onClick={() => form.submit()} size="large">
+                    {editingId ? "Cập nhật" : "Tạo mới"}
+                </Button>
+            ]}
+            style={{ top: 100 }}
         >
             <Form form={form} layout="vertical" onFinish={handleFinish}>
                 <Form.Item
@@ -55,9 +61,6 @@ export default function SectionFormModal({
                 >
                     <Input type="number" />
                 </Form.Item>
-                <Button type="primary" htmlType="submit" block size="large">
-                    {editingId ? "Cập nhật" : "Tạo mới"}
-                </Button>
             </Form>
         </Modal>
     );

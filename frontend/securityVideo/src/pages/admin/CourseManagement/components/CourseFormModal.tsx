@@ -11,9 +11,10 @@ interface CourseFormModalProps {
     onSuccess: (values: any, thumbFile: File | null) => Promise<void>;
     editingId?: number | null;
     initialValues?: any;
+    categories: any[];
 }
 
-export default function CourseFormModal({ open, onCancel, onSuccess, editingId, initialValues }: CourseFormModalProps) {
+export default function CourseFormModal({ open, onCancel, onSuccess, editingId, initialValues, categories }: CourseFormModalProps) {
     const [form] = Form.useForm();
     const [thumbFile, setThumbFile] = useState<File | null>(null);
     const [thumbUrl, setThumbUrl] = useState<string>('');
@@ -40,17 +41,23 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
             title={editingId ? "Chỉnh sửa Khóa học" : "Khởi tạo Khóa học"}
             open={open}
             onCancel={onCancel}
-            footer={null}
-            width={700}
+            footer={[
+                <Button key="cancel" onClick={onCancel}>Hủy</Button>,
+                <Button key="submit" type="primary" onClick={() => form.submit()} size="large" style={{ minWidth: 150 }}>
+                    {editingId ? "Cập nhật" : "Tạo khóa học"}
+                </Button>
+            ]}
+            width={900}
+            style={{ top: 100 }}
         >
             <Form form={form} layout="vertical" onFinish={handleFinish}>
-                <Row gutter={16}>
+                <Row gutter={24}>
+                    {/* Cột trái */}
                     <Col span={12}>
                         <Form.Item name="title" label="Tiêu đề" rules={[{ required: true }]}>
-                            <Input />
+                            <Input placeholder="Nhập tiêu đề khóa học" />
                         </Form.Item>
-                    </Col>
-                    <Col span={12}>
+
                         <Form.Item name="level" label="Trình độ" initialValue="Cơ bản">
                             <Select showSearch={false}>
                                 <Option value="Cơ bản">Cơ bản</Option>
@@ -58,54 +65,68 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                                 <Option value="Nâng cao">Nâng cao</Option>
                             </Select>
                         </Form.Item>
+
+                        <Form.Item name="category_id" label="Danh mục">
+                            <Select placeholder="Chọn danh mục" allowClear>
+                                {categories.map(cat => (
+                                    <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+
+                        <Form.Item name="description" label="Mô tả">
+                            <Input.TextArea rows={4} placeholder="Mô tả tóm tắt về khóa học" />
+                        </Form.Item>
+
+                        <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false}>
+                            <Select showSearch={false}>
+                                <Option value={false}>Công khai (Tự động cấp quyền)</Option>
+                                <Option value={true}>Riêng tư (Cần phê duyệt)</Option>
+                            </Select>
+                        </Form.Item>
+                    </Col>
+
+                    {/* Cột phải */}
+                    <Col span={12}>
+                        <Form.Item label="Hình ảnh khóa học (Thumbnail)">
+                            <Space direction="vertical" className={styles.fullWidth} style={{ width: '100%' }}>
+                                <Input
+                                    placeholder="Dán URL ảnh hoặc chọn file"
+                                    value={thumbUrl}
+                                    onChange={(e) => setThumbUrl(e.target.value)}
+                                    suffix={
+                                        <Upload
+                                            beforeUpload={(file) => {
+                                                setThumbFile(file);
+                                                const reader = new FileReader();
+                                                reader.onload = e => setThumbUrl(e.target?.result as string);
+                                                reader.readAsDataURL(file);
+                                                return false;
+                                            }}
+                                            showUploadList={false}
+                                        >
+                                            <UploadCloud size={18} className={styles.uploadIcon} style={{ cursor: 'pointer' }} />
+                                        </Upload>
+                                    }
+                                />
+                                {thumbUrl && (
+                                    <div style={{ textAlign: 'center' }}>
+                                        <img src={thumbUrl} className={styles.thumbPreview} alt="Preview" style={{ maxHeight: '100px', width: 'auto' }} />
+                                    </div>
+                                )}
+                            </Space>
+                        </Form.Item>
+
+                        <Form.Item name="learning_outcomes" label="Bạn sẽ học được gì? (Mỗi dòng một ý)">
+                            <Input.TextArea rows={3} placeholder="Mục tiêu đầu ra của khóa học..." />
+                        </Form.Item>
+
+                        <Form.Item name="requirements" label="Yêu cầu (Mỗi dòng một ý)">
+                            <Input.TextArea rows={3} placeholder="Các kiến thức cần chuẩn bị..." />
+                        </Form.Item>
                     </Col>
                 </Row>
 
-                <Form.Item name="description" label="Mô tả">
-                    <Input.TextArea rows={3} />
-                </Form.Item>
-
-                <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false}>
-                    <Select showSearch={false}>
-                        <Option value={false}>Công khai (Tự động cấp quyền)</Option>
-                        <Option value={true}>Riêng tư (Cần phê duyệt)</Option>
-                    </Select>
-                </Form.Item>
-
-                <Form.Item label="Hình ảnh khóa học (Thumbnail)">
-                    <Space direction="vertical" className={styles.fullWidth} style={{ width: '100%' }}>
-                        <Input
-                            placeholder="Dán URL ảnh hoặc chọn file"
-                            value={thumbUrl}
-                            onChange={(e) => setThumbUrl(e.target.value)}
-                            suffix={
-                                <Upload
-                                    beforeUpload={(file) => {
-                                        setThumbFile(file);
-                                        const reader = new FileReader();
-                                        reader.onload = e => setThumbUrl(e.target?.result as string);
-                                        reader.readAsDataURL(file);
-                                        return false;
-                                    }}
-                                    showUploadList={false}
-                                >
-                                    <UploadCloud size={18} className={styles.uploadIcon} style={{ cursor: 'pointer' }} />
-                                </Upload>
-                            }
-                        />
-                        {thumbUrl && <img src={thumbUrl} className={styles.thumbPreview} alt="Preview" />}
-                    </Space>
-                </Form.Item>
-
-                <Form.Item name="learning_outcomes" label="Bạn sẽ học được gì? (Mỗi dòng một ý)">
-                    <Input.TextArea rows={3} />
-                </Form.Item>
-
-                <Form.Item name="requirements" label="Yêu cầu (Mỗi dòng một ý)">
-                    <Input.TextArea rows={3} />
-                </Form.Item>
-
-                <Button type="primary" htmlType="submit" block size="large">Hoàn tất</Button>
             </Form>
         </Modal>
     );

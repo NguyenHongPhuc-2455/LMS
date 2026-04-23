@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { HomeOutlined, PlusCircleOutlined, MessageOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { HomeOutlined, PlusCircleOutlined, MessageOutlined, ApartmentOutlined, AppstoreOutlined } from '@ant-design/icons';
 import styles from './Sidebar.module.scss';
 
 
@@ -10,6 +10,7 @@ const Sidebar: React.FC = () => {
 
     const menuItems = [
         { key: '/course', icon: <HomeOutlined />, label: 'Trang chủ' },
+        { key: '/categories', icon: <AppstoreOutlined />, label: 'Danh mục' },
         { key: '/programs', icon: <ApartmentOutlined />, label: 'Lộ trình' },
         { key: '/contact', icon: <MessageOutlined />, label: 'Liên hệ' },
     ];

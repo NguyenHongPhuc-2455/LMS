@@ -26,12 +26,22 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   ├── src/
 │   │   ├── configs/               # Cấu hình hệ thống (Prisma, DB)
 │   │   ├── controllers/           # Nhận Request & Trả Response
+│   │   │   ├── category.controller.js # Quản lý danh mục
+│   │   │   ├── courseRequest.controller.js # Duyệt yêu cầu khóa học
+│   │   │   ├── programRequest.controller.js # Duyệt yêu cầu lộ trình
+│   │   │   ├── stats.controller.js    # Thống kê & Tiến độ
 │   │   │   ├── comment.controller.js  # CRUD bình luận
 │   │   │   └── notification.controller.js # Quản lý thông báo
 │   │   ├── services/              # (Core) Logic nghiệp vụ chính
+│   │   │   ├── category.service.js    # Logic danh mục
+│   │   │   ├── courseRequest.service.js # Logic duyệt yêu cầu
+│   │   │   ├── stats.service.js       # Tính toán tiến độ học viên
 │   │   │   ├── comment.service.js     # Logic bình luận (Facebook-style 2 cấp)
 │   │   │   └── notification.service.js # Tạo & phát thông báo Realtime
 │   │   ├── routes/                # Luồng API
+│   │   │   ├── category.routes.js     # /api/categories/*
+│   │   │   ├── course-request.routes.js # /api/course-requests/*
+│   │   │   ├── stats.routes.js        # /api/stats/*
 │   │   │   ├── comment.routes.js      # /api/comments/*
 │   │   │   └── notification.routes.js # /api/notifications/*
 │   │   ├── middlewares/           # Auth, Upload, validate, rateLimiter, Error Handler
@@ -42,13 +52,13 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │
 ├── frontend/securityVideo/       # React SPA
 │   ├── src/
-│   │   ├── styles/                # Global Style System (Variables, Mixins, Global SCSS)
-│   │   ├── components/            # Modular Components (Sử dụng Absolute Import @/components)
+│   │   ├── styles/                # Global Style System (RitaVo Red, Glassmorphism)
+│   │   ├── components/            # Modular Components (Standardized Admin Components)
 │   │   ├── hooks/                 # Custom React Hooks
-│   │   ├── pages/                 # Phân chia theo vai trò (Admin/Client/Contact)
-│   │   ├── services/              # API Client (axios instances)
-│   │   ├── App.tsx                # SPA Routing & Absolute Imports Config
-│   │   └── main.tsx               # Entry point nạp global styles
+│   │   ├── pages/                 # Admin modules (Course, Lesson, Category, Request, Progress, User)
+│   │   ├── services/              # API Client (Shared axios services)
+│   │   ├── App.tsx                # SPA Routing
+│   │   └── main.tsx               # Entry point
 │   ├── tsconfig.app.json          # Cấu hình Absolute Imports (@/* -> ./src/*)
 │   └── vite.config.ts             # Cấu hình Resolve Alias (@)
 
@@ -62,19 +72,17 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 
 ## 🌊 Luồng hoạt động chính (Workflows)
 
-### 1. Luồng xử lý Video (Security First)
-`Upload Video` -> `Multer` -> `VideoController` -> `VideoService` -> `FFmpeg`:
-- Video được băm thành phân đoạn (.ts).
-- Tạo mã hóa AES-128 và lưu File Key tạm.
-- Lưu Key Binary trực tiếp vào PostgreSQL (`hls_key`).
-- Trả về đường dẫn Manifest (.m3u8).
+### 1. Luồng xử lý Video Đa nguồn
+`Upload/Import Video` -> `VideoService`:
+- **HLS**: Cắt nhỏ (.ts), mã hóa AES-128, lưu Key vào DB. Bảo mật cao nhất.
+- **YouTube/Direct Link**: Lưu URL và thời lượng. Player tự động nhận diện nguồn.
+- **Tracking**: Hệ thống theo dõi chính xác thời gian xem. Khi đạt **99%** thời lượng, bài học tự động được đánh dấu hoàn thành.
 
-### 2. Luồng xem Video (SPA Flow)
-`Course Page` -> `VideoPlayer Component`:
-- Player gọi manifest `.m3u8`.
-- Trình duyệt yêu cầu Key giải mã từ API `/api/videos/key/:id`.
-- `AuthMiddleware` kiểm tra Token & Quyền sở hữu khóa học.
-- Trả về Key Binary để giải mã luồng video tại chỗ.
+### 2. Luồng Duyệt yêu cầu & Tiến độ
+`Student Registration` -> `Admin Dashboard` -> `Approval`:
+- Khi học viên đăng ký khóa học/lộ trình riêng tư, yêu cầu được đẩy về `CourseRequestManagement`.
+- Admin duyệt -> Học viên được cấp quyền truy cập (`enrollment`).
+- Admin có thể xem **Tiến độ học tập** theo thời gian thực (phần trăm hoàn thành) của từng học viên.
 
 ### 3. Luồng Bình luận (Facebook-style, 2 cấp)
 `CourseLearning` -> `CommentSection` -> `commentService` -> Backend:

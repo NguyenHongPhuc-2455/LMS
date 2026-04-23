@@ -1,8 +1,8 @@
 // Colors
-$primary-color: #6366f1;
-$primary-hover: #4f46e5;
-$secondary-color: #a855f7;
-$accent-color: #ec4899;
+$primary-color: #C72127;
+$primary-hover: #b01c22;
+$secondary-color: #B8121A;
+$accent-color: #ff4d4f;
 $bg-color: #f8fafc;
 $surface-color: #ffffff;
 $text-main: #0f172a;
@@ -10,7 +10,7 @@ $text-muted: #64748b;
 $border-color: #e2e8f0;
 
 // Gradients
-$primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+$primary-gradient: linear-gradient(135deg, #C72127 0%, #B8121A 100%);
 
 // Shadows
 $shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -20,4 +20,3 @@ $shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 // Radius
 $radius-base: 12px;
 $radius-lg: 24px;
-

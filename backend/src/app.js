@@ -16,6 +16,8 @@ const quizRoutes = require('./routes/quiz.routes');
 const programRoutes = require('./routes/program.routes');
 const programRequestRoutes = require('./routes/programRequest.routes');
 const sectionRoutes = require('./routes/section.routes');
+const categoryRoutes = require('./routes/category.routes');
+
 
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
@@ -77,6 +79,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/program-requests', programRequestRoutes);
 app.use('/api/sections', sectionRoutes);
+app.use('/api/categories', categoryRoutes);
+
 
 // Centralized Error Handling
 app.use(errorMiddleware);

@@ -25,17 +25,23 @@ mindmap
         H.264 Optimization["H.264 Optimization (CRF 26)"]
         HLS Streaming[".m3u8, .ts"]
       Quản Lý Nội Dung["Quản Lý Nội Dung (Content)"]
-        Categories and Levels
-        Courses["Courses (is_private, Level, Instructor)"]
-        Full CRUD
-        Sections & Lessons
+        Categories["Categories (CRUD, Hierarchy)"]
+        Courses["Courses (is_private, Level, Category)"]
+        Sections & Lessons["Sections & Lessons CRUD"]
+        Standardized UI["Standardized Dashboard Layout"]
+      Quản Trị ["Quản Trị (Admin Operations)"]
+        Request Tracking["Duyệt yêu cầu (Course/Program)"]
+        Progress Monitoring["Theo dõi tiến độ học viên"]
+        User Management["Quản lý người dùng & Phân quyền"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
         Enrollment["Đăng ký học"]
-        Lesson Completion Tracking
+        Lesson Completion Tracking["Precise Tracking (99%)"]
+        Multi-Source Video["HLS, YouTube, Direct MP4"]
         Bình luận Facebook-style (2 cấp)
       Thông Báo["Thông Báo Realtime (Notifications)"]
         Socket.io Push
         Comment Reply Alerts
+        Admin Request Alerts
         Click to Navigate["Scroll & Highlight"]
       Liên Hệ["Liên Hệ (Contact)"]
         Premium Contact Page
@@ -58,14 +64,18 @@ Thay vì dùng các dịch vụ đắt đỏ như Bunny.net, dự án tự xây 
 - **Tự động**: Tự động băm video ngay khi upload xong.
 
 ### 3. Khối Content & Learning
-Cấu trúc phân cấp 4 tầng: `Category` -> `Course` -> `Section` -> `Lesson`.
-- Hỗ trợ tracking tiến độ học viên (Học đến đâu, hoàn thành bài nào).
+Cấu trúc phân cấp đa tầng: `Category` -> `Course` -> `Section` -> `Lesson`.
+- **Quản lý Danh mục**: Phân loại khóa học linh hoạt giúp người dùng dễ dàng tìm kiếm.
+- **Hỗ trợ tracking tiến độ**: Hệ thống theo dõi chính xác đến 99% thời lượng video để ghi nhận hoàn thành.
+- **Đa dạng nguồn video**: Hỗ trợ HLS (bảo mật cao), YouTube và các link video trực tiếp.
 - **Hệ thống bình luận Facebook-style**: 2 cấp cố định (Parent + Replies). Reply vào reply sẽ tự động gộp vào cùng cấp.
 
-### 4. Khối Thông báo Realtime (Socket.io)
-- Thông báo push qua Socket.io khi có người phản hồi bình luận.
-- Click thông báo để nhảy thẳng tới vị trí bình luận (scroll + highlight).
-- Hiển thị toast notification góc dưới bên phải.
+### 4. Khối Quản Trị & Thông báo Realtime
+Dành riêng cho Admin để vận hành hệ thống:
+- **Duyệt yêu cầu**: Hệ thống quản lý yêu cầu tham gia khóa học/lộ trình từ học viên.
+- **Theo dõi tiến độ**: Admin có thể xem chi tiết phần trăm hoàn thành của từng học viên trong mỗi khóa học.
+- **Thông báo Realtime**: Push qua Socket.io khi có người phản hồi bình luận hoặc có yêu cầu mới cần duyệt.
+- Click thông báo để nhảy thẳng tới vị trí cần xử lý (bình luận hoặc trang duyệt).
 
 ### 5. Khối SPA (Single Page Application)
 Giao diện React hiện đại:
@@ -80,6 +90,9 @@ Giao diện React hiện đại:
 - [x] Thông báo Realtime khi có phản hồi (Socket.io)
 - [x] Click thông báo để nhảy tới bình luận cụ thể
 - [x] Trang Liên hệ (Contact) chuyên nghiệp
+- [x] Hệ thống Quản lý Danh mục & Phân loại khóa học
+- [x] Hệ thống Duyệt yêu cầu & Theo dõi Tiến độ Admin
+- [x] Đồng bộ hóa giao diện Dashboard (Standardized UI)
 - [ ] Tích hợp Livestream dạy học trực tuyến.
 - [ ] App Mobile (React Native) sử dụng chung Backend API.
 - [ ] Hệ thống AI gợi ý khóa học dựa trên hành vi học tập.
