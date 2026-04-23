@@ -8,6 +8,7 @@ import styles from './Profile.module.scss';
 import ProfileHeader from './components/ProfileHeader';
 import ProfileEditModal from './components/ProfileEditModal';
 import ProfileSections from './components/ProfileSections';
+import { LearningStatsChart } from '../../../components';
 
 const Profile: React.FC = () => {
     const { message } = App.useApp();
@@ -83,6 +84,7 @@ const Profile: React.FC = () => {
                     />
                 </Col>
                 <Col xs={24} md={16}>
+                    <LearningStatsChart />
                     <ProfileSections />
                 </Col>
             </Row>

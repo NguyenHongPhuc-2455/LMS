@@ -1,6 +1,9 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { HomeOutlined, PlusCircleOutlined, MessageOutlined, ApartmentOutlined, AppstoreOutlined } from '@ant-design/icons';
+import {
+    HomeOutlined, PlusCircleOutlined, MessageOutlined,
+    ApartmentOutlined, AppstoreOutlined
+} from '@ant-design/icons';
 import styles from './Sidebar.module.scss';
 
 
