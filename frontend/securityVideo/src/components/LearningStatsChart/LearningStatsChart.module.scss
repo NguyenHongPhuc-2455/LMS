@@ -85,6 +85,20 @@
                 color: #94a3b8;
             }
         }
+
+        .recordTag {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #d97706;
+            background: rgba(217, 119, 6, 0.1);
+            padding: 2px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
     }
 
     .cardIconWrap {

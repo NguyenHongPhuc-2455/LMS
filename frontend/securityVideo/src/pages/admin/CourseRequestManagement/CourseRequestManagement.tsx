@@ -3,6 +3,9 @@ import { Card, Tabs, Typography, message } from 'antd';
 import { BookOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { courseRequestService } from '../../../services/courseRequest.service';
 import { programRequestService } from '../../../services/programRequest.service';
+import { categoryService, type Category } from '../../../services/category.service';
+import { Space, Select, Tooltip, Button } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 
 import styles from './CourseRequests.module.scss';
 import RequestTabContent from './components/RequestTabContent';
@@ -16,16 +19,20 @@ export default function CourseRequestManagement() {
     const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
     const [selectedProgramIds, setSelectedProgramIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
     const fetchAllRequests = async () => {
         try {
             setLoading(true);
-            const [courseData, programData] = await Promise.all([
+            const [courseData, programData, catData] = await Promise.all([
                 courseRequestService.getAllPending(),
-                programRequestService.getAllPending()
+                programRequestService.getAllPending(),
+                categoryService.getAllCategories()
             ]);
             setCourseRequests(courseData);
             setProgramRequests(programData);
+            setCategories(catData);
         } catch (error) {
             message.error('Lỗi khi tải danh sách yêu cầu');
         } finally {
@@ -86,18 +93,22 @@ export default function CourseRequestManagement() {
         }
     };
 
+    const filteredCourseRequests = courseRequests.filter(req =>
+        !selectedCategoryId || req.course?.category_id === selectedCategoryId
+    );
+
     const items = [
         {
             key: '1',
             label: (
                 <span>
-                    <BookOutlined /> Khóa học ({courseRequests.length})
+                    <BookOutlined /> Khóa học ({filteredCourseRequests.length})
                 </span>
             ),
             children: (
                 <RequestTabContent
                     type="course"
-                    data={courseRequests}
+                    data={filteredCourseRequests}
                     loading={loading}
                     selectedIds={selectedCourseIds}
                     onSelectionChange={setSelectedCourseIds}
@@ -139,6 +150,33 @@ export default function CourseRequestManagement() {
             </div>
 
             <Card className="glass-card" style={{ borderRadius: '16px' }}>
+                <div style={{ marginBottom: 16 }}>
+                    <Space size={12}>
+                        <Typography.Text strong>Lọc theo danh mục:</Typography.Text>
+                        <Select
+                            placeholder="Tất cả danh mục"
+                            allowClear
+                            style={{ width: 220 }}
+                            size="small"
+                            value={selectedCategoryId}
+                            onChange={setSelectedCategoryId}
+                        >
+                            {categories.map(cat => (
+                                <Select.Option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                        <Tooltip title="Làm mới dữ liệu">
+                            <Button
+                                icon={<ReloadOutlined />}
+                                size="small"
+                                onClick={fetchAllRequests}
+                                loading={loading}
+                            />
+                        </Tooltip>
+                    </Space>
+                </div>
                 <Tabs defaultActiveKey="1" items={items} />
             </Card>
         </div>

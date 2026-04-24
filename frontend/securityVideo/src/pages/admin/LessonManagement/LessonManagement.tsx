@@ -4,14 +4,16 @@ import { courseService } from '../../../services/course.service';
 import { contentService } from '../../../services/content.service';
 import { quizService } from '../../../services/quiz.service';
 import { videoService } from '../../../services/video.service';
+import { categoryService } from '../../../services/category.service';
 
 import {
     Plus
 } from 'lucide-react';
 import {
     Card, Button, Typography,
-    message
+    message, Tooltip
 } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import styles from './LessonManagement.module.scss';
 
 // New specialized components
@@ -44,24 +46,28 @@ interface Course {
 }
 
 export default function LessonManagement() {
+    const [categories, setCategories] = useState<any[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [sections, setSections] = useState<Section[]>([]);
     const [lessons, setLessons] = useState<Lesson[]>([]);
 
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
     const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [searchParams] = useSearchParams();
     const isFirstLoad = useRef(true);
+    const isInitializing = useRef(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLesson, setEditingLesson] = useState<any | null>(null);
     const [editingQuizId, setEditingQuizId] = useState<number | null>(null);
     const [lessonType, setLessonType] = useState<'VIDEO' | 'QUIZ'>('VIDEO');
 
-    const fetchCourses = async () => {
+
+    const fetchCourses = async (categoryId: number) => {
         try {
-            const data = await courseService.getAll();
+            const data = await courseService.getAll('', categoryId);
             setCourses(data);
         } catch (e) { message.error('Lỗi tải khóa học'); }
     };
@@ -86,32 +92,65 @@ export default function LessonManagement() {
     };
 
     useEffect(() => {
-        fetchCourses();
+        const initFromUrl = async () => {
+            const allCategories = await categoryService.getAllCategories().catch(() => []);
+            setCategories(allCategories);
 
-        const cId = searchParams.get('courseId');
-        if (cId) {
-            setSelectedCourseId(Number(cId));
-        }
-    }, [searchParams]);
+            const cId = searchParams.get('courseId');
+            const sId = searchParams.get('sectionId');
 
-    useEffect(() => {
-        if (selectedCourseId) {
-            fetchSections(selectedCourseId);
-
-            if (isFirstLoad.current) {
-                const sId = searchParams.get('sectionId');
-                if (sId) {
-                    setSelectedSectionId(Number(sId));
+            if (cId) {
+                isInitializing.current = true;
+                isFirstLoad.current = true;
+                const courseData = await courseService.getById(cId).catch(() => null);
+                if (courseData) {
+                    const catId = courseData.category?.id;
+                    if (catId) {
+                        setSelectedCategoryId(catId);
+                        const coursesData = await courseService.getAll('', catId).catch(() => []);
+                        setCourses(coursesData);
+                    }
+                    const sortedSections = (courseData.sections || []).sort(
+                        (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
+                    );
+                    setSections(sortedSections);
+                    setSelectedCourseId(Number(cId));
+                    if (sId) {
+                        setSelectedSectionId(Number(sId));
+                        await fetchLessons(Number(sId)); // directly call, don't rely on useEffect
+                    }
                 }
+                isInitializing.current = false;
                 isFirstLoad.current = false;
             } else {
-                setSelectedSectionId(null);
-                setLessons([]);
+                isFirstLoad.current = false;
             }
+        };
+        initFromUrl();
+    }, []);
+
+    useEffect(() => {
+        if (isInitializing.current) return;
+        if (selectedCategoryId) {
+            fetchCourses(selectedCategoryId);
+            setSelectedCourseId(null);
+            setSections([]);
+            setSelectedSectionId(null);
+            setLessons([]);
+        }
+    }, [selectedCategoryId]);
+
+    useEffect(() => {
+        if (isInitializing.current) return;
+        if (selectedCourseId) {
+            fetchSections(selectedCourseId);
+            setSelectedSectionId(null);
+            setLessons([]);
         }
     }, [selectedCourseId]);
 
     useEffect(() => {
+        if (isInitializing.current) return;
         if (selectedSectionId) {
             fetchLessons(selectedSectionId);
         } else {
@@ -247,13 +286,24 @@ export default function LessonManagement() {
 
             <Card className="glass-card">
                 <LessonFilter
+                    categories={categories}
                     courses={courses}
                     sections={sections}
+                    selectedCategoryId={selectedCategoryId}
                     selectedCourseId={selectedCourseId}
                     selectedSectionId={selectedSectionId}
+                    onCategoryChange={setSelectedCategoryId}
                     onCourseChange={setSelectedCourseId}
                     onSectionChange={setSelectedSectionId}
                 >
+                    <Tooltip title="Làm mới dữ liệu">
+                        <Button
+                            icon={<ReloadOutlined />}
+                            onClick={() => selectedSectionId && fetchLessons(selectedSectionId)}
+                            loading={loading}
+                            disabled={!selectedSectionId}
+                        />
+                    </Tooltip>
                     <Button
                         type="primary"
                         disabled={!selectedSectionId}

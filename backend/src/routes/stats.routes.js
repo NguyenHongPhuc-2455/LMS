@@ -12,5 +12,6 @@ router.get('/global-learning-trends', authMiddleware.verifyToken, authMiddleware
 router.post('/track', authMiddleware.verifyToken, statsController.trackLearningTime);
 router.get('/my-learning-time', authMiddleware.verifyToken, statsController.getMyLearningStats);
 router.get('/my-learning-summary', authMiddleware.verifyToken, statsController.getMyLearningSummary);
+router.get('/top-learners', authMiddleware.verifyToken, statsController.getTopLearners);
 
 module.exports = router;

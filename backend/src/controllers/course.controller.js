@@ -4,8 +4,8 @@ const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
 exports.getCourses = catchAsync(async (req, res) => {
-    const { search } = req.query;
-    const courses = await courseService.getAllCourses(search);
+    const { search, categoryId } = req.query;
+    const courses = await courseService.getAllCourses(search, categoryId);
     res.json(courses);
 });
 
@@ -205,9 +205,14 @@ exports.getMyCourses = catchAsync(async (req, res) => {
                         select: { full_name: true }
                     },
                     sections: {
+                        orderBy: { order: 'asc' },
                         include: {
                             lessons: {
-                                select: { id: true }
+                                select: { id: true, order: true },
+                                orderBy: [
+                                    { order: 'asc' },
+                                    { id: 'asc' }
+                                ]
                             }
                         }
                     }

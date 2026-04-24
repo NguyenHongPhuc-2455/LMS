@@ -6,8 +6,10 @@ import { contentService } from '../../../services/content.service';
 import { Plus } from 'lucide-react';
 import {
     Card, Button, Select, Typography, Space,
-    message
+    message, Tooltip
 } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
+import { categoryService } from '../../../services/category.service';
 import styles from './SectionManagement.module.scss';
 
 // New specialized components
@@ -30,10 +32,14 @@ interface Course {
 }
 
 export default function SectionManagement() {
+    const [categories, setCategories] = useState<any[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
     const [sections, setSections] = useState<Section[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingCategories] = useState(false);
+    const [loadingCourses, setLoadingCourses] = useState(false);
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -41,11 +47,14 @@ export default function SectionManagement() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editingSection, setEditingSection] = useState<any>(null);
 
-    const fetchCourses = async () => {
+
+    const fetchCourses = async (categoryId: number) => {
+        setLoadingCourses(true);
         try {
-            const data = await courseService.getAll();
+            const data = await courseService.getAll('', categoryId);
             setCourses(data);
         } catch (e) { message.error('Lỗi tải danh sách khóa học'); }
+        finally { setLoadingCourses(false); }
     };
 
     const fetchSections = async (courseId: number) => {
@@ -61,12 +70,35 @@ export default function SectionManagement() {
     };
 
     useEffect(() => {
-        fetchCourses();
-        const courseIdFromUrl = searchParams.get('courseId');
-        if (courseIdFromUrl) {
-            setSelectedCourseId(Number(courseIdFromUrl));
+        const initFromUrl = async () => {
+            const allCategories = await categoryService.getAllCategories().catch(() => []);
+            setCategories(allCategories);
+
+            const cId = searchParams.get('courseId');
+            if (cId) {
+                const courseData = await courseService.getById(cId).catch(() => null);
+                if (courseData) {
+                    const catId = courseData.category?.id;
+                    if (catId) {
+                        setSelectedCategoryId(catId);
+                        const coursesData = await courseService.getAll('', catId).catch(() => []);
+                        setCourses(coursesData);
+                    }
+                    setSelectedCourseId(Number(cId));
+                    // fetchSections will be triggered by selectedCourseId useEffect
+                }
+            }
+        };
+        initFromUrl();
+    }, []);
+
+    useEffect(() => {
+        if (selectedCategoryId) {
+            fetchCourses(selectedCategoryId);
+            setSelectedCourseId(null);
+            setSections([]);
         }
-    }, [searchParams]);
+    }, [selectedCategoryId]);
 
     useEffect(() => {
         if (selectedCourseId) {
@@ -113,32 +145,64 @@ export default function SectionManagement() {
 
             <Card className="glass-card">
                 <div className={styles.courseSelectorWrapper}>
-                    <Space size={12}>
-                        <Text strong>Chọn khóa học:</Text>
-                        <Select
-                            showSearch
-                            placeholder="Chọn khóa học để xem chương..."
-                            className={styles.courseSelect}
-                            size="small"
-                            value={selectedCourseId}
-                            onChange={(v) => setSelectedCourseId(v)}
-                            optionFilterProp="children"
-                            filterOption={(input, option) =>
-                                (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
-                            }
+                    <Space size={20} wrap>
+                        <Space size={8}>
+                            <Text strong>Danh mục:</Text>
+                            <Select
+                                placeholder="Chọn danh mục"
+                                style={{ width: 180 }}
+                                onChange={setSelectedCategoryId}
+                                loading={loadingCategories}
+                                showSearch
+                                optionFilterProp="children"
+                                size="small"
+                                value={selectedCategoryId}
+                            >
+                                {categories.map(cat => (
+                                    <Option key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Space>
+
+                        <Space size={8}>
+                            <Text strong>Khóa học:</Text>
+                            <Select
+                                showSearch
+                                placeholder={selectedCategoryId ? "Chọn khóa học" : "Chọn danh mục trước"}
+                                style={{ width: 220 }}
+                                size="small"
+                                value={selectedCourseId}
+                                loading={loadingCourses}
+                                disabled={!selectedCategoryId}
+                                onChange={(v) => setSelectedCourseId(v)}
+                                optionFilterProp="children"
+                            >
+                                {courses.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
+                            </Select>
+                        </Space>
+
+                        <Tooltip title="Làm mới dữ liệu">
+                            <Button
+                                icon={<ReloadOutlined />}
+                                size="small"
+                                onClick={() => selectedCourseId && fetchSections(selectedCourseId)}
+                                loading={loading}
+                                disabled={!selectedCourseId}
+                            />
+                        </Tooltip>
+
+                        <Button
+                            type="primary"
+                            disabled={!selectedCourseId}
+                            onClick={() => { setEditingId(null); setEditingSection(null); setIsModalOpen(true); }}
+                            icon={<Plus size={16} />}
+                            className={styles.adminAddButton}
                         >
-                            {courses.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
-                        </Select>
+                            Thêm chương mới
+                        </Button>
                     </Space>
-                    <Button
-                        type="primary"
-                        disabled={!selectedCourseId}
-                        onClick={() => { setEditingId(null); setEditingSection(null); setIsModalOpen(true); }}
-                        icon={<Plus size={16} />}
-                        className={styles.adminAddButton}
-                    >
-                        Thêm chương mới
-                    </Button>
                 </div>
 
                 <SectionTable

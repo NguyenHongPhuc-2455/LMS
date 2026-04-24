@@ -1,0 +1,335 @@
+.homeContainer {
+    width: 100%;
+    padding: 10px 3% 40px;
+
+    .loadingContainer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 60vh;
+    }
+
+    .summaryCard {
+        background: var(--card-bg);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s ease;
+        height: 100%;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .cardIconWrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .cardInfo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .label {
+                font-size: 13px;
+                color: #64748b;
+                font-weight: 500;
+            }
+
+            .value {
+                font-size: 20px;
+                font-weight: 700;
+                color: #1e293b;
+                display: flex;
+                align-items: baseline;
+                gap: 4px;
+
+                .unit {
+                    font-size: 13px;
+                    color: #64748b;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+
+    .sectionHeader {
+        margin-bottom: 24px;
+    }
+
+    .categoryCard {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+
+        &:hover {
+            border-color: #C72127;
+            box-shadow: 0 4px 12px rgba(199, 33, 39, 0.1);
+
+            .catIconBox {
+                background: rgba(199, 33, 39, 0.1);
+            }
+        }
+
+        .catIconBox {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+    }
+
+    .leaderboardBox {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+
+        .lbHeader {
+            background: linear-gradient(135deg, #C72127 0%, #991b1b 100%);
+            padding: 24px 20px;
+            text-align: center;
+        }
+
+        .lbList {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            .lbItem {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 12px;
+                border-radius: 12px;
+                background: #f8fafc;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background: #f1f5f9;
+                }
+
+                .lbRank {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: #e2e8f0;
+                    color: #64748b;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 13px;
+
+                    &[data-rank="1"] {
+                        background: #fef08a;
+                        color: #854d0e;
+                        box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);
+                    }
+
+                    &[data-rank="2"] {
+                        background: #e2e8f0;
+                        color: #475569;
+                    }
+
+                    &[data-rank="3"] {
+                        background: #fed7aa;
+                        color: #9a3412;
+                    }
+                }
+
+                .lbInfo {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+
+                    .lbName {
+                        font-size: 14px;
+                        color: #1e293b;
+                    }
+
+                    .lbTime {
+                        font-size: 12px;
+                        color: #64748b;
+                        display: flex;
+                        align-items: center;
+                    }
+                }
+            }
+        }
+    }
+
+    .desktopOnlyHeaderSpace {
+        display: none;
+
+        @media (min-width: 992px) {
+            display: block; // Show on lg screens
+        }
+    }
+
+    .inProgressWrapper {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .inProgressScroll {
+        max-height: 420px; // Fits about 3 cards comfortably
+        overflow-y: auto;
+        padding-right: 4px;
+        margin-right: -4px;
+
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+    }
+
+    .inProgressCard {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        gap: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.3s;
+
+        &:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-color: #cbd5e1;
+        }
+
+        .progThumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .progPlaceholder {
+                width: 100%;
+                height: 100%;
+                background: #f1f5f9;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #94a3b8;
+                font-size: 24px;
+            }
+        }
+
+        .progInfo {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .progAction {
+            flex-shrink: 0;
+            margin-left: 16px;
+        }
+    }
+
+    .streakWidget {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+
+        .streakNumberBox {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+
+            .streakCount {
+                font-size: 48px;
+                font-weight: 800;
+                color: #1e293b;
+                line-height: 1;
+                margin: 8px 0;
+            }
+
+            .streakText {
+                font-size: 14px;
+                color: #64748b;
+            }
+        }
+
+        .streakDays {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 8px;
+
+            .streakDayCol {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+
+                .streakDot {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: #e2e8f0;
+                    transition: all 0.3s;
+
+                    &.active {
+                        background: #C8102E;
+                        box-shadow: 0 0 8px rgba(200, 16, 46, 0.4);
+                    }
+                }
+
+                .streakDayName {
+                    font-size: 12px;
+                    color: #64748b;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+}

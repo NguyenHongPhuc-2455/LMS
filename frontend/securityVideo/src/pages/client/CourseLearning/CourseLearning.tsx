@@ -157,6 +157,14 @@ export default function CourseLearning() {
     useEffect(() => {
         if (!activeLesson || !id) return;
 
+        // Gửi xung khởi động (1 giây) ngay khi bắt đầu vào bài học 
+        // để đảm bảo streak được kích hoạt ngay lập tức mà không cần chờ 30s
+        statsService.trackLearningTime({
+            courseId: parseInt(id),
+            lessonId: activeLesson.id,
+            duration: 1
+        }).catch(err => console.error('Failed to send initial learning pulse:', err));
+
         const TRACK_INTERVAL = 30000; // 30 seconds
         const timer = setInterval(() => {
             // Chỉ bắt đầu track nếu bài học không phải là một video đang bị tạm dừng (optional optimization)

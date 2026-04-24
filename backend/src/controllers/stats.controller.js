@@ -70,11 +70,22 @@ const getGlobalLearningTrends = async (req, res) => {
     }
 };
 
+const getTopLearners = async (req, res) => {
+    try {
+        const top = await statsService.getTopLearners();
+        res.json(top);
+    } catch (error) {
+        console.error('Error in getTopLearners controller:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getCourseProgress,
     trackLearningTime,
     getMyLearningStats,
     getMyLearningSummary,
-    getGlobalLearningTrends
+    getGlobalLearningTrends,
+    getTopLearners
 };

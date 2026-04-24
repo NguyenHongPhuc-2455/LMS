@@ -24,5 +24,9 @@ export const statsService = {
     getGlobalLearningTrends: async (days: number = 7) => {
         const response = await api.get(`/stats/global-learning-trends?days=${days}`);
         return response.data;
+    },
+    getTopLearners: async () => {
+        const response = await api.get('/stats/top-learners');
+        return response.data;
     }
 };

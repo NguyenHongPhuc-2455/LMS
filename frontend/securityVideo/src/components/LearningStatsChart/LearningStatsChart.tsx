@@ -36,7 +36,7 @@ const CARDS = [
     {
         key: 'currentStreak',
         fallback: '0',
-        label: 'Chuỗi kỷ lục',
+        label: 'Chuỗi hiện tại',
         unit: 'ngày',
         icon: <FireOutlined />,
         color: '#d97706',
@@ -105,6 +105,11 @@ const LearningStatsChart: React.FC<{ isProfile?: boolean }> = ({ isProfile = tru
                                     {displayValue}
                                     {card.unit && <span className={styles.unit}> {card.unit}</span>}
                                 </div>
+                                {card.key === 'currentStreak' && summary?.longestStreak > summary?.currentStreak && (
+                                    <div className={styles.recordTag}>
+                                        Kỷ lục: {summary.longestStreak} ngày
+                                    </div>
+                                )}
                             </div>
                         </Col>
                     );
@@ -162,11 +167,16 @@ const LearningStatsChart: React.FC<{ isProfile?: boolean }> = ({ isProfile = tru
                             <Tooltip
                                 content={({ active, payload, label }) => {
                                     if (active && payload && payload.length) {
+                                        const mins = payload[0].value as number;
+                                        const h = Math.floor(mins / 60);
+                                        const p = mins % 60;
+                                        const displayTime = h > 0 ? `${h}h${p}p` : `${p}p`;
+
                                         return (
                                             <div className={styles.customTooltip} style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
                                                 <span className={styles.tooltipDate}>{label}</span>
                                                 <span className={styles.tooltipValue}>
-                                                    {(payload[0].value as number / 60).toFixed(1)} giờ học
+                                                    {displayTime}
                                                 </span>
                                             </div>
                                         );

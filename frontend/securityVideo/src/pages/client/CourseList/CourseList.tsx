@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Skeleton, message, Empty } from 'antd';
+import { Skeleton, message, Empty, Typography, Button, Space } from 'antd';
+import { ArrowLeftOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { courseService } from '../../../services/course.service';
+import { categoryService } from '../../../services/category.service';
+import { useNavigate } from 'react-router-dom';
 import styles from './CourseList.module.scss';
 
 // Sub-components
@@ -10,10 +13,13 @@ import CourseGrid from './components/CourseGrid';
 import type { Course } from '../components/CourseCard';
 
 export default function CourseList() {
+    const navigate = useNavigate();
     const [courses, setCourses] = useState<Course[]>([]);
+    const [categoryName, setCategoryName] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
     const searchQuery = searchParams.get('search') || '';
+    const categoryId = searchParams.get('categoryId') ? parseInt(searchParams.get('categoryId') as string) : undefined;
 
     // Phân trang & Sắp xếp
     const [currentPagePrivate, setCurrentPagePrivate] = useState(1);
@@ -30,8 +36,16 @@ export default function CourseList() {
         const fetchCourses = async () => {
             try {
                 setLoading(true);
-                const data = await courseService.getAll(searchQuery);
+                const data = await courseService.getAll(searchQuery, categoryId);
                 setCourses(data);
+
+                if (categoryId) {
+                    const cats = await categoryService.getAllCategories();
+                    const currentCat = cats.find(c => c.id === categoryId);
+                    if (currentCat) setCategoryName(currentCat.name);
+                } else {
+                    setCategoryName(null);
+                }
             } catch (error) {
                 message.error('Lỗi khi tải danh sách khóa học');
             } finally {
@@ -39,7 +53,7 @@ export default function CourseList() {
             }
         };
         fetchCourses();
-    }, [searchQuery]);
+    }, [searchQuery, categoryId]);
 
     if (loading) {
         return (
@@ -77,6 +91,32 @@ export default function CourseList() {
 
     return (
         <div className={styles.courseListContainer}>
+            {categoryId && (
+                <div style={{ marginBottom: '32px', background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/home')} style={{ color: '#64748b', padding: 0 }}>
+                            Quay lại Trang chủ
+                        </Button>
+                    </div>
+                    <Space size={16} align="center">
+                        <div style={{ width: '48px', height: '48px', background: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FolderOpenOutlined style={{ fontSize: '24px', color: '#C72127' }} />
+                        </div>
+                        <div>
+                            <Typography.Title level={2} style={{ margin: 0, color: '#1e293b' }}>{categoryName || 'Danh mục'}</Typography.Title>
+                            <Typography.Text type="secondary">{courses.length} khóa học trong danh mục này</Typography.Text>
+                        </div>
+                    </Space>
+                </div>
+            )}
+
+            {!categoryId && (
+                <div style={{ marginBottom: '32px' }}>
+                    <Typography.Title level={2}>Tất cả Khóa học</Typography.Title>
+                    <Typography.Text type="secondary">Khám phá và chọn lựa những khóa học phù hợp với bạn</Typography.Text>
+                </div>
+            )}
+
             <CourseGrid
                 title="Khóa học Riêng tư (Cần phê duyệt)"
                 tagLabel="Yêu cầu"

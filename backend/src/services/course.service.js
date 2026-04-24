@@ -1,12 +1,15 @@
 const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
 
-const getAllCourses = async (search = '') => {
+const getAllCourses = async (search = '', categoryId = null) => {
     return await prisma.course.findMany({
         where: {
             deleted_at: null,
             ...(search && {
                 title: { contains: search, mode: 'insensitive' }
+            }),
+            ...(categoryId && {
+                category_id: parseInt(categoryId)
             })
         },
         include: {

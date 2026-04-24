@@ -1,8 +1,14 @@
 import api from "./api";
 
 export const courseService = {
-    getAll: async (search?: string) => {
-        const response = await api.get(`/courses${search ? `?search=${search}` : ''}`);
+    getAll: async (search?: string, categoryId?: number) => {
+        let url = '/courses';
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (categoryId) params.append('categoryId', categoryId.toString());
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await api.get(url);
         return response.data;
     },
     getById: async (id: string | number) => {

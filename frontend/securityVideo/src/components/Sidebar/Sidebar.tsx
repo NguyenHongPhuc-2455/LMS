@@ -12,8 +12,8 @@ const Sidebar: React.FC = () => {
     const location = useLocation();
 
     const menuItems = [
-        { key: '/course', icon: <HomeOutlined />, label: 'Trang chủ' },
-        { key: '/categories', icon: <AppstoreOutlined />, label: 'Danh mục' },
+        { key: '/home', icon: <HomeOutlined />, label: 'Trang chủ' },
+        { key: '/course', icon: <AppstoreOutlined />, label: 'Khóa học' },
         { key: '/programs', icon: <ApartmentOutlined />, label: 'Lộ trình' },
         { key: '/contact', icon: <MessageOutlined />, label: 'Liên hệ' },
     ];

@@ -8,7 +8,7 @@ import {
 import {
   CourseDetail, CourseLearning, CourseList,
   MyCourses, MyPrograms,
-  Profile, ProgramDetail, ProgramList, Contact, CategorizedCourses
+  Profile, ProgramDetail, ProgramList, Contact, CategorizedCourses, Home, CategoryCourseView
 } from '@/pages/client';
 import { MainLayout, AdminLayout } from '@/components';
 
@@ -53,12 +53,14 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Navigate to="/course" replace />} />
+            <Route path="/" element={<Navigate to="/home" replace />} />
 
             {/* Private SPA Routes with Header */}
             <Route element={<MainLayout />}>
+              <Route path="/home" element={<Home />} />
               <Route path="/course" element={<CourseList />} />
               <Route path="/categories" element={<CategorizedCourses />} />
+              <Route path="/categories/:id" element={<CategoryCourseView />} />
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course/:id" element={<CourseDetail />} />
               <Route path="/course/:id/learning" element={<CourseLearning />} />

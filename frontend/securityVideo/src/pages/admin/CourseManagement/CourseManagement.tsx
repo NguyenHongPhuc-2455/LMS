@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 import {
     Card, Button, Input, Typography,
-    message
+    message, Tooltip, Space, Select
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import styles from './CourseManagement.module.scss';
 
 // New specialized components
@@ -43,6 +43,7 @@ export default function CourseManagement() {
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
     const [searchText, setSearchText] = useState('');
     const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const navigate = useNavigate();
 
     const fetchData = async () => {
@@ -123,9 +124,11 @@ export default function CourseManagement() {
         }
     };
 
-    const filteredCourses = courses.filter(c =>
-        c.title.toLowerCase().includes(searchText.toLowerCase())
-    );
+    const filteredCourses = courses.filter(c => {
+        const matchesSearch = c.title.toLowerCase().includes(searchText.toLowerCase());
+        const matchesCategory = !selectedCategoryId || c.category_id === selectedCategoryId;
+        return matchesSearch && matchesCategory;
+    });
 
     return (
         <div className={styles.managementContainer}>
@@ -138,14 +141,38 @@ export default function CourseManagement() {
 
             <Card className="glass-card">
                 <div className={styles.tableHeaderActions}>
-                    <Input
-                        placeholder="Tìm kiếm khóa học..."
-                        prefix={<SearchOutlined />}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        className={styles.searchInput}
-                        size="small"
-                    />
+                    <Space size={8}>
+                        <Input
+                            placeholder="Tìm kiếm khóa học..."
+                            prefix={<SearchOutlined />}
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            className={styles.searchInput}
+                            size="small"
+                        />
+                        <Select
+                            placeholder="Tất cả danh mục"
+                            allowClear
+                            style={{ width: 180 }}
+                            size="small"
+                            value={selectedCategoryId}
+                            onChange={setSelectedCategoryId}
+                        >
+                            {categories.map(cat => (
+                                <Select.Option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                        <Tooltip title="Làm mới dữ liệu">
+                            <Button
+                                icon={<ReloadOutlined />}
+                                size="small"
+                                onClick={fetchData}
+                                loading={loading}
+                            />
+                        </Tooltip>
+                    </Space>
                     <Button
                         type="primary"
                         onClick={() => { setEditingCourse(null); setIsModalOpen(true); }}

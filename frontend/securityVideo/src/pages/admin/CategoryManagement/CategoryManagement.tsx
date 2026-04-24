@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Card, Typography, Modal, message, Input } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Card, Typography, Modal, message, Input, Tooltip, Select } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { categoryService, type Category } from '@/services/category.service';
 import CategoryFormModal from './components/CategoryFormModal';
 
@@ -12,6 +12,7 @@ const CategoryManagement: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [searchText, setSearchText] = useState('');
+    const [filterType, setFilterType] = useState<'ALL' | 'HAS_COURSES' | 'EMPTY'>('ALL');
 
     const fetchCategories = async () => {
         setLoading(true);
@@ -58,9 +59,16 @@ const CategoryManagement: React.FC = () => {
         setIsModalVisible(true);
     };
 
-    const filteredCategories = categories.filter(c =>
-        c.name.toLowerCase().includes(searchText.toLowerCase())
-    );
+    const filteredCategories = categories.filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(searchText.toLowerCase());
+        const courseCount = c._count?.courses || 0;
+
+        let matchesFilter = true;
+        if (filterType === 'HAS_COURSES') matchesFilter = courseCount > 0;
+        if (filterType === 'EMPTY') matchesFilter = courseCount === 0;
+
+        return matchesSearch && matchesFilter;
+    });
 
     const columns = [
         {
@@ -121,13 +129,33 @@ const CategoryManagement: React.FC = () => {
 
             <Card bordered={false} style={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <Input
-                        placeholder="Tìm danh mục..."
-                        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-                        value={searchText}
-                        onChange={e => setSearchText(e.target.value)}
-                        style={{ width: 250, borderRadius: '8px' }}
-                    />
+                    <Space size={8}>
+                        <Input
+                            placeholder="Tìm danh mục..."
+                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                            value={searchText}
+                            onChange={e => setSearchText(e.target.value)}
+                            style={{ width: 220, borderRadius: '8px' }}
+                            size="small"
+                        />
+                        <Select
+                            value={filterType}
+                            onChange={setFilterType}
+                            style={{ width: 180 }}
+                            size="small"
+                        >
+                            <Select.Option value="ALL">Tất cả danh mục</Select.Option>
+                            <Select.Option value="HAS_COURSES">Đã có khóa học</Select.Option>
+                            <Select.Option value="EMPTY">Chưa có khóa học</Select.Option>
+                        </Select>
+                        <Tooltip title="Làm mới dữ liệu">
+                            <Button
+                                icon={<ReloadOutlined />}
+                                onClick={fetchCategories}
+                                loading={loading}
+                            />
+                        </Tooltip>
+                    </Space>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}

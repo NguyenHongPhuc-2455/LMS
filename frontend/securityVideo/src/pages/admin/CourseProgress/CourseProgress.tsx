@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Table, Select, Typography, Space, Progress, Avatar, Card } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { Table, Select, Typography, Space, Progress, Avatar, Card, Button, Tooltip } from 'antd';
+import { UserOutlined, ReloadOutlined } from '@ant-design/icons';
 import { courseService } from '@/services/course.service';
 import { statsService } from '@/services/stats.service';
+import { categoryService, type Category } from '@/services/category.service';
 import styles from './CourseProgress.module.scss';
 
 const { Title, Text } = Typography;
@@ -25,26 +26,48 @@ interface StudentProgress {
 }
 
 export default function CourseProgress() {
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [courses, setCourses] = useState<Course[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
     const [students, setStudents] = useState<StudentProgress[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
     const [loadingCourses, setLoadingCourses] = useState(false);
     const [loadingStudents, setLoadingStudents] = useState(false);
 
     useEffect(() => {
-        fetchCourses();
+        fetchCategories();
     }, []);
 
-    const fetchCourses = async () => {
+    const fetchCategories = async () => {
+        setLoadingCategories(true);
+        try {
+            const data = await categoryService.getAllCategories();
+            setCategories(data);
+        } catch (error) {
+            console.error('Failed to fetch categories:', error);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    const fetchCourses = async (categoryId: number) => {
         setLoadingCourses(true);
         try {
-            const data = await courseService.getAll();
+            const data = await courseService.getAll('', categoryId);
             setCourses(data);
         } catch (error) {
             console.error('Failed to fetch courses:', error);
         } finally {
             setLoadingCourses(false);
         }
+    };
+
+    const handleCategoryChange = (categoryId: number) => {
+        setSelectedCategory(categoryId);
+        setSelectedCourse(null);
+        setStudents([]);
+        fetchCourses(categoryId);
     };
 
     const handleCourseChange = async (courseId: number) => {
@@ -110,23 +133,57 @@ export default function CourseProgress() {
 
             <Card className="glass-card">
                 <div className={styles.courseSelectorWrapper}>
-                    <Space size={12}>
-                        <Text strong>Chọn khóa học:</Text>
-                        <Select
-                            placeholder="Chọn khóa học để xem tiến độ"
-                            style={{ width: 400 }}
-                            onChange={handleCourseChange}
-                            loading={loadingCourses}
-                            showSearch
-                            optionFilterProp="children"
-                            size="small"
-                        >
-                            {courses.map(course => (
-                                <Option key={course.id} value={course.id}>
-                                    {course.title}
-                                </Option>
-                            ))}
-                        </Select>
+                    <Space size={20} wrap>
+                        <Space size={8}>
+                            <Text strong>Danh mục:</Text>
+                            <Select
+                                placeholder="Chọn danh mục"
+                                style={{ width: 220 }}
+                                onChange={handleCategoryChange}
+                                loading={loadingCategories}
+                                showSearch
+                                optionFilterProp="children"
+                                size="small"
+                                value={selectedCategory}
+                            >
+                                {categories.map(cat => (
+                                    <Option key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Space>
+
+                        <Space size={8}>
+                            <Text strong>Khóa học:</Text>
+                            <Select
+                                placeholder={selectedCategory ? "Chọn khóa học" : "Chọn danh mục trước"}
+                                style={{ width: 300 }}
+                                onChange={handleCourseChange}
+                                loading={loadingCourses}
+                                showSearch
+                                optionFilterProp="children"
+                                size="small"
+                                disabled={!selectedCategory}
+                                value={selectedCourse}
+                            >
+                                {courses.map(course => (
+                                    <Option key={course.id} value={course.id}>
+                                        {course.title}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Space>
+
+                        <Tooltip title="Làm mới dữ liệu">
+                            <Button
+                                icon={<ReloadOutlined />}
+                                size="small"
+                                onClick={() => selectedCourse && handleCourseChange(selectedCourse)}
+                                loading={loadingStudents}
+                                disabled={!selectedCourse}
+                            />
+                        </Tooltip>
                     </Space>
                 </div>
 
