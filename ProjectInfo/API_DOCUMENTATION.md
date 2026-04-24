@@ -28,7 +28,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
-| GET | `/` | Lấy danh sách khóa học | ✅ |
+| GET | `/` | Lấy danh sách khóa học (Hỗ trợ lọc `?search=` và `?categoryId=`) | ✅ |
 | GET | `/:id` | Chi tiết khóa học (kèm bài học) | ✅ |
 | POST | `/` | Tạo khóa học mới | ✅ |
 | PUT | `/:id` | Cập nhật thông tin khóa học | ✅ |
@@ -85,8 +85,8 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | GET | `/` | Danh sách các lộ trình học tập | ✅ |
 | GET | `/my-programs` | Lộ trình đang tham gia | ✅ |
 | GET | `/:id` | Chi tiết lộ trình & các khóa học bên trong | ✅ |
-| POST | `/` | Tạo lộ trình mới | ✅ |
-| PUT | `/:id` | Cập nhật lộ trình | ✅ |
+| POST | `/` | Tạo lộ trình mới (body: `title`, `description`, `thumbnail`, `level`, `status`, `is_private`) | ✅ |
+| PUT | `/:id` | Cập nhật lộ trình (body: `title`, `description`, `thumbnail`, `level`, `status`, `is_private`) | ✅ |
 | DELETE | `/:id` | Xóa lộ trình (Admin) | ✅ (Admin) |
 | POST | `/:id/courses` | Thêm khóa học vào lộ trình | ✅ (Admin) |
 | DELETE | `/:id/courses/:courseId` | Xóa khóa học khỏi lộ trình | ✅ (Admin) |

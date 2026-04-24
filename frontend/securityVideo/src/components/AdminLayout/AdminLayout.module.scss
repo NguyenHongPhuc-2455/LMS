@@ -3,6 +3,10 @@
     background: #F5F6FA;
     font-family: 'Outfit', 'Inter', sans-serif;
     padding-top: 66px; // Bù cho fixed header
+
+    @media (max-width: 768px) {
+        padding-top: 60px;
+    }
 }
 
 .adminSidebar {
@@ -13,6 +17,11 @@
     position: sticky;
     top: 66px;
     z-index: 100;
+    transition: all 0.3s ease;
+
+    @media (max-width: 1024px) {
+        display: none; // Ẩn sidebar thật trên tablet/mobile
+    }
 }
 
 .adminMenu {
@@ -57,6 +66,10 @@
 .adminContent {
     padding: 24px 30px;
     min-height: 280px;
+
+    @media (max-width: 768px) {
+        padding: 16px;
+    }
 
     :global {
         .ant-table-thead>tr>th {
@@ -206,4 +219,43 @@
 .notifTime {
     font-size: 11px;
     color: #a0aec0;
+}
+
+.mobileMenuToggle {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    z-index: 1002;
+    background: #C72127;
+    border: none;
+    color: white;
+    box-shadow: 0 4px 12px rgba(199, 33, 39, 0.4);
+    align-items: center;
+    justify-content: center;
+
+    &:hover,
+    &:focus {
+        background: #B8121A;
+        color: white;
+    }
+
+    @media (max-width: 1024px) {
+        display: flex;
+    }
+
+    :global(.anticon) {
+        font-size: 20px;
+    }
+}
+
+.adminDrawer {
+    :global {
+        .ant-drawer-body {
+            padding: 0;
+        }
+    }
 }

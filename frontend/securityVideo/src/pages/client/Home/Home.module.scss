@@ -2,6 +2,10 @@
     width: 100%;
     padding: 10px 3% 40px;
 
+    @media (max-width: 768px) {
+        padding: 4px 0 20px;
+    }
+
     .loadingContainer {
         display: flex;
         justify-content: center;
@@ -40,11 +44,15 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            overflow: hidden;
 
             .label {
                 font-size: 13px;
                 color: #64748b;
                 font-weight: 500;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
             }
 
             .value {
@@ -55,10 +63,8 @@
                 align-items: baseline;
                 gap: 4px;
 
-                .unit {
-                    font-size: 13px;
-                    color: #64748b;
-                    font-weight: 500;
+                @media (max-width: 480px) {
+                    font-size: 18px;
                 }
             }
         }
@@ -239,21 +245,9 @@
             overflow: hidden;
             flex-shrink: 0;
 
-            img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-
-            .progPlaceholder {
-                width: 100%;
-                height: 100%;
-                background: #f1f5f9;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #94a3b8;
-                font-size: 24px;
+            @media (max-width: 480px) {
+                width: 60px;
+                height: 60px;
             }
         }
 
@@ -262,11 +256,28 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+
+            @media (max-width: 480px) {
+                gap: 4px;
+
+                :global(.ant-typography) {
+                    font-size: 14px;
+                }
+            }
         }
 
         .progAction {
             flex-shrink: 0;
             margin-left: 16px;
+
+            @media (max-width: 480px) {
+                margin-left: 8px;
+
+                button {
+                    padding: 0 8px;
+                    font-size: 11px;
+                }
+            }
         }
     }
 

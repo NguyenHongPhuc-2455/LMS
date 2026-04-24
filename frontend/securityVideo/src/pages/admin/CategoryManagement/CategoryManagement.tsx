@@ -121,7 +121,7 @@ const CategoryManagement: React.FC = () => {
     ];
 
     return (
-        <div style={{ padding: '10px' }}>
+        <div>
             <div style={{ marginBottom: 20 }}>
                 <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Quản lý danh mục</Title>
                 <Typography.Text type="secondary">Phân loại khóa học trên hệ thống</Typography.Text>

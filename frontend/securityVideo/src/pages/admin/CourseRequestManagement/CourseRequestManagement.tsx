@@ -143,7 +143,7 @@ export default function CourseRequestManagement() {
     ];
 
     return (
-        <div className={styles.courseRequestsContainer} style={{ padding: '10px' }}>
+        <div className={styles.courseRequestsContainer}>
             <div style={{ marginBottom: 20 }}>
                 <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Duyệt yêu cầu truy cập</Title>
                 <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của học viên</Typography.Text>

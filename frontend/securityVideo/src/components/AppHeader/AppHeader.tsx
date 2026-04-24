@@ -195,7 +195,11 @@ const AppHeader: React.FC = () => {
     return (
         <Header className={styles.appHeaderContainer}>
             {/* Left: Logo */}
-            <div className={styles.appHeaderLogo}>
+            <div
+                className={styles.appHeaderLogo}
+                onClick={() => navigate('/home')}
+                style={{ cursor: 'pointer' }}
+            >
                 <img src="/logo/logo.svg" alt="Logo" className={styles.logoImg} />
             </div>
 

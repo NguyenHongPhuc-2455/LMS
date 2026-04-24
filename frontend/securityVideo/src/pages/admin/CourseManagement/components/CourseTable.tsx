@@ -218,7 +218,7 @@ export default function CourseTable({
                     return originalElement;
                 }
             } as any}
-            scroll={{ y: 600 }}
+            scroll={{ x: 'max-content', y: 600 }}
             virtual
             bordered
         />

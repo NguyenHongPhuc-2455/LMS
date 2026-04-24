@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Typography, Card, Space, Avatar, Spin, Empty, Select } from 'antd';
+import { Row, Col, Typography, Card, Space, Avatar, Empty, Select, Skeleton } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { ClockCircleOutlined, BookOutlined, FireOutlined, LineChartOutlined, TrophyOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { statsService } from '../../../services/stats.service';
@@ -108,8 +108,23 @@ export default function Home() {
 
     if (loading) {
         return (
-            <div className={styles.loadingContainer} style={{ padding: '40px', textAlign: 'center' }}>
-                <Spin size="large" tip="Đang tải dữ liệu..." />
+            <div className={styles.homeContainer} style={{ padding: '24px' }}>
+                <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                    {[1, 2, 3, 4].map(i => (
+                        <Col key={i} xs={24} sm={12} lg={6}>
+                            <Skeleton active avatar paragraph={{ rows: 1 }} />
+                        </Col>
+                    ))}
+                </Row>
+                <Row gutter={[24, 24]}>
+                    <Col xs={24} lg={16}>
+                        <Skeleton active paragraph={{ rows: 10 }} />
+                        <Skeleton active style={{ marginTop: '24px' }} paragraph={{ rows: 5 }} />
+                    </Col>
+                    <Col xs={24} lg={8}>
+                        <Skeleton active paragraph={{ rows: 15 }} />
+                    </Col>
+                </Row>
             </div>
         );
     }

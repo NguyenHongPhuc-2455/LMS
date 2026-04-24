@@ -18,7 +18,7 @@ export default function CourseFilter({
 }: CourseFilterProps) {
     return (
         <div className={styles.sortWrapper}>
-            <Space size={24} wrap={false} align="center">
+            <Space size={24} wrap={true} align="center">
                 <Space size={8} align="center">
                     <span className={styles.sortLabel} style={{ whiteSpace: 'nowrap' }}>Danh mục:</span>
                     <Select

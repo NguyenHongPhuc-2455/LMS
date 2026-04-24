@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { Layout, ConfigProvider, theme } from 'antd';
+import { Layout, ConfigProvider, theme, Drawer, Button } from 'antd';
+import { MenuOutlined } from '@ant-design/icons';
 import styles from './AdminLayout.module.scss';
 
 // New specialized components
@@ -10,6 +11,8 @@ import AppHeader from '../AppHeader/AppHeader';
 const { Content } = Layout;
 
 const AdminLayout: React.FC = () => {
+    const [drawerVisible, setDrawerVisible] = React.useState(false);
+
     // Kiểm tra Auth & Role
     const token = localStorage.getItem('accessToken');
     const userStr = localStorage.getItem('user');
@@ -79,8 +82,28 @@ const AdminLayout: React.FC = () => {
             <Layout className={styles.adminLayoutContainer}>
                 <AppHeader />
 
+                {/* Mobile/Tablet Menu Button */}
+                <Button
+                    className={styles.mobileMenuToggle}
+                    icon={<MenuOutlined />}
+                    onClick={() => setDrawerVisible(true)}
+                />
+
                 <Layout className={styles.adminMainLayout}>
+                    {/* Desktop Sidebar */}
                     <AdminSidebar />
+
+                    {/* Mobile/Tablet Drawer */}
+                    <Drawer
+                        placement="left"
+                        onClose={() => setDrawerVisible(false)}
+                        open={drawerVisible}
+                        width={250}
+                        bodyStyle={{ padding: 0 }}
+                        className={styles.adminDrawer}
+                    >
+                        <AdminSidebar isMobile onClose={() => setDrawerVisible(false)} />
+                    </Drawer>
 
                     <Content className={styles.adminContent}>
                         <div className="animate-fade-in">

@@ -18,7 +18,12 @@ import styles from '../AdminLayout.module.scss';
 
 const { Sider } = Layout;
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+    isMobile?: boolean;
+    onClose?: () => void;
+}
+
+export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -124,7 +129,10 @@ export default function AdminSidebar() {
                 mode="inline"
                 selectedKeys={[location.pathname]}
                 className={styles.adminMenu}
-                onClick={({ key }) => navigate(key)}
+                onClick={({ key }) => {
+                    navigate(key);
+                    if (isMobile && onClose) onClose();
+                }}
                 items={menuItems}
             />
         </Sider>
