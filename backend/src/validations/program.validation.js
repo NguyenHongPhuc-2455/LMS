@@ -6,6 +6,9 @@ const createProgram = {
         description: Joi.string().allow('', null),
         thumbnail: Joi.string().allow('', null),
         price: Joi.number().min(0).default(0),
+        level: Joi.string().allow('', null),
+        status: Joi.string().valid('DRAFT', 'PUBLISHED', 'ARCHIVED').allow('', null),
+        is_private: Joi.alternatives().try(Joi.boolean(), Joi.string().valid('true', 'false')),
     }),
 };
 
@@ -18,6 +21,9 @@ const updateProgram = {
         description: Joi.string().allow('', null),
         thumbnail: Joi.string().allow('', null),
         price: Joi.number().min(0),
+        level: Joi.string().allow('', null),
+        status: Joi.string().valid('DRAFT', 'PUBLISHED', 'ARCHIVED').allow('', null),
+        is_private: Joi.alternatives().try(Joi.boolean(), Joi.string().valid('true', 'false')),
     }).min(1),
 };
 
