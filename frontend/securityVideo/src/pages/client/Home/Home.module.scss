@@ -80,7 +80,7 @@
         transition: all 0.3s ease;
 
         &:hover {
-            border-color: #C72127;
+            border-color: C72127;
             box-shadow: 0 4px 12px rgba(199, 33, 39, 0.1);
 
             .catIconBox {
@@ -107,7 +107,7 @@
         overflow: hidden;
 
         .lbHeader {
-            background: linear-gradient(135deg, #C72127 0%, #991b1b 100%);
+            background: linear-gradient(135deg, C72127 0%, #991b1b 100%);
             padding: 24px 20px;
             text-align: center;
         }
@@ -270,12 +270,25 @@
             flex-shrink: 0;
             margin-left: 16px;
 
+            button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+                border-radius: 8px;
+                height: 36px;
+                min-width: 90px;
+                padding: 0 16px;
+                font-weight: 600;
+            }
+
             @media (max-width: 480px) {
                 margin-left: 8px;
 
                 button {
                     padding: 0 8px;
                     font-size: 11px;
+                    min-width: 60px;
                 }
             }
         }
@@ -330,7 +343,7 @@
                     transition: all 0.3s;
 
                     &.active {
-                        background: #C8102E;
+                        background: #C72127;
                         box-shadow: 0 0 8px rgba(200, 16, 46, 0.4);
                     }
                 }

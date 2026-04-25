@@ -21,7 +21,7 @@ Tài liệu này quy định các chuẩn mực về code, cấu trúc và quy t
    - Layout: Tiêu đề trang và mô tả phải nằm **NGOÀI** thẻ `Card`.
    - Spacing: Toàn bộ container sử dụng padding `10px`.
    - Spacing: Header trang (Title -> Card) sử dụng `margin-bottom: 20px`.
-   - Palette: Màu chủ đạo `#C72127` (RitaVo Red).
+   - Palette: Màu chủ đạo `C72127` (RitaVo Red).
 
 ---
 

@@ -14,7 +14,7 @@ const CARDS = [
         fallback: '0h0p',
         label: 'Tổng giờ học',
         icon: <ClockCircleOutlined />,
-        color: '#C72127',
+        color: 'C72127',
         bg: 'rgba(199,33,39,0.06)',
     },
     {
@@ -137,7 +137,7 @@ const LearningStatsChart: React.FC<{ isProfile?: boolean }> = ({ isProfile = tru
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-                    <div style={{ width: '12px', height: '12px', background: '#C72127', marginRight: '8px', borderRadius: '4px' }}></div>
+                    <div style={{ width: '12px', height: '12px', background: 'C72127', marginRight: '8px', borderRadius: '4px' }}></div>
                     <Text style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>GIỜ HỌC</Text>
                 </div>
 
@@ -146,8 +146,8 @@ const LearningStatsChart: React.FC<{ isProfile?: boolean }> = ({ isProfile = tru
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorMinutesLight" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#C72127" stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor="#C72127" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="C72127" stopOpacity={0.1} />
+                                    <stop offset="95%" stopColor="C72127" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -187,12 +187,12 @@ const LearningStatsChart: React.FC<{ isProfile?: boolean }> = ({ isProfile = tru
                             <Area
                                 type="monotone"
                                 dataKey="minutes"
-                                stroke="#C72127"
+                                stroke="C72127"
                                 strokeWidth={3}
                                 fillOpacity={1}
                                 fill="url(#colorMinutesLight)"
-                                dot={{ fill: '#C72127', strokeWidth: 2, r: 4, stroke: '#ffffff' }}
-                                activeDot={{ r: 6, strokeWidth: 0, fill: '#C72127' }}
+                                dot={{ fill: 'C72127', strokeWidth: 2, r: 4, stroke: '#ffffff' }}
+                                activeDot={{ r: 6, strokeWidth: 0, fill: 'C72127' }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>

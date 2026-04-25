@@ -70,7 +70,6 @@ export default function MyPrograms() {
                             key={p.id}
                             hoverable
                             className={styles.programCard}
-                            styles={{ body: { padding: 16 } }}
                             cover={
                                 <div className={styles.cardCoverWrapper}>
                                     {p.thumbnail ? (

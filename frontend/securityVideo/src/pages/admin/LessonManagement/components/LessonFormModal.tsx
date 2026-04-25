@@ -65,7 +65,7 @@ export default function LessonFormModal({
                     onClick={() => form.submit()}
                     size="large"
                 >
-                    {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Bắt đầu băm video HLS" : "Lưu bài trắc nghiệm")}
+                    {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Lưu bài học" : "Lưu bài trắc nghiệm")}
                 </Button>
             ]}
             width={1000}

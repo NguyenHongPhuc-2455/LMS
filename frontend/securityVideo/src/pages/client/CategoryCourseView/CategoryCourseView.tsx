@@ -67,7 +67,7 @@ export default function CategoryCourseView() {
                 </div>
                 <Space size={16} align="center">
                     <div style={{ width: '48px', height: '48px', background: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FolderOpenOutlined style={{ fontSize: '24px', color: '#C72127' }} />
+                        <FolderOpenOutlined style={{ fontSize: '24px', color: 'C72127' }} />
                     </div>
                     <div>
                         <Title level={2} style={{ margin: 0, color: '#1e293b' }}>{categoryName}</Title>

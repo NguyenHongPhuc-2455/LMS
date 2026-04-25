@@ -44,14 +44,14 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: var(--card-color, #C72127);
+            background: var(--card-color, C72127);
             opacity: 0;
             transition: opacity 0.3s ease;
             border-radius: 0 0 16px 16px;
         }
 
         &:hover {
-            border-color: var(--card-color, #C72127);
+            border-color: var(--card-color, C72127);
             transform: translateY(-3px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 
@@ -161,7 +161,7 @@
     padding: 12px;
     border-radius: 8px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border: 1px solid #C72127;
+    border: 1px solid C72127;
 
     .tooltipDate {
         display: block;
@@ -172,7 +172,7 @@
 
     .tooltipValue {
         font-weight: 700;
-        color: #C72127;
+        color: C72127;
         font-size: 14px;
     }
 }

@@ -162,8 +162,8 @@ const CategoryManagement: React.FC = () => {
                         onClick={handleAdd}
                         style={{
                             borderRadius: '8px',
-                            background: '#C72127',
-                            borderColor: '#C72127',
+                            background: 'C72127',
+                            borderColor: 'C72127',
                             height: '40px',
                             display: 'flex',
                             alignItems: 'center'

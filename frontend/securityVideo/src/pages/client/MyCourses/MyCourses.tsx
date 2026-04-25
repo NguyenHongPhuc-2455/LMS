@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Row, Col, Progress, Typography, Button, Empty, Skeleton, Tag, Space } from 'antd';
+import { Card, Progress, Typography, Button, Empty, Skeleton, Tag, Space } from 'antd';
 import { PlayCircleOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../../services/course.service';
@@ -56,9 +56,9 @@ export default function MyCourses() {
                     />
                 </Card>
             ) : (
-                <Row gutter={[24, 24]}>
+                <div className={styles.coursesGrid}>
                     {courses.map(course => (
-                        <Col xs={24} sm={12} lg={8} xl={6} key={course.id}>
+                        <div key={course.id}>
                             <Card
                                 hoverable
                                 cover={
@@ -92,7 +92,7 @@ export default function MyCourses() {
                                     <Progress
                                         percent={course.progressPercent}
                                         showInfo={false}
-                                        strokeColor={{ '0%': '#6366f1', '100%': '#a855f7' }}
+                                        strokeColor={{ '0%': '#C72127', '100%': '#991b1b' }}
                                         trailColor="#f1f5f9"
                                         strokeWidth={6}
                                     />
@@ -112,13 +112,20 @@ export default function MyCourses() {
                                     block
                                     icon={<PlayCircleOutlined />}
                                     className={`${styles.continueBtn} ${course.progressPercent === 100 ? styles.completed : ''}`}
+                                    style={{
+                                        background: course.progressPercent === 100 ? '#10b981' : '#C72127',
+                                        borderColor: course.progressPercent === 100 ? '#10b981' : '#C72127',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
                                 >
                                     {course.progressPercent === 100 ? 'Xem lại bài học' : 'Tiếp tục học'}
                                 </Button>
                             </Card>
-                        </Col>
+                        </div>
                     ))}
-                </Row>
+                </div>
             )}
         </div>
     );

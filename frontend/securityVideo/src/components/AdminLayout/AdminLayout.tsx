@@ -52,7 +52,7 @@ const AdminLayout: React.FC = () => {
                         headerBorderRadius: 8,
                     },
                     Menu: {
-                        itemSelectedColor: '#C72127',
+                        itemSelectedColor: 'C72127',
                         itemActiveBg: 'rgba(199, 33, 39, 0.05)',
                         itemSelectedBg: 'rgba(199, 33, 39, 0.05)',
                     },
@@ -71,7 +71,7 @@ const AdminLayout: React.FC = () => {
                         borderRadius: 8,
                     },
                     Pagination: {
-                        itemActiveBg: '#B8121A',
+                        itemActiveBg: '#8F000D',
                         itemActiveColor: '#ffffff',
                         borderRadius: 8,
                         itemSize: 32,

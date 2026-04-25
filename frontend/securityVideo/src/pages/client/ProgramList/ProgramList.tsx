@@ -21,7 +21,7 @@ interface Program {
     _count: { enrollments: number; courses: number };
 }
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 5;
 
 export default function ProgramList() {
     const [programs, setPrograms] = useState<Program[]>([]);
@@ -95,7 +95,6 @@ function ProgramCard({ program: p, navigate }: { program: Program; navigate: any
         <Card
             hoverable
             className={styles.programCardItem}
-            styles={{ body: { padding: 16 } }}
             cover={
                 <div className={styles.cardCoverWrapper}>
                     {p.thumbnail ? (

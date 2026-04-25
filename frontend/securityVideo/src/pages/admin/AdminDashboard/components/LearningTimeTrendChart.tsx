@@ -49,7 +49,7 @@ export default function LearningTimeTrendChart({ data, loading }: LearningTimeTr
                             barSize={30}
                         >
                             {data.map((_, index) => (
-                                <Cell key={`cell-${index}`} fill={index === data.length - 1 ? '#C72127' : '#4880FF'} />
+                                <Cell key={`cell-${index}`} fill={index === data.length - 1 ? 'C72127' : '#4880FF'} />
                             ))}
                         </Bar>
                     </BarChart>

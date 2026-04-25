@@ -58,7 +58,7 @@ function App() {
         },
         components: {
           Menu: {
-            itemSelectedColor: '#C72127',
+            itemSelectedColor: 'C72127',
             itemSelectedBg: 'rgba(199, 33, 39, 0.05)',
           },
         },

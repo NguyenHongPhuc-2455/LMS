@@ -21,11 +21,16 @@
     }
 }
 
-:global(body.ant-modal-open) {
-    .appHeaderContainer {
-        filter: blur(5px);
-        opacity: 0.7;
-        pointer-events: none;
+:global(.notification-popover) {
+    .ant-popover-inner {
+        border-radius: 16px;
+        overflow: hidden;
+        padding: 0;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .ant-popover-inner-content {
+        padding: 0 !important;
     }
 }
 
@@ -60,6 +65,25 @@
 
     @media (max-width: 768px) {
         display: none; // Ẩn thanh search thật trên mobile, đổi sang icon modal sau
+    }
+}
+
+.loadMoreWrapper {
+    text-align: center;
+    padding: 12px 0;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+}
+
+.loadMoreBtn {
+    font-size: 13px;
+    height: auto;
+    padding: 4px 16px;
+    color: #64748b;
+    font-weight: 500;
+
+    &:hover {
+        color: #C8102E;
     }
 }
 
@@ -151,108 +175,180 @@
 }
 
 .notificationContainer {
-    width: 310px;
+    width: 380px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
 }
 
 .notificationHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    padding: 0 4px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
 
-    .notifTitle {
-        font-size: 14px;
+    .notifHeaderLeft {
+        margin-bottom: 4px;
+
+        .notifTitle {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .notifNewCount {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 2px;
+        }
     }
 
-    .actionBtn {
+    .actionBtnRead {
         padding: 0;
-        font-size: 11px;
+        font-size: 13px;
+        color: #0866ff;
+        font-weight: 500;
+
+        &:hover {
+            color: #0055cc;
+        }
+    }
+
+    .actionBtnClear {
+        padding: 0;
+        font-size: 13px;
+        color: #ff4d4f;
+        opacity: 0.7;
+        font-weight: 500;
+
+        &:hover {
+            opacity: 1;
+        }
     }
 }
 
 .notificationList {
-    max-height: 400px;
+    max-height: 480px;
     overflow-y: auto;
+
+    // Thin scrollbar
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+    }
 }
 
 .notificationItem {
-    padding: 8px 10px;
+    padding: 14px 20px;
     cursor: pointer;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    transition: all 0.2s;
-    border: none;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    .deleteNotifBtn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: all 0.2s;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+        :global(.anticon) {
+            color: #ff4d4f;
+        }
+    }
+
+    &:hover {
+        background: #f8fafc;
+
+        .deleteNotifBtn {
+            opacity: 1;
+        }
+    }
 
     &.unread {
-        background: #f0f7ff;
+        background: #f8faf8; // Xám cực nhạt như yêu cầu
     }
 
     &.read {
-        background: transparent;
+        background: #fff;
     }
 }
 
-.deleteNotifBtn {
-    width: 24px;
-    height: 24px;
-    padding: 0;
+.notifItemIconWrap {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
 
-    :global(.anticon) {
+.notifTypeIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+
+    &.iconSuccess {
+        background: #f6ffed;
+        color: #52c41a;
+        border: 1px solid #b7eb8f;
+    }
+
+    &.iconError {
+        background: #fff1f0;
         color: #ff4d4f;
-        font-size: 12px;
+        border: 1px solid #ffccc7;
+    }
+
+    &.iconGeneral {
+        background: #fffbe6;
+        color: #faad14;
+        border: 1px solid #ffe58f;
     }
 }
 
 .notifItemTitleWrapper {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 4px;
 
     .notifItemTitle {
-        font-size: 12px;
+        font-size: 14px;
         line-height: 1.4;
-        flex: 1;
+        color: #1e293b;
     }
 
     .notifTime {
-        font-size: 10px;
-        white-space: nowrap;
+        font-size: 12px;
+        color: #94a3b8;
     }
 }
 
 .notifItemDesc {
-    font-size: 11px;
-    line-height: 1.4;
-    display: block;
-    margin-top: 2px;
-}
-
-.iconSuccess {
-    color: #52c41a;
-}
-
-.iconPrimary {
-    color: #6366f1;
-}
-
-.iconError {
-    color: #ff4d4f;
-}
-
-.cursorPointer {
-    cursor: pointer;
-}
-
-.loadMoreWrapper {
-    text-align: center;
-    padding: 8px 0;
-    border-top: 1px solid #f8f9fa;
-}
-
-.loadMoreBtn {
-    font-size: 12px;
-    height: auto;
-    padding: 4px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #64748b; // Xám nhạt
+    margin: 0;
 }

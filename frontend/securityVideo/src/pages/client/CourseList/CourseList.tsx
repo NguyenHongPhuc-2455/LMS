@@ -10,8 +10,11 @@ import CourseFilter from './components/CourseFilter';
 import CourseGrid from './components/CourseGrid';
 import type { Course } from '../components/CourseCard';
 
+import MyCourseGrid from './components/MyCourseGrid';
+
 export default function CourseList() {
     const [courses, setCourses] = useState<Course[]>([]);
+    const [registeredCourses, setRegisteredCourses] = useState<any[]>([]);
     const [categoryName, setCategoryName] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<any[]>([]);
@@ -20,12 +23,14 @@ export default function CourseList() {
     const categoryId = searchParams.get('categoryId') ? parseInt(searchParams.get('categoryId') as string) : undefined;
 
     // Phân trang & Sắp xếp
+    const [currentPageMy, setCurrentPageMy] = useState(1);
     const [currentPagePrivate, setCurrentPagePrivate] = useState(1);
     const [currentPagePublic, setCurrentPagePublic] = useState(1);
     const [sortBy, setSortBy] = useState('newest');
-    const pageSize = 4;
+    const pageSize = 5;
 
     useEffect(() => {
+        setCurrentPageMy(1);
         setCurrentPagePrivate(1);
         setCurrentPagePublic(1);
     }, [searchQuery, sortBy]);
@@ -44,14 +49,19 @@ export default function CourseList() {
         const fetchCourses = async () => {
             try {
                 setLoading(true);
-                const data = await courseService.getAll(searchQuery, categoryId);
-                setCourses(data);
+                // Fetch all courses and my courses in parallel
+                const [allData, myData] = await Promise.all([
+                    courseService.getAll(searchQuery, categoryId),
+                    courseService.getMyCourses()
+                ]);
+
+                setCourses(allData);
+                setRegisteredCourses(myData);
 
                 if (categoryId) {
                     const currentCat = categories.find(c => c.id === categoryId);
                     if (currentCat) setCategoryName(currentCat.name);
                     else {
-                        // If not found in current state, maybe it's not loaded yet or invalid
                         const cats = await categoryService.getAllCategories();
                         const findCat = cats.find(c => c.id === categoryId);
                         if (findCat) setCategoryName(findCat.name);
@@ -108,8 +118,12 @@ export default function CourseList() {
         return sorted;
     };
 
-    const publicCourses = sortCourses(courses.filter(c => !c.is_private));
-    const privateCourses = sortCourses(courses.filter(c => c.is_private));
+    // Filter out registered courses from the main list
+    const registeredIds = new Set(registeredCourses.map(rc => rc.id));
+    const availableCourses = courses.filter(c => !registeredIds.has(c.id));
+
+    const publicCourses = sortCourses(availableCourses.filter(c => !c.is_private));
+    const privateCourses = sortCourses(availableCourses.filter(c => c.is_private));
 
     return (
         <div className={styles.courseListContainer}>
@@ -132,9 +146,18 @@ export default function CourseList() {
                 />
             </div>
 
+            {registeredCourses.length > 0 && (
+                <MyCourseGrid
+                    title="Khóa học của tôi"
+                    courses={registeredCourses}
+                    currentPage={currentPageMy}
+                    pageSize={pageSize}
+                    setCurrentPage={setCurrentPageMy}
+                />
+            )}
+
             <CourseGrid
                 title="Khóa học Riêng tư (Cần phê duyệt)"
-                // tagLabel="Yêu cầu"
                 courses={privateCourses}
                 currentPage={currentPagePrivate}
                 pageSize={pageSize}

@@ -13,7 +13,7 @@
 }
 
 .courseCardCover {
-    height: 180px;
+    height: 125px;
     overflow: hidden;
     position: relative;
     background: #f1f5f9;
@@ -37,7 +37,7 @@
 }
 
 .courseCardHeader {
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 
     .levelBadgeText {
         font-size: 10px;
@@ -62,7 +62,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 
     .creatorInfo {
         .creatorLabel {
@@ -79,7 +79,7 @@
 .courseCardDivider {
     border: 0;
     border-top: 1px solid #f1f5f9;
-    margin: 0 0 16px 0;
+    margin: 0 0 10px 0;
 }
 
 .courseCardFooter {

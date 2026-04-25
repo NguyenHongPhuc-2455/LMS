@@ -72,7 +72,7 @@ export default function Home() {
             fallback: '0h0p',
             label: 'Tổng giờ học',
             icon: <ClockCircleOutlined />,
-            color: '#C8102E',
+            color: '#C72127',
             bg: 'rgba(200, 16, 46, 0.06)',
             value: summary?.totalHoursDisplay
         },
@@ -191,7 +191,7 @@ export default function Home() {
                                                     <Title level={5} style={{ margin: 0 }}>{course.title}</Title>
                                                     <Progress
                                                         percent={course.progressPercent}
-                                                        strokeColor="#C8102E"
+                                                        strokeColor="#C72127"
                                                         size="small"
                                                         showInfo={true}
                                                         format={(percent) => <span style={{ color: '#1e293b', fontWeight: 600 }}>{percent}%</span>}
@@ -202,7 +202,7 @@ export default function Home() {
                                                     <AntButton
                                                         type="primary"
                                                         size="small"
-                                                        style={{ background: '#C8102E' }}
+                                                        style={{ background: '#C72127' }}
                                                         onClick={() => {
                                                             const url = course.nextLessonId
                                                                 ? `/course/${course.id}/learning?lessonId=${course.nextLessonId}`
@@ -234,7 +234,7 @@ export default function Home() {
                                     >
                                         <Space direction="vertical" size={8}>
                                             <div className={styles.catIconBox}>
-                                                <FolderOpenOutlined style={{ fontSize: '24px', color: '#C8102E' }} />
+                                                <FolderOpenOutlined style={{ fontSize: '24px', color: '#C72127' }} />
                                             </div>
                                             <div>
                                                 <Title level={5} style={{ margin: 0 }}>{cat.name}</Title>
@@ -254,7 +254,7 @@ export default function Home() {
                 {/* Right column: Leaderboard & Streak */}
                 <Col xs={24} lg={8}>
                     <div className={styles.leaderboardBox} style={{ marginBottom: '16px' }}>
-                        <div className={styles.lbHeader} style={{ background: '#C8102E' }}>
+                        <div className={styles.lbHeader} style={{ background: '#C72127' }}>
                             <Title level={4} style={{ margin: 0, color: '#fff' }}>
                                 <TrophyOutlined style={{ marginRight: '8px' }} />
                                 Top học viên tháng này
@@ -289,7 +289,7 @@ export default function Home() {
                     <div className={styles.streakWidget}>
                         <Title level={5} style={{ marginBottom: '12px' }}>Streak của bạn</Title>
                         <div className={styles.streakNumberBox}>
-                            <FireOutlined style={{ color: '#C8102E', fontSize: '28px' }} />
+                            <FireOutlined style={{ color: '#C72127', fontSize: '28px' }} />
                             <span className={styles.streakCount}>{summary?.currentStreak || 0}</span>
                             <span className={styles.streakText}>ngày liên tiếp</span>
                         </div>

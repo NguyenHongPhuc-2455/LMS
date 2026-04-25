@@ -14,7 +14,7 @@ import styles from './AppHeader.module.scss';
 dayjs.extend(relativeTime);
 
 const { Header } = Layout;
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 const AppHeader: React.FC = () => {
     const navigate = useNavigate();
@@ -116,62 +116,82 @@ const AppHeader: React.FC = () => {
     const notificationContent = (
         <div className={styles.notificationContainer}>
             <div className={styles.notificationHeader}>
-                <Text strong className={styles.notifTitle}>Thông báo</Text>
-                <Space size={8}>
+                <div className={styles.notifHeaderLeft}>
+                    <Text strong className={styles.notifTitle}>Thông báo</Text>
                     {unreadCount > 0 && (
-                        <Button type="link" size="small" onClick={markAllAsRead} className={styles.actionBtn}>
-                            Đọc hết
-                        </Button>
+                        <div className={styles.notifNewCount}>
+                            {unreadCount} thông báo mới
+                        </div>
                     )}
-                    {notifications.length > 0 && (
-                        <Button type="link" danger size="small" onClick={deleteAllNotifications} className={styles.actionBtn}>
-                            Xóa hết
-                        </Button>
-                    )}
+                </div>
+                <Space size={12}>
+                    <Button type="link" size="small" onClick={markAllAsRead} className={styles.actionBtnRead}>
+                        Đọc hết
+                    </Button>
+                    <Button type="link" size="small" onClick={deleteAllNotifications} className={styles.actionBtnClear}>
+                        Xóa hết
+                    </Button>
                 </Space>
             </div>
+
             <List
                 loading={loading}
                 itemLayout="horizontal"
                 dataSource={notifications}
                 locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có thông báo nào" /> }}
-                renderItem={(item) => (
-                    <List.Item
-                        className={`${styles.notificationItem} ${item.is_read ? styles.read : styles.unread}`}
-                        onClick={() => {
-                            if (!item.is_read) markAsRead(item.id);
-                            if (item.link) {
-                                navigate(item.link);
-                            }
-                        }}
-                        actions={[
-                            <Button
-                                type="text"
-                                size="small"
-                                icon={<DeleteOutlined />}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteNotification(item.id);
-                                }}
-                                className={styles.deleteNotifBtn}
-                            />
-                        ]}
-                    >
-                        <List.Item.Meta
-                            title={
-                                <div className={styles.notifItemTitleWrapper}>
-                                    <Text strong={!item.is_read} className={styles.notifItemTitle}>{item.title}</Text>
-                                    <Text type="secondary" className={styles.notifTime}>{dayjs(item.created_at).fromNow()}</Text>
+                renderItem={(item) => {
+                    let icon = <BellOutlined />;
+                    let iconClass = styles.iconGeneral;
+
+                    if (item.type === 'COURSE_APPROVAL') {
+                        icon = <CheckCircleOutlined />;
+                        iconClass = styles.iconSuccess;
+                    } else if (item.type === 'COURSE_REJECTION') {
+                        icon = <CloseCircleOutlined />;
+                        iconClass = styles.iconError;
+                    }
+
+                    return (
+                        <List.Item
+                            className={`${styles.notificationItem} ${item.is_read ? styles.read : styles.unread}`}
+                            onClick={() => {
+                                if (!item.is_read) markAsRead(item.id);
+                                if (item.link) navigate(item.link);
+                            }}
+                            actions={[
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<DeleteOutlined />}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteNotification(item.id);
+                                    }}
+                                    className={styles.deleteNotifBtn}
+                                />
+                            ]}
+                        >
+                            <div className={styles.notifItemIconWrap}>
+                                <div className={`${styles.notifTypeIcon} ${iconClass}`}>
+                                    {icon}
                                 </div>
-                            }
-                            description={
-                                <Text type={item.is_read ? 'secondary' : undefined} className={styles.notifItemDesc}>
-                                    {item.message}
-                                </Text>
-                            }
-                        />
-                    </List.Item>
-                )}
+                            </div>
+                            <List.Item.Meta
+                                title={
+                                    <div className={styles.notifItemTitleWrapper}>
+                                        <Text strong className={styles.notifItemTitle}>{item.title}</Text>
+                                        <Text className={styles.notifTime}>{dayjs(item.created_at).fromNow()}</Text>
+                                    </div>
+                                }
+                                description={
+                                    <Paragraph ellipsis={{ rows: 2 }} className={styles.notifItemDesc}>
+                                        {item.message}
+                                    </Paragraph>
+                                }
+                            />
+                        </List.Item>
+                    );
+                }}
                 className={styles.notificationList}
                 loadMore={
                     hasMore && notifications.length > 0 && (
@@ -189,6 +209,7 @@ const AppHeader: React.FC = () => {
                     )
                 }
             />
+
         </div>
     );
 
