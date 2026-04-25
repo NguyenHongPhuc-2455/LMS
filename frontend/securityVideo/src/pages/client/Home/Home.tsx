@@ -295,7 +295,7 @@ export default function Home() {
                         </div>
                         <div className={styles.streakDays}>
                             {weeklyStats.map((stat, idx) => {
-                                const isStudied = stat.minutes > 0;
+                                const isStudied = stat.hasActivity || stat.minutes > 0;
                                 return (
                                     <div key={idx} className={styles.streakDayCol}>
                                         <div className={`${styles.streakDot} ${isStudied ? styles.active : ''}`}></div>

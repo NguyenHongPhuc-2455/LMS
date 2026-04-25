@@ -267,7 +267,8 @@ const getUserLearningStats = async (userId, days = 7) => {
             return {
                 date: date.format('DD/MM'),
                 fullDate: dateStr,
-                minutes: totalMinutes
+                minutes: totalMinutes,
+                hasActivity: totalSeconds > 0
             };
         });
 
