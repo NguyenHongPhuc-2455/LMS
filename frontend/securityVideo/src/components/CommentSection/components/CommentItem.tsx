@@ -92,7 +92,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                                                     cancelText="Hủy"
                                                     onPopupClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <span style={{ color: '#ff4d4f' }}>Xóa bình luận</span>
+                                                    <span style={{ color: '#C72127' }}>Xóa bình luận</span>
                                                 </Popconfirm>
                                             ),
                                             danger: true,

@@ -60,7 +60,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | PUT | `/:id` | Cập nhật Metadata bài học | ✅ |
 | POST | `/upload-attachment/:lessonId` | Upload tài liệu đính kèm (PDF) | ✅ (Multer) |
 | GET | `/key/:lessonId` | Lấy Key giải mã AES-128 | ✅ |
-| POST | `/complete/:id` | Đánh dấu hoàn thành bài học | ✅ |
+| POST | `/complete/:id` | Đánh dấu hoàn thành bài học (Yêu cầu đã đăng ký khóa học) | ✅ |
 | DELETE | `/:id` | Xóa video & Dọn dẹp HLS Folder | ✅ |
 
 ---
@@ -113,7 +113,7 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
 | GET | `/me` | Thông tin tài khoản hiện tại | ✅ |
-| GET | `/` | Danh sách thành viên (Admin) | ✅ (Admin) |
+| GET | `/` | Danh sách thành viên (Admin - Hỗ trợ tìm kiếm theo Username & Full Name) | ✅ (Admin) |
 
 ---
 

@@ -172,6 +172,7 @@ model Lesson {
   duration    Int?       @default(0)      // Tính theo giây
   order       Int        @default(0)
   is_free     Boolean    @default(false)
+  anti_seek   Boolean    @default(true)  // Bật chống tua mặc định
   
   // Các field cho HLS bảo mật tối thượng
   hls_key     Bytes?   // Lưu trực tiếp Binary Key

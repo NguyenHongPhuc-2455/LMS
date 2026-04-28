@@ -16,7 +16,7 @@ courses: Thông tin tổng quan khóa học (tiêu đề, mô tả, giá tiền,
 
 sections: Các chương trong một khóa học (ví dụ: Chương 1: Căn bản).
 
-lessons: Các bài học chi tiết (video URL ẩn, HLS, nội dung văn bản Markdown, tệp đính kèm PDF, thời lượng, thứ tự bài học).
+lessons: Các bài học chi tiết (video URL ẩn, HLS, nội dung văn bản Markdown, tệp đính kèm PDF, thời lượng, thứ tự bài học, tùy chọn bật/tắt chống tua).
 
 3. Nhóm bán hàng & Thanh toán (Orders & Payments)
 Phần này đảm bảo việc kinh doanh diễn ra trơn tru và bảo mật.
@@ -105,7 +105,7 @@ Một số lưu ý "chuẩn chỉ" khi thiết kế:
 3. Lưu trữ Video: Dự án hỗ trợ cơ chế đa nguồn (Multi-source). 
 - **HLS**: Video upload lên -> Băm thành định dạng HLS (.m3u8 và nhiều đoạn .ts nhỏ) có mã hóa AES-128 -> Lưu path HLS vào database. Đây là phương thức bảo mật cao nhất, hỗ trợ chặn tua và bảo vệ bản quyền.
 - **YouTube/External**: Hệ thống hỗ trợ nhúng video từ YouTube hoặc link trực tiếp (.mp4). Player tự động nhận diện và áp dụng cơ chế tracking phù hợp.
-- **Tiến độ (Tracking)**: Hệ thống theo dõi thời gian thực. Khi học viên xem đạt **99%** thời lượng, bài học sẽ tự động được đánh dấu hoàn thành để mở bài tiếp theo.
+- **Tiến độ (Tracking)**: Hệ thống theo dõi thời gian thực. Khi học viên xem đạt **95%** thời lượng, bài học sẽ tự động được đánh dấu hoàn thành để mở bài tiếp theo.
 
 4. Tính toàn vẹn: Sử dụng Foreign Keys (Khóa ngoại) để đảm bảo không có bài học nào "mồ côi" không thuộc về khóa học nào.
 

@@ -25,7 +25,7 @@ export default function LearningSidebar({
     const renderLessonIcon = (lesson: any, isLockedByProgress: boolean) => {
         if (lesson.isCompleted) return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
         if (isLockedByProgress) return <LockOutlined style={{ color: '#94a3b8' }} />;
-        if (!course?.hasAccess && !lesson.is_free) return <LockOutlined style={{ color: '#ff4d4f' }} />;
+        if (!course?.hasAccess && !lesson.is_free) return <LockOutlined style={{ color: '#C72127' }} />;
         switch (lesson.type) {
             case 'VIDEO': return <PlayCircleOutlined style={{ color: '#6366f1' }} />;
             case 'DOCUMENT': return <FileTextOutlined style={{ color: '#52c41a' }} />;

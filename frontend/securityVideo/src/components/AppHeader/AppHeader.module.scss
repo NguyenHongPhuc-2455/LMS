@@ -215,7 +215,7 @@
     .actionBtnClear {
         padding: 0;
         font-size: 13px;
-        color: #ff4d4f;
+        color: #C72127;
         opacity: 0.7;
         font-weight: 500;
 
@@ -274,7 +274,7 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
         :global(.anticon) {
-            color: #ff4d4f;
+            color: #C72127;
         }
     }
 
@@ -317,7 +317,7 @@
 
     &.iconError {
         background: #fff1f0;
-        color: #ff4d4f;
+        color: #C72127;
         border: 1px solid #ffccc7;
     }
 

@@ -35,7 +35,7 @@ mindmap
         User Management["Quản lý người dùng & Phân quyền"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
         Enrollment["Đăng ký học"]
-        Lesson Completion Tracking["Precise Tracking (99%)"]
+        Lesson Completion Tracking["Precise Tracking (95%)"]
         Multi-Source Video["HLS, YouTube, Direct MP4"]
         Bình luận Facebook-style (2 cấp)
       Thông Báo["Thông Báo Realtime (Notifications)"]
@@ -66,7 +66,7 @@ Thay vì dùng các dịch vụ đắt đỏ như Bunny.net, dự án tự xây 
 ### 3. Khối Content & Learning
 Cấu trúc phân cấp đa tầng: `Category` -> `Course` -> `Section` -> `Lesson`.
 - **Quản lý Danh mục**: Phân loại khóa học linh hoạt giúp người dùng dễ dàng tìm kiếm.
-- **Hỗ trợ tracking tiến độ**: Hệ thống theo dõi chính xác đến 99% thời lượng video để ghi nhận hoàn thành.
+- **Hỗ trợ tracking tiến độ**: Hệ thống theo dõi chính xác đến 95% thời lượng video để ghi nhận hoàn thành.
 - **Đa dạng nguồn video**: Hỗ trợ HLS (bảo mật cao), YouTube và các link video trực tiếp.
 - **Hệ thống bình luận Facebook-style**: 2 cấp cố định (Parent + Replies). Reply vào reply sẽ tự động gộp vào cùng cấp.
 

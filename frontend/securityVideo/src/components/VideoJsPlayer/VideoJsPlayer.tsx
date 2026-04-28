@@ -8,6 +8,7 @@ import styles from './VideoJsPlayer.module.scss';
 interface VideoJsPlayerProps {
     src: string;
     lessonId?: number;
+    antiSeek?: boolean;
     onEnded?: () => void;
     onPlay?: () => void;
     onPause?: () => void;
@@ -17,12 +18,14 @@ export interface VideoJsPlayerRef {
     reset: () => void;
 }
 
-const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, lessonId, onEnded, onPlay, onPause }, ref) => {
+const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause }, ref) => {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const playerRef = useRef<any>(null);
     const hasTriggeredEndRef = useRef(false);
     const progressIntervalRef = useRef<any>(null);
+    const maxWatchedTimeRef = useRef<number>(0);
+    const isSeekingRef = useRef<boolean>(false);
 
     const callbacksRef = useRef({ onEnded, onPlay, onPause });
     const stateRef = useRef({ lessonId });
@@ -35,8 +38,11 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     useImperativeHandle(ref, () => ({
         reset: () => {
             if (playerRef.current) {
+                isSeekingRef.current = true;
                 playerRef.current.currentTime(0);
+                maxWatchedTimeRef.current = 0;
                 playerRef.current.play().catch(() => { });
+                setTimeout(() => { isSeekingRef.current = false; }, 500);
             }
         }
     }));
@@ -50,7 +56,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
             const currentTime = player.currentTime();
             const duration = player.duration();
 
-            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.99) {
+            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.95) {
                 handleVideoComplete();
             }
         }, 1000);
@@ -121,6 +127,40 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
             player.on('play', () => {
                 startProgressCheck();
                 callbacksRef.current.onPlay?.();
+            });
+
+            player.on('timeupdate', () => {
+                if (!antiSeek || isSeekingRef.current) return;
+
+                const currentTime = player.currentTime();
+
+                // Cập nhật mốc thời gian nếu người dùng xem bình thường
+                if (!player.seeking() && currentTime > maxWatchedTimeRef.current) {
+                    if (currentTime - maxWatchedTimeRef.current < 2) {
+                        maxWatchedTimeRef.current = currentTime;
+                    }
+                }
+
+                // Fallback: Nếu vị trí hiện tại nhô lên quá cao (kể cả do click)
+                if (currentTime > maxWatchedTimeRef.current + 2) {
+                    isSeekingRef.current = true;
+                    player.currentTime(maxWatchedTimeRef.current);
+                    player.play().catch(() => { });
+                    setTimeout(() => { isSeekingRef.current = false; }, 100);
+                }
+            });
+
+            player.on('seeking', () => {
+                if (!antiSeek || isSeekingRef.current) return;
+
+                const currentTime = player.currentTime();
+                const buff = 2; // Cho phép tua sai số 2 giây
+
+                if (currentTime > maxWatchedTimeRef.current + buff) {
+                    isSeekingRef.current = true;
+                    player.currentTime(maxWatchedTimeRef.current);
+                    setTimeout(() => { isSeekingRef.current = false; }, 100);
+                }
             });
 
             player.on('pause', () => {

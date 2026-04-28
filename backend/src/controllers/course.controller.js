@@ -250,7 +250,14 @@ exports.getMyCourses = catchAsync(async (req, res) => {
             completedLessons,
             progressPercent,
             nextLessonId: nextLesson ? nextLesson.id : null,
-            enrolledAt: e.enrolled_at
+            enrolledAt: e.enrolled_at,
+            lastActivity: completedLessonsData.length > 0
+                ? (await prisma.lessonCompleted.findFirst({
+                    where: { user_id: userId, lesson_id: { in: allLessons.map(l => l.id) } },
+                    orderBy: { completed_at: 'desc' },
+                    select: { completed_at: true }
+                }))?.completed_at || e.enrolled_at
+                : e.enrolled_at
         };
     }));
 
@@ -279,6 +286,32 @@ exports.completeLesson = catchAsync(async (req, res) => {
     const userId = req.user.id;
 
     if (!lessonId) throw new ApiError(400, 'Thiếu Lesson ID');
+
+    const lesson = await prisma.lesson.findUnique({
+        where: { id: parseInt(lessonId) },
+        include: { section: true }
+    });
+
+    if (!lesson) throw new ApiError(404, 'Không tìm thấy bài học');
+
+    if (!lesson.is_free) {
+        const isAdmin = req.user?.roles?.includes('admin');
+        const course = await prisma.course.findUnique({ where: { id: lesson.section.course_id } });
+        const isOwner = course?.instructor_id === userId;
+
+        if (!isAdmin && !isOwner) {
+            const enrollment = await prisma.enrollment.findUnique({
+                where: { user_id_course_id: { user_id: userId, course_id: lesson.section.course_id } }
+            });
+            const programEnrollment = await prisma.programEnrollment.findFirst({
+                where: { user_id: userId, program: { courses: { some: { course_id: lesson.section.course_id } } } }
+            });
+
+            if (!enrollment && !programEnrollment) {
+                throw new ApiError(403, 'Bạn không thể hoàn thành bài học của khóa học chưa đăng ký');
+            }
+        }
+    }
 
     const completion = await prisma.lessonCompleted.upsert({
         where: {

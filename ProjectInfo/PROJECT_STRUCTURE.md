@@ -76,7 +76,7 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 `Upload/Import Video` -> `VideoService`:
 - **HLS**: Cắt nhỏ (.ts), mã hóa AES-128, lưu Key vào DB. Bảo mật cao nhất.
 - **YouTube/Direct Link**: Lưu URL và thời lượng. Player tự động nhận diện nguồn.
-- **Tracking**: Hệ thống theo dõi chính xác thời gian xem. Khi đạt **99%** thời lượng, bài học tự động được đánh dấu hoàn thành.
+- **Tracking**: Hệ thống theo dõi chính xác thời gian xem. Khi đạt **95%** thời lượng, bài học tự động được đánh dấu hoàn thành.
 
 ### 2. Luồng Duyệt yêu cầu & Tiến độ
 `Student Registration` -> `Admin Dashboard` -> `Approval`:

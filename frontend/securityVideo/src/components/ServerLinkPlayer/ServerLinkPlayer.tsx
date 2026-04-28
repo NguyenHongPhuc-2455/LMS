@@ -7,6 +7,7 @@ import styles from './ServerLinkPlayer.module.scss';
 interface ServerLinkPlayerProps {
     src: string;
     lessonId?: number;
+    antiSeek?: boolean;
     onEnded?: () => void;
     onPlay?: () => void;
     onPause?: () => void;
@@ -16,11 +17,13 @@ export interface ServerLinkPlayerRef {
     reset: () => void;
 }
 
-const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(({ src, lessonId, onEnded, onPlay, onPause }, ref) => {
+const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const playerRef = useRef<any>(null);
     const hasTriggeredEndRef = useRef(false);
     const progressIntervalRef = useRef<any>(null);
+    const maxWatchedTimeRef = useRef<number>(0);
+    const isSeekingRef = useRef<boolean>(false);
 
     const callbacksRef = useRef({ onEnded, onPlay, onPause });
     const stateRef = useRef({ lessonId });
@@ -33,8 +36,11 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
     useImperativeHandle(ref, () => ({
         reset: () => {
             if (playerRef.current) {
+                isSeekingRef.current = true;
                 playerRef.current.currentTime(0);
+                maxWatchedTimeRef.current = 0;
                 playerRef.current.play().catch(() => { });
+                setTimeout(() => { isSeekingRef.current = false; }, 500);
             }
         }
     }));
@@ -48,7 +54,7 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
             const currentTime = player.currentTime();
             const duration = player.duration();
 
-            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.99) {
+            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.95) {
                 handleVideoComplete();
             }
         }, 1000);
@@ -111,6 +117,39 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
             player.on('play', () => {
                 startProgressCheck();
                 callbacksRef.current.onPlay?.();
+            });
+
+            // --- CHỐNG TUA VIDEO (ANTI-SEEK) ---
+            player.on('timeupdate', () => {
+                if (!antiSeek || isSeekingRef.current) return;
+
+                const currentTime = player.currentTime();
+
+                // Cập nhật mốc thời gian đã xem xa nhất
+                if (!player.seeking() && currentTime > maxWatchedTimeRef.current) {
+                    if (currentTime - maxWatchedTimeRef.current < 2) {
+                        maxWatchedTimeRef.current = currentTime;
+                    }
+                }
+
+                // Fallback: nếu vị trí nhảy vọt lên quá mốc cho phép
+                if (currentTime > maxWatchedTimeRef.current + 2) {
+                    isSeekingRef.current = true;
+                    player.currentTime(maxWatchedTimeRef.current);
+                    player.play().catch(() => { });
+                    setTimeout(() => { isSeekingRef.current = false; }, 100);
+                }
+            });
+
+            player.on('seeking', () => {
+                if (!antiSeek || isSeekingRef.current) return;
+
+                const currentTime = player.currentTime();
+                if (currentTime > maxWatchedTimeRef.current + 2) {
+                    isSeekingRef.current = true;
+                    player.currentTime(maxWatchedTimeRef.current);
+                    setTimeout(() => { isSeekingRef.current = false; }, 100);
+                }
             });
 
             player.on('pause', () => {

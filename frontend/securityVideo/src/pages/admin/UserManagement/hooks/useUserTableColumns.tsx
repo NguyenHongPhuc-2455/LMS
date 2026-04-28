@@ -41,12 +41,12 @@ export function useUserTableColumns() {
         setSearchedColumn(dataIndex);
     };
 
-    const getColumnSearchProps = (dataIndex: DataIndex): TableColumnType<UserData> => ({
+    const getColumnSearchProps = (dataIndex: DataIndex, placeholder?: string): TableColumnType<UserData> => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
             <div className={styles.filterDropdownContainer} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
                     ref={searchInput}
-                    placeholder={`Tìm ${dataIndex}`}
+                    placeholder={placeholder || `Tìm ${dataIndex}`}
                     value={selectedKeys[0]}
                     onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
                     onPressEnter={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
@@ -59,10 +59,28 @@ export function useUserTableColumns() {
             </div>
         ),
         filterIcon: (filtered: boolean) => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
-        onFilter: (value, record) => record[dataIndex] ? record[dataIndex]!.toString().toLowerCase().includes((value as string).toLowerCase()) : false,
-        render: (text) => searchedColumn === dataIndex ? (
-            <Highlighter highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }} searchWords={[searchText]} autoEscape textToHighlight={text ? text.toString() : ''} />
-        ) : (text),
+        onFilter: (value, record) => {
+            const searchValue = (value as string).toLowerCase();
+            if (dataIndex === 'username') {
+                return (record.username?.toLowerCase().includes(searchValue)) ||
+                    (record.full_name?.toLowerCase().includes(searchValue));
+            }
+            return record[dataIndex] ? record[dataIndex]!.toString().toLowerCase().includes(searchValue) : false;
+        },
+        render: (text, record) => {
+            if (searchedColumn === dataIndex) {
+                // Nếu đang highlight cho username, cần xử lý hiển thị highlight cho cả text (ở đây render nhận text của dIndex)
+                return (
+                    <Highlighter
+                        highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+                        searchWords={[searchText]}
+                        autoEscape
+                        textToHighlight={text ? text.toString() : ''}
+                    />
+                );
+            }
+            return text;
+        },
     });
 
     return { getColumnSearchProps };

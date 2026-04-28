@@ -1,4 +1,4 @@
-import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space } from 'antd';
+import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space, Switch } from 'antd';
 import { FileText, Video, UploadCloud } from 'lucide-react';
 import styles from '../LessonManagement.module.scss';
 
@@ -61,6 +61,19 @@ export default function VideoLessonForm({
 
                     <Form.Item name="content" label="Nội dung văn bản">
                         <Input.TextArea rows={6} placeholder="Nhập nội dung văn bản của bài học hoặc hướng dẫn..." />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="anti_seek"
+                        label="Chống tua video"
+                        valuePropName="checked"
+                        tooltip="Bật để ngăn học viên kéo thanh tua tới nội dung chưa xem"
+                    >
+                        <Switch
+                            checkedChildren="🔒 Bật"
+                            unCheckedChildren="🔓 Tắt"
+                            defaultChecked
+                        />
                     </Form.Item>
                 </Col>
 

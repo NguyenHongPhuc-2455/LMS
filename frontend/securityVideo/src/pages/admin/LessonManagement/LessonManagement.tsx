@@ -33,6 +33,7 @@ interface Lesson {
     type: 'VIDEO' | 'DOCUMENT' | 'QUIZ';
     order?: number;
     duration?: number;
+    anti_seek?: boolean;
 }
 
 interface Section {
@@ -182,7 +183,8 @@ export default function LessonManagement() {
                         section_id: values.section_id,
                         content: values.content,
                         order: values.order,
-                        duration: totalDuration
+                        duration: totalDuration,
+                        anti_seek: values.anti_seek !== undefined ? values.anti_seek : true
                     });
                     message.success('Đã cập nhật bài giảng!');
                 } else {
@@ -197,6 +199,7 @@ export default function LessonManagement() {
                     formData.append('section_id', String(values.section_id));
                     formData.append('order', String(values.order || '0'));
                     formData.append('content', values.content || '');
+                    formData.append('anti_seek', String(values.anti_seek !== undefined ? values.anti_seek : true));
                     if (totalDuration > 0) {
                         formData.append('duration', String(totalDuration));
                     }
@@ -261,7 +264,8 @@ export default function LessonManagement() {
                 ...lesson,
                 section_id: selectedSectionId,
                 duration_min: lesson.duration ? Math.floor(lesson.duration / 60) : 0,
-                duration_sec: lesson.duration ? (lesson.duration % 60) : 0
+                duration_sec: lesson.duration ? (lesson.duration % 60) : 0,
+                anti_seek: lesson.anti_seek !== undefined ? lesson.anti_seek : true
             });
         }
         setIsModalOpen(true);

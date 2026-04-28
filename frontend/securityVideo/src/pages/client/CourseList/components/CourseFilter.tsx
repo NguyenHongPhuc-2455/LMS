@@ -43,7 +43,11 @@ export default function CourseFilter({
                             { value: 'oldest', label: 'Ngày tạo (Cũ nhất)' },
                             { value: 'az', label: 'Tên khóa học (A-Z)' },
                             { value: 'za', label: 'Tên khóa học (Z-A)' },
-                            { value: 'level', label: 'Trình độ (Tăng dần)' }
+                            { value: 'level', label: 'Trình độ (Tăng dần)' },
+                            { value: 'recent', label: 'Xem gần nhất' },
+                            { value: 'old-view', label: 'Lâu chưa xem' },
+                            { value: 'progress-desc', label: '% Hoàn thành (Cao nhất)' },
+                            { value: 'progress-asc', label: '% Hoàn thành (Thấp nhất)' }
                         ]}
                     />
                 </Space>

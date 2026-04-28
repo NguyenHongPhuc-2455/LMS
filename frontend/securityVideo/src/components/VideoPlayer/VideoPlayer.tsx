@@ -6,6 +6,7 @@ import styles from './VideoPlayer.module.scss';
 interface VideoPlayerProps {
     src: string;
     lessonId?: number;
+    antiSeek?: boolean;
     onEnded?: () => void;
     onPlay?: () => void;
     onPause?: () => void;
@@ -15,17 +16,22 @@ export interface VideoPlayerRef {
     reset: () => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, onEnded, onPlay, onPause }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
     const progressIntervalRef = useRef<any>(null);
+    const maxWatchedTimeRef = useRef<number>(0);
+    const isSeekingRef = useRef<boolean>(false);
 
     useImperativeHandle(ref, () => ({
         reset: () => {
             if (videoRef.current) {
+                isSeekingRef.current = true; // Tránh check anti-seek khi reset
                 videoRef.current.currentTime = 0;
+                maxWatchedTimeRef.current = 0;
                 videoRef.current.play().catch(() => { });
+                setTimeout(() => { isSeekingRef.current = false; }, 500);
             }
         }
     }));
@@ -44,7 +50,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
             // 1. Duration hợp lệ (> 5s)
             // 2. Đã xem tối thiểu 5s (tránh lỗi nhảy bài ngay khi load)
             // 3. Đã xem trên 99% (gần như hết video)
-            if (duration > 5 && currentTime > 5 && currentTime / duration >= 1) {
+            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.95) {
                 handleComplete();
             }
         }, 1000);
@@ -80,6 +86,42 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         if (!video) return;
 
         video.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // --- CHỐNG TUA VIDEO (ANTI-SEEK) ---
+        const handleTimeUpdate = () => {
+            if (!antiSeek || isSeekingRef.current) return;
+
+            // Cập nhật mốc thời gian nếu người dùng xem bình thường
+            if (!video.seeking && video.currentTime > maxWatchedTimeRef.current) {
+                // Chỉ cập nhật nếu khoảng cách tăng thêm nhỏ (< 2 giây) để chắc chắn không phải đang nhảy cóc
+                if (video.currentTime - maxWatchedTimeRef.current < 2) {
+                    maxWatchedTimeRef.current = video.currentTime;
+                }
+            }
+
+            // Fallback: nếu bằng cách nào đó currentTime vượt quá maxWatchedTimeRef quá nhiều
+            if (video.currentTime > maxWatchedTimeRef.current + 2) {
+                isSeekingRef.current = true;
+                video.currentTime = maxWatchedTimeRef.current;
+                // Phát lại nếu đang bị dừng
+                video.play().catch(() => { });
+                setTimeout(() => { isSeekingRef.current = false; }, 100);
+            }
+        };
+
+        const handleSeeking = () => {
+            if (!antiSeek || isSeekingRef.current) return;
+
+            if (video.currentTime > maxWatchedTimeRef.current + 2) {
+                isSeekingRef.current = true;
+                video.currentTime = maxWatchedTimeRef.current;
+                setTimeout(() => { isSeekingRef.current = false; }, 100);
+            }
+        };
+
+        video.addEventListener('timeupdate', handleTimeUpdate);
+        video.addEventListener('seeking', handleSeeking);
+
         shaka.polyfill.installAll();
 
         const player = new shaka.Player();
@@ -102,6 +144,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         });
 
         return () => {
+            video.removeEventListener('timeupdate', handleTimeUpdate);
+            video.removeEventListener('seeking', handleSeeking);
             stopProgressCheck();
             if (player) player.destroy();
             if (video) {

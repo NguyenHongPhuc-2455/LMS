@@ -176,8 +176,8 @@ export default function QuizPlayer({ lessonId, onCompleted }: QuizPlayerProps) {
                                     {result && (
                                         <span className={styles.questionStatusIcon}>
                                             {isCorrectAnswer && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                                            {isIncorrectAnswer && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
-                                            {notAnswered && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
+                                            {isIncorrectAnswer && <CloseCircleOutlined style={{ color: '#C72127' }} />}
+                                            {notAnswered && <CloseCircleOutlined style={{ color: '#C72127' }} />}
                                         </span>
                                     )}
                                 </div>

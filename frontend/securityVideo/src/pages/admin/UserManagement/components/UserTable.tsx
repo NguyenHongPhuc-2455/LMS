@@ -104,7 +104,7 @@ export default function UserTable({
             key: 'user_info',
             width: 250,
             fixed: 'left',
-            ...getColumnSearchProps('username'),
+            ...getColumnSearchProps('username', 'Tìm tên hoặc username...'),
             render: (_, record) => {
                 const isEditing = editingKeys.includes(record.id);
                 return (

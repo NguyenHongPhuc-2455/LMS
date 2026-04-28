@@ -50,7 +50,7 @@ function App() {
       theme={{
         algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#6366f1',
+          colorPrimary: '#C72127',
           borderRadius: 12,
           colorBgContainer: '#ffffff',
           colorBgLayout: '#f8fafc',
@@ -58,7 +58,7 @@ function App() {
         },
         components: {
           Menu: {
-            itemSelectedColor: 'C72127',
+            itemSelectedColor: '#C72127',
             itemSelectedBg: 'rgba(199, 33, 39, 0.05)',
           },
         },

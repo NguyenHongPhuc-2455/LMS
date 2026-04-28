@@ -110,7 +110,7 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
                     {pendingCount > 0 && (
                         <Badge
                             count={pendingCount}
-                            style={{ backgroundColor: '#ff4d4f' }}
+                            style={{ backgroundColor: '#C72127' }}
                             size="small"
                         />
                     )}

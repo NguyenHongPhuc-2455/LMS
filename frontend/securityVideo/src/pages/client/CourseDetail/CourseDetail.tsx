@@ -169,6 +169,11 @@ export default function CourseDetail() {
     return (
         <div className={styles.courseDetailContainer}>
             <Row gutter={40}>
+                <CourseFloatingCard
+                    course={course}
+                    totalLessons={totalLessons}
+                    renderActionButton={renderActionButton}
+                />
                 <Col lg={16} md={24}>
                     <Title level={1} className={styles.courseTitleMain}>{course.title}</Title>
                     <Paragraph className={styles.courseDescription}>
@@ -181,12 +186,6 @@ export default function CourseDetail() {
 
                     <CourseCurriculum sections={course.sections} totalLessons={totalLessons} />
                 </Col>
-
-                <CourseFloatingCard
-                    course={course}
-                    totalLessons={totalLessons}
-                    renderActionButton={renderActionButton}
-                />
             </Row>
         </div>
     );

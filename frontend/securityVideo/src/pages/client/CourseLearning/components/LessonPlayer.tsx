@@ -52,6 +52,7 @@ export default function LessonPlayer({
                     ref={videoPlayerRef}
                     src={finalSrc}
                     lessonId={activeLesson.id}
+                    antiSeek={activeLesson.anti_seek !== false && !activeLesson.isCompleted}
                     onEnded={handleNextLesson}
                     onPlay={() => setIsVideoPlaying(true)}
                     onPause={() => setIsVideoPlaying(false)}
@@ -68,6 +69,7 @@ export default function LessonPlayer({
                     ref={videoPlayerRef as any}
                     src={activeLesson.video_url}
                     lessonId={activeLesson.id}
+                    antiSeek={activeLesson.anti_seek !== false && !activeLesson.isCompleted}
                     onEnded={handleNextLesson}
                     onPlay={() => setIsVideoPlaying(true)}
                     onPause={() => setIsVideoPlaying(false)}
@@ -85,6 +87,7 @@ export default function LessonPlayer({
                 ref={videoPlayerRef as any}
                 src={finalSrc}
                 lessonId={activeLesson.id}
+                antiSeek={activeLesson.anti_seek !== false && !activeLesson.isCompleted}
                 onEnded={handleNextLesson}
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}

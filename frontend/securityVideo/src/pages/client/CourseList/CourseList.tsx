@@ -17,6 +17,7 @@ export default function CourseList() {
     const [registeredCourses, setRegisteredCourses] = useState<any[]>([]);
     const [categoryName, setCategoryName] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [categories, setCategories] = useState<any[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const searchQuery = searchParams.get('search') || '';
@@ -73,6 +74,7 @@ export default function CourseList() {
                 message.error('Lỗi khi tải danh sách khóa học');
             } finally {
                 setLoading(false);
+                setIsInitialLoading(false);
             }
         };
         fetchCourses();
@@ -87,7 +89,7 @@ export default function CourseList() {
         setSearchParams(searchParams);
     };
 
-    if (loading) {
+    if (isInitialLoading) {
         return (
             <div className={styles.loaderContainer}>
                 <Skeleton active paragraph={{ rows: 10 }} />
@@ -114,6 +116,18 @@ export default function CourseList() {
                 const levels: Record<string, number> = { 'Cơ bản': 1, 'Trung cấp': 2, 'Nâng cao': 3 };
                 sorted.sort((a, b) => (levels[a.level] || 99) - (levels[b.level] || 99));
                 break;
+            case 'progress-desc':
+                sorted.sort((a: any, b: any) => (b.progressPercent || 0) - (a.progressPercent || 0));
+                break;
+            case 'progress-asc':
+                sorted.sort((a: any, b: any) => (a.progressPercent || 0) - (b.progressPercent || 0));
+                break;
+            case 'recent':
+                sorted.sort((a: any, b: any) => new Date(b.lastActivity || b.enrolledAt || b.created_at).getTime() - new Date(a.lastActivity || a.enrolledAt || a.created_at).getTime());
+                break;
+            case 'old-view':
+                sorted.sort((a: any, b: any) => new Date(a.lastActivity || a.enrolledAt || a.created_at).getTime() - new Date(b.lastActivity || b.enrolledAt || b.created_at).getTime());
+                break;
         }
         return sorted;
     };
@@ -122,6 +136,7 @@ export default function CourseList() {
     const registeredIds = new Set(registeredCourses.map(rc => rc.id));
     const availableCourses = courses.filter(c => !registeredIds.has(c.id));
 
+    const sortedRegisteredCourses = sortCourses(registeredCourses);
     const publicCourses = sortCourses(availableCourses.filter(c => !c.is_private));
     const privateCourses = sortCourses(availableCourses.filter(c => c.is_private));
 
@@ -129,11 +144,11 @@ export default function CourseList() {
         <div className={styles.courseListContainer}>
             <div style={{ marginBottom: '32px' }}>
                 <Typography.Title level={2}>Tất cả Khóa học</Typography.Title>
-                <Typography.Text type="secondary">
+                <Typography.Title level={5} type="secondary" style={{ fontWeight: 400, marginTop: 0 }}>
                     {categoryId
                         ? `Đang hiển thị các khóa học thuộc danh mục "${categoryName || '...'}"`
                         : "Khám phá và chọn lựa những khóa học phù hợp với bạn"}
-                </Typography.Text>
+                </Typography.Title>
             </div>
 
             <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'flex-start' }}>
@@ -146,34 +161,43 @@ export default function CourseList() {
                 />
             </div>
 
-            {registeredCourses.length > 0 && (
-                <MyCourseGrid
-                    title="Khóa học của tôi"
-                    courses={registeredCourses}
-                    currentPage={currentPageMy}
-                    pageSize={pageSize}
-                    setCurrentPage={setCurrentPageMy}
-                />
-            )}
+            {loading ? (
+                <div style={{ marginTop: '40px' }}>
+                    <Skeleton active paragraph={{ rows: 6 }} />
+                    <Skeleton active paragraph={{ rows: 6 }} style={{ marginTop: '40px' }} />
+                </div>
+            ) : (
+                <>
+                    {registeredCourses.length > 0 && (
+                        <MyCourseGrid
+                            title="Khóa học của tôi"
+                            courses={sortedRegisteredCourses}
+                            currentPage={currentPageMy}
+                            pageSize={pageSize}
+                            setCurrentPage={setCurrentPageMy}
+                        />
+                    )}
 
-            <CourseGrid
-                title="Khóa học Riêng tư (Cần phê duyệt)"
-                courses={privateCourses}
-                currentPage={currentPagePrivate}
-                pageSize={pageSize}
-                setCurrentPage={setCurrentPagePrivate}
-            />
+                    <CourseGrid
+                        title="Khóa học Riêng tư (Cần phê duyệt)"
+                        courses={privateCourses}
+                        currentPage={currentPagePrivate}
+                        pageSize={pageSize}
+                        setCurrentPage={setCurrentPagePrivate}
+                    />
 
-            <CourseGrid
-                title="Khóa học cộng đồng (Khóa học Công khai)"
-                courses={publicCourses}
-                currentPage={currentPagePublic}
-                pageSize={pageSize}
-                setCurrentPage={setCurrentPagePublic}
-            />
+                    <CourseGrid
+                        title="Khóa học cộng đồng (Khóa học Công khai)"
+                        courses={publicCourses}
+                        currentPage={currentPagePublic}
+                        pageSize={pageSize}
+                        setCurrentPage={setCurrentPagePublic}
+                    />
 
-            {courses.length === 0 && (
-                <Empty description="Chưa có khóa học nào được đăng tải" />
+                    {courses.length === 0 && (
+                        <Empty description="Chưa có khóa học nào được đăng tải" style={{ marginTop: '40px' }} />
+                    )}
+                </>
             )}
         </div>
     );

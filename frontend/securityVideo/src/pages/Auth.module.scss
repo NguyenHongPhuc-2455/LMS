@@ -1,6 +1,6 @@
 $auth-bg-light: #f8fafc;
-$auth-blob-1: rgba(199, 33, 39, 0.08);
-$auth-blob-2: rgba(184, 18, 26, 0.08);
+$auth-blob-1: rgba(199, 33, 39, 0.05);
+$auth-blob-2: rgba(184, 18, 26, 0.05);
 
 .authContainer {
     min-height: 100vh;
@@ -54,12 +54,12 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
 .authWrapper {
     display: flex;
     width: 100%;
-    max-width: 900px;
-    min-height: 550px;
+    max-width: 850px;
+    min-height: 500px;
     background: white;
     border-radius: 32px;
     overflow: hidden;
-    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.12);
     z-index: 10;
     animation: auth-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -70,14 +70,14 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
 
 .authSideForm {
     flex: 1.2;
-    padding: 60px;
+    padding: 40px 50px;
     display: flex;
     flex-direction: column;
     justify-content: center;
 
     .sideTitle {
         text-align: center;
-        margin-bottom: 40px;
+        margin-bottom: 24px;
         font-weight: 800;
         letter-spacing: -0.02em;
         @include premium-text;
@@ -86,10 +86,10 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
     .authLogoWrapper {
         display: flex;
         justify-content: center;
-        margin-bottom: 20px;
+        margin-bottom: 12px;
 
         .authLogo {
-            height: 60px;
+            height: 50px;
             object-fit: contain;
         }
     }
@@ -103,11 +103,15 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
             letter-spacing: 0.05em;
         }
 
+        .ant-form-item {
+            margin-bottom: 20px !important;
+        }
+
         .ant-input-affix-wrapper {
             border: none !important;
             border-bottom: 2px solid #f1f5f9 !important;
             border-radius: 0 !important;
-            padding: 12px 0 !important;
+            padding: 8px 0 !important;
             background: transparent !important;
             transition: all 0.3s;
 
@@ -147,7 +151,7 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
 .authSideInfo {
     flex: 0.8;
     background: $primary-gradient;
-    padding: 60px 40px;
+    padding: 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -176,19 +180,19 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
     }
 
     .infoDesc {
-        font-size: 16px;
-        margin-bottom: 40px;
+        font-size: 15px;
+        margin-bottom: 24px;
         opacity: 0.9;
-        line-height: 1.6;
+        line-height: 1.5;
     }
 
     .btnOutline {
         background: transparent;
         border: 2px solid white;
         color: white;
-        border-radius: 30px;
-        height: 52px;
-        padding: 0 44px;
+        border-radius: 25px;
+        height: 46px;
+        padding: 0 36px;
         font-weight: 700;
         @include transition-standard;
 
@@ -204,8 +208,8 @@ $auth-blob-2: rgba(184, 18, 26, 0.08);
 .btnTheme {
     background: $primary-gradient !important;
     border: none !important;
-    border-radius: 14px !important;
-    height: 52px !important;
+    border-radius: 12px !important;
+    height: 48px !important;
     font-weight: 700 !important;
     font-size: 16px !important;
     box-shadow: 0 15px 25px -5px rgba(199, 33, 39, 0.3) !important;

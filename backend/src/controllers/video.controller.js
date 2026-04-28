@@ -9,7 +9,7 @@ const ApiError = require('../utils/ApiError');
  * Upload và bắt đầu xử lý Video
  */
 exports.uploadVideo = catchAsync(async (req, res) => {
-    const { title, section_id, order, video_url, content, duration: manualDuration } = req.body;
+    const { title, section_id, order, video_url, content, duration: manualDuration, anti_seek } = req.body;
 
     if (!req.file && !video_url) throw new ApiError(400, 'Please upload a video file or provide a video URL');
     if (!section_id) throw new ApiError(400, 'Section ID is required');
@@ -21,7 +21,8 @@ exports.uploadVideo = catchAsync(async (req, res) => {
             type: 'VIDEO',
             content: content || null,
             order: order ? parseInt(order) : 0,
-            video_url: video_url || null // Set URL right away if they passed string
+            video_url: video_url || null,
+            anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : true
         }
     });
 
@@ -196,7 +197,7 @@ exports.getManifest = catchAsync(async (req, res) => {
 exports.updateLesson = catchAsync(async (req, res) => {
     const { id } = req.params;
     if (isNaN(parseInt(id))) throw new ApiError(400, 'Invalid lesson ID');
-    const { title, section_id, content, order, duration } = req.body;
+    const { title, section_id, content, order, duration, anti_seek } = req.body;
 
     const lesson = await prisma.lesson.update({
         where: { id: parseInt(id) },
@@ -205,7 +206,8 @@ exports.updateLesson = catchAsync(async (req, res) => {
             section_id: section_id ? parseInt(section_id) : undefined,
             content,
             order: order !== undefined ? parseInt(order) : undefined,
-            duration: duration !== undefined ? parseInt(duration) : undefined
+            duration: duration !== undefined ? parseInt(duration) : undefined,
+            anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : undefined
         }
     });
 
