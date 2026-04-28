@@ -34,7 +34,7 @@ export default function UserEditableCell({
             return (
                 <Select
                     defaultValue={record.roles[0]?.id}
-                    className="full-width"
+                    style={{ width: '100%', minWidth: '110px' }}
                     size="small"
                     showSearch={false}
                     onChange={(val) => onUpdate(record.id, 'role_id', val)}
@@ -46,7 +46,7 @@ export default function UserEditableCell({
             return (
                 <Select
                     defaultValue={currentText}
-                    className="full-width"
+                    style={{ width: '100%', minWidth: '90px' }}
                     size="small"
                     showSearch={false}
                     onChange={(val) => onUpdate(record.id, 'gender', val)}
@@ -62,7 +62,7 @@ export default function UserEditableCell({
             return (
                 <DatePicker
                     defaultValue={currentText ? dayjs(currentText) : undefined}
-                    className="full-width"
+                    style={{ width: '100%', minWidth: '120px' }}
                     size="small"
                     format="DD/MM/YYYY"
                     onChange={(date) => onUpdate(record.id, 'dob', date ? date.toISOString() : null)}
@@ -72,6 +72,7 @@ export default function UserEditableCell({
         return (
             <Input
                 defaultValue={currentText}
+                style={{ width: '100%', minWidth: '150px' }}
                 size="small"
                 onChange={(e) => onUpdate(record.id, field, e.target.value)}
             />

@@ -193,6 +193,16 @@ export default function CourseLearning() {
         fetchDetail();
     };
 
+    const handleVideoError = (error: any) => {
+        // Tự động làm mới Token bằng cách gọi lại API chi tiết khóa học.
+        // Backend sẽ cấp lại URL có Token mới nhất dựa trên IP hiện tại.
+        console.log('🔄 Đang làm mới Token video để phục hồi kết nối...');
+        message.loading({ content: 'Phát hiện thay đổi mạng, đang khôi phục video...', key: 'video-refresh' });
+        fetchDetail().then(() => {
+            message.success({ content: 'Khôi phục thành công!', key: 'video-refresh', duration: 2 });
+        });
+    };
+
     if (loading) return <div className={styles.learningLoading}><Skeleton active /></div>;
     if (!course) return <div>Không tìm thấy dữ liệu</div>;
 
@@ -213,6 +223,7 @@ export default function CourseLearning() {
                         navigate={navigate}
                         id={id!}
                         user={user}
+                        onError={handleVideoError}
                     />
                 </Col>
 

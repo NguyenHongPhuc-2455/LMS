@@ -8,8 +8,9 @@ Tài liệu này giải thích chi tiết cách hệ thống **chuyển đổi f
 
 ```
 [Upload .mp4] → [FFmpeg Transcoding] → [Tạo HLS Segments + Key AES-128]
-     → [Lưu URL + Key vào DB] → [Trình duyệt tải manifest.m3u8]
-     → [Xin Key giải mã từ API] → [Phát video đã giải mã]
+     → [Lưu URL + Key vào DB] → [API tạo Signed URL Token ngắn hạn] 
+     → [Trình duyệt gọi Proxy /api/videos/stream/:token/*]
+     → [Proxy xác thực IP & Expiry] → [Phát video an toàn]
 ```
 
 ---
@@ -126,41 +127,38 @@ Nếu một bải học có `source_url` (link gốc) nhưng chưa có file HLS 
 
 ---
 
-## 💾 Bước 3: Lưu URL vào Database
+## 💾 Bước 3: Lưu URL và Chốt Signed URL
 
-Sau khi FFmpeg chạy xong (code = 0), hệ thống cập nhật bản ghi Lesson:
+### 3.1 Trong Database
+`video_url` lưu trong DB là **đường dẫn tương đối nội bộ**, VD: `/public/hls/38/master.m3u8`. Đường dẫn này **không bao giờ** được trả về trực tiếp cho Client.
 
-```javascript
-await prisma.lesson.update({
-    where: { id: lessonId },
-    data: {
-        video_url: `/public/hls/${lessonId}/master.m3u8`,  // ★ Đường link lưu DB
-        hls_key: key,        // Key binary 16 bytes
-        hls_iv: iv,          // IV hex string
-        duration: duration   // Thời lượng (giây)
-    }
-});
-```
+### 3.2 Lúc trả về API (Signed URL)
+**File**: `course.controller.js` → `getCourseById()`
 
-**Quan trọng**: `video_url` lưu trong DB là **đường dẫn tương đối**, VD:
-```
-/public/hls/38/master.m3u8
-```
+Hệ thống tự động "ký tên" cho các URL bài học:
+1. Tạo một **Stream Token** (JWT) chứa: `userId`, `lessonId`, và `clientIp`.
+2. Token có thời hạn cực ngắn (2 giờ).
+3. Chuyển đổi `/public/hls/38/master.m3u8` thành:
+   `http://localhost:5000/api/videos/stream/TOKEN_CUA_BAN/master.m3u8`
 
-Express serve thư mục `public/` như static files:
-```javascript
-// app.js
-app.use('/public', express.static(path.join(__dirname, '../public')));
-```
-
-Nên URL đầy đủ trên trình duyệt sẽ là:
-```
-http://localhost:5000/public/hls/38/master.m3u8
-```
+**Bảo mật**: Nếu User A gửi link này cho User B, Server sẽ chặn vì IP không khớp.
 
 ---
 
-## 📄 Bước 4: Nội dung file master.m3u8
+## 🛡️ Bước 4: Proxy Stream Server
+**File**: `video.controller.js` → `streamProxy()`
+
+Mọi yêu cầu video (playlist và cả các mảnh `.ts`) đều đi qua một Route duy nhất: `GET /api/videos/stream/:token/*filePath`.
+
+1. **Xác thực Token**: Kiểm tra chữ ký JWT.
+2. **Kiểm tra IP**: So khớp IP người gửi request với IP nhúng trong Token.
+3. **Chống Path Traversal**: Làm sạch `filePath` để ngăn chặn việc đọc trộm file hệ thống.
+4. **CORS Dynamic**: Tự động trả về `Access-Control-Allow-Origin` khớp với domain gọi tới (hỗ trợ chế độ Credentials của Browser).
+5. **Gửi file vật lý**: Nếu mọi thứ hợp lệ, Server mới đọc file từ thư mục ẩn `/public/hls` và gửi về.
+
+---
+
+## 📄 Bước 5: Nội dung file master.m3u8
 
 File `.m3u8` là một **playlist text** mà trình phát video đọc để biết cần tải những gì:
 
@@ -198,12 +196,14 @@ seg_001.ts
 Khi mở trang học và chọn bài, trình duyệt thực hiện:
 
 ```
-① GET /public/hls/38/master.m3u8     ← Tải playlist
-② GET /api/videos/key/38              ← Xin key giải mã (có gắn JWT Token)
-③ GET /public/hls/38/seg_000.ts       ← Tải segment 0 (đã mã hóa)
-④ GET /public/hls/38/seg_001.ts       ← Tải segment 1
-⑤ GET /public/hls/38/seg_002.ts       ← Tải tiếp khi xem đến...
+① GET /api/videos/stream/TOKEN/master.m3u8   ← Tải playlist (Đã xác thực IP)
+② GET /api/videos/key/38                    ← Xin key giải mã (Gắn Authorization Bearer)
+③ GET /api/videos/stream/TOKEN/seg_000.ts   ← Tải segment 0 qua Proxy
+④ GET /api/videos/stream/TOKEN/seg_001.ts   ← Tải segment 1 qua Proxy
+...
 ```
+
+**Lưu ý**: Client **hoàn toàn không biết** thư mục `/public/hls/` tồn tại. Mọi thứ đều nấp sau URL `/api/videos/stream/`.
 
 ### 5.2 Shaka Player gắn JWT Token
 
@@ -304,13 +304,13 @@ Gán vào <video src="blob:..."> để phát
 | Lớp | Cơ chế |
 |---|---|
 | **Mã hóa** | AES-128 (mỗi segment .ts đều bị mã hóa) |
-| **Key Storage** | Key binary lưu trong DB, file key tạm bị xóa ngay |
-| **Key Delivery** | API `/api/videos/key/:id` yêu cầu JWT Token hợp lệ |
-| **Anti-Cache** | Key request gắn timestamp `?t=...` để chống cache |
-| **Anti-Download** | `controlsList="nodownload"`, chuột phải bị chặn |
-| **Anti-Seek** | Logic chống tua nhanh (delta > 1.2s bị reset) |
-| **Precise Tracking** | Hệ thống ghi nhận hoàn thành bài học khi xem đạt **95%** thời lượng. |
-| **Multi-Source** | Hỗ trợ YouTube, Direct MP4 bên cạnh HLS, tự động chuyển đổi Player. |
+| **Proxy Stream** | Không bao giờ lộ đường dẫn vật lý trên disk lên URL. |
+| **Signed URL** | Link video chỉ có hiệu lực với một IP cụ thể (IP Binding). |
+| **Short Expiry** | Token stream tự hết hạn sau 2 giờ. |
+| **Key Delivery** | API `/api/videos/key/:id` yêu cầu JWT Token (Bearer) hợp lệ. |
+| **CORS Secure** | Dynamic Origin Handling cho phép chạy mượt mà trên đa domain mà vẫn bảo mật. |
+| **Anti-Download** | Chặn "Save as", chặn xem cấu trúc file qua URL. |
+| **Precise Tracking** | Ghi nhận hoàn thành bài học ở mức **95-99%**. |
 
 ---
 

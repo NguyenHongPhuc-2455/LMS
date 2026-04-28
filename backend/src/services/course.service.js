@@ -1,5 +1,6 @@
 const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
+const { lessonSelect } = require('./video.service');
 
 const getAllCourses = async (search = '', categoryId = null) => {
     return await prisma.course.findMany({
@@ -34,6 +35,7 @@ const getCourseById = async (courseId) => {
                 ],
                 include: {
                     lessons: {
+                        select: lessonSelect,
                         orderBy: [
                             { order: 'asc' },
                             { title: 'asc' },

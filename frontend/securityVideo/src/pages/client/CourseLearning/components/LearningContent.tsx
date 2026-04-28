@@ -24,6 +24,7 @@ interface LearningContentProps {
     navigate: any;
     id: string;
     user: any;
+    onError?: (error?: any) => void;
 }
 
 export default function LearningContent({
@@ -38,7 +39,8 @@ export default function LearningContent({
     setIsVideoPlaying,
     navigate,
     id,
-    user
+    user,
+    onError
 }: LearningContentProps) {
     return (
         <div className={`${styles.contentWrapper} ${showSidebar ? styles.sidebarVisible : styles.sidebarHidden}`}>
@@ -69,6 +71,7 @@ export default function LearningContent({
                     videoPlayerRef={videoPlayerRef}
                     handleNextLesson={handleNextLesson}
                     setIsVideoPlaying={setIsVideoPlaying}
+                    onError={onError}
                 />
             </div>
 
