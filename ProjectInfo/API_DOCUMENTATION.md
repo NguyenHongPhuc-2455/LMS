@@ -112,8 +112,13 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
-| GET | `/me` | Thông tin tài khoản hiện tại | ✅ |
-| GET | `/` | Danh sách thành viên (Admin - Hỗ trợ tìm kiếm theo Username & Full Name) | ✅ (Admin) |
+| GET | `/profile` | Thông tin tài khoản hiện tại | ✅ |
+| PUT | `/profile` | Cập nhật hồ sơ (Họ tên, Email, Phone, DOB, Gender, Avatar) | ✅ |
+| GET | `/` | Danh sách thành viên (Admin) | ✅ (Admin) |
+| POST | `/` | Tạo mới người dùng (Admin) | ✅ (Admin) |
+| PUT | `/:id` | Cập nhật thông tin người dùng (Admin) | ✅ (Admin) |
+| DELETE | `/:id` | Xóa tài khoản (Admin) | ✅ (Admin) |
+| POST | `/revoke-course` | Thu hồi quyền truy cập khóa học | ✅ (Admin) |
 
 ---
 
@@ -121,9 +126,11 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
-| GET | `/dashboard` | Tổng quan số liệu hệ thống (Users, Courses...) | ✅ (Admin) |
-| GET | `/course-progress/:courseId` | Lấy chi tiết tiến độ học viên của khóa học | ✅ (Admin) |
-| GET | `/my-progress/:courseId` | Lấy tiến độ của học viên hiện tại | ✅ |
+| GET | `/dashboard` | Tổng quan số liệu hệ thống (Admin) | ✅ (Admin) |
+| GET | `/course-progress/:courseId` | Tiến độ toàn bộ học viên của khóa học | ✅ (Admin) |
+| GET | `/my-learning-time?days=N` | Biểu đồ thời gian học gần đây | ✅ |
+| GET | `/my-learning-summary` | Tổng kết giờ học, Streak, Peak Day | ✅ |
+| GET | `/top-learners` | Bảng xếp hạng học viên chăm chỉ | ✅ |
 
 ---
 

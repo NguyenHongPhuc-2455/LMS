@@ -6,6 +6,7 @@ import { statsService } from '../../../services/stats.service';
 import { categoryService, type Category } from '../../../services/category.service';
 import { courseService } from '../../../services/course.service';
 import { Progress, Button as AntButton } from 'antd';
+import dayjs from 'dayjs';
 import styles from './Home.module.scss';
 
 const { Title, Text } = Typography;
@@ -51,8 +52,9 @@ export default function Home() {
                 }
 
                 try {
-                    const weekData = await statsService.getMyLearningTime(7);
-                    setWeeklyStats((weekData || []).slice(-7));
+                    const daysInMonth = dayjs().date(); // Fetch up to today
+                    const weekData = await statsService.getMyLearningTime(daysInMonth);
+                    setWeeklyStats(weekData || []);
                 } catch {
                     setWeeklyStats([]);
                 }
@@ -287,22 +289,47 @@ export default function Home() {
                     </div>
 
                     <div className={styles.streakWidget}>
-                        <Title level={5} style={{ marginBottom: '12px' }}>Streak của bạn</Title>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <Title level={5} style={{ margin: 0 }}>Lịch học tập</Title>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>Tháng {dayjs().format('MM/YYYY')}</Text>
+                        </div>
                         <div className={styles.streakNumberBox}>
-                            <FireOutlined style={{ color: '#C72127', fontSize: '28px' }} />
+                            <FireOutlined style={{ color: '#C72127', fontSize: '32px' }} />
                             <span className={styles.streakCount}>{summary?.currentStreak || 0}</span>
                             <span className={styles.streakText}>ngày liên tiếp</span>
                         </div>
                         <div className={styles.streakDays}>
-                            {weeklyStats.map((stat, idx) => {
-                                const isStudied = stat.hasActivity || stat.minutes > 0;
-                                return (
+                            {(() => {
+                                const now = dayjs();
+                                const startOfMonth = now.startOf('month');
+                                const daysInMonth = now.daysInMonth();
+                                const paddingDays = (startOfMonth.day() + 6) % 7;
+                                const prevMonth = now.subtract(1, 'month');
+                                const prevMonthDays = prevMonth.daysInMonth();
+
+                                const calendar: any[] = [];
+                                for (let i = paddingDays - 1; i >= 0; i--) {
+                                    calendar.push({ type: 'padding', dayNumber: prevMonthDays - i });
+                                }
+                                for (let d = 1; d <= daysInMonth; d++) {
+                                    const dateStr = now.date(d).format('DD/MM');
+                                    const stat = weeklyStats.find(s => s.date === dateStr);
+                                    calendar.push({
+                                        type: 'day',
+                                        dayNumber: d,
+                                        isStudied: stat?.hasActivity || (stat?.minutes || 0) > 0
+                                    });
+                                }
+
+                                return calendar.map((item, idx) => (
                                     <div key={idx} className={styles.streakDayCol}>
-                                        <div className={`${styles.streakDot} ${isStudied ? styles.active : ''}`}></div>
-                                        <div className={styles.streakDayName}>{stat.date ? stat.date.split('/')[0] : ''}</div>
+                                        <div className={`${styles.streakDot} ${item.isStudied ? styles.active : ''} ${item.type === 'padding' ? styles.paddingDot : ''}`}></div>
+                                        <div className={`${styles.streakDayName} ${item.type === 'padding' ? styles.paddingText : ''}`}>
+                                            {item.dayNumber < 10 ? `0${item.dayNumber}` : item.dayNumber}
+                                        </div>
                                     </div>
-                                );
-                            })}
+                                ));
+                            })()}
                         </div>
                     </div>
                 </Col>
