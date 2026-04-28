@@ -11,6 +11,7 @@ interface LessonPlayerProps {
     videoPlayerRef: any;
     handleNextLesson: () => void;
     setIsVideoPlaying: (playing: boolean) => void;
+    onError?: (error?: any) => void;
 }
 
 export default function LessonPlayer({
@@ -18,7 +19,8 @@ export default function LessonPlayer({
     activeLesson,
     videoPlayerRef,
     handleNextLesson,
-    setIsVideoPlaying
+    setIsVideoPlaying,
+    onError
 }: LessonPlayerProps) {
     if (!activeLesson) return null;
 
@@ -56,6 +58,7 @@ export default function LessonPlayer({
                     onEnded={handleNextLesson}
                     onPlay={() => setIsVideoPlaying(true)}
                     onPause={() => setIsVideoPlaying(false)}
+                    onError={onError}
                 />
             );
         }

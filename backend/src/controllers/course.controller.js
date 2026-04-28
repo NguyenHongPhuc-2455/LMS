@@ -2,6 +2,8 @@ const prisma = require('../configs/prisma');
 const courseService = require('../services/course.service');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
+const { generateStreamToken } = require('../utils/streamToken');
+const { lessonSelect } = require('../services/video.service');
 
 exports.getCourses = catchAsync(async (req, res) => {
     const { search, categoryId } = req.query;
@@ -63,15 +65,26 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
     // Transform lessons based on access
     course.sections = course.sections.map(s => ({
         ...s,
-        lessons: s.lessons.map(l => ({
-            ...l,
-            isCompleted: completedLessonIds.includes(l.id),
-            // Hide secure content if no access and not free
-            ...(!hasAccess && !l.is_free && {
-                video_url: null,
-                content: 'Nội dung này đã bị khóa. Vui lòng liên hệ quản trị viên để mở khóa.'
-            })
-        }))
+        lessons: s.lessons.map(l => {
+            let securedVideoUrl = l.video_url;
+
+            if (hasAccess || l.is_free) {
+                if (securedVideoUrl && securedVideoUrl.startsWith('/public/hls/')) {
+                    const token = generateStreamToken(userId, l.id, req.ip);
+                    const fileName = securedVideoUrl.split('/').pop() || 'master.m3u8';
+                    securedVideoUrl = `/api/videos/stream/${token}/${fileName}`;
+                }
+            }
+
+            return {
+                ...l,
+                isCompleted: completedLessonIds.includes(l.id),
+                video_url: (hasAccess || l.is_free) ? securedVideoUrl : null,
+                ...(!hasAccess && !l.is_free && {
+                    content: 'Nội dung này đã bị khóa. Vui lòng liên hệ quản trị viên để mở khóa.'
+                })
+            };
+        })
     }));
 
     // Calculate progress and next lesson
@@ -182,6 +195,7 @@ exports.getSectionDetail = catchAsync(async (req, res) => {
         where: { id: parseInt(id) },
         include: {
             lessons: {
+                select: lessonSelect,
                 orderBy: [
                     { order: 'asc' },
                     { id: 'asc' }

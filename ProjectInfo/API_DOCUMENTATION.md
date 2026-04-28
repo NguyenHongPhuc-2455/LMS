@@ -60,6 +60,7 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | PUT | `/:id` | Cập nhật Metadata bài học | ✅ |
 | POST | `/upload-attachment/:lessonId` | Upload tài liệu đính kèm (PDF) | ✅ (Multer) |
 | GET | `/key/:lessonId` | Lấy Key giải mã AES-128 | ✅ |
+| GET | `/stream/:token/:filePath*` | Proxy Stream an toàn (Bảo mật đường dẫn vật lý, Token giới hạn IP và thời gian) | 🔐 (IP Binding) |
 | POST | `/complete/:id` | Đánh dấu hoàn thành bài học (Yêu cầu đã đăng ký khóa học) | ✅ |
 | DELETE | `/:id` | Xóa video & Dọn dẹp HLS Folder | ✅ |
 

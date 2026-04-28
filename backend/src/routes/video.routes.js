@@ -9,8 +9,14 @@ const lessonValidation = require('../validations/lesson.validation');
 
 const upload = multer({ dest: 'uploads/' });
 
-router.get('/', authMiddleware.verifyToken, videoController.getVideos);
+router.get('/', authMiddleware.verifyToken, authMiddleware.isInstructor, videoController.getVideos);
 router.get('/manifest/:id', authMiddleware.verifyToken, videoController.getManifest);
+router.get(/^\/stream\/([^/]+)\/(.+)$/, (req, res, next) => {
+    // Map regex captures to req.params for controller compatibility
+    req.params.token = req.params[0];
+    req.params.filePath = req.params[1];
+    next();
+}, videoController.streamProxy);
 
 // Quản lý Video/Bài học (Chỉ Instructor/Admin)
 router.post('/upload', authMiddleware.verifyToken, authMiddleware.isInstructor, upload.single('video'), videoController.uploadVideo);

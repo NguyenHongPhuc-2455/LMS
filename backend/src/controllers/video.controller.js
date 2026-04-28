@@ -4,6 +4,7 @@ const prisma = require('../configs/prisma');
 const videoService = require('../services/video.service');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
+const { verifyStreamToken } = require('../utils/streamToken');
 
 /**
  * Upload và bắt đầu xử lý Video
@@ -208,7 +209,8 @@ exports.updateLesson = catchAsync(async (req, res) => {
             order: order !== undefined ? parseInt(order) : undefined,
             duration: duration !== undefined ? parseInt(duration) : undefined,
             anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : undefined
-        }
+        },
+        select: videoService.lessonSelect
     });
 
     res.json({
@@ -239,7 +241,8 @@ exports.uploadAttachment = catchAsync(async (req, res) => {
         data: {
             attachment_url: attachmentUrl,
             attachment_name: req.file.originalname
-        }
+        },
+        select: videoService.lessonSelect
     });
 
     res.json({
@@ -285,4 +288,66 @@ exports.reprobeVideo = catchAsync(async (req, res) => {
         message: 'Re-probe successful',
         data: { duration: updated.duration }
     });
+});
+
+/**
+ * Proxy stream HLS an toàn
+ */
+exports.streamProxy = catchAsync(async (req, res) => {
+    let { token, filePath } = req.params;
+
+    try {
+        // Log ngay lập tức khi nhận request
+        console.log(`[STREAM] Request for token: ${token}, filePath raw:`, filePath);
+
+        // Đảm bảo filePath là string
+        if (Array.isArray(filePath)) {
+            filePath = filePath.join('/');
+        }
+        if (!filePath) {
+            filePath = 'master.m3u8';
+        }
+
+        const payload = verifyStreamToken(token);
+        if (!payload) {
+            console.error(`[STREAM ERROR] Token không hợp lệ: ${token}`);
+            return res.status(403).json({ error: 'Token stream không hợp lệ hoặc đã hết hạn.' });
+        }
+
+        // Kiểm tra IP để chống chia sẻ link giữa các User
+        if (payload.clientIp && payload.clientIp !== req.ip) {
+            console.error(`[STREAM ERROR] IP Mismatch. Token IP: ${payload.clientIp}, Request IP: ${req.ip}`);
+            // Xử lý báo lỗi để Client re-sync Token
+            return res.status(403).json({ error: 'Token này được tạo cho một địa chỉ IP khác. Cần đồng bộ lại.' });
+        }
+
+        const { lessonId } = payload;
+
+        // Làm sạch và build đường dẫn vật lý
+        const safeFilePath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+        const physicalPath = path.resolve(__dirname, '../../public/hls', String(lessonId), safeFilePath);
+
+        console.log(`[STREAM DEBUG] Lesson: ${lessonId}, File: ${safeFilePath}, Path: ${physicalPath}`);
+
+        if (!fs.existsSync(physicalPath)) {
+            console.error(`[STREAM ERROR] Không tìm thấy file: ${physicalPath}`);
+            return res.status(404).send('Video file not found');
+        }
+
+        // Headers cho HLS (CORS & Security)
+        const origin = req.headers.origin;
+        if (origin) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        } else {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+        }
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+
+        return res.sendFile(physicalPath);
+    } catch (err) {
+        console.error('[STREAM FATAL ERROR]', err);
+        return res.status(500).json({ error: err.message });
+    }
 });

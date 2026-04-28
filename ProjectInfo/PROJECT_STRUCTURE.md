@@ -45,8 +45,8 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   │   ├── comment.routes.js      # /api/comments/*
 │   │   │   └── notification.routes.js # /api/notifications/*
 │   │   ├── middlewares/           # Auth, Upload, validate, rateLimiter, Error Handler
-│   │   ├── utils/                 # ApiError, catchAsync, socket.js
-│   │   └── app.js                 # Cấu hình Express
+│   │   ├── utils/                 # ApiError, catchAsync, socket.js, streamToken.js (New)
+│   │   └── app.js                 # Cấu hình Express (Cài đặt Proxy Stream)
 │   ├── scripts/                   # Các script quản lý database, seed dữ liệu
 │   └── server.js                  # Entry point (Port 5000, Socket.io)
 │
@@ -75,8 +75,9 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 ### 1. Luồng xử lý Video Đa nguồn
 `Upload/Import Video` -> `VideoService`:
 - **HLS**: Cắt nhỏ (.ts), mã hóa AES-128, lưu Key vào DB. Bảo mật cao nhất.
+- **Signed URL & Proxy**: Video không phát trực tiếp từ thư mục tĩnh. Mọi request đi qua Proxy `/api/videos/stream` có kiểm tra IP Binding và thời hạn Token (2 giờ).
 - **YouTube/Direct Link**: Lưu URL và thời lượng. Player tự động nhận diện nguồn.
-- **Tracking**: Hệ thống theo dõi chính xác thời gian xem. Khi đạt **95%** thời lượng, bài học tự động được đánh dấu hoàn thành.
+- **Tracking**: Hệ thống theo dõi chính xác thời gian xem. Khi đạt **95-99%** thời lượng, bài học tự động được đánh dấu hoàn thành.
 
 ### 2. Luồng Duyệt yêu cầu & Tiến độ
 `Student Registration` -> `Admin Dashboard` -> `Approval`:

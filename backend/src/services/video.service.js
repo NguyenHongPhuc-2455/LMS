@@ -130,12 +130,33 @@ const processVideoToHLS = async (lessonId, inputPath) => {
     }
 };
 
+// Danh sách các trường an toàn của bài học (Không bao gồm hls_key, hls_iv, source_url)
+const lessonSelect = {
+    id: true,
+    section_id: true,
+    title: true,
+    type: true,
+    content: true,
+    video_url: true,
+    duration: true,
+    order: true,
+    is_free: true,
+    anti_seek: true,
+    attachment_url: true,
+    attachment_name: true
+};
+
 /**
  * Lấy danh sách video
  */
 const getVideos = async () => {
     return await prisma.lesson.findMany({
-        include: { section: { include: { course: true } } }
+        select: {
+            ...lessonSelect,
+            section: {
+                include: { course: true }
+            }
+        }
     });
 };
 
@@ -263,5 +284,6 @@ module.exports = {
     getVideoKey,
     deleteVideoFiles,
     ensureHLS,
-    getDuration
+    getDuration,
+    lessonSelect
 };

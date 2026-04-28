@@ -10,13 +10,14 @@ interface VideoPlayerProps {
     onEnded?: () => void;
     onPlay?: () => void;
     onPause?: () => void;
+    onError?: (error?: any) => void;
 }
 
 export interface VideoPlayerRef {
     reset: () => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause, onError }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
@@ -128,6 +129,15 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         playerRef.current = player;
         player.attach(video);
 
+        // Lắng nghe lỗi từ Shaka (đạc biệt lỗi 403 do sai IP)
+        player.addEventListener('error', (event: any) => {
+            const e = event.detail;
+            console.error('❌ Shaka Event Error:', e);
+            if (e.code === shaka.util.Error.Code.BAD_HTTP_STATUS) {
+                if (onError) onError(e);
+            }
+        });
+
         player.getNetworkingEngine()?.registerRequestFilter((type, request) => {
             const uri = request.uris[0];
             const isInternal = uri.startsWith('http://localhost:5000') || uri.startsWith('/');
@@ -169,7 +179,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
                     }
                 } catch (e: any) {
                     if (isStillMounted && e.code !== shaka.util.Error.Code.LOAD_INTERRUPTED) {
-                        console.error('❌ Shaka Error:', e);
+                        console.error('❌ Shaka Error on load:', e);
+                        if (e.code === shaka.util.Error.Code.BAD_HTTP_STATUS) {
+                            if (onError) onError(e);
+                        }
                     }
                 }
             }
