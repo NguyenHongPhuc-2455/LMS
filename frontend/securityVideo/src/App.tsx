@@ -34,6 +34,7 @@ const CourseRequestManagement = lazy(() => import('./pages/admin/CourseRequestMa
 const ProgramManagement = lazy(() => import('./pages/admin/ProgramManagement/ProgramManagement'));
 const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement/CategoryManagement'));
 const CourseProgress = lazy(() => import('./pages/admin/CourseProgress/CourseProgress'));
+const BannerManagement = lazy(() => import('./pages/admin/BannerManagement/BannerManagement'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -102,6 +103,7 @@ function App() {
                 <Route path="programs" element={<ProgramManagement />} />
                 <Route path="categories" element={<CategoryManagement />} />
                 <Route path="progress" element={<CourseProgress />} />
+                <Route path="banners" element={<BannerManagement />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

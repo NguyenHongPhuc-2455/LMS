@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 
 exports.uploadImage = async (req, res) => {
+    console.log('[DEBUG] Uploading image:', req.file?.originalname);
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Vui lòng chọn ảnh' });

@@ -9,7 +9,8 @@ import {
     ApartmentOutlined,
     CheckOutlined,
     LineChartOutlined,
-    TagsOutlined
+    TagsOutlined,
+    PictureOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
@@ -116,6 +117,11 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
                     )}
                 </Space>
             ),
+        },
+        {
+            key: '/admin/banners',
+            icon: <PictureOutlined />,
+            label: 'Quản lý Banner Home',
         }
     ];
 

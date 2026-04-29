@@ -6,7 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 const videoRoutes = require('./routes/video.routes');
 const courseRoutes = require('./routes/course.routes');
 const userRoutes = require('./routes/user.routes');
-const courseRequestRoutes = require('./routes/courseRequest.routes');
+const heroBannerRoutes = require('./routes/heroBanner.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const statsRoutes = require('./routes/stats.routes');
 
@@ -17,7 +17,7 @@ const programRoutes = require('./routes/program.routes');
 const programRequestRoutes = require('./routes/programRequest.routes');
 const sectionRoutes = require('./routes/section.routes');
 const categoryRoutes = require('./routes/category.routes');
-
+const courseRequestRoutes = require('./routes/courseRequest.routes');
 
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
@@ -26,16 +26,11 @@ const app = express();
 const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true,
+    optionsSuccessStatus: 204
 }));
 
 app.use(express.json());
@@ -57,7 +52,7 @@ app.use('/public', express.static(path.join(__dirname, '../public'), {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
 
-        // Đặc trị: Một số trình duyệt khó tính cần định dạng tệp thô nếu là file .key
+        // Đặc trị: Một số trình duyệt khó tính cần định dạng thô nếu là file .key
         if (path.endsWith('.key')) {
             res.setHeader('Content-Type', 'application/octet-stream');
         }
@@ -80,6 +75,7 @@ app.use('/api/programs', programRoutes);
 app.use('/api/program-requests', programRequestRoutes);
 app.use('/api/sections', sectionRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/hero-banners', heroBannerRoutes);
 
 
 // Centralized Error Handling
