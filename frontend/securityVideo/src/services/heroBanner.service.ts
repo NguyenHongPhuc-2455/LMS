@@ -1,9 +1,4 @@
-import axios from 'axios';
-const API_URL = 'http://localhost:5000/api/hero-banners';
-
-const getAuthHeader = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-});
+import api from './api';
 
 export interface HeroBanner {
     id: number;
@@ -20,22 +15,22 @@ export interface HeroBanner {
 
 export const heroBannerService = {
     getAll: async (): Promise<HeroBanner[]> => {
-        const response = await axios.get(API_URL);
+        const response = await api.get('/hero-banners');
         return response.data;
     },
     getAllAdmin: async (): Promise<HeroBanner[]> => {
-        const response = await axios.get(`${API_URL}/admin`, getAuthHeader());
+        const response = await api.get('/hero-banners/admin');
         return response.data;
     },
     create: async (data: Partial<HeroBanner>): Promise<HeroBanner> => {
-        const response = await axios.post(API_URL, data, getAuthHeader());
+        const response = await api.post('/hero-banners', data);
         return response.data;
     },
     update: async (id: number, data: Partial<HeroBanner>): Promise<HeroBanner> => {
-        const response = await axios.put(`${API_URL}/${id}`, data, getAuthHeader());
+        const response = await api.put(`/hero-banners/${id}`, data);
         return response.data;
     },
     delete: async (id: number): Promise<void> => {
-        await axios.delete(`${API_URL}/${id}`, getAuthHeader());
+        await api.delete(`/hero-banners/${id}`);
     }
 };

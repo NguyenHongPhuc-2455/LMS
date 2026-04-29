@@ -1,6 +1,4 @@
 :global {
-
-    /* Ghi đè để nút phân trang luôn sáng và bấm được cho vòng lặp vô hạn */
     .ant-pagination-prev.ant-pagination-disabled,
     .ant-pagination-next.ant-pagination-disabled {
         cursor: pointer;
