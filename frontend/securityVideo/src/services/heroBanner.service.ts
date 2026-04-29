@@ -15,11 +15,16 @@ export interface HeroBanner {
     stat_value?: string;
     color_code?: string;
     order: number;
+    is_active: boolean;
 }
 
 export const heroBannerService = {
     getAll: async (): Promise<HeroBanner[]> => {
         const response = await axios.get(API_URL);
+        return response.data;
+    },
+    getAllAdmin: async (): Promise<HeroBanner[]> => {
+        const response = await axios.get(`${API_URL}/admin`, getAuthHeader());
         return response.data;
     },
     create: async (data: Partial<HeroBanner>): Promise<HeroBanner> => {

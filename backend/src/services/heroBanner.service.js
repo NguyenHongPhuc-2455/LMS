@@ -8,6 +8,12 @@ const getAllActiveBanners = async () => {
     });
 };
 
+const getAllBanners = async () => {
+    return await prisma.heroBanner.findMany({
+        orderBy: { order: 'asc' }
+    });
+};
+
 const createBanner = async (data) => {
     return await prisma.heroBanner.create({
         data
@@ -29,6 +35,7 @@ const deleteBanner = async (id) => {
 
 module.exports = {
     getAllActiveBanners,
+    getAllBanners,
     createBanner,
     updateBanner,
     deleteBanner

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Space, Typography } from 'antd';
-import { 
-    BookOutlined, 
-    TrophyOutlined, 
-    FireOutlined, 
+import {
+    BookOutlined,
+    TrophyOutlined,
+    FireOutlined,
     FlagOutlined,
     LeftOutlined,
     RightOutlined,
@@ -45,7 +45,7 @@ export default function HeroSection() {
         const handleResize = () => setIsMobile(window.innerWidth < 992);
         handleResize();
         window.addEventListener('resize', handleResize);
-        
+
         let timer: any;
         if (!isDragging && banners.length > 0) {
             timer = setInterval(() => {
@@ -91,7 +91,7 @@ export default function HeroSection() {
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
         // Prevent default browser drag behavior
         if (e.type === 'mousedown') e.preventDefault();
-        
+
         setIsDragging(true);
         const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
         setStartX(x);
@@ -114,7 +114,6 @@ export default function HeroSection() {
         <section className={styles.heroContainer}>
             <div className={styles.heroContent}>
                 <div className={styles.leftCol}>
-                    <div className={styles.badge}>Hệ thống học tập nội bộ</div>
                     <Title level={1} className={styles.mainTitle}>
                         Nâng cao kỹ năng — <br />Phát triển sự nghiệp
                     </Title>
@@ -122,7 +121,7 @@ export default function HeroSection() {
                         RitaVo eLearning cung cấp nền tảng học tập hiện đại, giúp cán bộ nhân viên <br />
                         nâng cao năng lực chuyên môn và thăng tiến trong công việc.
                     </Text>
-                    
+
                     <div className={styles.ctaGroup}>
                         <Button type="primary" size="large" className={styles.primaryBtn}>
                             Bắt đầu học ngay
@@ -152,34 +151,34 @@ export default function HeroSection() {
 
                 <div className={styles.rightCol}>
                     <div className={styles.carouselWrapper}>
-                        <div 
+                        <div
                             className={styles.scene}
                             onMouseDown={handleDragStart}
                             onTouchStart={handleDragStart}
                         >
-                            <div 
+                            <div
                                 className={styles.carousel}
-                                style={{ 
+                                style={{
                                     transform: `rotateY(${rotation}deg)`,
                                     transition: isDragging ? 'none' : 'transform 0.9s cubic-bezier(0.4, 0, 0.2, 1)',
                                     cursor: isDragging ? 'grabbing' : 'grab'
                                 }}
                             >
                                 {banners.map((item, idx) => (
-                                    <div 
-                                        key={item.id} 
+                                    <div
+                                        key={item.id}
                                         className={styles.carouselCell}
-                                        style={{ 
+                                        style={{
                                             background: item.color_code || '#C8102E',
                                             transform: `rotateY(${idx * 90}deg) translateZ(180px)`
                                         }}
                                     >
                                         {item.image_url ? (
                                             <div className={styles.imageCard}>
-                                                <img 
-                                                    src={item.image_url} 
-                                                    alt={item.title} 
-                                                    className={styles.fullImage} 
+                                                <img
+                                                    src={item.image_url}
+                                                    alt={item.title}
+                                                    className={styles.fullImage}
                                                     draggable={false}
                                                 />
                                                 {/* Optional: Overlay title/stat if desired, but user asked for "only image" */}
@@ -202,8 +201,8 @@ export default function HeroSection() {
                             <button onClick={prevSlide} className={styles.navBtn} aria-label="Previous"><LeftOutlined /></button>
                             <div className={styles.indicators}>
                                 {banners.map((_, idx) => (
-                                    <span 
-                                        key={idx} 
+                                    <span
+                                        key={idx}
                                         className={`${styles.dot} ${activeIndex === idx ? styles.activeDot : ''}`}
                                         onClick={() => setActiveIndex(idx)}
                                     />
@@ -212,7 +211,7 @@ export default function HeroSection() {
                             <button onClick={nextSlide} className={styles.navBtn} aria-label="Next"><RightOutlined /></button>
                         </div>
                     </div>
-                    
+
                     <div className={styles.backgroundDecoration}>
                         <div className={styles.blob1} />
                         <div className={styles.blob2} />

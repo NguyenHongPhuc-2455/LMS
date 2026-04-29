@@ -103,6 +103,11 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
             label: 'Quản lý học viên',
         },
         {
+            key: '/admin/banners',
+            icon: <PictureOutlined />,
+            label: 'Quản lý Banner Home',
+        },
+        {
             key: '/admin/requests',
             icon: <CheckOutlined />,
             label: (
@@ -117,11 +122,6 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
                     )}
                 </Space>
             ),
-        },
-        {
-            key: '/admin/banners',
-            icon: <PictureOutlined />,
-            label: 'Quản lý Banner Home',
         }
     ];
 

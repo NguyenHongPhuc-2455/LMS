@@ -9,6 +9,15 @@ const getBanners = async (req, res) => {
     }
 };
 
+const getAdminBanners = async (req, res) => {
+    try {
+        const banners = await heroBannerService.getAllBanners();
+        res.json(banners);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 const createBanner = async (req, res) => {
     try {
         const banner = await heroBannerService.createBanner(req.body);
@@ -40,6 +49,7 @@ const deleteBanner = async (req, res) => {
 
 module.exports = {
     getBanners,
+    getAdminBanners,
     createBanner,
     updateBanner,
     deleteBanner

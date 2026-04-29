@@ -16,7 +16,7 @@ export default function BannerManagement() {
     const fetchBanners = async () => {
         setLoading(true);
         try {
-            const data = await heroBannerService.getAll();
+            const data = await heroBannerService.getAllAdmin();
             setBanners(data);
         } catch (error) {
             message.error('Không thể tải danh sách banner');
@@ -73,6 +73,16 @@ export default function BannerManagement() {
         });
     };
 
+    const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+        try {
+            await heroBannerService.update(id, { is_active: !currentStatus });
+            message.success('Cập nhật trạng thái thành công');
+            fetchBanners();
+        } catch (error) {
+            message.error('Cập nhật trạng thái thất bại');
+        }
+    };
+
     const handleOk = async () => {
         try {
             const values = await form.validateFields();
@@ -123,8 +133,8 @@ export default function BannerManagement() {
             title: 'Trạng thái',
             dataIndex: 'is_active',
             key: 'is_active',
-            render: (active: boolean) => (
-                <Switch checked={active} disabled />
+            render: (active: boolean, record: HeroBanner) => (
+                <Switch checked={active} onChange={() => handleToggleStatus(record.id, active)} />
             )
         },
         {

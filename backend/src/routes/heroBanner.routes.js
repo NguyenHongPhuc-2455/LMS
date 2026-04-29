@@ -7,6 +7,7 @@ const { verifyToken, isAdmin } = require('../middlewares/auth.middleware');
 router.get('/', heroBannerController.getBanners);
 
 // Admin routes to manage banners
+router.get('/admin', verifyToken, isAdmin, heroBannerController.getAdminBanners);
 router.post('/', verifyToken, isAdmin, heroBannerController.createBanner);
 router.put('/:id', verifyToken, isAdmin, heroBannerController.updateBanner);
 router.delete('/:id', verifyToken, isAdmin, heroBannerController.deleteBanner);
