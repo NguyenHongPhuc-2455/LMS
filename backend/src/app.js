@@ -23,7 +23,7 @@ const { globalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost', 'http://[IP_ADDRESS]'];
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost', 'http://[IP_ADDRESS]', 'https://securityvideo-web.onrender.com'];
 
 app.use(cors({
     origin: allowedOrigins,
