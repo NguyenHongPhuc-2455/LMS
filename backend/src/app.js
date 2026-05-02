@@ -23,13 +23,15 @@ const { globalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost', 'http://[IP_ADDRESS]', 'https://securityvideo-web.onrender.com'];
 
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, curl requests)
         if (!origin) return callback(null, true);
-        
+
         // Allow if origin is in the allowed list, or if it's a railway app, or if it matches the FRONTEND_URL env var
         if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.up.railway.app') || origin === process.env.FRONTEND_URL) {
             callback(null, true);
