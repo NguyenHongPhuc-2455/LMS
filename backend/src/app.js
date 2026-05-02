@@ -26,7 +26,17 @@ const app = express();
 const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost', 'http://[IP_ADDRESS]', 'https://securityvideo-web.onrender.com'];
 
 app.use(cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Allow if origin is in the allowed list, or if it's a railway app, or if it matches the FRONTEND_URL env var
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.up.railway.app') || origin === process.env.FRONTEND_URL) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     credentials: true,
@@ -42,7 +52,7 @@ app.use(globalLimiter);
 app.use('/public', express.static(path.join(__dirname, '../public'), {
     setHeaders: (res, path, stat) => {
         const origin = res.req.headers.origin;
-        if (allowedOrigins.includes(origin)) {
+        if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin === process.env.FRONTEND_URL)) {
             res.setHeader('Access-Control-Allow-Origin', origin);
         }
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST, PUT, DELETE, PATCH');
