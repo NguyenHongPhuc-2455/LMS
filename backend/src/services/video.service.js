@@ -45,8 +45,7 @@ const processVideoToHLS = async (lessonId, inputPath) => {
         const duration = Math.round(result.duration || 0);
         
         // Tạo HLS URL (Cloudinary tự động sinh ra khi thay đổi extension)
-        const video_url = result.secure_url.replace('/upload/', '/upload/sp_hd/').replace(/\.[^/.]+$/, ".m3u8");
-
+        const video_url = result.secure_url;
         await prisma.lesson.update({
             where: { id: lessonId },
             data: {
