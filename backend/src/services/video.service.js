@@ -31,7 +31,7 @@ const processVideoToHLS = async (lessonId, inputPath) => {
     try {
         processingLessons.add(lessonId);
 
-        console.log(`Uploading Video to Cloudinary: Lesson ${lessonId}`);
+        console.log(`Uploading & Transcoding Video to Cloudinary: Lesson ${lessonId}`);
         const result = await cloudinary.uploader.upload_large(inputPath, {
             resource_type: 'video',
             folder: 'security_video_lessons',
@@ -39,13 +39,17 @@ const processVideoToHLS = async (lessonId, inputPath) => {
             eager: [
                 { streaming_profile: 'hd', format: 'm3u8' }
             ],
-            eager_async: true
+            eager_async: false // Đợi Cloudinary băm HLS xong mới trả kết quả về
         });
 
         const duration = Math.round(result.duration || 0);
         
-        // Tạo HLS URL (Cloudinary tự động sinh ra khi thay đổi extension)
-        const video_url = result.secure_url;
+        // Lấy URL HLS (.m3u8) từ mảng eager thay vì URL MP4 gốc
+        let video_url = result.secure_url;
+        if (result.eager && result.eager.length > 0) {
+            video_url = result.eager[0].secure_url;
+        }
+
         await prisma.lesson.update({
             where: { id: lessonId },
             data: {
@@ -60,7 +64,7 @@ const processVideoToHLS = async (lessonId, inputPath) => {
             fs.unlinkSync(inputPath);
         }
 
-        console.log(`Video ${lessonId} uploaded to Cloudinary successfully.`);
+        console.log(`Video ${lessonId} processed and saved to DB successfully. URL: ${video_url}`);
         processingLessons.delete(lessonId);
     } catch (error) {
         console.error('Video Service Error (Cloudinary):', error);
