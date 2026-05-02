@@ -26,7 +26,7 @@ export default function Login() {
                 navigate('/course');
             }
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'username hoặc mật khẩu không đúng');
+            message.error(error.response?.data?.message || error.response?.data?.error || 'username hoặc mật khẩu không đúng');
         } finally {
             setLoading(false);
         }

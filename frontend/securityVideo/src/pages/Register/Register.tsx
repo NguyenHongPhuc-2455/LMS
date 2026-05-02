@@ -19,7 +19,7 @@ export default function Register() {
             message.success('Ghi danh thành công! Mời bạn đăng nhập');
             navigate('/login');
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi đăng ký tài khoản');
+            message.error(error.response?.data?.message || error.response?.data?.error || 'Lỗi đăng ký tài khoản');
         } finally {
             setLoading(false);
         }
