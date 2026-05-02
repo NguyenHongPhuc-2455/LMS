@@ -7,10 +7,22 @@ const userSockets = new Map(); // Lưu trữ mapping giữa userId và socketId
  * Khởi tạo Socket.io
  */
 exports.init = (server) => {
+    // Danh sách origin được phép (thêm FRONTEND_URL từ env để hỗ trợ production)
+    const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://localhost'
+    ];
+    if (process.env.FRONTEND_URL) {
+        allowedOrigins.push(process.env.FRONTEND_URL);
+    }
+
     io = new Server(server, {
         cors: {
-            origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost'],
-            methods: ['GET', 'POST']
+            origin: allowedOrigins,
+            methods: ['GET', 'POST'],
+            credentials: true
         }
     });
 
