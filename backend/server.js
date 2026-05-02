@@ -17,6 +17,19 @@ process.on('unhandledRejection', (reason) => {
 const http = require('http');
 const app = require('./src/app');
 const socketUtils = require('./src/utils/socket');
+const prisma = require('./src/configs/prisma');
+
+// Fix PostgreSQL sequences automatically on startup
+async function fixPostgresSequences() {
+    try {
+        await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('"roles"', 'id'), coalesce(max(id), 0) + 1, false) FROM "roles";`);
+        await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('"users"', 'id'), coalesce(max(id), 0) + 1, false) FROM "users";`);
+        console.log('✅ PostgreSQL sequences synced successfully');
+    } catch (err) {
+        console.error('⚠️ Could not sync sequences (ignore if not using PostgreSQL):', err.message);
+    }
+}
+fixPostgresSequences();
 
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
