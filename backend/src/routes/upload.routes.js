@@ -6,22 +6,19 @@ const fs = require('fs');
 const uploadController = require('../controllers/upload.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
-// Cấu hình lưu trữ
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const dir = 'public/thumbnails';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../configs/cloudinary.config');
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'security_video_thumbnails',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+        public_id: (req, file) => 'thumb-' + Date.now(),
     },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'thumb-' + uniqueSuffix + path.extname(file.originalname));
-    }
 });
 
-const upload = multer({
+const upload = multer({ 
     storage: storage,
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {

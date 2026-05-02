@@ -8,7 +8,6 @@ const validate = require('../middlewares/validate');
 const lessonValidation = require('../validations/lesson.validation');
 
 const upload = multer({ dest: 'uploads/' });
-
 router.get('/', authMiddleware.verifyToken, authMiddleware.isInstructor, videoController.getVideos);
 router.get('/manifest/:id', authMiddleware.verifyToken, videoController.getManifest);
 router.get(/^\/stream\/([^/]+)\/(.+)$/, (req, res, next) => {

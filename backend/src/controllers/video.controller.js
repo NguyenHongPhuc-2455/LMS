@@ -169,10 +169,15 @@ exports.getManifest = catchAsync(async (req, res) => {
 
     // Đảm bảo HLS đã sẵn sàng
     const isReady = await videoService.ensureHLS(id);
+    
+    const lesson = await prisma.lesson.findUnique({
+        where: { id: parseInt(id) },
+        select: { video_url: true }
+    });
 
-    // Nếu chưa sẵn sàng ngay lập tức (đang băm ngầm), 
-    // lý tưởng nhất là trả về loading hoặc một list trống.
-    // Tuy nhiên FFmpeg băm khá nhanh master.m3u8, ta sẽ đợi một chút hoặc serve trực tiếp.
+    if (lesson && lesson.video_url && lesson.video_url.includes('cloudinary')) {
+        return res.redirect(lesson.video_url);
+    }
 
     const manifestPath = path.join(__dirname, `../../public/hls/${id}/master.m3u8`);
 
