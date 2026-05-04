@@ -88,12 +88,15 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
 
                     {/* Cột phải */}
                     <Col span={12}>
-                        <Form.Item label="Hình ảnh khóa học (Thumbnail)">
+                        <Form.Item name="thumbnail" label="Hình ảnh khóa học (Thumbnail)">
                             <Space direction="vertical" className={styles.fullWidth} style={{ width: '100%' }}>
                                 <Input
                                     placeholder="Dán URL ảnh hoặc chọn file"
                                     value={thumbUrl}
-                                    onChange={(e) => setThumbUrl(e.target.value)}
+                                    onChange={(e) => {
+                                        setThumbUrl(e.target.value);
+                                        form.setFieldsValue({ thumbnail: e.target.value });
+                                    }}
                                     suffix={
                                         <Upload
                                             beforeUpload={(file) => {

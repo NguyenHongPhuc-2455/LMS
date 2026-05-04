@@ -68,7 +68,7 @@ export default function CourseManagement() {
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         try {
-            let finalThumbnail = values.thumbnail;
+            let finalThumbnail = values.thumbnail; // Lấy URL từ ô input nếu có
 
             if (thumbFile) {
                 const formData = new FormData();

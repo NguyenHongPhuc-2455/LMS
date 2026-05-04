@@ -24,5 +24,13 @@ export const videoService = {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         return response.data;
+    },
+    /**
+     * Làm mới token stream trước khi hết hạn (token sống 5 phút)
+     * @returns videoUrl mới với token mới
+     */
+    refreshVideoToken: async (lessonId: number): Promise<string> => {
+        const response = await api.get(`/videos/refresh-stream/${lessonId}`);
+        return response.data.videoUrl;
     }
 };

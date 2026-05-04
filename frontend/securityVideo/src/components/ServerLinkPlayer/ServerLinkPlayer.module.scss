@@ -16,3 +16,9 @@
     object-fit: contain;
     outline: none;
 }
+
+.antiSeek {
+    :global(.vjs-progress-control) {
+        pointer-events: none !important;
+    }
+}

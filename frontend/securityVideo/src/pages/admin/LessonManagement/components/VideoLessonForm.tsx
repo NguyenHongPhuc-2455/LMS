@@ -84,18 +84,24 @@ export default function VideoLessonForm({
                             <FileText size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
                             Tài liệu đính kèm (PDF - Tùy chọn)
                         </Text>
-                        <Upload
-                            beforeUpload={(file) => {
-                                setAttachmentFile(file);
-                                return false;
-                            }}
-                            showUploadList={false}
-                            accept="application/pdf"
-                        >
-                            <Button icon={<UploadCloud size={16} />} block style={{ height: 45, borderRadius: 8 }}>
-                                {attachmentFile ? attachmentFile.name : "Chọn tệp PDF"}
-                            </Button>
-                        </Upload>
+                        <Form.Item name="attachment_url" label="Link tài liệu (GG Drive, OneDrive...)">
+                            <Input 
+                                placeholder="Dán link tài liệu tại đây" 
+                                suffix={
+                                    <Upload
+                                        beforeUpload={(file) => {
+                                            setAttachmentFile(file);
+                                            return false;
+                                        }}
+                                        showUploadList={false}
+                                        accept="application/pdf"
+                                    >
+                                        <UploadCloud size={18} style={{ cursor: 'pointer', color: '#6366f1' }} />
+                                    </Upload>
+                                }
+                            />
+                        </Form.Item>
+                        {attachmentFile && <Text type="success" style={{ fontSize: 12 }}>✓ Đã chọn file: {attachmentFile.name}</Text>}
                     </div>
 
                     {!editingId && (

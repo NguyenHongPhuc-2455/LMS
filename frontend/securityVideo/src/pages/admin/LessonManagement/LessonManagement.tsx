@@ -203,6 +203,9 @@ export default function LessonManagement() {
                     if (totalDuration > 0) {
                         formData.append('duration', String(totalDuration));
                     }
+                    if (values.attachment_url) {
+                        formData.append('attachment_url', values.attachment_url);
+                    }
 
                     if (videoSourceType === 'UPLOAD') {
                         formData.append('video', selectedFile!);
@@ -217,11 +220,22 @@ export default function LessonManagement() {
                     message.success({ content: videoSourceType === 'UPLOAD' ? 'Video đang được băm bảo mật...' : 'Đã tải lên thành công!', key: 'hls-up' });
                 }
 
-                if (attachmentFile && lessonId) {
-                    const attachData = new FormData();
-                    attachData.append('attachment', attachmentFile);
-                    await videoService.uploadAttachment(lessonId, attachData);
-                    message.success('Đã đính kèm tài liệu!');
+                if (lessonId) {
+                    // Nếu có file đính kèm mới -> Upload lên server/cloud
+                    if (attachmentFile) {
+                        const attachData = new FormData();
+                        attachData.append('attachment', attachmentFile);
+                        await videoService.uploadAttachment(lessonId, attachData);
+                        message.success('Đã tải lên tài liệu mới!');
+                    } 
+                    // Nếu không có file mới nhưng có nhập URL (như GG Drive) -> Cập nhật URL vào DB
+                    else if (values.attachment_url) {
+                        await videoService.update(lessonId, {
+                            attachment_url: values.attachment_url,
+                            attachment_name: values.attachment_url.split('/').pop()?.substring(0, 30) || 'Document'
+                        });
+                        message.success('Đã lưu link tài liệu!');
+                    }
                 }
             }
 
@@ -265,7 +279,8 @@ export default function LessonManagement() {
                 section_id: selectedSectionId,
                 duration_min: lesson.duration ? Math.floor(lesson.duration / 60) : 0,
                 duration_sec: lesson.duration ? (lesson.duration % 60) : 0,
-                anti_seek: lesson.anti_seek !== undefined ? lesson.anti_seek : true
+                anti_seek: lesson.anti_seek !== undefined ? lesson.anti_seek : true,
+                attachment_url: lesson.attachment_url
             });
         }
         setIsModalOpen(true);

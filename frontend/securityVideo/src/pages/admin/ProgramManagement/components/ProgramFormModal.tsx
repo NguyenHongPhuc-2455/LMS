@@ -85,12 +85,15 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                     </Col>
                 </Row>
 
-                <Form.Item label="Ảnh bìa">
+                <Form.Item name="thumbnail" label="Ảnh bìa">
                     <Space direction="vertical" style={{ width: '100%' }}>
                         <Input
                             placeholder="Dán URL hoặc upload file"
                             value={thumbUrl}
-                            onChange={e => setThumbUrl(e.target.value)}
+                            onChange={e => {
+                                setThumbUrl(e.target.value);
+                                form.setFieldsValue({ thumbnail: e.target.value });
+                            }}
                             suffix={
                                 <Upload beforeUpload={file => {
                                     setThumbFile(file);

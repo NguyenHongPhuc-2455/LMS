@@ -76,7 +76,7 @@ export default function ProgramManagement() {
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         try {
-            let finalThumbnail = values.thumbnail;
+            let finalThumbnail = values.thumbnail; // Lấy URL từ ô input nếu có
             if (thumbFile) {
                 const fd = new FormData();
                 fd.append('image', thumbFile);

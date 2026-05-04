@@ -12,6 +12,7 @@ export default function BannerManagement() {
     const [editingBanner, setEditingBanner] = useState<HeroBanner | null>(null);
     const [uploading, setUploading] = useState(false);
     const [form] = Form.useForm();
+    const imageUrl = Form.useWatch('image_url', form);
 
     const fetchBanners = async () => {
         setLoading(true);
@@ -202,12 +203,12 @@ export default function BannerManagement() {
                                     listType="picture-card"
                                     className="avatar-uploader"
                                     showUploadList={false}
-                                    action="http://localhost:5000/api/upload/image"
+                                    action={`${import.meta.env.VITE_API_URL}/upload/image`}
                                     headers={{ Authorization: `Bearer ${localStorage.getItem('accessToken')}` }}
                                     onChange={handleUpload}
                                 >
-                                    {form.getFieldValue('image_url') ? (
-                                        <img src={form.getFieldValue('image_url')} alt="banner" style={{ width: '100%' }} />
+                                    {imageUrl ? (
+                                        <img src={imageUrl} alt="banner" style={{ width: '100%' }} />
                                     ) : (
                                         <div>
                                             {uploading ? <LoadingOutlined /> : <PlusOutlined />}
@@ -216,9 +217,9 @@ export default function BannerManagement() {
                                     )}
                                 </Upload>
                                 <Input 
-                                    placeholder="Hoặc dán URL ảnh vào đây" 
+                                    placeholder="Dán URL ảnh vào đây" 
                                     onChange={(e) => form.setFieldsValue({ image_url: e.target.value })}
-                                    value={form.getFieldValue('image_url')}
+                                    value={imageUrl}
                                 />
                             </Space>
                         </Form.Item>
