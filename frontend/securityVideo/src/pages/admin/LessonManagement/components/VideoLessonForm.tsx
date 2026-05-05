@@ -70,12 +70,12 @@ export default function VideoLessonForm({
                         name="anti_seek"
                         label="Chống tua video"
                         valuePropName="checked"
+                        initialValue={true}
                         tooltip="Bật để ngăn học viên kéo thanh tua tới nội dung chưa xem"
                     >
                         <Switch
                             checkedChildren="🔒 Bật"
                             unCheckedChildren="🔓 Tắt"
-                            defaultChecked
                         />
                     </Form.Item>
                 </Col>

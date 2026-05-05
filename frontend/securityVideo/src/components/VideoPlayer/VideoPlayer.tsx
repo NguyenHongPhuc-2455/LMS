@@ -107,28 +107,33 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
 
         // --- CHỐNG TUA VIDEO (ANTI-SEEK) ---
         const handleTimeUpdate = () => {
-            if (!antiSeek || isCompletedRef.current || isSeekingRef.current) return;
+            if (isCompletedRef.current || isSeekingRef.current) return;
+
+            const video = videoRef.current;
+            if (!video) return;
 
             const currentTime = video.currentTime;
 
-            // 1. CẬP NHẬT MAX WATCHED TIME
-            if (!video.seeking && currentTime > maxWatchedTimeRef.current) {
-                if (currentTime - maxWatchedTimeRef.current < 2) {
-                    maxWatchedTimeRef.current = currentTime;
+            // 1. LUÔN CẬP NHẬT TIẾN ĐỘ (Để tính hoàn thành bài học)
+            if (!video.seeking) {
+                if (antiSeek) {
+                    // Nếu bật chống tua: Chỉ tăng tiến độ nếu xem bình thường (< 2s jump)
+                    if (currentTime > maxWatchedTimeRef.current && currentTime - maxWatchedTimeRef.current < 2) {
+                        maxWatchedTimeRef.current = currentTime;
+                    }
+                } else {
+                    // Nếu tắt chống tua: Tiến độ luôn đi theo currentTime (cho phép tua)
+                    if (currentTime > maxWatchedTimeRef.current) {
+                        maxWatchedTimeRef.current = currentTime;
+                    }
                 }
             }
 
-            // 2. GIẬT LẠI (PULL BACK) - Áp dụng cơ chế Hard Lock
-            if (currentTime > maxWatchedTimeRef.current + 1.5) {
+            // 2. CHỈ CHẶN TUA NẾU BẬT ANTI-SEEK
+            if (antiSeek && currentTime > maxWatchedTimeRef.current + 1.5) {
                 isSeekingRef.current = true;
-                
-                // Tạm dừng ngay lập tức để trình duyệt ngừng gửi request segment mới
                 video.pause();
-                
-                // Giật về mốc cũ
                 video.currentTime = maxWatchedTimeRef.current;
-                
-                // Đợi 1s để Shaka ổn định lại toàn bộ trạng thái buffer trước khi cho phép tiếp tục
                 setTimeout(() => {
                     isSeekingRef.current = false;
                     video.play().catch(() => {});
@@ -137,18 +142,29 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         };
 
         const handleSeeking = () => {
-            if (!antiSeek || isCompletedRef.current || isSeekingRef.current) return;
+            if (isCompletedRef.current || isSeekingRef.current) return;
+
+            const video = videoRef.current;
+            if (!video) return;
 
             const currentTime = video.currentTime;
-            if (currentTime > maxWatchedTimeRef.current + 0.5) {
-                isSeekingRef.current = true;
-                video.pause(); // Stop requests immediately
-                video.currentTime = maxWatchedTimeRef.current;
-                
-                setTimeout(() => {
-                    isSeekingRef.current = false;
-                    video.play().catch(() => {});
-                }, 1000);
+
+            if (antiSeek) {
+                // Nếu bật chống tua: Không cho phép tua vượt quá mốc đã xem
+                if (currentTime > maxWatchedTimeRef.current + 1) {
+                    isSeekingRef.current = true;
+                    video.pause();
+                    video.currentTime = maxWatchedTimeRef.current;
+                    setTimeout(() => {
+                        isSeekingRef.current = false;
+                        video.play().catch(() => {});
+                    }, 1000);
+                }
+            } else {
+                // Nếu tắt chống tua: Cập nhật luôn mốc xem mới nhất khi tua xong
+                if (currentTime > maxWatchedTimeRef.current) {
+                    maxWatchedTimeRef.current = currentTime;
+                }
             }
         };
 

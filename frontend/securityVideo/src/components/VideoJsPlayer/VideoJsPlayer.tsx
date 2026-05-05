@@ -165,19 +165,25 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
             });
 
             player.on('timeupdate', () => {
-                if (!antiSeek || isCompletedRef.current || isSeekingRef.current) return;
+                if (isCompletedRef.current || isSeekingRef.current) return;
 
                 const currentTime = player.currentTime();
 
-                // CẬP NHẬT MỐC XEM (Chỉ khi xem bình thường)
-                if (!player.seeking() && currentTime > maxWatchedTimeRef.current) {
-                    if (currentTime - maxWatchedTimeRef.current < 2) {
-                        maxWatchedTimeRef.current = currentTime;
+                // 1. LUÔN CẬP NHẬT TIẾN ĐỘ
+                if (!player.seeking()) {
+                    if (antiSeek) {
+                        if (currentTime > maxWatchedTimeRef.current && currentTime - maxWatchedTimeRef.current < 2) {
+                            maxWatchedTimeRef.current = currentTime;
+                        }
+                    } else {
+                        if (currentTime > maxWatchedTimeRef.current) {
+                            maxWatchedTimeRef.current = currentTime;
+                        }
                     }
                 }
 
-                // GIẬT LẠI NGAY LẬP TỨC NẾU VƯỢT MỐC (Buffer 1s cho an toàn)
-                if (currentTime > maxWatchedTimeRef.current + 1.5) {
+                // 2. CHỈ CHẶN TUA NẾU BẬT ANTI-SEEK
+                if (antiSeek && currentTime > maxWatchedTimeRef.current + 1.5) {
                     isSeekingRef.current = true;
                     player.currentTime(maxWatchedTimeRef.current);
                     setTimeout(() => { isSeekingRef.current = false; }, 100);
@@ -185,15 +191,19 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
             });
 
             player.on('seeking', () => {
-                if (!antiSeek || isCompleted || isSeekingRef.current) return;
+                if (isCompletedRef.current || isSeekingRef.current) return;
 
                 const currentTime = player.currentTime();
-                
-                // Nếu tua tới vượt quá mốc đã xem
-                if (currentTime > maxWatchedTimeRef.current + 1) {
-                    isSeekingRef.current = true;
-                    player.currentTime(maxWatchedTimeRef.current);
-                    setTimeout(() => { isSeekingRef.current = false; }, 100);
+                if (antiSeek) {
+                    if (currentTime > maxWatchedTimeRef.current + 1) {
+                        isSeekingRef.current = true;
+                        player.currentTime(maxWatchedTimeRef.current);
+                        setTimeout(() => { isSeekingRef.current = false; }, 100);
+                    }
+                } else {
+                    if (currentTime > maxWatchedTimeRef.current) {
+                        maxWatchedTimeRef.current = currentTime;
+                    }
                 }
             });
 

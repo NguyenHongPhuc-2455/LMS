@@ -27,7 +27,7 @@ exports.uploadVideo = catchAsync(async (req, res) => {
             content: content || null,
             order: order ? parseInt(order) : 0,
             video_url: video_url || null,
-            anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : true,
+            anti_seek: anti_seek !== undefined ? (anti_seek === 'false' ? false : Boolean(anti_seek)) : true,
             attachment_url: attachment_url || null,
             attachment_name: attachment_url ? 'Document' : null
         }
@@ -112,7 +112,7 @@ exports.updateLesson = catchAsync(async (req, res) => {
             content,
             order: order !== undefined ? parseInt(order) : undefined,
             duration: duration !== undefined ? parseInt(duration) : undefined,
-            anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : undefined,
+            anti_seek: anti_seek !== undefined ? (anti_seek === 'false' ? false : Boolean(anti_seek)) : undefined,
             attachment_url: attachment_url !== undefined ? attachment_url : undefined,
             attachment_name: attachment_name !== undefined ? attachment_name : undefined
         },
