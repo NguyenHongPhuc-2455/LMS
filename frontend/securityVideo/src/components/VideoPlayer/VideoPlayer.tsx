@@ -192,7 +192,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
 
         player.getNetworkingEngine()?.registerRequestFilter((type, request) => {
             const uri = request.uris[0];
-            const isInternal = uri.startsWith('http://localhost:5000') || uri.startsWith('/');
+            const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const isInternal = uri.startsWith(backendUrl) || uri.startsWith('http://localhost:5000') || uri.startsWith('/');
 
             if (isInternal) {
                 const token = localStorage.getItem('accessToken');
