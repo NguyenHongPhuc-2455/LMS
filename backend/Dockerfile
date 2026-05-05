@@ -1,5 +1,5 @@
 # Base image
-FROM node:20-alpine
+FROM node:20.11.1-alpine3.19
 
 # Install ffmpeg and build dependencies for Prisma/Node-gyp if needed
 RUN apk add --no-cache ffmpeg python3 make g++
