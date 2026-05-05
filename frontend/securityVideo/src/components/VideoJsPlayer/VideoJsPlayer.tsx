@@ -12,13 +12,14 @@ interface VideoJsPlayerProps {
     onEnded?: () => void;
     onPlay?: () => void;
     onPause?: () => void;
+    isCompleted?: boolean;
 }
 
 export interface VideoJsPlayerRef {
     reset: () => void;
 }
 
-const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause }, ref) => {
+const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, lessonId, antiSeek = true, isCompleted = false, onEnded, onPlay, onPause }, ref) => {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const playerRef = useRef<any>(null);
@@ -26,6 +27,11 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     const progressIntervalRef = useRef<any>(null);
     const maxWatchedTimeRef = useRef<number>(0);
     const isSeekingRef = useRef<boolean>(false);
+    const isCompletedRef = useRef(isCompleted);
+
+    useEffect(() => {
+        isCompletedRef.current = isCompleted;
+    }, [isCompleted]);
 
     const callbacksRef = useRef({ onEnded, onPlay, onPause });
     const stateRef = useRef({ lessonId });
@@ -48,16 +54,16 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     }));
 
     const startProgressCheck = () => {
-        stopProgressCheck();
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = setInterval(() => {
-            const player = playerRef.current;
-            if (!player || player.paused() || hasTriggeredEndRef.current) return;
+            if (playerRef.current && !isCompletedRef.current) {
+                const currentTime = playerRef.current.currentTime();
+                const duration = playerRef.current.duration();
+                const watchedTime = maxWatchedTimeRef.current;
 
-            const currentTime = player.currentTime();
-            const duration = player.duration();
-
-            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.95) {
-                handleVideoComplete();
+                if (duration > 0 && watchedTime / duration >= 0.95) {
+                    handleVideoComplete();
+                }
             }
         }, 1000);
     };
@@ -70,13 +76,26 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     };
 
     const handleVideoComplete = async () => {
-        if (hasTriggeredEndRef.current) return;
+        // CHỐT CHẶN: Ngăn chặn vòng lặp gọi API nếu đã hoàn thành
+        if (hasTriggeredEndRef.current || isCompletedRef.current) return;
+        
+        hasTriggeredEndRef.current = true;
+        const player = playerRef.current;
+        const duration = player ? player.duration() : 0;
+        const watchedTime = maxWatchedTimeRef.current;
+
+        // Kiểm tra lại một lần nữa cho chắc chắn
+        if (duration > 0 && watchedTime / duration < 0.95) {
+            console.warn('Chưa xem đủ 95% thời lượng thật sự');
+            return;
+        }
+
         hasTriggeredEndRef.current = true;
         stopProgressCheck();
 
         // Tự động dừng video
-        if (playerRef.current) {
-            playerRef.current.pause();
+        if (player) {
+            player.pause();
         }
 
         const currentLessonId = stateRef.current.lessonId;
@@ -118,11 +137,27 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 modestbranding: 1,
                 rel: 0,
                 autoplay: 1
-            } : undefined
+            } : undefined,
+            userActions: {
+                doubleClick: true, // Cho phép double click (logic bên dưới sẽ xử lý nếu chưa xem đủ)
+            }
         };
 
         const player = videojs(videoElement, videoJsOptions, () => {
             playerRef.current = player;
+
+            // Nếu chưa hoàn thành và bật antiSeek thì mới khóa thanh tua
+            if (antiSeek && !isCompleted) {
+                player.addClass('vjs-anti-seek');
+                // Chặn phím mũi tên để tua
+                player.on('keydown', (event: any) => {
+                    if (event.which === 37 || event.which === 39) {
+                        event.preventDefault();
+                    }
+                });
+            } else if (isCompleted) {
+                player.addClass('vjs-completed');
+            }
 
             player.on('play', () => {
                 startProgressCheck();
@@ -130,33 +165,32 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
             });
 
             player.on('timeupdate', () => {
-                if (!antiSeek || isSeekingRef.current) return;
+                if (!antiSeek || isCompletedRef.current || isSeekingRef.current) return;
 
                 const currentTime = player.currentTime();
 
-                // Cập nhật mốc thời gian nếu người dùng xem bình thường
+                // CẬP NHẬT MỐC XEM (Chỉ khi xem bình thường)
                 if (!player.seeking() && currentTime > maxWatchedTimeRef.current) {
                     if (currentTime - maxWatchedTimeRef.current < 2) {
                         maxWatchedTimeRef.current = currentTime;
                     }
                 }
 
-                // Fallback: Nếu vị trí hiện tại nhô lên quá cao (kể cả do click)
-                if (currentTime > maxWatchedTimeRef.current + 2) {
+                // GIẬT LẠI NGAY LẬP TỨC NẾU VƯỢT MỐC (Buffer 1s cho an toàn)
+                if (currentTime > maxWatchedTimeRef.current + 1.5) {
                     isSeekingRef.current = true;
                     player.currentTime(maxWatchedTimeRef.current);
-                    player.play().catch(() => { });
                     setTimeout(() => { isSeekingRef.current = false; }, 100);
                 }
             });
 
             player.on('seeking', () => {
-                if (!antiSeek || isSeekingRef.current) return;
+                if (!antiSeek || isCompleted || isSeekingRef.current) return;
 
                 const currentTime = player.currentTime();
-                const buff = 2; // Cho phép tua sai số 2 giây
-
-                if (currentTime > maxWatchedTimeRef.current + buff) {
+                
+                // Nếu tua tới vượt quá mốc đã xem
+                if (currentTime > maxWatchedTimeRef.current + 1) {
                     isSeekingRef.current = true;
                     player.currentTime(maxWatchedTimeRef.current);
                     setTimeout(() => { isSeekingRef.current = false; }, 100);
@@ -168,7 +202,25 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 callbacksRef.current.onPause?.();
             });
 
-            player.on('ended', () => handleVideoComplete());
+            player.on('ended', () => {
+                const duration = player.duration();
+                const watchedTime = maxWatchedTimeRef.current;
+
+                // Nếu đã hoàn thành bài học từ trước, chỉ cần dừng lại (Dùng Ref để lấy giá trị mới nhất)
+                if (isCompletedRef.current) {
+                    player.pause();
+                    return;
+                }
+
+                // CHỈ HOÀN THÀNH KHI XEM THẬT >= 95%
+                if (duration > 0 && watchedTime / duration >= 0.95) {
+                    handleVideoComplete();
+                } else {
+                    console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự. Không tính hoàn thành.');
+                    player.currentTime(maxWatchedTimeRef.current);
+                    player.play().catch(() => {});
+                }
+            });
         });
 
         return () => {

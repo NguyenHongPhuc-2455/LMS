@@ -97,13 +97,10 @@ function ProgramCard({ program: p, navigate }: { program: Program; navigate: any
             className={styles.programCardItem}
             cover={
                 <div className={styles.cardCoverWrapper}>
-                    {p.thumbnail ? (
-                        <img src={p.thumbnail} alt={p.title} />
-                    ) : (
-                        <div className={styles.emptyThumb}>
-                            <BookOutlined />
-                        </div>
-                    )}
+                    <img 
+                        src={p.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'} 
+                        alt={p.title} 
+                    />
                     <div className={styles.statusBadgeSticky}>
                         <Tag color={p.is_private ? 'purple' : 'green'}>
                             {p.is_private ? 'RIÊNG TƯ' : 'CÔNG KHAI'}

@@ -25,24 +25,29 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost', 'http://[IP_ADDRESS]', 'https://securityvideo-web.onrender.com'];
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL // Thêm domain production vào .env
+];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl requests)
-        if (!origin) return callback(null, true);
-
-        // Allow if origin is in the allowed list, or if it's a railway app, or if it matches the FRONTEND_URL env var
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.up.railway.app') || origin === process.env.FRONTEND_URL) {
+        // Cho phép không có origin (mobile/curl) hoặc nằm trong whitelist hoặc là subdomain railway
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.railway.app')) {
             callback(null, true);
         } else {
+            console.log('CORS Blocked:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     credentials: true,
-    optionsSuccessStatus: 204
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 app.use(express.json());

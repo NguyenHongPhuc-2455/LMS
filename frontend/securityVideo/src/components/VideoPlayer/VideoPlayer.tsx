@@ -11,19 +11,25 @@ interface VideoPlayerProps {
     onPlay?: () => void;
     onPause?: () => void;
     onError?: (error?: any) => void;
+    isCompleted?: boolean;
 }
 
 export interface VideoPlayerRef {
     reset: () => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, antiSeek = true, onEnded, onPlay, onPause, onError }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonId, antiSeek = true, isCompleted = false, onEnded, onPlay, onPause, onError }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const playerRef = useRef<shaka.Player | null>(null);
     const hasTriggeredEndRef = useRef(false);
     const progressIntervalRef = useRef<any>(null);
     const maxWatchedTimeRef = useRef<number>(0);
     const isSeekingRef = useRef<boolean>(false);
+    const isCompletedRef = useRef(isCompleted);
+
+    useEffect(() => {
+        isCompletedRef.current = isCompleted;
+    }, [isCompleted]);
 
     useImperativeHandle(ref, () => ({
         reset: () => {
@@ -39,20 +45,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
 
     // Hàm kiểm tra tiến độ chủ động
     const startProgressCheck = () => {
-        stopProgressCheck();
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = setInterval(() => {
-            const video = videoRef.current;
-            if (!video || video.paused || hasTriggeredEndRef.current) return;
+            if (videoRef.current && !isCompletedRef.current) {
+                const currentTime = videoRef.current.currentTime;
+                const duration = videoRef.current.duration;
+                const watchedTime = maxWatchedTimeRef.current;
 
-            const currentTime = video.currentTime;
-            const duration = video.duration;
-
-            // Chỉ xác nhận hoàn thành nếu:
-            // 1. Duration hợp lệ (> 5s)
-            // 2. Đã xem tối thiểu 5s (tránh lỗi nhảy bài ngay khi load)
-            // 3. Đã xem trên 99% (gần như hết video)
-            if (duration > 5 && currentTime > 5 && currentTime / duration >= 0.95) {
-                handleComplete();
+                if (duration > 0 && watchedTime / duration >= 0.95) {
+                    handleComplete();
+                }
             }
         }, 1000);
     };
@@ -65,14 +67,20 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     };
 
     const handleComplete = async () => {
-        if (hasTriggeredEndRef.current || !lessonId) return;
+        // CHỐT CHẶN: Nếu đã hoàn thành hoặc đang xử lý dở thì DỪNG NGAY.
+        if (hasTriggeredEndRef.current || !lessonId || isCompletedRef.current) return;
+        
+        const video = videoRef.current;
+        const duration = video ? video.duration : 0;
+        const watchedTime = maxWatchedTimeRef.current;
+
+        // RULE: Chỉ hoàn thành khi xem thực đạt 95%
+        if (duration > 0 && watchedTime / duration < 0.95) return;
+
         hasTriggeredEndRef.current = true;
         stopProgressCheck();
 
-        // Tự động dừng video khi hoàn thành
-        if (videoRef.current) {
-            videoRef.current.pause();
-        }
+        if (video) video.pause();
 
         try {
             await contentService.completeLesson(lessonId);
@@ -88,35 +96,59 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
 
         video.addEventListener('contextmenu', (e) => e.preventDefault());
 
+        // Chặn phím tắt để tua (Mũi tên trái/phải)
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (antiSeek && !isCompleted && (e.keyCode === 37 || e.keyCode === 39)) {
+                e.preventDefault();
+                return false;
+            }
+        };
+        video.addEventListener('keydown', handleKeyDown);
+
         // --- CHỐNG TUA VIDEO (ANTI-SEEK) ---
         const handleTimeUpdate = () => {
-            if (!antiSeek || isSeekingRef.current) return;
+            if (!antiSeek || isCompletedRef.current || isSeekingRef.current) return;
 
-            // Cập nhật mốc thời gian nếu người dùng xem bình thường
-            if (!video.seeking && video.currentTime > maxWatchedTimeRef.current) {
-                // Chỉ cập nhật nếu khoảng cách tăng thêm nhỏ (< 2 giây) để chắc chắn không phải đang nhảy cóc
-                if (video.currentTime - maxWatchedTimeRef.current < 2) {
-                    maxWatchedTimeRef.current = video.currentTime;
+            const currentTime = video.currentTime;
+
+            // 1. CẬP NHẬT MAX WATCHED TIME
+            if (!video.seeking && currentTime > maxWatchedTimeRef.current) {
+                if (currentTime - maxWatchedTimeRef.current < 2) {
+                    maxWatchedTimeRef.current = currentTime;
                 }
             }
 
-            // Fallback: nếu bằng cách nào đó currentTime vượt quá maxWatchedTimeRef quá nhiều
-            if (video.currentTime > maxWatchedTimeRef.current + 2) {
+            // 2. GIẬT LẠI (PULL BACK) - Áp dụng cơ chế Hard Lock
+            if (currentTime > maxWatchedTimeRef.current + 1.5) {
                 isSeekingRef.current = true;
+                
+                // Tạm dừng ngay lập tức để trình duyệt ngừng gửi request segment mới
+                video.pause();
+                
+                // Giật về mốc cũ
                 video.currentTime = maxWatchedTimeRef.current;
-                // Phát lại nếu đang bị dừng
-                video.play().catch(() => { });
-                setTimeout(() => { isSeekingRef.current = false; }, 100);
+                
+                // Đợi 1s để Shaka ổn định lại toàn bộ trạng thái buffer trước khi cho phép tiếp tục
+                setTimeout(() => {
+                    isSeekingRef.current = false;
+                    video.play().catch(() => {});
+                }, 1000);
             }
         };
 
         const handleSeeking = () => {
-            if (!antiSeek || isSeekingRef.current) return;
+            if (!antiSeek || isCompletedRef.current || isSeekingRef.current) return;
 
-            if (video.currentTime > maxWatchedTimeRef.current + 2) {
+            const currentTime = video.currentTime;
+            if (currentTime > maxWatchedTimeRef.current + 0.5) {
                 isSeekingRef.current = true;
+                video.pause(); // Stop requests immediately
                 video.currentTime = maxWatchedTimeRef.current;
-                setTimeout(() => { isSeekingRef.current = false; }, 100);
+                
+                setTimeout(() => {
+                    isSeekingRef.current = false;
+                    video.play().catch(() => {});
+                }, 1000);
             }
         };
 
@@ -127,6 +159,26 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
 
         const player = new shaka.Player();
         playerRef.current = player;
+        
+        // Cấu hình Shaka để mượt mà hơn khi network không ổn định
+        player.configure({
+            streaming: {
+                bufferingGoal: 30, // Tăng buffer lên 30s để xem mượt hơn
+                rebufferingGoal: 2,
+                bufferBehind: 30,
+                retryParameters: {
+                    maxAttempts: 3,
+                    baseDelay: 1000,
+                    backoffFactor: 2,
+                }
+            },
+            manifest: {
+                retryParameters: {
+                    maxAttempts: 3,
+                }
+            }
+        });
+
         player.attach(video);
 
         // Lắng nghe lỗi từ Shaka (đạc biệt lỗi 403 do sai IP)
@@ -154,6 +206,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         });
 
         return () => {
+            video.removeEventListener('keydown', handleKeyDown);
             video.removeEventListener('timeupdate', handleTimeUpdate);
             video.removeEventListener('seeking', handleSeeking);
             stopProgressCheck();
@@ -193,7 +246,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     }, [src]);
 
     return (
-        <div className={styles.videoPlayerContainer}>
+        <div className={`${styles.videoPlayerContainer} ${antiSeek && !isCompleted ? 'anti-seek-native' : isCompleted ? 'completed-native' : ''}`}>
             <video
                 ref={videoRef}
                 controls
@@ -208,8 +261,35 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
                     stopProgressCheck();
                     onPause?.();
                 }}
-                onEnded={handleComplete}
+                onEnded={() => {
+                    const video = videoRef.current;
+                    const duration = video ? video.duration : 0;
+                    const watchedTime = maxWatchedTimeRef.current;
+
+                    // Sử dụng Ref để đảm bảo đọc được giá trị mới nhất của isCompleted
+                    if (isCompletedRef.current && video) {
+                        video.pause();
+                        return;
+                    }
+
+                    if (duration > 0 && watchedTime / duration >= 0.95) {
+                        handleComplete();
+                    } else if (video) {
+                        console.warn('Video ended but not enough watch time.');
+                        video.currentTime = maxWatchedTimeRef.current;
+                        video.play().catch(() => {});
+                    }
+                }}
             ></video>
+            
+            {/* LỚP MÀNG BẢO VỆ: Chặn đứng mọi tương tác click/kéo lên vùng thanh tua */}
+            {antiSeek && !isCompleted && (
+                <div 
+                    className={styles.videoOverlayMask}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDoubleClick={(e) => e.preventDefault()}
+                />
+            )}
         </div>
     );
 });

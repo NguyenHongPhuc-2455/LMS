@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { exec } = require('child_process');
+const crypto = require('crypto');
+const axios = require('axios');
 const { uploadFolder, uploadFile, deleteFolder, R2_PUBLIC_URL } = require('../utils/r2Storage');
 
 // Thư mục HLS local (fallback nếu không có R2, hoặc để hỗ trợ dev)
@@ -42,22 +44,71 @@ const processVideoToHLS = async (lessonId, inputPath) => {
     const tmpDir = path.join(os.tmpdir(), `hls_${lessonId}_${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
 
-    const masterPlaylist = path.join(tmpDir, 'master.m3u8');
+    let actualInputPath = inputPath;
+    let downloadedFilePath = null;
 
-    console.log(`[HLS] Bắt đầu băm video: Lesson ${lessonId}`);
+    if (inputPath.startsWith('http')) {
+        console.log(`[HLS] Downloading video from URL to /tmp...`);
+        try {
+            const response = await axios({
+                method: 'get',
+                url: inputPath,
+                responseType: 'stream'
+            });
+            downloadedFilePath = path.join(tmpDir, 'downloaded_source.mp4');
+            const writer = fs.createWriteStream(downloadedFilePath);
+            response.data.pipe(writer);
+            await new Promise((resolve, reject) => {
+                writer.on('finish', resolve);
+                writer.on('error', reject);
+            });
+            actualInputPath = downloadedFilePath;
+            console.log(`[HLS] Download complete. Temp file: ${downloadedFilePath}`);
+        } catch (error) {
+            console.error(`[HLS] Failed to download video URL: ${error.message}`);
+            processingLessons.delete(lessonId);
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+            return;
+        }
+    }
+
+    const masterPlaylist = path.join(tmpDir, 'master.m3u8');
+    
+    // --- KHỞI TẠO MÃ HÓA HLS (AES-128) ---
+    const hlsKey = crypto.randomBytes(16); // 16 bytes key
+    const hlsIv = crypto.randomBytes(16).toString('hex'); // 16 bytes IV dạng hex
+    
+    const keyFileName = 'enc.key';
+    const keyFilePath = path.join(tmpDir, keyFileName);
+    const keyInfoPath = path.join(tmpDir, 'enc.keyinfo');
+    
+    // 1. Ghi file key vật lý (binary)
+    fs.writeFileSync(keyFilePath, hlsKey);
+    
+    // 2. Tạo file keyinfo cho FFmpeg
+    // Dòng 1: URL để trình phát lấy key (thông qua API bảo mật của mình)
+    // Dòng 2: Đường dẫn file key vật lý để FFmpeg đọc lúc băm
+    // Dòng 3: IV (tùy chọn)
+    const keyUrl = `/api/videos/key/${lessonId}`;
+    const keyInfoContent = `${keyUrl}\n${keyFilePath}\n${hlsIv}`;
+    fs.writeFileSync(keyInfoPath, keyInfoContent);
+
+    console.log(`[HLS] Bắt đầu băm video (Có mã hóa AES-128): Lesson ${lessonId}`);
 
     const ffmpegCmd = [
         'ffmpeg',
-        '-i', `"${inputPath}"`,
-        '-preset veryfast',         // Giảm tải CPU cho Railway
+        '-i', `"${actualInputPath}"`,
+        '-preset veryfast',
         '-g 48 -sc_threshold 0',
         '-map 0:v:0 -map 0:a:0',
-        '-vf "scale=\'min(1280,iw)\':-2"', // Giữ tỉ lệ, chiều ngang tối đa 1280, chiều cao tự động chia hết cho 2
-        '-b:v:0 2800k -b:a:0 128k',
+        '-vf "scale=\'min(1280,iw)\':-2"', 
+        '-c:v libx264 -crf 26 -maxrate 1800k -bufsize 3600k',
+        '-c:a aac -b:a 96k',
+        '-hls_key_info_file', `"${keyInfoPath}"`, // Kích hoạt mã hóa
         '-var_stream_map "v:0,a:0"',
         '-master_pl_name master.m3u8',
         '-f hls',
-        '-hls_time 6',
+        '-hls_time 10',
         '-hls_list_size 0',
         '-hls_segment_filename', `"${path.join(tmpDir, 'segment_%03d.ts')}"`,
         `"${path.join(tmpDir, 'stream.m3u8')}"`
@@ -74,30 +125,38 @@ const processVideoToHLS = async (lessonId, inputPath) => {
                 return resolve();
             }
 
-            console.log(`[HLS] FFmpeg hoàn thành. Đang upload lên R2...`);
+            console.log(`[HLS] FFmpeg hoàn thành. Đang dọn dẹp và upload lên R2...`);
 
             try {
-                // Upload toàn bộ thư mục HLS lên R2
+                // Lấy duration bài học TRƯỚC khi xóa file nguồn
+                const duration = await getDuration(actualInputPath).catch(() => 0);
+
+                // --- DỌN DẸP TRƯỚC KHI UPLOAD ---
+                // Xóa file key và file cấu hình băm (Chỉ giữ trong DB)
+                if (fs.existsSync(keyFilePath)) fs.unlinkSync(keyFilePath);
+                if (fs.existsSync(keyInfoPath)) fs.unlinkSync(keyInfoPath);
+                
+                // Xóa file video gốc đã tải về (nếu có) để tránh đẩy lên R2
+                if (downloadedFilePath && fs.existsSync(downloadedFilePath)) {
+                    fs.unlinkSync(downloadedFilePath);
+                }
+
+                // Upload toàn bộ thư mục HLS lên R2 (Lúc này chỉ còn file .m3u8 và .ts)
                 const r2Prefix = `hls/${lessonId}`;
                 await uploadFolder(tmpDir, r2Prefix);
 
-                // Lấy duration
-                const duration = await getDuration(inputPath).catch(() => 0);
-
-                // URL stream qua proxy của server (không dùng public URL trực tiếp để bảo mật)
-                const video_url = `hls/${lessonId}/stream.m3u8`;
-
+                // Lưu thông tin vào DB (Bao gồm Key và IV để giải mã sau này)
                 await prisma.lesson.update({
                     where: { id: lessonId },
                     data: {
-                        video_url: video_url, // Lưu đường dẫn R2 key thay vì URL đầy đủ
+                        video_url: `${r2Prefix}/stream.m3u8`, // Lưu path tương đối
                         duration: duration,
-                        hls_key: null,
-                        hls_iv: null
+                        hls_key: hlsKey, // Lưu Buffer key vào DB
+                        hls_iv: hlsIv    // Lưu chuỗi IV vào DB
                     }
                 });
 
-                console.log(`[HLS] Lesson ${lessonId} đã được xử lý và lưu thành công.`);
+                console.log(`[HLS] Lesson ${lessonId} đã được xử lý và lưu thành công (Key đã lưu vào DB).`);
             } catch (uploadErr) {
                 console.error(`[HLS] Lỗi upload R2 Lesson ${lessonId}:`, uploadErr.message);
             } finally {

@@ -1,5 +1,6 @@
-import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space, Switch } from 'antd';
-import { FileText, Video, UploadCloud } from 'lucide-react';
+import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space, Switch, Segmented } from 'antd';
+import { FileText, Video, UploadCloud, Link } from 'lucide-react';
+import { useState } from 'react';
 import styles from '../LessonManagement.module.scss';
 
 const { Text } = Typography;
@@ -25,6 +26,8 @@ export default function VideoLessonForm({
     attachmentFile,
     editingId
 }: VideoLessonFormProps) {
+    const [hlsUploadMethod, setHlsUploadMethod] = useState<'FILE' | 'URL'>('FILE');
+
     return (
         <div style={{ padding: '4px' }}>
             <Row gutter={32}>
@@ -125,19 +128,38 @@ export default function VideoLessonForm({
                             <div style={{ marginTop: 16 }}>
                                 {videoSourceType === 'UPLOAD' ? (
                                     <div>
-                                        <Upload
-                                            beforeUpload={(file) => {
-                                                setSelectedFile(file);
-                                                return false;
-                                            }}
-                                            showUploadList={false}
-                                            accept="video/mp4"
-                                        >
-                                            <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 8 }}>
-                                                {selectedFile ? selectedFile.name : "Nhấn để tải lên Video (MP4)"}
-                                            </Button>
-                                        </Upload>
-                                        {selectedFile && <Text type="success" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>✓ Sẵn sàng để băm video</Text>}
+                                        <Segmented
+                                            options={[
+                                                { label: 'Tải lên từ máy', value: 'FILE', icon: <UploadCloud size={14} /> },
+                                                { label: 'Link từ Server', value: 'URL', icon: <Link size={14} /> }
+                                            ]}
+                                            value={hlsUploadMethod}
+                                            onChange={(v) => setHlsUploadMethod(v as 'FILE' | 'URL')}
+                                            style={{ marginBottom: 16, width: '100%' }}
+                                            block
+                                        />
+
+                                        {hlsUploadMethod === 'FILE' ? (
+                                            <div>
+                                                <Upload
+                                                    beforeUpload={(file) => {
+                                                        setSelectedFile(file);
+                                                        return false;
+                                                    }}
+                                                    showUploadList={false}
+                                                    accept="video/mp4"
+                                                >
+                                                    <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 8 }}>
+                                                        {selectedFile ? selectedFile.name : "Nhấn để tải lên Video (MP4)"}
+                                                    </Button>
+                                                </Upload>
+                                                {selectedFile && <Text type="success" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>✓ Sẵn sàng để băm video</Text>}
+                                            </div>
+                                        ) : (
+                                            <Form.Item name="hls_video_url" rules={[{ required: true, message: 'Vui lòng nhập link video từ server!' }]}>
+                                                <Input prefix={<Link size={16} style={{ color: '#bfbfbf' }} />} placeholder="Nhập link video MP4 từ server công ty..." style={{ height: 40 }} />
+                                            </Form.Item>
+                                        )}
                                     </div>
                                 ) : (
                                     <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>

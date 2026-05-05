@@ -79,9 +79,8 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
                         const finalFileName = (fileName && fileName.includes('.m3u8')) ? fileName : 'master.m3u8';
                         securedVideoUrl = `/api/videos/stream/${token}/${finalFileName}`;
                     } else if (securedVideoUrl.includes('cloudinary.com') || securedVideoUrl.startsWith('http')) {
-                        // Mã hóa AES có thời hạn + gắn IP cho URL bên ngoài
-                        const encryptedUrl = createVideoToken(securedVideoUrl, req.ip);
-                        securedVideoUrl = `/api/videos/secure-stream/${encodeURIComponent(encryptedUrl)}`;
+                        // Trả thẳng link gốc cho Cloudinary hoặc link ngoài theo yêu cầu (Bỏ Token/Proxy)
+                        securedVideoUrl = l.video_url;
                     }
                 }
             }

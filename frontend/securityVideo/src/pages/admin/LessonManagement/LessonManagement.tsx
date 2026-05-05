@@ -189,8 +189,10 @@ export default function LessonManagement() {
                     message.success('Đã cập nhật bài giảng!');
                 } else {
                     const videoSourceType = values.video_url ? 'LINK' : 'UPLOAD';
-                    if (videoSourceType === 'UPLOAD' && !selectedFile) {
-                        message.error('Vui lòng chọn tệp video');
+                    const isHlsUrl = videoSourceType === 'UPLOAD' && !!values.hls_video_url;
+
+                    if (videoSourceType === 'UPLOAD' && !selectedFile && !isHlsUrl) {
+                        message.error('Vui lòng chọn tệp video hoặc nhập link video HLS');
                         return;
                     }
 
@@ -208,7 +210,11 @@ export default function LessonManagement() {
                     }
 
                     if (videoSourceType === 'UPLOAD') {
-                        formData.append('video', selectedFile!);
+                        if (selectedFile) {
+                            formData.append('video', selectedFile);
+                        } else if (isHlsUrl) {
+                            formData.append('hls_video_url', values.hls_video_url);
+                        }
                         message.loading({ content: 'Đang xử lý video HLS...', key: 'hls-up' });
                     } else {
                         formData.append('video_url', values.video_url);

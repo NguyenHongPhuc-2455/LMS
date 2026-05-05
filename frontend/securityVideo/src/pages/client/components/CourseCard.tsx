@@ -31,13 +31,11 @@ export default function CourseCard({ course }: CourseCardProps) {
             className={`glass-card ${styles.courseHoverCard}`}
             cover={
                 <div className={styles.courseCardCover}>
-                    {course.thumbnail ? (
-                        <img src={course.thumbnail} alt={course.title} className={styles.thumbnailImg} />
-                    ) : (
-                        <div className={styles.placeholderIconWrapper}>
-                            <BookOutlined />
-                        </div>
-                    )}
+                    <img 
+                        src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'} 
+                        alt={course.title} 
+                        className={styles.thumbnailImg} 
+                    />
                 </div>
             }
             onClick={() => navigate(`/course/${course.id}`)}

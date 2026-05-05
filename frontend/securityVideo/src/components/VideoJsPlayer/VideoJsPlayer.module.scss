@@ -1,11 +1,11 @@
 .videoJsPlayerContainer {
     width: 100%;
     aspect-ratio: 16/9;
-    max-height: 70vh;
     background: #000;
-    border-radius: 8px;
+    border-radius: 16px;
     overflow: hidden;
     position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 
     :global {
         .video-js {

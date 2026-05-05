@@ -53,13 +53,14 @@ function decodeVideoToken(token, clientIp) {
             return null;
         }
 
-        // 2. Kiểm tra IP (nếu token có IP thì phải khớp)
-        if (payload.ip && clientIp && payload.ip !== clientIp) {
-            console.warn(`[VIDEO TOKEN] IP không khớp: token=${payload.ip}, request=${clientIp}`);
-            return null;
+        // 2. Kiểm tra IP (ĐÃ GỠ BỎ THEO YÊU CẦU: Cho phép truy cập công cộng qua proxy)
+        /*
+        if (payload.ip && clientIp) {
+            ...
         }
+        */
 
-        return payload.url;
+        return payload; // Trả về toàn bộ object payload
     } catch (err) {
         console.error('[VIDEO TOKEN] Giải mã thất bại:', err.message);
         return null;

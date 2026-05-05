@@ -189,11 +189,10 @@ export default function Home() {
                                             .map((course: any) => (
                                                 <div key={course.id} className={styles.inProgressCard}>
                                                     <div className={styles.progThumbnail}>
-                                                        {course.thumbnail ? (
-                                                            <img src={course.thumbnail} alt={course.title} />
-                                                        ) : (
-                                                            <div className={styles.progPlaceholder}><BookOutlined /></div>
-                                                        )}
+                                                        <img 
+                                                            src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'} 
+                                                            alt={course.title} 
+                                                        />
                                                     </div>
                                                     <div className={styles.progInfo}>
                                                         <Title level={5} style={{ margin: 0 }}>{course.title}</Title>

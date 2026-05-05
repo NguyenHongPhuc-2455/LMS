@@ -46,7 +46,6 @@ export default function LessonPlayer({
 
         if (activeLesson.video_url.includes('.m3u8')) {
             const isAbsolute = activeLesson.video_url.startsWith('http');
-            // const finalSrc = isAbsolute ? activeLesson.video_url : `http://localhost:5000${activeLesson.video_url}`;
             const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
             const finalSrc = isAbsolute ? activeLesson.video_url : `${BASE_URL}${activeLesson.video_url}`;
             return (
@@ -55,7 +54,8 @@ export default function LessonPlayer({
                     ref={videoPlayerRef}
                     src={finalSrc}
                     lessonId={activeLesson.id}
-                    antiSeek={activeLesson.anti_seek !== false && !activeLesson.isCompleted}
+                    antiSeek={activeLesson.anti_seek !== false}
+                    isCompleted={!!activeLesson.isCompleted}
                     onEnded={handleNextLesson}
                     onPlay={() => setIsVideoPlaying(true)}
                     onPause={() => setIsVideoPlaying(false)}
@@ -73,7 +73,8 @@ export default function LessonPlayer({
                     ref={videoPlayerRef as any}
                     src={activeLesson.video_url}
                     lessonId={activeLesson.id}
-                    antiSeek={activeLesson.anti_seek !== false && !activeLesson.isCompleted}
+                    antiSeek={activeLesson.anti_seek !== false}
+                    isCompleted={!!activeLesson.isCompleted}
                     onEnded={handleNextLesson}
                     onPlay={() => setIsVideoPlaying(true)}
                     onPause={() => setIsVideoPlaying(false)}
@@ -92,7 +93,8 @@ export default function LessonPlayer({
                 ref={videoPlayerRef as any}
                 src={finalSrc}
                 lessonId={activeLesson.id}
-                antiSeek={activeLesson.anti_seek !== false && !activeLesson.isCompleted}
+                antiSeek={activeLesson.anti_seek !== false}
+                isCompleted={!!activeLesson.isCompleted}
                 onEnded={handleNextLesson}
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}
