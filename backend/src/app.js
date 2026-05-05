@@ -23,7 +23,7 @@ const { globalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
 
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 const allowedOrigins = [
     'http://localhost:5173',
