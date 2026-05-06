@@ -192,7 +192,10 @@
     border-bottom: 1px solid #f0f0f0;
 
     .notifHeaderLeft {
-        margin-bottom: 4px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 8px;
 
         .notifTitle {
             font-size: 18px;
@@ -203,7 +206,7 @@
         .notifNewCount {
             font-size: 13px;
             color: #64748b;
-            margin-top: 2px;
+            font-weight: 400;
         }
     }
 

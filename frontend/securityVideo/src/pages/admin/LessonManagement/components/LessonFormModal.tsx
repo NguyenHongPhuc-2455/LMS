@@ -35,10 +35,9 @@ export default function LessonFormModal({
 
     useEffect(() => {
         if (open) {
+            form.resetFields();
             if (initialValues) {
                 form.setFieldsValue(initialValues);
-            } else {
-                form.resetFields();
             }
             setSelectedFile(null);
             setAttachmentFile(null);

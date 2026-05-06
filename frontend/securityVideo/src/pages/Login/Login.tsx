@@ -19,7 +19,7 @@ export default function Login() {
             localStorage.setItem('accessToken', data.accessToken);
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
-            message.success('Chào mừng bạn quay trở lại!');
+            message.success('Chào mừng bạn đến với eLearning!');
             if (data.user.roles?.includes('admin')) {
                 navigate('/admin');
             } else {

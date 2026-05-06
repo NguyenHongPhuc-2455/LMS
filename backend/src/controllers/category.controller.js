@@ -10,7 +10,11 @@ exports.getCategories = catchAsync(async (req, res) => {
         orderBy: { name: 'asc' },
         include: {
             _count: {
-                select: { courses: true }
+                select: { 
+                    courses: {
+                        where: { deleted_at: null }
+                    } 
+                }
             }
         }
     });

@@ -67,20 +67,25 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
             label: 'Tổng quan',
         },
         {
-            key: '/admin/courses',
+            key: '/admin/content',
             icon: <BookOutlined />,
-            label: 'Quản lý khóa học',
+            label: 'Quản lý nội dung',
         },
-        {
-            key: '/admin/sections',
-            icon: <MenuFoldOutlined />,
-            label: 'Quản lý chương học',
-        },
-        {
-            key: '/admin/lessons',
-            icon: <PlaySquareOutlined />,
-            label: 'Quản lý bài giảng',
-        },
+        // {
+        //     key: '/admin/courses',
+        //     icon: <BookOutlined />,
+        //     label: 'Quản lý khóa học',
+        // },
+        // {
+        //     key: '/admin/sections',
+        //     icon: <MenuFoldOutlined />,
+        //     label: 'Quản lý chương học',
+        // },
+        // {
+        //     key: '/admin/lessons',
+        //     icon: <PlaySquareOutlined />,
+        //     label: 'Quản lý bài giảng',
+        // },
         {
             key: '/admin/programs',
             icon: <ApartmentOutlined />,

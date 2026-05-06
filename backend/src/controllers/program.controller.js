@@ -54,6 +54,16 @@ exports.getProgramDetail = catchAsync(async (req, res) => {
 
             const totalLessons = lessons.length;
             const lessonIds = lessons.map(l => l.id);
+            const isAdminUser = req.user?.roles?.includes('admin');
+            const isInstructor = program.instructor_id === userId;
+
+            if (totalLessons === 0) {
+                sortedCourses[i].isLocked = (isAdminUser || isInstructor) ? false : !previousCourseFinished;
+                sortedCourses[i].progressPercent = 0; // Khóa học trống là 0%
+                sortedCourses[i].isFinished = false;
+                previousCourseFinished = false; // Chặn các khóa sau nếu khóa này trống
+                continue;
+            }
 
             // Đếm số bài đã hoàn thành
             const completedCount = lessonIds.length > 0 ? await prisma.lessonCompleted.count({
@@ -65,12 +75,8 @@ exports.getProgramDetail = catchAsync(async (req, res) => {
 
             const isFinished = totalLessons > 0 && completedCount === totalLessons;
 
-            // Đánh dấu khóa/mở (Học viên Admin hoặc người dạy thì không bị khóa)
-            const isAdmin = req.user?.roles?.includes('admin');
-            const isInstructor = program.instructor_id === userId;
-
-            sortedCourses[i].isLocked = (isAdmin || isInstructor) ? false : !previousCourseFinished;
-            sortedCourses[i].progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
+            sortedCourses[i].isLocked = (isAdminUser || isInstructor) ? false : !previousCourseFinished;
+            sortedCourses[i].progressPercent = Math.round((completedCount / totalLessons) * 100);
             sortedCourses[i].isFinished = isFinished;
 
             // Cập nhật trạng thái cho khóa học kế tiếp
@@ -166,8 +172,44 @@ exports.reorderProgramCourses = catchAsync(async (req, res) => {
 });
 
 exports.getMyPrograms = catchAsync(async (req, res) => {
-
     const userId = req.user.id;
     const programs = await programService.getMyPrograms(userId);
-    res.json(programs);
+
+    // Tính toán tiến độ cho từng lộ trình
+    const programsWithProgress = await Promise.all(programs.map(async (p) => {
+        const sortedCourses = p.courses.sort((a, b) => a.order - b.order);
+        let totalProgress = 0;
+        const totalCourses = sortedCourses.length;
+
+        for (const pc of sortedCourses) {
+            const courseId = pc.course.id;
+            const lessons = await prisma.lesson.findMany({
+                where: { section: { course_id: courseId } },
+                select: { id: true }
+            });
+            const totalLessons = lessons.length;
+            if (totalLessons === 0) {
+                totalProgress += 0; // Khóa học trống là 0%
+                continue;
+            }
+
+            const completedCount = await prisma.lessonCompleted.count({
+                where: {
+                    user_id: userId,
+                    lesson_id: { in: lessons.map(l => l.id) }
+                }
+            });
+
+            totalProgress += (completedCount / totalLessons) * 100;
+        }
+
+        const progressPercent = totalCourses === 0 ? 0 : Math.round(totalProgress / totalCourses);
+
+        return {
+            ...p,
+            progressPercent
+        };
+    }));
+
+    res.json(programsWithProgress);
 });

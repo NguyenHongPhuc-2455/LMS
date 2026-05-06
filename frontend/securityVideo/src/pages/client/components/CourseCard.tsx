@@ -16,6 +16,7 @@ export interface Course {
     is_private: boolean;
     created_at: string;
     _count?: { sections: number };
+    progressPercent?: number; // Added progress field
 }
 
 interface CourseCardProps {
@@ -56,6 +57,22 @@ export default function CourseCard({ course }: CourseCardProps) {
                     </Tag>
                 </div>
             </div>
+
+            {/* Progress Section */}
+            {(course.progressPercent !== undefined && course.progressPercent !== null) && (
+                <div className={styles.progressContainer}>
+                    <div className={styles.progressHeader}>
+                        <Text type="secondary" className={styles.progressText}>Tiến độ học tập</Text>
+                        <Text strong className={styles.percentText}>{course.progressPercent}%</Text>
+                    </div>
+                    <div className={styles.progressBarWrapper}>
+                        <div 
+                            className={styles.progressBar} 
+                            style={{ width: `${course.progressPercent}%` }}
+                        ></div>
+                    </div>
+                </div>
+            )}
 
             <hr className={styles.courseCardDivider} />
 

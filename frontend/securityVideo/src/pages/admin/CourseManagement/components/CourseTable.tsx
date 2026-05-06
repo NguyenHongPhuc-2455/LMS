@@ -96,7 +96,7 @@ export default function CourseTable({
                     className={styles.courseInfoSpace}
                     onClick={() => onNavigateToSections(c.id)}
                 >
-                    <img src={c.thumbnail || 'https://via.placeholder.com/150'} className={styles.courseThumbnail} />
+                    <img src={c.thumbnail || 'https://placehold.jp/150x150.png'} className={styles.courseThumbnail} />
                     <div>
                         <Text strong className={styles.courseTitleText}>{c.title}</Text>
                         <Text type="secondary" className={styles.courseLevelText}>{c.level}</Text>
@@ -148,7 +148,7 @@ export default function CourseTable({
                     className={styles.statusSelect}
                     size="small"
                     showSearch={false}
-                    popupClassName={styles.statusPopup}
+                    dropdownClassName={styles.statusPopup}
                     options={[
                         {
                             value: true,
@@ -262,7 +262,7 @@ export default function CourseTable({
                     return originalElement;
                 }
             } as any}
-            scroll={{ x: 'max-content', y: 600 }}
+            scroll={{ x: 1200, y: 600 }}
             virtual
             bordered
         />

@@ -68,11 +68,8 @@ const AppHeader: React.FC = () => {
                         }
                     },
                     className: newNotif.link ? styles.cursorPointer : '',
-                    icon: newNotif.type === 'COURSE_APPROVAL' ?
-                        <CheckCircleOutlined className={styles.iconSuccess} /> :
-                        newNotif.type === 'COMMENT_REPLY' ?
-                            <MessageOutlined className={styles.iconPrimary} /> :
-                            <CloseCircleOutlined className={styles.iconError} />,
+                    icon: null,
+                    duration: 5,
                 });
             };
             socket.on('newNotification', handleNewNotif);

@@ -31,7 +31,9 @@ const getDashboardStats = async () => {
             }
         });
 
-        const totalCourses = await prisma.course.count();
+        const totalCourses = await prisma.course.count({
+            where: { deleted_at: null }
+        });
 
         const totalEnrollments = await prisma.enrollment.count();
 

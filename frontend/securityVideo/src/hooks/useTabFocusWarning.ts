@@ -59,6 +59,7 @@ export const useTabFocusWarning = (title: string, msg: string, enabled: boolean,
                 description: m,
                 placement: 'topRight',
                 duration: 5,
+                icon: null,
             });
         };
 

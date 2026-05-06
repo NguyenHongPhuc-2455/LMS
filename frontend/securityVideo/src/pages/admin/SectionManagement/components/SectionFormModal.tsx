@@ -20,13 +20,12 @@ export default function SectionFormModal({
 
     useEffect(() => {
         if (open) {
-            if (editingId && initialValues) {
+            form.resetFields();
+            if (initialValues) {
                 form.setFieldsValue(initialValues);
-            } else {
-                form.resetFields();
             }
         }
-    }, [open, editingId, initialValues, form]);
+    }, [open, initialValues, form]);
 
     const handleFinish = async (values: any) => {
         await onSuccess(values);

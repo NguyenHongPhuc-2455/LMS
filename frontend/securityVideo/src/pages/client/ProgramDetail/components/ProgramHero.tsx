@@ -12,6 +12,7 @@ interface ProgramHeroProps {
     submitting: boolean;
     navigate: (path: string) => void;
     sortedCourses: any[];
+    overallProgress: number;
 }
 
 export default function ProgramHero({
@@ -21,7 +22,8 @@ export default function ProgramHero({
     enrolling,
     submitting,
     navigate,
-    sortedCourses
+    sortedCourses,
+    overallProgress
 }: ProgramHeroProps) {
     return (
         <div className={styles.heroBanner}>
@@ -43,6 +45,15 @@ export default function ProgramHero({
                             <div className={styles.statDivider} />
                             <div className={styles.statItem}><CheckCircleOutlined /> <span>Tạo bởi <strong>{program.instructor?.full_name}</strong></span></div>
                         </div>
+
+                        {program.isEnrolled && (
+                            <div className={styles.heroProgressSection}>
+                                <div className={styles.progressLabel}>Tiến độ lộ trình học của bạn: <strong>{overallProgress}%</strong></div>
+                                <div className={styles.heroProgressBar}>
+                                    <div className={styles.heroProgressFill} style={{ width: `${overallProgress}%` }} />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className={styles.heroActionSection}>
