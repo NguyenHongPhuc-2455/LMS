@@ -9,8 +9,8 @@ const getAllCourses = async (search = '', categoryId = null) => {
             ...(search && {
                 title: { contains: search, mode: 'insensitive' }
             }),
-            ...(categoryId && {
-                category_id: parseInt(categoryId)
+            ...(categoryId !== undefined && categoryId !== null && categoryId !== '' && {
+                category_id: parseInt(categoryId) === -1 ? null : parseInt(categoryId)
             })
         },
         include: {

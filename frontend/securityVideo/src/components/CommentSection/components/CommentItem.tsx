@@ -17,7 +17,7 @@ interface CommentItemProps {
     onDelete: (id: number) => void;
     onUpdate: (id: number, content: string) => Promise<void>;
     onReply: (parentId: number, content: string) => Promise<void>;
-    submitting: boolean;
+    submittingId: number | 'main' | null;
 }
 
 
@@ -31,7 +31,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
     onDelete,
     onUpdate,
     onReply,
-    submitting
+    submittingId
 }) => {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
@@ -83,6 +83,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                                         }] : []),
                                         {
                                             key: 'delete',
+                                            className: styles.deleteMenuItem,
                                             label: (
                                                 <Popconfirm
                                                     title="Xóa bình luận"
@@ -92,7 +93,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                                                     cancelText="Hủy"
                                                     onPopupClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <span style={{ color: '#C72127' }}>Xóa bình luận</span>
+                                                    <span>Xóa bình luận</span>
                                                 </Popconfirm>
                                             ),
                                             danger: true,
@@ -148,7 +149,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                             value={replyContent}
                             onChange={setReplyContent}
                             onSubmit={handleReply}
-                            submitting={submitting}
+                            submitting={submittingId === item.id}
                             placeholder={`Phản hồi tới ${item.user.full_name || item.user.username}...`}
                             onCancel={() => setReplyTo(null)}
                             isReply
@@ -180,7 +181,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                                             onDelete={onDelete}
                                             onUpdate={onUpdate}
                                             onReply={onReply}
-                                            submitting={submitting}
+                                            submittingId={submittingId}
                                         />
                                     ))}
                                     <Button

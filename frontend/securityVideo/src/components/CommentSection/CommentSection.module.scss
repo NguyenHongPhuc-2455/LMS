@@ -30,9 +30,8 @@
 }
 
 .commentSubmitBtn {
-    height: 40px;
     border-radius: 10px;
-    background: #6366f1;
+    background: #B8121A;
 }
 
 .commentItem {
@@ -132,4 +131,18 @@
     padding: 0;
     margin-top: 8px;
     height: auto;
+}
+
+.deleteMenuItem {
+    span {
+        color: #C72127;
+        transition: color 0.2s;
+    }
+
+    &:hover {
+        background-color: #B8121A !important;
+        span {
+            color: #fff !important;
+        }
+    }
 }

@@ -36,16 +36,16 @@ const CommentInput: React.FC<CommentInputProps> = ({
                 className={isReply ? styles.replyTextarea : styles.commentTextarea}
                 autoFocus={autoFocus}
             />
-            <div className={styles.submitBtnWrapper}>
+            <div className={styles.commentSubmitBtnWrapper}>
                 <Button
                     type="primary"
                     icon={<SendOutlined />}
                     onClick={onSubmit}
                     loading={submitting}
-                    className={styles.submitBtn}
+                    className={styles.commentSubmitBtn}
                     size={isReply ? "small" : undefined}
                 >
-                    {isReply ? "Gửi" : "Gửi câu hỏi"}
+                    {isReply ? "Gửi" : "Gửi"}
                 </Button>
                 {onCancel && (
                     <Button size="small" onClick={onCancel} style={{ marginLeft: 8 }}>

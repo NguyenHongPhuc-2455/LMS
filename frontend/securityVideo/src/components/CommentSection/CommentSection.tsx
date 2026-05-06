@@ -17,7 +17,7 @@ interface CommentSectionProps {
 const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }) => {
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
+    const [submittingId, setSubmittingId] = useState<number | 'main' | null>(null);
     const [content, setContent] = useState('');
     const [expandedComments, setExpandedComments] = useState<number[]>([]);
 
@@ -92,7 +92,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
             return;
         }
 
-        setSubmitting(true);
+        setSubmittingId(parentId || 'main');
         try {
             await commentService.create({
                 lesson_id: lessonId,
@@ -111,7 +111,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
         } catch (error: any) {
             message.error('Lỗi khi gửi bình luận');
         } finally {
-            setSubmitting(false);
+            setSubmittingId(null);
         }
     };
 
@@ -151,7 +151,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                 value={content}
                 onChange={setContent}
                 onSubmit={() => handleSubmit()}
-                submitting={submitting}
+                submitting={submittingId === 'main'}
             />
 
             <List
@@ -166,7 +166,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                         onDelete={handleDelete}
                         onUpdate={handleUpdate}
                         onReply={handleSubmit}
-                        submitting={submitting}
+                        submittingId={submittingId}
                     />
                 )}
                 locale={{ emptyText: 'Chưa có bình luận nào cho bài học này.' }}

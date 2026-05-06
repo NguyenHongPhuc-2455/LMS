@@ -39,7 +39,7 @@ export default function SectionFormModal({
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="cancel" onClick={onCancel}>Hủy</Button>,
+                <Button key="cancel" onClick={onCancel} size="large">Hủy</Button>,
                 <Button key="submit" type="primary" onClick={() => form.submit()} size="large">
                     {editingId ? "Cập nhật" : "Tạo mới"}
                 </Button>

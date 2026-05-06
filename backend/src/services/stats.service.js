@@ -445,9 +445,89 @@ const getTopLearners = async () => {
     }
 };
 
+const searchStudentsProgress = async (searchTerm, courseId = null) => {
+    try {
+        const whereClause = {
+            ...(courseId && { course_id: parseInt(courseId) }),
+            ...(searchTerm && {
+                user: {
+                    OR: [
+                        { full_name: { contains: searchTerm, mode: 'insensitive' } },
+                        { email: { contains: searchTerm, mode: 'insensitive' } },
+                        { username: { contains: searchTerm, mode: 'insensitive' } }
+                    ]
+                }
+            })
+        };
+
+        const enrollments = await prisma.enrollment.findMany({
+            where: whereClause,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true,
+                        username: true,
+                        avatar: true
+                    }
+                },
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        category_id: true,
+                        category: { select: { name: true } },
+                        sections: {
+                            select: {
+                                lessons: { select: { id: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const progressData = await Promise.all(enrollments.map(async (e) => {
+            const lessonIds = e.course.sections.flatMap(s => s.lessons.map(l => l.id));
+            const totalLessons = lessonIds.length;
+
+            const completedCount = await prisma.lessonCompleted.count({
+                where: {
+                    user_id: e.user_id,
+                    lesson_id: { in: lessonIds }
+                }
+            });
+
+            const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
+
+            return {
+                id: e.user.id,
+                fullName: e.user.full_name || e.user.username,
+                email: e.user.email,
+                avatar: e.user.avatar,
+                completedLessons: completedCount,
+                totalLessons: totalLessons,
+                progressPercent: progressPercent,
+                enrolledAt: e.enrolled_at,
+                courseId: e.course.id,
+                courseTitle: e.course.title,
+                categoryId: e.course.category_id,
+                categoryName: e.course.category?.name
+            };
+        }));
+
+        return progressData;
+    } catch (error) {
+        console.error('Error in searchStudentsProgress:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getStudentsProgressByCourse,
+    searchStudentsProgress,
     emitPendingRequestsCountToAdmins,
     trackLearningTime,
     getUserLearningStats,

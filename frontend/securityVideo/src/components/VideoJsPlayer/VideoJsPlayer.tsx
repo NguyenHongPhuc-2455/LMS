@@ -78,7 +78,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     const handleVideoComplete = async () => {
         // CHỐT CHẶN: Ngăn chặn vòng lặp gọi API nếu đã hoàn thành
         if (hasTriggeredEndRef.current || isCompletedRef.current) return;
-        
+
         hasTriggeredEndRef.current = true;
         const player = playerRef.current;
         const duration = player ? player.duration() : 0;
@@ -122,7 +122,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
         containerRef.current.appendChild(videoElement);
 
         const videoJsOptions: any = {
-            autoplay: true,
+            autoplay: isYouTube ? 'muted' : true,
             controls: true,
             responsive: true,
             fluid: true,
@@ -136,7 +136,8 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 iv_load_policy: 3,
                 modestbranding: 1,
                 rel: 0,
-                autoplay: 1
+                autoplay: 1,
+                mute: 1
             } : undefined,
             userActions: {
                 doubleClick: true, // Cho phép double click (logic bên dưới sẽ xử lý nếu chưa xem đủ)
@@ -228,7 +229,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 } else {
                     console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự. Không tính hoàn thành.');
                     player.currentTime(maxWatchedTimeRef.current);
-                    player.play().catch(() => {});
+                    player.play().catch(() => { });
                 }
             });
         });

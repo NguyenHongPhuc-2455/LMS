@@ -40,7 +40,10 @@ export default function LessonFilter({
                             style={{ width: 180 }}
                             onChange={onCategoryChange}
                             value={selectedCategoryId}
-                            options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                            options={[
+                                { value: -1, label: 'Trống (Không danh mục)' },
+                                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                            ]}
                         />
                     </Space>
                     <Space>

@@ -55,7 +55,7 @@ export default function LessonFormModal({
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="cancel" onClick={onCancel}>
+                <Button key="cancel" onClick={onCancel} size="large">
                     Hủy bỏ
                 </Button>,
                 <Button

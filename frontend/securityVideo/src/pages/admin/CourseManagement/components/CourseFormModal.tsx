@@ -42,7 +42,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="cancel" onClick={onCancel}>Hủy</Button>,
+                <Button key="cancel" onClick={onCancel} size="large">Hủy</Button>,
                 <Button key="submit" type="primary" onClick={() => form.submit()} size="large" style={{ minWidth: 150 }}>
                     {editingId ? "Cập nhật" : "Tạo khóa học"}
                 </Button>

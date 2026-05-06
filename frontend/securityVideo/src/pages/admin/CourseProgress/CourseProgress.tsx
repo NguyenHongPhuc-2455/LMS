@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Select, Typography, Space, Progress, Avatar, Card, Button, Tooltip } from 'antd';
-import { UserOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Table, Select, Typography, Space, Progress, Avatar, Card, Button, Tooltip, Input } from 'antd';
+import { UserOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { courseService } from '@/services/course.service';
 import { statsService } from '@/services/stats.service';
 import { categoryService, type Category } from '@/services/category.service';
@@ -23,6 +23,10 @@ interface StudentProgress {
     totalLessons: number;
     progressPercent: number;
     enrolledAt: string;
+    courseId?: number;
+    courseTitle?: string;
+    categoryId?: number;
+    categoryName?: string;
 }
 
 export default function CourseProgress() {
@@ -34,6 +38,9 @@ export default function CourseProgress() {
     const [loadingCategories, setLoadingCategories] = useState(false);
     const [loadingCourses, setLoadingCourses] = useState(false);
     const [loadingStudents, setLoadingStudents] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [isGlobalSearch, setIsGlobalSearch] = useState(false);
+    const [columnSearchText, setColumnSearchText] = useState('');
 
     useEffect(() => {
         fetchCategories();
@@ -72,6 +79,7 @@ export default function CourseProgress() {
 
     const handleCourseChange = async (courseId: number) => {
         setSelectedCourse(courseId);
+        setIsGlobalSearch(false);
         setLoadingStudents(true);
         try {
             const data = await statsService.getCourseProgress(courseId);
@@ -83,10 +91,83 @@ export default function CourseProgress() {
         }
     };
 
+    const handleStudentSearch = async (value: string) => {
+        setSearchText(value);
+        if (!value && !selectedCourse) {
+            setStudents([]);
+            setIsGlobalSearch(false);
+            return;
+        }
+
+        setLoadingStudents(true);
+        try {
+            const data = await statsService.searchProgress(value, selectedCourse || undefined);
+            setStudents(data);
+            setIsGlobalSearch(!selectedCourse);
+
+            // If only one result and no course selected, try to "auto-select" for the user
+            if (data.length === 1 && !selectedCourse) {
+                const item = data[0];
+                if (item.categoryId) {
+                    setSelectedCategory(item.categoryId);
+                    fetchCourses(item.categoryId);
+                }
+                setSelectedCourse(item.courseId);
+            }
+        } catch (error) {
+            console.error('Search failed:', error);
+        } finally {
+            setLoadingStudents(false);
+        }
+    };
+
+    const getColumnSearchProps = (dataIndex: string): any => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+            <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                <Input
+                    placeholder={`Tìm tên hoặc email...`}
+                    value={selectedKeys[0]}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => handleStudentSearch(selectedKeys[0])}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            confirm();
+                            handleStudentSearch(selectedKeys[0]);
+                        }}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Tìm
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            clearFilters?.();
+                            confirm();
+                            handleStudentSearch('');
+                        }}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Xóa
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#fff' : '#fff', fontSize: '18px' }} />
+        ),
+    });
+
     const columns = [
         {
             title: 'Học viên',
             key: 'student',
+            ...getColumnSearchProps('fullName'),
             render: (record: StudentProgress) => (
                 <Space>
                     <Avatar src={record.avatar} icon={<UserOutlined />} />
@@ -97,6 +178,20 @@ export default function CourseProgress() {
                 </Space>
             ),
         },
+        ...(isGlobalSearch ? [
+            {
+                title: 'Danh mục',
+                dataIndex: 'categoryName',
+                key: 'categoryName',
+                render: (text: string) => text || <Text type="secondary">Trống</Text>
+            },
+            {
+                title: 'Khóa học',
+                dataIndex: 'courseTitle',
+                key: 'courseTitle',
+                render: (text: string) => <Text strong>{text}</Text>
+            }
+        ] : []),
         {
             title: 'Ngày tham gia',
             dataIndex: 'enrolledAt',
@@ -138,12 +233,11 @@ export default function CourseProgress() {
                             <Text strong>Danh mục:</Text>
                             <Select
                                 placeholder="Chọn danh mục"
-                                style={{ width: 220 }}
+                                style={{ width: 180 }}
                                 onChange={handleCategoryChange}
                                 loading={loadingCategories}
                                 showSearch
                                 optionFilterProp="children"
-                                size="small"
                                 value={selectedCategory}
                             >
                                 {categories.map(cat => (
@@ -151,6 +245,7 @@ export default function CourseProgress() {
                                         {cat.name}
                                     </Option>
                                 ))}
+                                <Option value={-1}>Trống (Không danh mục)</Option>
                             </Select>
                         </Space>
 
@@ -158,12 +253,11 @@ export default function CourseProgress() {
                             <Text strong>Khóa học:</Text>
                             <Select
                                 placeholder={selectedCategory ? "Chọn khóa học" : "Chọn danh mục trước"}
-                                style={{ width: 300 }}
+                                style={{ width: 220 }}
                                 onChange={handleCourseChange}
                                 loading={loadingCourses}
                                 showSearch
                                 optionFilterProp="children"
-                                size="small"
                                 disabled={!selectedCategory}
                                 value={selectedCourse}
                             >
@@ -178,10 +272,12 @@ export default function CourseProgress() {
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
-                                size="small"
-                                onClick={() => selectedCourse && handleCourseChange(selectedCourse)}
+                                onClick={() => {
+                                    if (searchText) handleStudentSearch(searchText);
+                                    else if (selectedCourse) handleCourseChange(selectedCourse);
+                                }}
                                 loading={loadingStudents}
-                                disabled={!selectedCourse}
+                                disabled={!selectedCourse && !searchText}
                             />
                         </Tooltip>
                     </Space>
