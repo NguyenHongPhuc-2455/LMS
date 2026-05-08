@@ -105,7 +105,12 @@ exports.requestAccess = catchAsync(async (req, res) => {
  */
 exports.getPendingRequests = catchAsync(async (req, res) => {
     const requests = await prisma.programRequest.findMany({
-        where: { status: 'PENDING' },
+        where: { 
+            status: 'PENDING',
+            program: {
+                deleted_at: null
+            }
+        },
         include: {
             user: {
                 select: { id: true, full_name: true, email: true, username: true }

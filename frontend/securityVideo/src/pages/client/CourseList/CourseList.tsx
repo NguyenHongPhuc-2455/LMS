@@ -133,8 +133,13 @@ export default function CourseList() {
 
     const getFilteredCourses = () => {
         // Map progress data to courses
-        const progressMap = new Map(registeredCourses.map(rc => [rc.id, rc.progressPercent]));
-        
+        // const progressMap = new Map(registeredCourses.map(rc => [rc.id, rc.progressPercent]));
+        const progressMap = new Map(
+            Array.isArray(registeredCourses)
+                ? registeredCourses.map(rc => [rc.id, rc.progressPercent])
+                : []
+        );
+
         let list = courses.map(c => ({
             ...c,
             progressPercent: progressMap.get(c.id) // Attach progress if exists
@@ -190,19 +195,19 @@ export default function CourseList() {
             <div className={styles.unifiedFilterBar}>
                 {/* Group 1: Status */}
                 <div className={styles.filterGroup}>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${statusFilter === 'ALL' ? styles.active : ''}`}
                         onClick={() => setStatusFilter('ALL')}
                     >
                         Tất cả
                     </div>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${statusFilter === 'IN_PROGRESS' ? styles.active : ''}`}
                         onClick={() => setStatusFilter('IN_PROGRESS')}
                     >
                         Đang học
                     </div>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${statusFilter === 'COMPLETED' ? styles.active : ''}`}
                         onClick={() => setStatusFilter('COMPLETED')}
                     >
@@ -220,19 +225,19 @@ export default function CourseList() {
 
                 {/* Group 2: Level */}
                 <div className={styles.filterGroup}>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${levelFilter === 'Cơ bản' ? styles.active : ''}`}
                         onClick={() => setLevelFilter(levelFilter === 'Cơ bản' ? 'ALL' : 'Cơ bản')}
                     >
                         <span className={styles.dot} style={{ background: '#3b82f6' }}></span> Cơ bản
                     </div>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${levelFilter === 'Trung cấp' ? styles.active : ''}`}
                         onClick={() => setLevelFilter(levelFilter === 'Trung cấp' ? 'ALL' : 'Trung cấp')}
                     >
                         <span className={styles.dot} style={{ background: '#f59e0b' }}></span> Trung cấp
                     </div>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${levelFilter === 'Nâng cao' ? styles.active : ''}`}
                         onClick={() => setLevelFilter(levelFilter === 'Nâng cao' ? 'ALL' : 'Nâng cao')}
                     >
@@ -244,13 +249,13 @@ export default function CourseList() {
 
                 {/* Group 3: Mode */}
                 <div className={styles.filterGroup}>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${accessFilter === 'PUBLIC' ? styles.active : ''}`}
                         onClick={() => setAccessFilter(accessFilter === 'PUBLIC' ? 'ALL' : 'PUBLIC')}
                     >
                         Công khai
                     </div>
-                    <div 
+                    <div
                         className={`${styles.filterItem} ${accessFilter === 'PRIVATE' ? styles.active : ''}`}
                         onClick={() => setAccessFilter(accessFilter === 'PRIVATE' ? 'ALL' : 'PRIVATE')}
                     >
@@ -298,13 +303,13 @@ export default function CourseList() {
                     />
 
                     {filteredCourses.length === 0 && (
-                        <Empty 
+                        <Empty
                             description={
-                                statusFilter === 'ALL' 
-                                    ? "Chưa có khóa học nào được đăng tải" 
+                                statusFilter === 'ALL'
+                                    ? "Chưa có khóa học nào được đăng tải"
                                     : "Không tìm thấy khóa học nào phù hợp"
-                            } 
-                            style={{ marginTop: '80px' }} 
+                            }
+                            style={{ marginTop: '80px' }}
                         />
                     )}
                 </>

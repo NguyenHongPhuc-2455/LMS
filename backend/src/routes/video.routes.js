@@ -17,7 +17,7 @@ const attachmentStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'security_video_attachments',
-        resource_type: 'raw', 
+        resource_type: 'raw',
         public_id: (req, file) => {
             // Loại bỏ khoảng trắng và ký tự đặc biệt để tránh lỗi URL (401/404)
             const cleanName = file.originalname.replace(/\s+/g, '_');

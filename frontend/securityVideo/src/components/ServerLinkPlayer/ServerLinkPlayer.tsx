@@ -28,6 +28,7 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
         const maxWatchedTimeRef = useRef<number>(0);
         const isSeekingRef = useRef<boolean>(false);
         const isCompletedRef = useRef(isCompleted);
+        const lastLessonIdRef = useRef<number | null>(null);
 
         useEffect(() => {
             isCompletedRef.current = isCompleted;
@@ -107,6 +108,16 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                     player.addClass('vjs-completed');
                 }
 
+                // Logic tự động phát (Auto-play) có kiểm soát
+                const isNewLesson = lastLessonIdRef.current !== lessonId;
+                if (isNewLesson || !isCompleted) {
+                    player.play().catch(() => { });
+                } else {
+                    console.log('[SERVER PLAYER] Video đã hoàn thành, không tự động phát lại.');
+                    player.pause();
+                }
+                lastLessonIdRef.current = lessonId || null;
+
                 player.on('play', () => {
                     startProgressCheck();
                     callbacksRef.current.onPlay?.();
@@ -181,8 +192,8 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                         handleVideoComplete();
                     } else {
                         console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự.');
+                        player.pause();
                         player.currentTime(maxWatchedTimeRef.current);
-                        player.play().catch(() => {});
                     }
                 });
             });

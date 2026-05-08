@@ -25,6 +25,7 @@ const { Title, Text } = Typography;
 
 interface Lesson {
     id: number;
+    section_id: number;
     title: string;
     video_url: string;
     attachment_url?: string;
@@ -233,7 +234,7 @@ export default function LessonManagement() {
                         attachData.append('attachment', attachmentFile);
                         await videoService.uploadAttachment(lessonId, attachData);
                         message.success('Đã tải lên tài liệu mới!');
-                    } 
+                    }
                     // Nếu không có file mới nhưng có nhập URL (như GG Drive) -> Cập nhật URL vào DB
                     else if (values.attachment_url) {
                         await videoService.update(lessonId, {
@@ -256,10 +257,11 @@ export default function LessonManagement() {
     };
 
     const startEditing = async (lesson: Lesson) => {
-        setEditingLesson(lesson);
+        // Cài đặt loại bài học trước để modal biết render form nào
+        const type = lesson.type === 'QUIZ' ? 'QUIZ' : 'VIDEO';
+        setLessonType(type);
 
         if (lesson.type === 'QUIZ') {
-            setLessonType('QUIZ');
             try {
                 message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
                 const data = await quizService.getByLesson(lesson.id);
@@ -268,7 +270,7 @@ export default function LessonManagement() {
 
                 setEditingLesson({
                     ...lesson,
-                    section_id: selectedSectionId,
+                    section_id: lesson.section_id || selectedSectionId,
                     description: quizData.description,
                     pass_score: quizData.pass_score,
                     time_limit: quizData.time_limit,
@@ -277,12 +279,15 @@ export default function LessonManagement() {
                 message.success({ content: 'Hoàn tất', key: 'quiz-loading', duration: 1 });
             } catch (e) {
                 message.error({ content: 'Không tải được nội dung bài thi', key: 'quiz-loading' });
+                setEditingLesson({
+                    ...lesson,
+                    section_id: lesson.section_id || selectedSectionId
+                });
             }
         } else {
-            setLessonType('VIDEO');
             setEditingLesson({
                 ...lesson,
-                section_id: selectedSectionId,
+                section_id: lesson.section_id || selectedSectionId,
                 duration_min: lesson.duration ? Math.floor(lesson.duration / 60) : 0,
                 duration_sec: lesson.duration ? (lesson.duration % 60) : 0,
                 anti_seek: lesson.anti_seek !== undefined ? lesson.anti_seek : true,

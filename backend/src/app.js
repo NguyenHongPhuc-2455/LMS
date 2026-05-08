@@ -26,6 +26,9 @@ const app = express();
 app.set('trust proxy', true);
 
 const allowedOrigins = [
+    // 'https://frostbite-payphone-rerun.ngrok-free.dev',
+    'http://26.51.87.121:5174',
+    'http://172.16.4.113:5174',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',

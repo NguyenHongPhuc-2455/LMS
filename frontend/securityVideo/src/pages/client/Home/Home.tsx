@@ -189,9 +189,9 @@ export default function Home() {
                                             .map((course: any) => (
                                                 <div key={course.id} className={styles.inProgressCard}>
                                                     <div className={styles.progThumbnail}>
-                                                        <img 
-                                                            src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'} 
-                                                            alt={course.title} 
+                                                        <img
+                                                            src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'}
+                                                            alt={course.title}
                                                         />
                                                     </div>
                                                     <div className={styles.progInfo}>

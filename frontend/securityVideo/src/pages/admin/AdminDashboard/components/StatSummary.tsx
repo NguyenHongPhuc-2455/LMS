@@ -15,36 +15,36 @@ export default function StatSummary({ stats }: StatSummaryProps) {
     const statCards = [
         {
             title: 'Tổng Học Viên',
-            value: stats?.overview?.totalStudents?.toLocaleString() || '0',
-            percent: '8.5%',
-            isUp: true,
+            value: stats?.overview?.totalStudents?.value?.toLocaleString() || '0',
+            percent: stats?.overview?.totalStudents?.percent || '0%',
+            isUp: stats?.overview?.totalStudents?.isUp ?? true,
             icon: <TeamOutlined style={{ fontSize: '24px', color: '#8884d8' }} />,
             bg: '#eef2ff',
             detail: 'So với hôm qua'
         },
         {
             title: 'Khóa Học',
-            value: stats?.overview?.totalCourses?.toLocaleString() || '0',
-            percent: '1.3%',
-            isUp: true,
+            value: stats?.overview?.totalCourses?.value?.toLocaleString() || '0',
+            percent: stats?.overview?.totalCourses?.percent || '0%',
+            isUp: stats?.overview?.totalCourses?.isUp ?? true,
             icon: <BoxPlotOutlined style={{ fontSize: '24px', color: '#f59e0b' }} />,
             bg: '#fffbeb',
             detail: 'Tổng số hiện có'
         },
         {
             title: 'Lượt tham gia',
-            value: stats?.overview?.totalEnrollments?.toLocaleString() || '0',
-            percent: '4.3%',
-            isUp: true,
+            value: stats?.overview?.totalEnrollments?.value?.toLocaleString() || '0',
+            percent: stats?.overview?.totalEnrollments?.percent || '0%',
+            isUp: stats?.overview?.totalEnrollments?.isUp ?? true,
             icon: <LineChartOutlined style={{ fontSize: '24px', color: '#10b981' }} />,
             bg: '#ecfdf5',
             detail: 'Tổng lượt ghi danh'
         },
         {
             title: 'Đang chờ xử lý',
-            value: stats?.overview?.pendingRequests?.toLocaleString() || '0',
-            percent: '1.8%',
-            isUp: true,
+            value: stats?.overview?.pendingRequests?.value?.toLocaleString() || '0',
+            percent: stats?.overview?.pendingRequests?.percent || '0%',
+            isUp: stats?.overview?.pendingRequests?.isUp ?? true,
             icon: <HistoryOutlined style={{ fontSize: '24px', color: '#ef4444' }} />,
             bg: '#fef2f2',
             detail: 'Yêu cầu phê duyệt'

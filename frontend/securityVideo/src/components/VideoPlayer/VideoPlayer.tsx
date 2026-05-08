@@ -26,6 +26,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
     const maxWatchedTimeRef = useRef<number>(0);
     const isSeekingRef = useRef<boolean>(false);
     const isCompletedRef = useRef(isCompleted);
+    const lastLessonIdRef = useRef<number | null>(null);
 
     useEffect(() => {
         isCompletedRef.current = isCompleted;
@@ -245,8 +246,19 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
                 try {
                     await playerRef.current.load(src);
                     if (isStillMounted && videoRef.current) {
-                        videoRef.current.play().catch(() => { });
+                        // CHỈ TỰ ĐỘNG PHÁT NẾU:
+                        // 1. Chuyển sang một bài học khác (lastLessonId khác lessonId)
+                        // 2. HOẶC bài học này chưa hoàn thành
+                        // (Tránh tự phát lại khi hệ thống làm mới token sau khi vừa báo cáo hoàn thành cùng 1 bài)
+                        const isNewLesson = lastLessonIdRef.current !== lessonId;
+                        if (isNewLesson || !isCompleted) {
+                            videoRef.current.play().catch(() => { });
+                        } else {
+                            console.log('Video đã hoàn thành, không tự động phát lại khi làm mới dữ liệu.');
+                            videoRef.current.pause();
+                        }
                     }
+                    lastLessonIdRef.current = lessonId || null;
                 } catch (e: any) {
                     if (isStillMounted && e.code !== shaka.util.Error.Code.LOAD_INTERRUPTED) {
                         console.error('❌ Shaka Error on load:', e);
@@ -292,9 +304,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
                     if (duration > 0 && watchedTime / duration >= 0.95) {
                         handleComplete();
                     } else if (video) {
-                        console.warn('Video ended but not enough watch time.');
+                        console.warn('Video ended but not enough watch time. Staying at last watched position.');
+                        video.pause();
                         video.currentTime = maxWatchedTimeRef.current;
-                        video.play().catch(() => {});
                     }
                 }}
             ></video>

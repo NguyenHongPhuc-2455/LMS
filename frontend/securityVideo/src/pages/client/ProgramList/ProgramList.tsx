@@ -269,7 +269,10 @@ function ProgramCard({ program: p, navigate, isEnrolled: enrolledProp }: { progr
                         <Text strong className={styles.progressValue}>{progress}%</Text>
                     </div>
                     <div className={styles.progressBar}>
-                        <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+                        <div 
+                            className={`${styles.progressFill} ${progress === 100 ? styles.finished : ''}`}
+                            style={{ width: `${progress}%` }} 
+                        />
                     </div>
                 </div>
             )}

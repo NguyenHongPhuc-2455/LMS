@@ -38,11 +38,20 @@ export default function LessonFormModal({
             form.resetFields();
             if (initialValues) {
                 form.setFieldsValue(initialValues);
+
+                // Tự động nhận diện loại nguồn video khi edit
+                if (lessonType === 'VIDEO') {
+                    if (initialValues.video_url && !initialValues.video_url.startsWith('hls/')) {
+                        setVideoSourceType('LINK');
+                    } else {
+                        setVideoSourceType('UPLOAD');
+                    }
+                }
             }
             setSelectedFile(null);
             setAttachmentFile(null);
         }
-    }, [open, initialValues, form]);
+    }, [open, initialValues, form, lessonType]);
 
     const handleFinish = async (values: any) => {
         await onSuccess(values, selectedFile, attachmentFile);
@@ -96,6 +105,7 @@ export default function LessonFormModal({
                             selectedFile={selectedFile}
                             attachmentFile={attachmentFile}
                             editingId={editingId}
+                            form={form}
                         />
                     ) : (
                         <QuizLessonForm sections={sections} form={form} />

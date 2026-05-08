@@ -251,7 +251,7 @@ const AppHeader: React.FC = () => {
                 <Dropdown menu={userMenuItems} trigger={['click']}>
                     <div className={styles.userProfileTrigger}>
                         <Avatar
-                            src={user?.avatar}
+                            src={profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.full_name || profile?.username || 'U')}&background=4880FF&color=fff&size=200`}
                             icon={<UserOutlined />}
                             className={styles.headerUserAvatar}
                             size={38}

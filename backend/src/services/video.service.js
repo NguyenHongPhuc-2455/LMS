@@ -73,18 +73,18 @@ const processVideoToHLS = async (lessonId, inputPath) => {
     }
 
     const masterPlaylist = path.join(tmpDir, 'master.m3u8');
-    
+
     // --- KHỞI TẠO MÃ HÓA HLS (AES-128) ---
     const hlsKey = crypto.randomBytes(16); // 16 bytes key
     const hlsIv = crypto.randomBytes(16).toString('hex'); // 16 bytes IV dạng hex
-    
+
     const keyFileName = 'enc.key';
     const keyFilePath = path.join(tmpDir, keyFileName);
     const keyInfoPath = path.join(tmpDir, 'enc.keyinfo');
-    
+
     // 1. Ghi file key vật lý (binary)
     fs.writeFileSync(keyFilePath, hlsKey);
-    
+
     // 2. Tạo file keyinfo cho FFmpeg
     // Dòng 1: URL để trình phát lấy key (thông qua API bảo mật của mình)
     // Dòng 2: Đường dẫn file key vật lý để FFmpeg đọc lúc băm
@@ -101,7 +101,7 @@ const processVideoToHLS = async (lessonId, inputPath) => {
         '-preset veryfast',
         '-g 48 -sc_threshold 0',
         '-map 0:v:0 -map 0:a:0',
-        '-vf "scale=\'min(1280,iw)\':-2"', 
+        '-vf "scale=\'min(1280,iw)\':-2"',
         '-c:v libx264 -crf 26 -maxrate 1800k -bufsize 3600k',
         '-c:a aac -b:a 96k',
         '-hls_key_info_file', `"${keyInfoPath}"`, // Kích hoạt mã hóa
@@ -135,7 +135,7 @@ const processVideoToHLS = async (lessonId, inputPath) => {
                 // Xóa file key và file cấu hình băm (Chỉ giữ trong DB)
                 if (fs.existsSync(keyFilePath)) fs.unlinkSync(keyFilePath);
                 if (fs.existsSync(keyInfoPath)) fs.unlinkSync(keyInfoPath);
-                
+
                 // Xóa file video gốc đã tải về (nếu có) để tránh đẩy lên R2
                 if (downloadedFilePath && fs.existsSync(downloadedFilePath)) {
                     fs.unlinkSync(downloadedFilePath);

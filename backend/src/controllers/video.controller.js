@@ -192,19 +192,19 @@ exports.streamProxy = catchAsync(async (req, res) => {
         if (safeFilePath.endsWith('.m3u8')) {
             const response = await getFileStream(r2Key);
             let content = '';
-            
+
             return new Promise((resolve, reject) => {
                 response.Body.on('data', chunk => content += chunk.toString());
                 response.Body.on('end', () => {
                     const normalizedIp = req.ip.replace('::ffff:', '');
                     const token = createVideoToken(`key-${lessonId}`, normalizedIp);
                     const signedKeyUrl = `/api/videos/key/${lessonId}?token=${encodeURIComponent(token)}`;
-                    
+
                     const newContent = content.replace(
                         new RegExp(`URI="/api/videos/key/${lessonId}"`, 'g'),
                         `URI="${signedKeyUrl}"`
                     );
-                    
+
                     res.set('Content-Type', 'application/x-mpegURL');
                     res.send(newContent);
                     resolve();
@@ -282,7 +282,7 @@ exports.getVideoKey = catchAsync(async (req, res) => {
     const roles = req.user.roles || [];
 
     if (!token) throw new ApiError(403, 'Thiếu mã xác thực chìa khóa');
-    
+
     const clientIp = req.ip.replace('::ffff:', '');
     const payload = decodeVideoToken(token, clientIp);
 

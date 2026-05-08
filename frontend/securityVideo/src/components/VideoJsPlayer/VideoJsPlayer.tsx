@@ -28,6 +28,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
     const maxWatchedTimeRef = useRef<number>(0);
     const isSeekingRef = useRef<boolean>(false);
     const isCompletedRef = useRef(isCompleted);
+    const lastLessonIdRef = useRef<number | null>(null);
 
     useEffect(() => {
         isCompletedRef.current = isCompleted;
@@ -122,7 +123,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
         containerRef.current.appendChild(videoElement);
 
         const videoJsOptions: any = {
-            autoplay: isYouTube ? 'muted' : true,
+            autoplay: false,
             controls: true,
             responsive: true,
             fluid: true,
@@ -136,8 +137,8 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 iv_load_policy: 3,
                 modestbranding: 1,
                 rel: 0,
-                autoplay: 1,
-                mute: 1
+                autoplay: 0,
+                mute: isYouTube ? 1 : 0
             } : undefined,
             userActions: {
                 doubleClick: true, // Cho phép double click (logic bên dưới sẽ xử lý nếu chưa xem đủ)
@@ -160,78 +161,90 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 player.addClass('vjs-completed');
             }
 
-            player.on('play', () => {
-                startProgressCheck();
-                callbacksRef.current.onPlay?.();
-            });
+                // Logic tự động phát (Auto-play) có kiểm soát
+                const isNewLesson = lastLessonIdRef.current !== lessonId;
+                if (isNewLesson || !isCompleted) {
+                    player.play().catch(() => { });
+                } else {
+                    console.log('[VideoJS] Video đã hoàn thành, không tự động phát lại.');
+                    player.pause();
+                }
+                lastLessonIdRef.current = lessonId || null;
 
-            player.on('timeupdate', () => {
-                if (isCompletedRef.current || isSeekingRef.current) return;
+                player.on('play', () => {
+                    startProgressCheck();
+                    callbacksRef.current.onPlay?.();
+                });
+                
+                // ... (rest of the listeners)
+                
+                player.on('timeupdate', () => {
+                    if (isCompletedRef.current || isSeekingRef.current) return;
 
-                const currentTime = player.currentTime();
+                    const currentTime = player.currentTime();
 
-                // 1. LUÔN CẬP NHẬT TIẾN ĐỘ
-                if (!player.seeking()) {
+                    // 1. LUÔN CẬP NHẬT TIẾN ĐỘ
+                    if (!player.seeking()) {
+                        if (antiSeek) {
+                            if (currentTime > maxWatchedTimeRef.current && currentTime - maxWatchedTimeRef.current < 2) {
+                                maxWatchedTimeRef.current = currentTime;
+                            }
+                        } else {
+                            if (currentTime > maxWatchedTimeRef.current) {
+                                maxWatchedTimeRef.current = currentTime;
+                            }
+                        }
+                    }
+
+                    // 2. CHỈ CHẶN TUA NẾU BẬT ANTI-SEEK
+                    if (antiSeek && currentTime > maxWatchedTimeRef.current + 1.5) {
+                        isSeekingRef.current = true;
+                        player.currentTime(maxWatchedTimeRef.current);
+                        setTimeout(() => { isSeekingRef.current = false; }, 100);
+                    }
+                });
+
+                player.on('seeking', () => {
+                    if (isCompletedRef.current || isSeekingRef.current) return;
+
+                    const currentTime = player.currentTime();
                     if (antiSeek) {
-                        if (currentTime > maxWatchedTimeRef.current && currentTime - maxWatchedTimeRef.current < 2) {
-                            maxWatchedTimeRef.current = currentTime;
+                        if (currentTime > maxWatchedTimeRef.current + 1) {
+                            isSeekingRef.current = true;
+                            player.currentTime(maxWatchedTimeRef.current);
+                            setTimeout(() => { isSeekingRef.current = false; }, 100);
                         }
                     } else {
                         if (currentTime > maxWatchedTimeRef.current) {
                             maxWatchedTimeRef.current = currentTime;
                         }
                     }
-                }
+                });
 
-                // 2. CHỈ CHẶN TUA NẾU BẬT ANTI-SEEK
-                if (antiSeek && currentTime > maxWatchedTimeRef.current + 1.5) {
-                    isSeekingRef.current = true;
-                    player.currentTime(maxWatchedTimeRef.current);
-                    setTimeout(() => { isSeekingRef.current = false; }, 100);
-                }
-            });
+                player.on('pause', () => {
+                    stopProgressCheck();
+                    callbacksRef.current.onPause?.();
+                });
 
-            player.on('seeking', () => {
-                if (isCompletedRef.current || isSeekingRef.current) return;
+                player.on('ended', () => {
+                    const duration = player.duration();
+                    const watchedTime = maxWatchedTimeRef.current;
 
-                const currentTime = player.currentTime();
-                if (antiSeek) {
-                    if (currentTime > maxWatchedTimeRef.current + 1) {
-                        isSeekingRef.current = true;
+                    // Nếu đã hoàn thành bài học từ trước, chỉ cần dừng lại (Dùng Ref để lấy giá trị mới nhất)
+                    if (isCompletedRef.current) {
+                        player.pause();
+                        return;
+                    }
+
+                    // CHỈ HOÀN THÀNH KHI XEM THẬT >= 95%
+                    if (duration > 0 && watchedTime / duration >= 0.95) {
+                        handleVideoComplete();
+                    } else {
+                        console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự. Không tính hoàn thành.');
+                        player.pause();
                         player.currentTime(maxWatchedTimeRef.current);
-                        setTimeout(() => { isSeekingRef.current = false; }, 100);
                     }
-                } else {
-                    if (currentTime > maxWatchedTimeRef.current) {
-                        maxWatchedTimeRef.current = currentTime;
-                    }
-                }
-            });
-
-            player.on('pause', () => {
-                stopProgressCheck();
-                callbacksRef.current.onPause?.();
-            });
-
-            player.on('ended', () => {
-                const duration = player.duration();
-                const watchedTime = maxWatchedTimeRef.current;
-
-                // Nếu đã hoàn thành bài học từ trước, chỉ cần dừng lại (Dùng Ref để lấy giá trị mới nhất)
-                if (isCompletedRef.current) {
-                    player.pause();
-                    return;
-                }
-
-                // CHỈ HOÀN THÀNH KHI XEM THẬT >= 95%
-                if (duration > 0 && watchedTime / duration >= 0.95) {
-                    handleVideoComplete();
-                } else {
-                    console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự. Không tính hoàn thành.');
-                    player.currentTime(maxWatchedTimeRef.current);
-                    player.play().catch(() => { });
-                }
-            });
+                });
         });
 
         return () => {

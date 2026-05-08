@@ -20,7 +20,9 @@ const getTodayStr = () => {
 
 const getDashboardStats = async () => {
     try {
-        // 1. Overview counts
+        const yesterday = moment().subtract(1, 'day').endOf('day').toDate();
+
+        // 1. Overview counts (Current)
         const totalStudents = await prisma.user.count({
             where: {
                 user_roles: {
@@ -46,6 +48,53 @@ const getDashboardStats = async () => {
         });
 
         const pendingRequests = coursePending + programPending;
+
+        // 1b. Historical counts (Yesterday)
+        const yesterdayStudents = await prisma.user.count({
+            where: {
+                created_at: { lte: yesterday },
+                user_roles: {
+                    some: {
+                        role: { name: 'student' }
+                    }
+                }
+            }
+        });
+
+        const yesterdayCourses = await prisma.course.count({
+            where: {
+                created_at: { lte: yesterday },
+                deleted_at: null
+            }
+        });
+
+        const yesterdayEnrollments = await prisma.enrollment.count({
+            where: { enrolled_at: { lte: yesterday } }
+        });
+
+        const yesterdayCourseRequests = await prisma.courseRequest.count({
+            where: { created_at: { lte: yesterday } }
+        });
+        const yesterdayProgramRequests = await prisma.programRequest.count({
+            where: { created_at: { lte: yesterday } }
+        });
+        const yesterdayTotalRequests = yesterdayCourseRequests + yesterdayProgramRequests;
+        const currentTotalRequests = await prisma.courseRequest.count() + await prisma.programRequest.count();
+
+        // Helper to calculate trend
+        const calculateTrend = (current, previous) => {
+            if (!previous || previous === 0) return { percent: '0%', isUp: true };
+            const diff = ((current - previous) / previous) * 100;
+            return {
+                percent: `${Math.abs(diff).toFixed(1)}%`,
+                isUp: diff >= 0
+            };
+        };
+
+        const studentTrend = calculateTrend(totalStudents, yesterdayStudents);
+        const courseTrend = calculateTrend(totalCourses, yesterdayCourses);
+        const enrollmentTrend = calculateTrend(totalEnrollments, yesterdayEnrollments);
+        const requestTrend = calculateTrend(currentTotalRequests, yesterdayTotalRequests);
 
         // 2. Enrollment Trend (Last 7 days)
         const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -78,6 +127,11 @@ const getDashboardStats = async () => {
 
         // 3. Top Courses by enrollment
         const topCoursesData = await prisma.enrollment.groupBy({
+            where: {
+                course: {
+                    deleted_at: null
+                }
+            },
             by: ['course_id'],
             _count: {
                 course_id: true
@@ -87,28 +141,32 @@ const getDashboardStats = async () => {
                     course_id: 'desc'
                 }
             },
-            take: 5
+            take: 10 // Fetch more to filter later if needed, but top 5 is usually enough
         });
 
-        const topCourses = await Promise.all(
+        const topCourses = (await Promise.all(
             topCoursesData.map(async (item) => {
-                const course = await prisma.course.findUnique({
-                    where: { id: item.course_id },
+                const course = await prisma.course.findFirst({
+                    where: { 
+                        id: item.course_id,
+                        deleted_at: null
+                    },
                     select: { title: true }
                 });
+                if (!course) return null;
                 return {
                     title: course.title,
                     count: item._count.course_id
                 };
             })
-        );
+        )).filter(Boolean).slice(0, 5);
 
         return {
             overview: {
-                totalStudents,
-                totalCourses,
-                totalEnrollments,
-                pendingRequests
+                totalStudents: { value: totalStudents, ...studentTrend },
+                totalCourses: { value: totalCourses, ...courseTrend },
+                totalEnrollments: { value: totalEnrollments, ...enrollmentTrend },
+                pendingRequests: { value: pendingRequests, ...requestTrend }
             },
             enrollmentTrends,
             topCourses
@@ -415,6 +473,17 @@ const getGlobalLearningTrends = async (days = 7) => {
 const getTopLearners = async () => {
     try {
         const topSessions = await prisma.learningSession.groupBy({
+            where: {
+                user: {
+                    user_roles: {
+                        none: {
+                            role: {
+                                name: 'admin'
+                            }
+                        }
+                    }
+                }
+            },
             by: ['user_id'],
             _sum: {
                 duration: true
@@ -450,6 +519,9 @@ const getTopLearners = async () => {
 const searchStudentsProgress = async (searchTerm, courseId = null) => {
     try {
         const whereClause = {
+            course: {
+                deleted_at: null
+            },
             ...(courseId && { course_id: parseInt(courseId) }),
             ...(searchTerm && {
                 user: {

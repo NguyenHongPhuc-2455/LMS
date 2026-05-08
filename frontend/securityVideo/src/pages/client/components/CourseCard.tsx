@@ -67,7 +67,7 @@ export default function CourseCard({ course }: CourseCardProps) {
                     </div>
                     <div className={styles.progressBarWrapper}>
                         <div 
-                            className={styles.progressBar} 
+                            className={`${styles.progressBar} ${course.progressPercent === 100 ? styles.finished : ''}`} 
                             style={{ width: `${course.progressPercent}%` }}
                         ></div>
                     </div>

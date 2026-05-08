@@ -241,7 +241,12 @@ exports.getSectionDetail = catchAsync(async (req, res) => {
 exports.getMyCourses = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const enrollments = await prisma.enrollment.findMany({
-        where: { user_id: userId },
+        where: { 
+            user_id: userId,
+            course: {
+                deleted_at: null
+            }
+        },
         include: {
             course: {
                 include: {

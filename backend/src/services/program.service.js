@@ -117,7 +117,12 @@ const enrollProgram = async (userId, programId) => {
 
 const getMyPrograms = async (userId) => {
     const enrollments = await prisma.programEnrollment.findMany({
-        where: { user_id: userId },
+        where: { 
+            user_id: userId,
+            program: {
+                deleted_at: null
+            }
+        },
         include: {
             program: {
                 include: {
