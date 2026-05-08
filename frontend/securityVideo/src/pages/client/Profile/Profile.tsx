@@ -7,7 +7,7 @@ import styles from './Profile.module.scss';
 // Sub-components
 import ProfileHeader from './components/ProfileHeader';
 import ProfileEditModal from './components/ProfileEditModal';
-import ProfileSections from './components/ProfileSections';
+// import ProfileSections from './components/ProfileSections';
 import { LearningStatsChart } from '../../../components';
 
 const Profile: React.FC = () => {
@@ -85,7 +85,7 @@ const Profile: React.FC = () => {
                 </Col>
                 <Col xs={24} md={16}>
                     <LearningStatsChart />
-                    <ProfileSections />
+                    {/* <ProfileSections /> */}
                 </Col>
             </Row>
 

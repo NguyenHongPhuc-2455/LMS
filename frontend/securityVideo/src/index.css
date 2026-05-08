@@ -90,3 +90,33 @@ body {
   font-weight: 500 !important;
   color: var(--text-main) !important;
 }
+
+/* KHÓA CỨNG THANH TIẾN TRÌNH - CHỐNG CLICK/KÉO */
+.vjs-anti-seek .vjs-progress-control {
+    pointer-events: none !important;
+}
+
+.vjs-anti-seek .vjs-play-progress::before {
+    display: none !important;
+}
+
+/* Khi đã hoàn thành: Khôi phục tương tác */
+.vjs-completed .vjs-progress-control {
+    pointer-events: auto !important;
+}
+
+.vjs-completed .vjs-play-progress::before {
+    display: block !important;
+}
+
+/* Native Player */
+.anti-seek-native video::-webkit-media-controls-timeline {
+    display: none !important;
+}
+
+.completed-native video::-webkit-media-controls-timeline {
+    display: block !important;
+}
+
+
+

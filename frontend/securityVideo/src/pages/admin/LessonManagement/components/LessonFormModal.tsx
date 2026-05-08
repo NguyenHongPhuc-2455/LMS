@@ -35,15 +35,23 @@ export default function LessonFormModal({
 
     useEffect(() => {
         if (open) {
+            form.resetFields();
             if (initialValues) {
                 form.setFieldsValue(initialValues);
-            } else {
-                form.resetFields();
+
+                // Tự động nhận diện loại nguồn video khi edit
+                if (lessonType === 'VIDEO') {
+                    if (initialValues.video_url && !initialValues.video_url.startsWith('hls/')) {
+                        setVideoSourceType('LINK');
+                    } else {
+                        setVideoSourceType('UPLOAD');
+                    }
+                }
             }
             setSelectedFile(null);
             setAttachmentFile(null);
         }
-    }, [open, initialValues, form]);
+    }, [open, initialValues, form, lessonType]);
 
     const handleFinish = async (values: any) => {
         await onSuccess(values, selectedFile, attachmentFile);
@@ -55,7 +63,7 @@ export default function LessonFormModal({
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="cancel" onClick={onCancel}>
+                <Button key="cancel" onClick={onCancel} size="large">
                     Hủy bỏ
                 </Button>,
                 <Button
@@ -97,6 +105,7 @@ export default function LessonFormModal({
                             selectedFile={selectedFile}
                             attachmentFile={attachmentFile}
                             editingId={editingId}
+                            form={form}
                         />
                     ) : (
                         <QuizLessonForm sections={sections} form={form} />

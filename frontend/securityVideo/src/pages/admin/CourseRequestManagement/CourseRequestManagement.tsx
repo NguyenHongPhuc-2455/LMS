@@ -94,7 +94,8 @@ export default function CourseRequestManagement() {
     };
 
     const filteredCourseRequests = courseRequests.filter(req =>
-        !selectedCategoryId || req.course?.category_id === selectedCategoryId
+        selectedCategoryId === null || 
+        (selectedCategoryId === -1 ? !req.course?.category_id : req.course?.category_id === selectedCategoryId)
     );
 
     const items = [
@@ -156,11 +157,11 @@ export default function CourseRequestManagement() {
                         <Select
                             placeholder="Tất cả danh mục"
                             allowClear
-                            style={{ width: 220 }}
-                            size="small"
+                            style={{ width: 180 }}
                             value={selectedCategoryId}
                             onChange={setSelectedCategoryId}
                         >
+                            <Select.Option value={-1}>Trống (Không danh mục)</Select.Option>
                             {categories.map(cat => (
                                 <Select.Option key={cat.id} value={cat.id}>
                                     {cat.name}
@@ -170,7 +171,6 @@ export default function CourseRequestManagement() {
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
-                                size="small"
                                 onClick={fetchAllRequests}
                                 loading={loading}
                             />

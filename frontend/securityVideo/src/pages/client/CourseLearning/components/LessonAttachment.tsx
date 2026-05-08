@@ -28,12 +28,11 @@ export default function LessonAttachment({ url, name }: LessonAttachmentProps) {
             <Button
                 type="primary"
                 icon={<DownloadOutlined />}
-                href={`http://localhost:5000${url}`}
+                href={url.startsWith('http') ? url : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${url}`}
                 target="_blank"
-                download
                 className={styles.downloadBtn}
             >
-                Tải về PDF
+                Xem tài liệu
             </Button>
         </div>
     );

@@ -192,7 +192,7 @@ export default function Navbar() {
                             <Text className={styles.userRoleText}>{isAdmin ? 'Quản trị viên' : 'Học viên'}</Text>
                         </div>
                         <Avatar
-                            src={user?.avatar}
+                            src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.username || 'U')}&background=4880FF&color=fff&size=200`}
                             size={44}
                             icon={<UserOutlined />}
                             className={styles.userNavbarAvatar}

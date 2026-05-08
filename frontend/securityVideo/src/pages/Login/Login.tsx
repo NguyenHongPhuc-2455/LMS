@@ -19,14 +19,14 @@ export default function Login() {
             localStorage.setItem('accessToken', data.accessToken);
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
-            message.success('Chào mừng bạn quay trở lại!');
+            message.success('Chào mừng bạn đến với eLearning!');
             if (data.user.roles?.includes('admin')) {
                 navigate('/admin');
             } else {
                 navigate('/course');
             }
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'username hoặc mật khẩu không đúng');
+            message.error(error.response?.data?.message || error.response?.data?.error || 'username hoặc mật khẩu không đúng');
         } finally {
             setLoading(false);
         }

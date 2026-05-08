@@ -429,4 +429,23 @@ model LearningSession {
   @@unique([user_id, course_id, date]) // Một ngày một khóa học chỉ có 1 bản ghi tổng hợp
   @@map("learning_sessions")
 }
+// ==========================================
+// 7. QUẢN LÝ BANNER & GIAO DIỆN (UI/UX)
+// ==========================================
 
+model HeroBanner {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  image_url   String?  @db.VarChar(500)
+  button_text String?  @db.VarChar(50)
+  button_link String?  @db.VarChar(500)
+  stat_value  String?  @db.VarChar(50)  // Ví dụ: "24+ khóa học"
+  color_code  String?  @db.VarChar(20)   // Mã màu nền (hex)
+  order       Int      @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("hero_banners")
+}

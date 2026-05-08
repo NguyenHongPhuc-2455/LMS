@@ -9,8 +9,8 @@ const getAllCourses = async (search = '', categoryId = null) => {
             ...(search && {
                 title: { contains: search, mode: 'insensitive' }
             }),
-            ...(categoryId && {
-                category_id: parseInt(categoryId)
+            ...(categoryId !== undefined && categoryId !== null && categoryId !== '' && {
+                category_id: parseInt(categoryId) === -1 ? null : parseInt(categoryId)
             })
         },
         include: {
@@ -22,8 +22,11 @@ const getAllCourses = async (search = '', categoryId = null) => {
 };
 
 const getCourseById = async (courseId) => {
-    return await prisma.course.findUnique({
-        where: { id: parseInt(courseId) },
+    return await prisma.course.findFirst({
+        where: { 
+            id: parseInt(courseId),
+            deleted_at: null
+        },
         include: {
             category: true,
             instructor: { select: { id: true, username: true, full_name: true } },

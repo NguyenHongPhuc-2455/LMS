@@ -58,7 +58,7 @@ export function useUserTableColumns() {
                 </Space>
             </div>
         ),
-        filterIcon: (filtered: boolean) => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+        filterIcon: (filtered: boolean) => <SearchOutlined style={{ color: filtered ? '#fff' : '#fff', fontSize: '18px' }} />,
         onFilter: (value, record) => {
             const searchValue = (value as string).toLowerCase();
             if (dataIndex === 'username') {

@@ -16,6 +16,7 @@ export interface Course {
     is_private: boolean;
     created_at: string;
     _count?: { sections: number };
+    progressPercent?: number; // Added progress field
 }
 
 interface CourseCardProps {
@@ -31,13 +32,11 @@ export default function CourseCard({ course }: CourseCardProps) {
             className={`glass-card ${styles.courseHoverCard}`}
             cover={
                 <div className={styles.courseCardCover}>
-                    {course.thumbnail ? (
-                        <img src={course.thumbnail} alt={course.title} className={styles.thumbnailImg} />
-                    ) : (
-                        <div className={styles.placeholderIconWrapper}>
-                            <BookOutlined />
-                        </div>
-                    )}
+                    <img 
+                        src={course.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'} 
+                        alt={course.title} 
+                        className={styles.thumbnailImg} 
+                    />
                 </div>
             }
             onClick={() => navigate(`/course/${course.id}`)}
@@ -58,6 +57,22 @@ export default function CourseCard({ course }: CourseCardProps) {
                     </Tag>
                 </div>
             </div>
+
+            {/* Progress Section */}
+            {(course.progressPercent !== undefined && course.progressPercent !== null) && (
+                <div className={styles.progressContainer}>
+                    <div className={styles.progressHeader}>
+                        <Text type="secondary" className={styles.progressText}>Tiến độ học tập</Text>
+                        <Text strong className={styles.percentText}>{course.progressPercent}%</Text>
+                    </div>
+                    <div className={styles.progressBarWrapper}>
+                        <div 
+                            className={`${styles.progressBar} ${course.progressPercent === 100 ? styles.finished : ''}`} 
+                            style={{ width: `${course.progressPercent}%` }}
+                        ></div>
+                    </div>
+                </div>
+            )}
 
             <hr className={styles.courseCardDivider} />
 

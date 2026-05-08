@@ -1,16 +1,30 @@
 .videoPlayerContainer {
     width: 100%;
     aspect-ratio: 16/9;
-    max-height: 70vh;
     background: #000;
-    border-radius: 8px;
+    border-radius: 16px; /* Bo góc mượt hơn */
     overflow: hidden;
     position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .videoElement {
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: contain;
+    object-fit: contain; /* Giữ tỉ lệ gốc của video */
+    margin: auto;
+    background: #000;
+}
+
+.videoOverlayMask {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px; /* Độ cao bao phủ thanh timeline của trình duyệt */
+    z-index: 10;
+    background: transparent;
+    cursor: default;
+    /* Không dùng pointer-events: none vì ta MUỐN nó chặn click */
 }

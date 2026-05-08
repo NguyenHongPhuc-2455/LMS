@@ -68,11 +68,8 @@ const AppHeader: React.FC = () => {
                         }
                     },
                     className: newNotif.link ? styles.cursorPointer : '',
-                    icon: newNotif.type === 'COURSE_APPROVAL' ?
-                        <CheckCircleOutlined className={styles.iconSuccess} /> :
-                        newNotif.type === 'COMMENT_REPLY' ?
-                            <MessageOutlined className={styles.iconPrimary} /> :
-                            <CloseCircleOutlined className={styles.iconError} />,
+                    icon: null,
+                    duration: 5,
                 });
             };
             socket.on('newNotification', handleNewNotif);
@@ -254,7 +251,7 @@ const AppHeader: React.FC = () => {
                 <Dropdown menu={userMenuItems} trigger={['click']}>
                     <div className={styles.userProfileTrigger}>
                         <Avatar
-                            src={user?.avatar}
+                            src={profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.full_name || profile?.username || 'U')}&background=4880FF&color=fff&size=200`}
                             icon={<UserOutlined />}
                             className={styles.headerUserAvatar}
                             size={38}

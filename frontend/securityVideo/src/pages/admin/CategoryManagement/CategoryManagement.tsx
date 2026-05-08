@@ -136,13 +136,11 @@ const CategoryManagement: React.FC = () => {
                             value={searchText}
                             onChange={e => setSearchText(e.target.value)}
                             style={{ width: 220, borderRadius: '8px' }}
-                            size="small"
                         />
                         <Select
                             value={filterType}
                             onChange={setFilterType}
                             style={{ width: 180 }}
-                            size="small"
                         >
                             <Select.Option value="ALL">Tất cả danh mục</Select.Option>
                             <Select.Option value="HAS_COURSES">Đã có khóa học</Select.Option>

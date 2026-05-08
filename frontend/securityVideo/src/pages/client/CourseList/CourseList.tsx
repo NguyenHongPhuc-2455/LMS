@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Skeleton, message, Empty, Typography } from 'antd';
+import { Skeleton, message, Empty, Typography, Select } from 'antd';
+import { LockOutlined } from '@ant-design/icons';
 import { courseService } from '../../../services/course.service';
 import { categoryService } from '../../../services/category.service';
 import styles from './CourseList.module.scss';
@@ -24,17 +25,17 @@ export default function CourseList() {
     const categoryId = searchParams.get('categoryId') ? parseInt(searchParams.get('categoryId') as string) : undefined;
 
     // Phân trang & Sắp xếp
-    const [currentPageMy, setCurrentPageMy] = useState(1);
-    const [currentPagePrivate, setCurrentPagePrivate] = useState(1);
-    const [currentPagePublic, setCurrentPagePublic] = useState(1);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [levelFilter, setLevelFilter] = useState('ALL');
+    const [accessFilter, setAccessFilter] = useState('ALL');
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
     const [sortBy, setSortBy] = useState('newest');
-    const pageSize = 5;
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     useEffect(() => {
-        setCurrentPageMy(1);
-        setCurrentPagePrivate(1);
-        setCurrentPagePublic(1);
-    }, [searchQuery, sortBy]);
+        setCurrentPage(1);
+    }, [searchQuery, sortBy, statusFilter, levelFilter, accessFilter, selectedCategoryIds]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -50,23 +51,21 @@ export default function CourseList() {
         const fetchCourses = async () => {
             try {
                 setLoading(true);
-                // Fetch all courses and my courses in parallel
+                // Fetch all courses for the search query (ignoring specific categoryId for client-side multi-filter)
                 const [allData, myData] = await Promise.all([
-                    courseService.getAll(searchQuery, categoryId),
+                    courseService.getAll(searchQuery),
                     courseService.getMyCourses()
                 ]);
 
                 setCourses(allData);
                 setRegisteredCourses(myData);
 
-                if (categoryId) {
-                    const currentCat = categories.find(c => c.id === categoryId);
-                    if (currentCat) setCategoryName(currentCat.name);
-                    else {
-                        const cats = await categoryService.getAllCategories();
-                        const findCat = cats.find(c => c.id === categoryId);
-                        if (findCat) setCategoryName(findCat.name);
-                    }
+                // Update category name display (optional, could be "Nhiều danh mục")
+                if (selectedCategoryIds.length === 1) {
+                    const cat = categories.find(c => c.id === selectedCategoryIds[0]);
+                    setCategoryName(cat ? cat.name : null);
+                } else if (selectedCategoryIds.length > 1) {
+                    setCategoryName(`${selectedCategoryIds.length} danh mục đã chọn`);
                 } else {
                     setCategoryName(null);
                 }
@@ -78,7 +77,7 @@ export default function CourseList() {
             }
         };
         fetchCourses();
-    }, [searchQuery, categoryId, categories]);
+    }, [searchQuery, selectedCategoryIds, categories]);
 
     const handleCategoryChange = (id: number | undefined) => {
         if (id) {
@@ -132,70 +131,186 @@ export default function CourseList() {
         return sorted;
     };
 
-    // Filter out registered courses from the main list
-    const registeredIds = new Set(registeredCourses.map(rc => rc.id));
-    const availableCourses = courses.filter(c => !registeredIds.has(c.id));
+    const getFilteredCourses = () => {
+        // Map progress data to courses
+        // const progressMap = new Map(registeredCourses.map(rc => [rc.id, rc.progressPercent]));
+        const progressMap = new Map(
+            Array.isArray(registeredCourses)
+                ? registeredCourses.map(rc => [rc.id, rc.progressPercent])
+                : []
+        );
 
-    const sortedRegisteredCourses = sortCourses(registeredCourses);
-    const publicCourses = sortCourses(availableCourses.filter(c => !c.is_private));
-    const privateCourses = sortCourses(availableCourses.filter(c => c.is_private));
+        let list = courses.map(c => ({
+            ...c,
+            progressPercent: progressMap.get(c.id) // Attach progress if exists
+        }));
+
+        // Status Filter
+        if (statusFilter === 'IN_PROGRESS') {
+            list = list.filter(c => c.progressPercent !== undefined && (c.progressPercent || 0) < 100);
+        } else if (statusFilter === 'COMPLETED') {
+            list = list.filter(c => (c.progressPercent || 0) === 100);
+        } else if (statusFilter === 'FAVORITE') {
+            list = []; // Placeholder for favorites
+        }
+
+        // Level Filter
+        if (levelFilter !== 'ALL') {
+            list = list.filter(c => c.level === levelFilter);
+        }
+
+        // Access Filter
+        if (accessFilter === 'PUBLIC') {
+            list = list.filter(c => !c.is_private);
+        } else if (accessFilter === 'PRIVATE') {
+            list = list.filter(c => c.is_private);
+        }
+
+        // Category Multi-filter
+        if (selectedCategoryIds.length > 0) {
+            list = list.filter(c => {
+                // Assuming c.category_id or c.category.id exists
+                // Based on previous code, we need to find how category is structured in Course object
+                const courseCatId = (c as any).category_id || (c.category as any)?.id;
+                return selectedCategoryIds.includes(courseCatId);
+            });
+        }
+
+        return sortCourses(list);
+    };
+
+    const filteredCourses = getFilteredCourses();
+    const displayed = filteredCourses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
         <div className={styles.courseListContainer}>
-            <div style={{ marginBottom: '32px' }}>
-                <Typography.Title level={2}>Tất cả Khóa học</Typography.Title>
-                <Typography.Title level={5} type="secondary" style={{ fontWeight: 400, marginTop: 0 }}>
-                    {categoryId
-                        ? `Đang hiển thị các khóa học thuộc danh mục "${categoryName || '...'}"`
-                        : "Khám phá và chọn lựa những khóa học phù hợp với bạn"}
-                </Typography.Title>
+            {/* <div className={styles.pageHeader}>
+                <Typography.Title level={2} className={styles.headerTitle}>Khóa học</Typography.Title>
+                <Typography.Text type="secondary" style={{ fontSize: '18px' }}>
+                    Khám phá và chọn lựa những khóa học phù hợp
+                </Typography.Text>
+            </div> */}
+
+            {/* Unified Filter Bar */}
+            <div className={styles.unifiedFilterBar}>
+                {/* Group 1: Status */}
+                <div className={styles.filterGroup}>
+                    <div
+                        className={`${styles.filterItem} ${statusFilter === 'ALL' ? styles.active : ''}`}
+                        onClick={() => setStatusFilter('ALL')}
+                    >
+                        Tất cả
+                    </div>
+                    <div
+                        className={`${styles.filterItem} ${statusFilter === 'IN_PROGRESS' ? styles.active : ''}`}
+                        onClick={() => setStatusFilter('IN_PROGRESS')}
+                    >
+                        Đang học
+                    </div>
+                    <div
+                        className={`${styles.filterItem} ${statusFilter === 'COMPLETED' ? styles.active : ''}`}
+                        onClick={() => setStatusFilter('COMPLETED')}
+                    >
+                        Hoàn thành
+                    </div>
+                    {/* <div 
+                        className={`${styles.filterItem} ${statusFilter === 'FAVORITE' ? styles.active : ''}`}
+                        onClick={() => setStatusFilter('FAVORITE')}
+                    >
+                        Yêu thích
+                    </div> */}
+                </div>
+
+                <div className={styles.separator} />
+
+                {/* Group 2: Level */}
+                <div className={styles.filterGroup}>
+                    <div
+                        className={`${styles.filterItem} ${levelFilter === 'Cơ bản' ? styles.active : ''}`}
+                        onClick={() => setLevelFilter(levelFilter === 'Cơ bản' ? 'ALL' : 'Cơ bản')}
+                    >
+                        <span className={styles.dot} style={{ background: '#3b82f6' }}></span> Cơ bản
+                    </div>
+                    <div
+                        className={`${styles.filterItem} ${levelFilter === 'Trung cấp' ? styles.active : ''}`}
+                        onClick={() => setLevelFilter(levelFilter === 'Trung cấp' ? 'ALL' : 'Trung cấp')}
+                    >
+                        <span className={styles.dot} style={{ background: '#f59e0b' }}></span> Trung cấp
+                    </div>
+                    <div
+                        className={`${styles.filterItem} ${levelFilter === 'Nâng cao' ? styles.active : ''}`}
+                        onClick={() => setLevelFilter(levelFilter === 'Nâng cao' ? 'ALL' : 'Nâng cao')}
+                    >
+                        <span className={styles.dot} style={{ background: '#ef4444' }}></span> Nâng cao
+                    </div>
+                </div>
+
+                <div className={styles.separator} />
+
+                {/* Group 3: Mode */}
+                <div className={styles.filterGroup}>
+                    <div
+                        className={`${styles.filterItem} ${accessFilter === 'PUBLIC' ? styles.active : ''}`}
+                        onClick={() => setAccessFilter(accessFilter === 'PUBLIC' ? 'ALL' : 'PUBLIC')}
+                    >
+                        Công khai
+                    </div>
+                    <div
+                        className={`${styles.filterItem} ${accessFilter === 'PRIVATE' ? styles.active : ''}`}
+                        onClick={() => setAccessFilter(accessFilter === 'PRIVATE' ? 'ALL' : 'PRIVATE')}
+                    >
+                        Riêng tư
+                    </div>
+                </div>
+
+                <div className={styles.sortWrapper}>
+                    <CourseFilter
+                        categories={categories}
+                        selectedCategoryId={categoryId}
+                        onCategoryChange={handleCategoryChange}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                        hideCategory={true}
+                    />
+                </div>
             </div>
 
-            <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'flex-start' }}>
-                <CourseFilter
-                    categories={categories}
-                    selectedCategoryId={categoryId}
-                    onCategoryChange={handleCategoryChange}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
+            <div className={styles.categoryFilterRow}>
+                <div className={styles.filterLabel}>Danh mục</div>
+                <Select
+                    mode="multiple"
+                    placeholder="Chọn danh mục để lọc..."
+                    value={selectedCategoryIds}
+                    onChange={(values) => setSelectedCategoryIds(values)}
+                    allowClear
+                    className={styles.multiCategorySelect}
+                    options={categories.map(cat => ({ label: cat.name, value: cat.id }))}
                 />
             </div>
 
             {loading ? (
                 <div style={{ marginTop: '40px' }}>
-                    <Skeleton active paragraph={{ rows: 6 }} />
-                    <Skeleton active paragraph={{ rows: 6 }} style={{ marginTop: '40px' }} />
+                    <Skeleton active paragraph={{ rows: 10 }} />
                 </div>
             ) : (
                 <>
-                    {registeredCourses.length > 0 && (
-                        <MyCourseGrid
-                            title="Khóa học của tôi"
-                            courses={sortedRegisteredCourses}
-                            currentPage={currentPageMy}
-                            pageSize={pageSize}
-                            setCurrentPage={setCurrentPageMy}
+                    <CourseGrid
+                        title={""} // No title needed here as we use headers above
+                        courses={filteredCourses}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        setCurrentPage={setCurrentPage}
+                    />
+
+                    {filteredCourses.length === 0 && (
+                        <Empty
+                            description={
+                                statusFilter === 'ALL'
+                                    ? "Chưa có khóa học nào được đăng tải"
+                                    : "Không tìm thấy khóa học nào phù hợp"
+                            }
+                            style={{ marginTop: '80px' }}
                         />
-                    )}
-
-                    <CourseGrid
-                        title="Khóa học Riêng tư (Cần phê duyệt)"
-                        courses={privateCourses}
-                        currentPage={currentPagePrivate}
-                        pageSize={pageSize}
-                        setCurrentPage={setCurrentPagePrivate}
-                    />
-
-                    <CourseGrid
-                        title="Khóa học cộng đồng (Khóa học Công khai)"
-                        courses={publicCourses}
-                        currentPage={currentPagePublic}
-                        pageSize={pageSize}
-                        setCurrentPage={setCurrentPagePublic}
-                    />
-
-                    {courses.length === 0 && (
-                        <Empty description="Chưa có khóa học nào được đăng tải" style={{ marginTop: '40px' }} />
                     )}
                 </>
             )}

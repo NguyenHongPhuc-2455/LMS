@@ -5,14 +5,18 @@ const videoService = require('../services/video.service');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 const { verifyStreamToken } = require('../utils/streamToken');
+const { decodeVideoToken, createVideoToken } = require('../utils/crypto');
+const axios = require('axios');
+const cloudinary = require('../configs/cloudinary.config');
+const { getFileStream, uploadFile, R2_PUBLIC_URL } = require('../utils/r2Storage');
 
 /**
  * Upload và bắt đầu xử lý Video
  */
 exports.uploadVideo = catchAsync(async (req, res) => {
-    const { title, section_id, order, video_url, content, duration: manualDuration, anti_seek } = req.body;
+    const { title, section_id, order, video_url, hls_video_url, content, duration: manualDuration, anti_seek, attachment_url } = req.body;
 
-    if (!req.file && !video_url) throw new ApiError(400, 'Please upload a video file or provide a video URL');
+    if (!req.file && !video_url && !hls_video_url) throw new ApiError(400, 'Please upload a video file or provide a video URL');
     if (!section_id) throw new ApiError(400, 'Section ID is required');
 
     const lesson = await prisma.lesson.create({
@@ -23,14 +27,15 @@ exports.uploadVideo = catchAsync(async (req, res) => {
             content: content || null,
             order: order ? parseInt(order) : 0,
             video_url: video_url || null,
-            anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : true
+            anti_seek: anti_seek !== undefined ? (anti_seek === 'false' ? false : Boolean(anti_seek)) : true,
+            attachment_url: attachment_url || null,
+            attachment_name: attachment_url ? 'Document' : null
         }
     });
 
-    if (req.file) {
-        // Chạy ngầm trong background
-        videoService.processVideoToHLS(lesson.id, req.file.path);
-
+    if (req.file || hls_video_url) {
+        const sourcePath = req.file ? req.file.path : hls_video_url;
+        videoService.processVideoToHLS(lesson.id, sourcePath);
         return res.status(202).json({
             status: 'success',
             message: 'Video is being processed...',
@@ -39,7 +44,6 @@ exports.uploadVideo = catchAsync(async (req, res) => {
     }
 
     if (video_url) {
-        // Nếu là Link trực tiếp (không phải Youtube), thử lấy duration
         let duration = manualDuration ? parseInt(manualDuration) : 0;
         const isYoutube = video_url.includes('youtube.com') || video_url.includes('youtu.be');
 
@@ -82,123 +86,23 @@ exports.getVideos = catchAsync(async (req, res) => {
 });
 
 /**
- * Endpoint cung cấp Key cho trình phát video (Đã qua Auth Middleware)
- */
-exports.getVideoKey = catchAsync(async (req, res) => {
-    const { lessonId } = req.params;
-    const userId = req.user.id;
-    const roles = req.user.roles || [];
-
-    if (isNaN(parseInt(lessonId))) throw new ApiError(400, 'Invalid lesson ID');
-
-    // 1. Lấy thông tin bài học và khóa học tương ứng
-    const lesson = await prisma.lesson.findUnique({
-        where: { id: parseInt(lessonId) },
-        include: {
-            section: {
-                select: { course_id: true }
-            }
-        }
-    });
-
-    if (!lesson) throw new ApiError(404, 'Không tìm thấy bài học');
-
-    const courseId = lesson.section.course_id;
-
-    // 2. Kiểm tra quyền truy cập
-    // Bài học miễn phí hoặc User là Admin/Instructor thì cho phép luôn
-    const isSpecialUser = roles.includes('admin') || roles.includes('instructor');
-
-    if (!lesson.is_free && !isSpecialUser) {
-        // Kiểm tra Enrollment (Trực tiếp hoặc qua Program)
-        const [enrollment, programEnrollment] = await Promise.all([
-            prisma.enrollment.findUnique({
-                where: { user_id_course_id: { user_id: userId, course_id: courseId } }
-            }),
-            prisma.programEnrollment.findFirst({
-                where: {
-                    user_id: userId,
-                    program: {
-                        courses: {
-                            some: { course_id: courseId }
-                        }
-                    }
-                }
-            })
-        ]);
-
-        if (!enrollment && !programEnrollment) {
-            throw new ApiError(403, 'Bạn chưa có quyền truy cập video này. Vui lòng đăng ký khóa học.');
-        }
-    }
-
-    const key = await videoService.getVideoKey(lessonId);
-
-    res.set('Content-Type', 'application/octet-stream');
-    res.set('Cache-Control', 'no-store');
-    res.send(key);
-});
-
-/**
  * Xóa video
  */
 exports.deleteVideo = catchAsync(async (req, res) => {
     const { id } = req.params;
     if (isNaN(parseInt(id))) throw new ApiError(400, 'Invalid lesson ID');
-
-    // 1. Xóa folder video vật lý
     await videoService.deleteVideoFiles(id);
-
-    // 2. Xóa trong database
     await prisma.lesson.delete({ where: { id: parseInt(id) } });
-
-    res.json({
-        status: 'success',
-        message: 'Video deleted'
-    });
+    res.json({ status: 'success', message: 'Video deleted' });
 });
 
 /**
  * Cập nhật thông tin bài học
  */
-/**
- * Endpoint phục vụ file Manifest .m3u8 (Có kiểm tra On-demand Transcoding)
- */
-exports.getManifest = catchAsync(async (req, res) => {
-    const { id } = req.params;
-
-    // Đảm bảo HLS đã sẵn sàng
-    const isReady = await videoService.ensureHLS(id);
-
-    // Nếu chưa sẵn sàng ngay lập tức (đang băm ngầm), 
-    // lý tưởng nhất là trả về loading hoặc một list trống.
-    // Tuy nhiên FFmpeg băm khá nhanh master.m3u8, ta sẽ đợi một chút hoặc serve trực tiếp.
-
-    const manifestPath = path.join(__dirname, `../../public/hls/${id}/master.m3u8`);
-
-    // Đợi tối đa 5s cho master.m3u8 xuất hiện nếu đang băm
-    if (!isReady) {
-        let attempts = 0;
-        while (!fs.existsSync(manifestPath) && attempts < 10) {
-            await new Promise(r => setTimeout(r, 500));
-            attempts++;
-        }
-    }
-
-    if (!fs.existsSync(manifestPath)) {
-        return res.status(202).json({
-            status: 'processing',
-            message: 'Video is being transcoded, please retry in a few seconds'
-        });
-    }
-
-    res.sendFile(manifestPath);
-});
-
 exports.updateLesson = catchAsync(async (req, res) => {
     const { id } = req.params;
     if (isNaN(parseInt(id))) throw new ApiError(400, 'Invalid lesson ID');
-    const { title, section_id, content, order, duration, anti_seek } = req.body;
+    const { title, section_id, content, order, duration, anti_seek, attachment_url, attachment_name } = req.body;
 
     const lesson = await prisma.lesson.update({
         where: { id: parseInt(id) },
@@ -208,15 +112,14 @@ exports.updateLesson = catchAsync(async (req, res) => {
             content,
             order: order !== undefined ? parseInt(order) : undefined,
             duration: duration !== undefined ? parseInt(duration) : undefined,
-            anti_seek: anti_seek !== undefined ? Boolean(anti_seek) : undefined
+            anti_seek: anti_seek !== undefined ? (anti_seek === 'false' ? false : Boolean(anti_seek)) : undefined,
+            attachment_url: attachment_url !== undefined ? attachment_url : undefined,
+            attachment_name: attachment_name !== undefined ? attachment_name : undefined
         },
         select: videoService.lessonSelect
     });
 
-    res.json({
-        status: 'success',
-        data: lesson
-    });
+    res.json({ status: 'success', data: lesson });
 });
 
 /**
@@ -228,126 +131,219 @@ exports.uploadAttachment = catchAsync(async (req, res) => {
 
     if (!req.file) throw new ApiError(400, 'Vui lòng chọn tệp đính kèm');
 
-    const fileName = `${Date.now()}-${req.file.originalname}`;
-    const destinationPath = path.join(__dirname, '../../public/attachments', fileName);
+    try {
+        const cleanName = req.file.originalname
+            .replace(/\s+/g, '_')
+            .replace(/[^a-zA-Z0-9._-]/g, '');
 
-    // Di chuyển file từ temp upload sang thư mục chính
-    fs.renameSync(req.file.path, destinationPath);
+        const publicId = `attachment-${Date.now()}-${cleanName}`;
 
-    const attachmentUrl = `/public/attachments/${fileName}`;
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'security_video_attachments',
+            resource_type: 'raw',
+            public_id: publicId
+        });
 
-    const lesson = await prisma.lesson.update({
-        where: { id: parseInt(lessonId) },
-        data: {
-            attachment_url: attachmentUrl,
-            attachment_name: req.file.originalname
-        },
-        select: videoService.lessonSelect
-    });
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
-    res.json({
-        status: 'success',
-        message: 'Tài liệu đã được tải lên thành công',
-        data: lesson
-    });
+        const lesson = await prisma.lesson.update({
+            where: { id: parseInt(lessonId) },
+            data: {
+                attachment_url: result.secure_url,
+                attachment_name: req.file.originalname
+            },
+            select: videoService.lessonSelect
+        });
+
+        res.json({
+            status: 'success',
+            message: 'Tài liệu đã được tải lên thành công',
+            data: lesson
+        });
+    } catch (error) {
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        throw new ApiError(500, `Lỗi upload tài liệu: ${error.message}`);
+    }
 });
 
 /**
- * Quét lại thông tin thời lượng (Re-probe)
- */
-exports.reprobeVideo = catchAsync(async (req, res) => {
-    const { id } = req.params;
-    if (isNaN(parseInt(id))) throw new ApiError(400, 'Invalid lesson ID');
-
-    const lesson = await prisma.lesson.findUnique({ where: { id: parseInt(id) } });
-    if (!lesson) throw new ApiError(404, 'Lesson not found');
-
-    // Xác định nguồn để quét
-    const source = lesson.source_url || lesson.video_url;
-    if (!source || source.includes('youtube.com') || source.includes('youtu.be')) {
-        throw new ApiError(400, 'Cannot reprobe YouTube videos. Please update duration manually.');
-    }
-
-    // Nếu là file vật lý cục bộ thì cần map lại path
-    let probePath = source;
-    if (source.startsWith('/public/hls/')) {
-        // HLS playlist might not give good duration for some ffprobe versions, 
-        // better use a segment or the master if it contains duration tags.
-        probePath = path.join(__dirname, '../../', source);
-    }
-
-    const duration = await videoService.getDuration(probePath);
-
-    const updated = await prisma.lesson.update({
-        where: { id: parseInt(id) },
-        data: { duration }
-    });
-
-    res.json({
-        status: 'success',
-        message: 'Re-probe successful',
-        data: { duration: updated.duration }
-    });
-});
-
-/**
- * Proxy stream HLS an toàn
+ * Endpoint phục vụ file Manifest .m3u8 (HLS từ R2)
  */
 exports.streamProxy = catchAsync(async (req, res) => {
     let { token, filePath } = req.params;
 
     try {
-        // Log ngay lập tức khi nhận request
-        console.log(`[STREAM] Request for token: ${token}, filePath raw:`, filePath);
-
-        // Đảm bảo filePath là string
-        if (Array.isArray(filePath)) {
-            filePath = filePath.join('/');
-        }
-        if (!filePath) {
-            filePath = 'master.m3u8';
-        }
+        if (Array.isArray(filePath)) filePath = filePath.join('/');
+        if (!filePath) filePath = 'stream.m3u8';
 
         const payload = verifyStreamToken(token);
-        if (!payload) {
-            console.error(`[STREAM ERROR] Token không hợp lệ: ${token}`);
-            return res.status(403).json({ error: 'Token stream không hợp lệ hoặc đã hết hạn.' });
-        }
+        if (!payload) return res.status(403).json({ error: 'Token stream không hợp lệ hoặc đã hết hạn.' });
 
-        // Kiểm tra IP để chống chia sẻ link giữa các User
-        if (payload.clientIp && payload.clientIp !== req.ip) {
-            console.error(`[STREAM ERROR] IP Mismatch. Token IP: ${payload.clientIp}, Request IP: ${req.ip}`);
-            // Xử lý báo lỗi để Client re-sync Token
-            return res.status(403).json({ error: 'Token này được tạo cho một địa chỉ IP khác. Cần đồng bộ lại.' });
-        }
-
-        const { lessonId } = payload;
-
-        // Làm sạch và build đường dẫn vật lý
+        const lessonId = payload.lessonId;
         const safeFilePath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-        const physicalPath = path.resolve(__dirname, '../../public/hls', String(lessonId), safeFilePath);
 
-        console.log(`[STREAM DEBUG] Lesson: ${lessonId}, File: ${safeFilePath}, Path: ${physicalPath}`);
-
-        if (!fs.existsSync(physicalPath)) {
-            console.error(`[STREAM ERROR] Không tìm thấy file: ${physicalPath}`);
-            return res.status(404).send('Video file not found');
+        if (safeFilePath.endsWith('.key') || safeFilePath.endsWith('.keyinfo')) {
+            return res.status(403).json({ error: 'Truy cập bị từ chối. Key chỉ được cấp qua kênh bảo mật riêng.' });
         }
 
-        // Headers cho HLS (CORS & Security)
-        const origin = req.headers.origin;
-        if (origin) {
-            res.setHeader('Access-Control-Allow-Origin', origin);
-            res.setHeader('Access-Control-Allow-Credentials', 'true');
-        } else {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-        }
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const r2Key = `hls/${lessonId}/${safeFilePath}`;
+        console.log(`[STREAM R2] Lesson: ${lessonId}, Key: ${r2Key}`);
 
-        return res.sendFile(physicalPath);
+        if (safeFilePath.endsWith('.m3u8')) {
+            const response = await getFileStream(r2Key);
+            let content = '';
+
+            return new Promise((resolve, reject) => {
+                response.Body.on('data', chunk => content += chunk.toString());
+                response.Body.on('end', () => {
+                    const normalizedIp = req.ip.replace('::ffff:', '');
+                    const token = createVideoToken(`key-${lessonId}`, normalizedIp);
+                    const signedKeyUrl = `/api/videos/key/${lessonId}?token=${encodeURIComponent(token)}`;
+
+                    const newContent = content.replace(
+                        new RegExp(`URI="/api/videos/key/${lessonId}"`, 'g'),
+                        `URI="${signedKeyUrl}"`
+                    );
+
+                    res.set('Content-Type', 'application/x-mpegURL');
+                    res.send(newContent);
+                    resolve();
+                });
+                response.Body.on('error', reject);
+            });
+        }
+
+        const r2Response = await getFileStream(r2Key);
+        res.set({
+            'Content-Type': safeFilePath.endsWith('.ts') ? 'video/mp2t' : 'application/octet-stream',
+            'Access-Control-Allow-Origin': req.headers.origin || '*',
+            'Access-Control-Allow-Credentials': 'true',
+            'Cache-Control': 'no-store'
+        });
+        r2Response.Body.pipe(res);
     } catch (err) {
         console.error('[STREAM FATAL ERROR]', err);
         return res.status(500).json({ error: err.message });
     }
+});
+
+/**
+ * Proxy stream link trực tiếp (Cloudinary, v.v.) qua Token AES
+ */
+exports.secureStream = catchAsync(async (req, res) => {
+    const { token } = req.params;
+
+    // Giải mã không kiểm tra IP (Theo yêu cầu cho link Public)
+    const payload = decodeVideoToken(token, req.ip);
+    if (!payload) return res.status(403).json({ error: 'Token video không hợp lệ hoặc đã hết hạn.' });
+
+    const originalUrl = payload.url;
+    console.log(`[SECURE STREAM] Proxying URL: ${originalUrl}`);
+
+    try {
+        const headers = {};
+        if (req.headers.range) headers.range = req.headers.range;
+
+        const response = await axios({
+            method: 'get',
+            url: originalUrl,
+            responseType: 'stream',
+            headers: headers,
+            timeout: 30000
+        });
+
+        res.set({
+            'Content-Type': response.headers['content-type'],
+            'Content-Length': response.headers['content-length'],
+            'Accept-Ranges': response.headers['accept-ranges'] || 'bytes',
+            'Content-Range': response.headers['content-range'],
+            'Access-Control-Allow-Origin': req.headers.origin || '*',
+            'Access-Control-Allow-Credentials': 'true'
+        });
+
+        if (response.status === 206) res.status(206);
+        response.data.pipe(res);
+
+        response.data.on('error', () => res.end());
+        req.on('close', () => { if (response.data?.destroy) response.data.destroy(); });
+    } catch (error) {
+        console.error('[SECURE STREAM ERROR]', error.message);
+        res.status(500).send('Internal Server Error while streaming');
+    }
+});
+
+/**
+ * Lấy chìa khóa giải mã video HLS (AES-128)
+ */
+exports.getVideoKey = catchAsync(async (req, res) => {
+    const { lessonId } = req.params;
+    const { token } = req.query;
+    const userId = req.user.id;
+    const roles = req.user.roles || [];
+
+    if (!token) throw new ApiError(403, 'Thiếu mã xác thực chìa khóa');
+
+    const clientIp = req.ip.replace('::ffff:', '');
+    const payload = decodeVideoToken(token, clientIp);
+
+    if (!payload || payload.url !== `key-${lessonId}`) {
+        throw new ApiError(403, 'Mã xác thực chìa khóa không hợp lệ hoặc đã hết hạn');
+    }
+
+    const lesson = await prisma.lesson.findUnique({
+        where: { id: parseInt(lessonId) },
+        include: { section: { select: { course_id: true } } }
+    });
+
+    if (!lesson || !lesson.hls_key) throw new ApiError(404, 'Không tìm thấy khóa giải mã');
+
+    // Kiểm tra quyền truy cập
+    const isSpecialUser = roles.includes('admin') || roles.includes('instructor');
+    if (!lesson.is_free && !isSpecialUser) {
+        const courseId = lesson.section.course_id;
+        const enrollment = await prisma.enrollment.findUnique({
+            where: { user_id_course_id: { user_id: userId, course_id: courseId } }
+        });
+        if (!enrollment) throw new ApiError(403, 'Bạn không có quyền truy cập video này');
+    }
+
+    res.set({
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': lesson.hls_key.length,
+        'Access-Control-Allow-Origin': req.headers.origin || '*',
+        'Access-Control-Allow-Credentials': 'true'
+    });
+    res.send(lesson.hls_key);
+});
+
+/**
+ * Làm mới token stream
+ */
+exports.refreshStreamToken = catchAsync(async (req, res) => {
+    const { lessonId } = req.params;
+    const lesson = await prisma.lesson.findUnique({ where: { id: parseInt(lessonId) } });
+    if (!lesson) throw new ApiError(404, 'Không tìm thấy bài học');
+
+    const newToken = createVideoToken(lesson.video_url, req.ip, 60 * 60 * 1000); // 1 giờ
+    res.json({ videoUrl: `/api/videos/secure-stream/${encodeURIComponent(newToken)}` });
+});
+
+/**
+ * Quét lại thông tin thời lượng
+ */
+exports.reprobeVideo = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const lesson = await prisma.lesson.findUnique({ where: { id: parseInt(id) } });
+    const source = lesson.source_url || lesson.video_url;
+    const duration = await videoService.getDuration(source);
+    await prisma.lesson.update({ where: { id: parseInt(id) }, data: { duration } });
+    res.json({ status: 'success', data: { duration } });
+});
+
+exports.getManifest = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    await videoService.ensureHLS(id);
+    const manifestPath = path.join(__dirname, `../../public/hls/${id}/master.m3u8`);
+    if (!fs.existsSync(manifestPath)) return res.status(202).json({ status: 'processing' });
+    res.sendFile(manifestPath);
 });

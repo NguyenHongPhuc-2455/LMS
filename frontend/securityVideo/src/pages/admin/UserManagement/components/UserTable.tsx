@@ -102,7 +102,7 @@ export default function UserTable({
         {
             title: 'Người dùng',
             key: 'user_info',
-            width: 250,
+            width: 280,
             fixed: 'left',
             ...getColumnSearchProps('username', 'Tìm tên hoặc username...'),
             render: (_, record) => {
@@ -136,7 +136,7 @@ export default function UserTable({
         {
             title: 'Vai trò',
             key: 'roles',
-            width: 150,
+            width: 160,
             filters: [
                 { text: 'ADMIN', value: 'admin' },
                 { text: 'INSTRUCTOR', value: 'instructor' },
@@ -159,7 +159,7 @@ export default function UserTable({
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            width: 200,
+            width: 300,
             ...getColumnSearchProps('email'),
             render: (text, record) => (
                 <UserEditableCell
@@ -177,7 +177,7 @@ export default function UserTable({
             title: 'Số điện thoại',
             dataIndex: 'phone',
             key: 'phone',
-            width: 150,
+            width: 160,
             render: (text, record) => (
                 <UserEditableCell
                     record={record}
@@ -234,7 +234,7 @@ export default function UserTable({
             title: 'Tiểu sử',
             dataIndex: 'bio',
             key: 'bio',
-            width: 250,
+            width: 300,
             ellipsis: true,
             render: (text, record) => (
                 <UserEditableCell
@@ -259,7 +259,7 @@ export default function UserTable({
         {
             title: 'Khóa học đã đăng ký',
             key: 'enrolled_courses',
-            width: 200,
+            width: 220,
             render: (_, record) => (
                 <div className={styles.enrollmentCell}>
                     {record.enrolled_courses.length > 0 ? (
@@ -305,7 +305,7 @@ export default function UserTable({
                 rowSelection={rowSelection}
                 pagination={pagination}
                 rowClassName={(record) => editingKeys.includes(record.id) ? `${styles.editableRow} ${styles.active}` : 'premium-row'}
-                scroll={{ x: 1800, y: 600 }}
+                scroll={{ x: 2000, y: 600 }}
                 virtual
                 bordered
             />

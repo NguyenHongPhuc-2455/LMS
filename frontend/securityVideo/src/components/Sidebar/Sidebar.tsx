@@ -34,11 +34,11 @@ const Sidebar: React.FC = () => {
                 );
             })}
 
-            <div className={styles.sidebarFooter}>
+            {/* <div className={styles.sidebarFooter}>
                 <div className={styles.sidebarPlusBtn}>
                     <PlusCircleOutlined className={styles.sidebarPlusIcon} />
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 };

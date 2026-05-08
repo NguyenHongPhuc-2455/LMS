@@ -155,9 +155,9 @@ export default function SectionManagement() {
                                 loading={loadingCategories}
                                 showSearch
                                 optionFilterProp="children"
-                                size="small"
                                 value={selectedCategoryId}
                             >
+                                <Option value={-1}>Trống (Không danh mục)</Option>
                                 {categories.map(cat => (
                                     <Option key={cat.id} value={cat.id}>
                                         {cat.name}
@@ -172,7 +172,6 @@ export default function SectionManagement() {
                                 showSearch
                                 placeholder={selectedCategoryId ? "Chọn khóa học" : "Chọn danh mục trước"}
                                 style={{ width: 220 }}
-                                size="small"
                                 value={selectedCourseId}
                                 loading={loadingCourses}
                                 disabled={!selectedCategoryId}
@@ -186,7 +185,6 @@ export default function SectionManagement() {
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
-                                size="small"
                                 onClick={() => selectedCourseId && fetchSections(selectedCourseId)}
                                 loading={loading}
                                 disabled={!selectedCourseId}

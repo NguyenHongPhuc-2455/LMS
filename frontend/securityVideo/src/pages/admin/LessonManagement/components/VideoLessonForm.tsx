@@ -1,5 +1,6 @@
-import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space, Switch } from 'antd';
-import { FileText, Video, UploadCloud } from 'lucide-react';
+import { Form, Input, Row, Col, InputNumber, Radio, Typography, Select, Upload, Button, Space, Switch, Segmented } from 'antd';
+import { FileText, Video, UploadCloud, Link } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import styles from '../LessonManagement.module.scss';
 
 const { Text } = Typography;
@@ -23,8 +24,18 @@ export default function VideoLessonForm({
     setAttachmentFile,
     selectedFile,
     attachmentFile,
-    editingId
-}: VideoLessonFormProps) {
+    editingId,
+    form
+}: VideoLessonFormProps & { form: any }) {
+    const [hlsUploadMethod, setHlsUploadMethod] = useState<'FILE' | 'URL'>('FILE');
+
+    useEffect(() => {
+        const hlsUrl = form.getFieldValue('hls_video_url');
+        if (hlsUrl) {
+            setHlsUploadMethod('URL');
+        }
+    }, [editingId, form]);
+
     return (
         <div style={{ padding: '4px' }}>
             <Row gutter={32}>
@@ -67,12 +78,12 @@ export default function VideoLessonForm({
                         name="anti_seek"
                         label="Chống tua video"
                         valuePropName="checked"
+                        initialValue={true}
                         tooltip="Bật để ngăn học viên kéo thanh tua tới nội dung chưa xem"
                     >
                         <Switch
                             checkedChildren="🔒 Bật"
                             unCheckedChildren="🔓 Tắt"
-                            defaultChecked
                         />
                     </Form.Item>
                 </Col>
@@ -84,63 +95,86 @@ export default function VideoLessonForm({
                             <FileText size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
                             Tài liệu đính kèm (PDF - Tùy chọn)
                         </Text>
-                        <Upload
-                            beforeUpload={(file) => {
-                                setAttachmentFile(file);
-                                return false;
-                            }}
-                            showUploadList={false}
-                            accept="application/pdf"
-                        >
-                            <Button icon={<UploadCloud size={16} />} block style={{ height: 45, borderRadius: 8 }}>
-                                {attachmentFile ? attachmentFile.name : "Chọn tệp PDF"}
-                            </Button>
-                        </Upload>
+                        <Form.Item name="attachment_url" label="Link tài liệu (GG Drive, OneDrive...)">
+                            <Input 
+                                placeholder="Dán link tài liệu tại đây" 
+                                suffix={
+                                    <Upload
+                                        beforeUpload={(file) => {
+                                            setAttachmentFile(file);
+                                            return false;
+                                        }}
+                                        showUploadList={false}
+                                        accept="application/pdf"
+                                    >
+                                        <UploadCloud size={18} style={{ cursor: 'pointer', color: '#6366f1' }} />
+                                    </Upload>
+                                }
+                            />
+                        </Form.Item>
+                        {attachmentFile && <Text type="success" style={{ fontSize: 12 }}>✓ Đã chọn file: {attachmentFile.name}</Text>}
                     </div>
 
-                    {!editingId && (
-                        <div className={styles.videoSourceWrapper} style={{ marginTop: 24 }}>
-                            <Text strong className={styles.attachmentTitle}>
-                                <Video size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-                                Nguồn Bài Giảng
-                            </Text>
-                            <Radio.Group
-                                value={videoSourceType}
-                                onChange={e => setVideoSourceType(e.target.value)}
-                                className={styles.videoSourceRadio}
-                                optionType="button"
-                                buttonStyle="solid"
-                                style={{ width: '100%', marginBottom: 16 }}
-                            >
-                                <Radio.Button value="UPLOAD" style={{ width: '50%', textAlign: 'center' }}>HLS Upload</Radio.Button>
-                                <Radio.Button value="LINK" style={{ width: '50%', textAlign: 'center' }}>External Link</Radio.Button>
-                            </Radio.Group>
+                    <div className={styles.videoSourceWrapper} style={{ marginTop: 24 }}>
+                        <Text strong className={styles.attachmentTitle}>
+                            <Video size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                            Nguồn Bài Giảng
+                        </Text>
+                        <Radio.Group
+                            value={videoSourceType}
+                            onChange={e => setVideoSourceType(e.target.value)}
+                            className={styles.videoSourceRadio}
+                            optionType="button"
+                            buttonStyle="solid"
+                            style={{ width: '100%', marginBottom: 16 }}
+                        >
+                            <Radio.Button value="UPLOAD" style={{ width: '50%', textAlign: 'center' }}>HLS Upload</Radio.Button>
+                            <Radio.Button value="LINK" style={{ width: '50%', textAlign: 'center' }}>External Link</Radio.Button>
+                        </Radio.Group>
 
-                            <div style={{ marginTop: 16 }}>
-                                {videoSourceType === 'UPLOAD' ? (
-                                    <div>
-                                        <Upload
-                                            beforeUpload={(file) => {
-                                                setSelectedFile(file);
-                                                return false;
-                                            }}
-                                            showUploadList={false}
-                                            accept="video/mp4"
-                                        >
-                                            <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 8 }}>
-                                                {selectedFile ? selectedFile.name : "Nhấn để tải lên Video (MP4)"}
-                                            </Button>
-                                        </Upload>
-                                        {selectedFile && <Text type="success" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>✓ Sẵn sàng để băm video</Text>}
-                                    </div>
-                                ) : (
-                                    <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>
-                                        <Input placeholder="Ví dụ: https://www.youtube.com/watch?v=..." style={{ height: 40 }} />
-                                    </Form.Item>
-                                )}
-                            </div>
+                        <div style={{ marginTop: 16 }}>
+                            {videoSourceType === 'UPLOAD' ? (
+                                <div>
+                                    <Segmented
+                                        options={[
+                                            { label: 'Tải lên từ máy', value: 'FILE', icon: <UploadCloud size={14} /> },
+                                            { label: 'Link từ Server', value: 'URL', icon: <Link size={14} /> }
+                                        ]}
+                                        value={hlsUploadMethod}
+                                        onChange={(v) => setHlsUploadMethod(v as 'FILE' | 'URL')}
+                                        style={{ marginBottom: 16, width: '100%' }}
+                                        block
+                                    />
+
+                                    {hlsUploadMethod === 'FILE' ? (
+                                        <div>
+                                            <Upload
+                                                beforeUpload={(file) => {
+                                                    setSelectedFile(file);
+                                                    return false;
+                                                }}
+                                                showUploadList={false}
+                                                accept="video/mp4"
+                                            >
+                                                <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 8 }}>
+                                                    {selectedFile ? selectedFile.name : "Nhấn để tải lên Video (MP4)"}
+                                                </Button>
+                                            </Upload>
+                                            {selectedFile && <Text type="success" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>✓ Sẵn sàng để băm video</Text>}
+                                        </div>
+                                    ) : (
+                                        <Form.Item name="hls_video_url" rules={[{ required: true, message: 'Vui lòng nhập link video từ server!' }]}>
+                                            <Input prefix={<Link size={16} style={{ color: '#bfbfbf' }} />} placeholder="Nhập link video MP4 từ server công ty..." style={{ height: 40 }} />
+                                        </Form.Item>
+                                    )}
+                                </div>
+                            ) : (
+                                <Form.Item name="video_url" label="Link Video (Youtube hoặc link trực tiếp)" rules={[{ required: true }]}>
+                                    <Input placeholder="Ví dụ: https://www.youtube.com/watch?v=..." style={{ height: 40 }} />
+                                </Form.Item>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </Col>
             </Row>
         </div>

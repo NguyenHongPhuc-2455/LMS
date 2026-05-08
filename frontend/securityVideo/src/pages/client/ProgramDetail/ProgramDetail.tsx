@@ -101,6 +101,9 @@ export default function ProgramDetail() {
     if (!program) return null;
 
     const sortedCourses = [...program.courses].sort((a, b) => a.order - b.order);
+    const overallProgress = sortedCourses.length > 0 
+        ? Math.round(sortedCourses.reduce((acc, pc) => acc + (pc.progressPercent || 0), 0) / sortedCourses.length)
+        : 0;
 
     return (
         <div className={styles.programDetailContainer}>
@@ -112,6 +115,7 @@ export default function ProgramDetail() {
                 submitting={submitting}
                 navigate={navigate}
                 sortedCourses={sortedCourses}
+                overallProgress={overallProgress}
             />
 
             <ProgramCurriculum

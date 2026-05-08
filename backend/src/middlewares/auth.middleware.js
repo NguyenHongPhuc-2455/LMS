@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 
 exports.verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    console.log('[DEBUG] Auth Header received:', authHeader ? 'Present' : 'Missing');
+    const token = authHeader?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Truy cập bị từ chối. Vui lòng đăng nhập.' });
 
     try {

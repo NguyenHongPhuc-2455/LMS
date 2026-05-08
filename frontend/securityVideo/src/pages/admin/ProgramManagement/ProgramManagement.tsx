@@ -47,7 +47,6 @@ export default function ProgramManagement() {
     const [isCourseDrawerOpen, setIsCourseDrawerOpen] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-    const [searchText, setSearchText] = useState('');
     const [addingCourseId, setAddingCourseId] = useState<number | null>(null);
 
     const fetchPrograms = async () => {
@@ -76,7 +75,7 @@ export default function ProgramManagement() {
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         try {
-            let finalThumbnail = values.thumbnail;
+            let finalThumbnail = values.thumbnail; // Lấy URL từ ô input nếu có
             if (thumbFile) {
                 const fd = new FormData();
                 fd.append('image', thumbFile);
@@ -169,7 +168,7 @@ export default function ProgramManagement() {
         }
     };
 
-    const filtered = programs.filter(p => p.title.toLowerCase().includes(searchText.toLowerCase()));
+    const filtered = programs;
 
     const currentCourseIds = selectedProgram?.courses.map(pc => pc.course.id) || [];
     const availableCourses = allCourses.filter(c => !currentCourseIds.includes(c.id));
@@ -185,8 +184,7 @@ export default function ProgramManagement() {
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
-                    <Input placeholder="Tìm kiếm chương trình..." prefix={<SearchOutlined />}
-                        value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} size="small" />
+                    <div />
                     <Button
                         type="primary"
                         icon={<Plus size={16} />}

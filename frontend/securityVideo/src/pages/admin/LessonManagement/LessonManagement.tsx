@@ -25,6 +25,7 @@ const { Title, Text } = Typography;
 
 interface Lesson {
     id: number;
+    section_id: number;
     title: string;
     video_url: string;
     attachment_url?: string;
@@ -189,8 +190,10 @@ export default function LessonManagement() {
                     message.success('Đã cập nhật bài giảng!');
                 } else {
                     const videoSourceType = values.video_url ? 'LINK' : 'UPLOAD';
-                    if (videoSourceType === 'UPLOAD' && !selectedFile) {
-                        message.error('Vui lòng chọn tệp video');
+                    const isHlsUrl = videoSourceType === 'UPLOAD' && !!values.hls_video_url;
+
+                    if (videoSourceType === 'UPLOAD' && !selectedFile && !isHlsUrl) {
+                        message.error('Vui lòng chọn tệp video hoặc nhập link video HLS');
                         return;
                     }
 
@@ -203,9 +206,16 @@ export default function LessonManagement() {
                     if (totalDuration > 0) {
                         formData.append('duration', String(totalDuration));
                     }
+                    if (values.attachment_url) {
+                        formData.append('attachment_url', values.attachment_url);
+                    }
 
                     if (videoSourceType === 'UPLOAD') {
-                        formData.append('video', selectedFile!);
+                        if (selectedFile) {
+                            formData.append('video', selectedFile);
+                        } else if (isHlsUrl) {
+                            formData.append('hls_video_url', values.hls_video_url);
+                        }
                         message.loading({ content: 'Đang xử lý video HLS...', key: 'hls-up' });
                     } else {
                         formData.append('video_url', values.video_url);
@@ -217,11 +227,22 @@ export default function LessonManagement() {
                     message.success({ content: videoSourceType === 'UPLOAD' ? 'Video đang được băm bảo mật...' : 'Đã tải lên thành công!', key: 'hls-up' });
                 }
 
-                if (attachmentFile && lessonId) {
-                    const attachData = new FormData();
-                    attachData.append('attachment', attachmentFile);
-                    await videoService.uploadAttachment(lessonId, attachData);
-                    message.success('Đã đính kèm tài liệu!');
+                if (lessonId) {
+                    // Nếu có file đính kèm mới -> Upload lên server/cloud
+                    if (attachmentFile) {
+                        const attachData = new FormData();
+                        attachData.append('attachment', attachmentFile);
+                        await videoService.uploadAttachment(lessonId, attachData);
+                        message.success('Đã tải lên tài liệu mới!');
+                    }
+                    // Nếu không có file mới nhưng có nhập URL (như GG Drive) -> Cập nhật URL vào DB
+                    else if (values.attachment_url) {
+                        await videoService.update(lessonId, {
+                            attachment_url: values.attachment_url,
+                            attachment_name: values.attachment_url.split('/').pop()?.substring(0, 30) || 'Document'
+                        });
+                        message.success('Đã lưu link tài liệu!');
+                    }
                 }
             }
 
@@ -236,10 +257,11 @@ export default function LessonManagement() {
     };
 
     const startEditing = async (lesson: Lesson) => {
-        setEditingLesson(lesson);
+        // Cài đặt loại bài học trước để modal biết render form nào
+        const type = lesson.type === 'QUIZ' ? 'QUIZ' : 'VIDEO';
+        setLessonType(type);
 
         if (lesson.type === 'QUIZ') {
-            setLessonType('QUIZ');
             try {
                 message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
                 const data = await quizService.getByLesson(lesson.id);
@@ -248,7 +270,7 @@ export default function LessonManagement() {
 
                 setEditingLesson({
                     ...lesson,
-                    section_id: selectedSectionId,
+                    section_id: lesson.section_id || selectedSectionId,
                     description: quizData.description,
                     pass_score: quizData.pass_score,
                     time_limit: quizData.time_limit,
@@ -257,15 +279,19 @@ export default function LessonManagement() {
                 message.success({ content: 'Hoàn tất', key: 'quiz-loading', duration: 1 });
             } catch (e) {
                 message.error({ content: 'Không tải được nội dung bài thi', key: 'quiz-loading' });
+                setEditingLesson({
+                    ...lesson,
+                    section_id: lesson.section_id || selectedSectionId
+                });
             }
         } else {
-            setLessonType('VIDEO');
             setEditingLesson({
                 ...lesson,
-                section_id: selectedSectionId,
+                section_id: lesson.section_id || selectedSectionId,
                 duration_min: lesson.duration ? Math.floor(lesson.duration / 60) : 0,
                 duration_sec: lesson.duration ? (lesson.duration % 60) : 0,
-                anti_seek: lesson.anti_seek !== undefined ? lesson.anti_seek : true
+                anti_seek: lesson.anti_seek !== undefined ? lesson.anti_seek : true,
+                attachment_url: lesson.attachment_url
             });
         }
         setIsModalOpen(true);

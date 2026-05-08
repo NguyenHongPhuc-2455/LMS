@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   db:
     image: postgres:latest
@@ -6,11 +7,54 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: security_video_db
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     restart: unless-stopped
+    networks:
+      - security-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: security_video_backend
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      DATABASE_URL: postgresql://postgres:123456@db:5432/security_video_db?schema=public
+      PORT: 5000
+      JWT_SECRET: your_jwt_secret_here
+      # Thêm các biến môi trường khác từ file .env của bạn vào đây
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - security-network
+
+  frontend:
+    build:
+      context: ./frontend/securityVideo
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000/api
+    container_name: security_video_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - security-network
+
+networks:
+  security-network:
+    driver: bridge
 
 volumes:
   pgdata:

@@ -9,6 +9,12 @@ export const statsService = {
         const response = await api.get(`/stats/course-progress/${courseId}`);
         return response.data;
     },
+    searchProgress: async (query: string, courseId?: number) => {
+        const response = await api.get(`/stats/progress-search`, {
+            params: { q: query, courseId }
+        });
+        return response.data;
+    },
     trackLearningTime: async (payload: { courseId?: number, lessonId?: number, duration: number }) => {
         const response = await api.post('/stats/track', payload);
         return response.data;

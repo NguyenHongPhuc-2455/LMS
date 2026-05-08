@@ -1,5 +1,6 @@
-import { Table, Space, Select, Tag, Button, Popconfirm, Badge, Typography, message } from 'antd';
+import { Table, Space, Select, Tag, Button, Popconfirm, Badge, Typography, message, Input } from 'antd';
 import { Edit, Trash2 } from 'lucide-react';
+import { SearchOutlined } from '@ant-design/icons';
 import { programService } from '../../../../services/program.service';
 import styles from '../ProgramManagement.module.scss';
 
@@ -37,15 +38,56 @@ interface ProgramTableProps {
 }
 
 export default function ProgramTable({ programs, loading, onEdit, onDelete, onOpenCourseDrawer, onRefresh }: ProgramTableProps) {
+    const getColumnSearchProps = (dataIndex: string): any => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+            <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                <Input
+                    placeholder={`Tìm lộ trình...`}
+                    value={selectedKeys[0]}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => confirm()}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => confirm()}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Tìm
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            clearFilters?.();
+                            confirm();
+                        }}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Xóa
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#fff' : '#fff', fontSize: '18px' }} />
+        ),
+        onFilter: (value: any, record: any) =>
+            record[dataIndex]
+                ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+                : '',
+    });
+
     const columns = [
         {
             title: 'Lộ trình học',
             key: 'info',
             width: 350,
-            filters: programs.map(p => ({ text: p.title, value: p.id })),
-            filterSearch: true,
-            onFilter: (value: any, p: Program) => p.id === value,
-            render: (p: Program) => (
+            dataIndex: 'title',
+            ...getColumnSearchProps('title'),
+            render: (_: any, p: Program) => (
                 <div className={styles.programInfoCell}>
                     <img src={p.thumbnail || 'https://via.placeholder.com/80x45'} className={styles.programThumb} alt="thumbnail" />
                     <div>

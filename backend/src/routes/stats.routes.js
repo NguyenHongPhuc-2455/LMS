@@ -6,6 +6,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
 // Chỉ cho phép admin xem thống kê tổng quát
 router.get('/dashboard', authMiddleware.verifyToken, authMiddleware.isAdmin, statsController.getDashboardStats);
 router.get('/course-progress/:courseId', authMiddleware.verifyToken, authMiddleware.isAdmin, statsController.getCourseProgress);
+router.get('/progress-search', authMiddleware.verifyToken, authMiddleware.isAdmin, statsController.searchProgress);
 router.get('/global-learning-trends', authMiddleware.verifyToken, authMiddleware.isAdmin, statsController.getGlobalLearningTrends);
 
 // APIs cho học viên

@@ -106,7 +106,12 @@ exports.requestAccess = catchAsync(async (req, res) => {
 exports.getMyRequests = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const requests = await prisma.courseRequest.findMany({
-        where: { user_id: userId },
+        where: { 
+            user_id: userId,
+            course: {
+                deleted_at: null
+            }
+        },
         include: {
             course: {
                 select: { title: true, thumbnail: true }
@@ -122,7 +127,12 @@ exports.getMyRequests = catchAsync(async (req, res) => {
  */
 exports.getPendingRequests = catchAsync(async (req, res) => {
     const requests = await prisma.courseRequest.findMany({
-        where: { status: 'PENDING' },
+        where: { 
+            status: 'PENDING',
+            course: {
+                deleted_at: null
+            }
+        },
         include: {
             user: {
                 select: { id: true, full_name: true, email: true, username: true }

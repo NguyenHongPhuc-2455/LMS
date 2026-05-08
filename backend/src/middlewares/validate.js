@@ -11,7 +11,7 @@ const validate = (schema) => (req, res, next) => {
     }, {});
 
     const { value, error } = Joi.compile(schema)
-        .prefs({ errors: { label: 'key' }, abortEarly: false })
+        .prefs({ errors: { label: 'key' }, abortEarly: false, stripUnknown: true })
         .validate(object);
 
     if (error) {

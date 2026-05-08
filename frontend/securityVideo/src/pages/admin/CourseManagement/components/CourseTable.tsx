@@ -1,5 +1,5 @@
-import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select } from 'antd';
-import { CalendarOutlined } from '@ant-design/icons';
+import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input } from 'antd';
+import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import styles from '../CourseManagement.module.scss';
@@ -41,18 +41,62 @@ export default function CourseTable({
     onStatusChange,
     onCategoryChange
 }: CourseTableProps) {
+    const getColumnSearchProps = (dataIndex: string): any => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+            <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+                <Input
+                    placeholder={`Tìm tên khóa học...`}
+                    value={selectedKeys[0]}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => confirm()}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => confirm()}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Tìm
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            clearFilters?.();
+                            confirm();
+                        }}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Xóa
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#fff' : '#fff', fontSize: '18px' }} />
+        ),
+        onFilter: (value: any, record: any) =>
+            record[dataIndex]
+                ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+                : '',
+    });
+
     const columns = [
         {
             title: 'Khóa học',
             key: 'info',
+            dataIndex: 'title',
+            ...getColumnSearchProps('title'),
             sorter: (a: Course, b: Course) => a.title.localeCompare(b.title),
-            render: (c: Course) => (
+            render: (_: any, c: Course) => (
                 <Space
                     size={12}
                     className={styles.courseInfoSpace}
                     onClick={() => onNavigateToSections(c.id)}
                 >
-                    <img src={c.thumbnail || 'https://via.placeholder.com/150'} className={styles.courseThumbnail} />
+                    <img src={c.thumbnail || 'https://placehold.jp/150x150.png'} className={styles.courseThumbnail} />
                     <div>
                         <Text strong className={styles.courseTitleText}>{c.title}</Text>
                         <Text type="secondary" className={styles.courseLevelText}>{c.level}</Text>
@@ -104,7 +148,7 @@ export default function CourseTable({
                     className={styles.statusSelect}
                     size="small"
                     showSearch={false}
-                    popupClassName={styles.statusPopup}
+                    dropdownClassName={styles.statusPopup}
                     options={[
                         {
                             value: true,
@@ -218,7 +262,7 @@ export default function CourseTable({
                     return originalElement;
                 }
             } as any}
-            scroll={{ x: 'max-content', y: 600 }}
+            scroll={{ x: 1200, y: 600 }}
             virtual
             bordered
         />

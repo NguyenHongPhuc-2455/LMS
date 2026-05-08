@@ -41,7 +41,6 @@ export default function CourseManagement() {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-    const [searchText, setSearchText] = useState('');
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const navigate = useNavigate();
@@ -68,7 +67,7 @@ export default function CourseManagement() {
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         try {
-            let finalThumbnail = values.thumbnail;
+            let finalThumbnail = values.thumbnail; // Lấy URL từ ô input nếu có
 
             if (thumbFile) {
                 const formData = new FormData();
@@ -125,9 +124,9 @@ export default function CourseManagement() {
     };
 
     const filteredCourses = courses.filter(c => {
-        const matchesSearch = c.title.toLowerCase().includes(searchText.toLowerCase());
-        const matchesCategory = !selectedCategoryId || c.category_id === selectedCategoryId;
-        return matchesSearch && matchesCategory;
+        const matchesCategory = selectedCategoryId === null || 
+                              (selectedCategoryId === -1 ? !c.category_id : c.category_id === selectedCategoryId);
+        return matchesCategory;
     });
 
     return (
@@ -142,22 +141,15 @@ export default function CourseManagement() {
             <Card className="glass-card">
                 <div className={styles.tableHeaderActions}>
                     <Space size={8}>
-                        <Input
-                            placeholder="Tìm kiếm khóa học..."
-                            prefix={<SearchOutlined />}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            className={styles.searchInput}
-                            size="small"
-                        />
+                        <Text strong>Danh mục:</Text>
                         <Select
                             placeholder="Tất cả danh mục"
                             allowClear
                             style={{ width: 180 }}
-                            size="small"
                             value={selectedCategoryId}
                             onChange={setSelectedCategoryId}
                         >
+                            <Select.Option value={-1}>Trống (Không danh mục)</Select.Option>
                             {categories.map(cat => (
                                 <Select.Option key={cat.id} value={cat.id}>
                                     {cat.name}
@@ -167,7 +159,6 @@ export default function CourseManagement() {
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
-                                size="small"
                                 onClick={fetchData}
                                 loading={loading}
                             />

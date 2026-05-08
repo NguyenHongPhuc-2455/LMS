@@ -30,7 +30,7 @@ const MainLayout: React.FC = () => {
                     </div>
                 </Content>
             </Layout>
-            <AppFooter />
+            {/* <AppFooter /> */}
         </Layout>
     );
 };

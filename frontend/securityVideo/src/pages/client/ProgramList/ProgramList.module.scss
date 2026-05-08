@@ -1,14 +1,81 @@
 .programListContainer {
-    padding: 10px 3%;
+    padding: 24px 4%;
     min-height: 100vh;
+    background-color: #fcfcfc;
 }
 
-.pageHeader {
-    margin-bottom: 28px;
+/* Modern Filter Bar Styles */
+.modernFilterBar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+    position: sticky;
+    top: 70px;
+    z-index: 10;
 
-    .headerTitle {
-        margin: 0;
-        font-size: 24px;
+    .filterGroup {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        padding: 6px;
+        border-radius: 40px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: center;
+        border: 1px solid #f1f5f9;
+        gap: 4px;
+    }
+
+    .separator {
+        width: 1px;
+        height: 20px;
+        background: #e2e8f0;
+        margin: 0 8px;
+    }
+
+    .filterPill {
+        border: none;
+        background: transparent;
+        padding: 8px 24px;
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+
+        &:hover {
+            color: #C72127;
+            background: rgba(199, 33, 39, 0.05);
+        }
+
+        &.active {
+            background: #C72127;
+            color: white;
+            box-shadow: 0 4px 12px rgba(199, 33, 39, 0.25);
+        }
+    }
+}
+
+.sectionHeader {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 20px;
+        background: #C72127;
+        border-radius: 2px;
+    }
+    
+    .sectionTitle {
+        margin: 0 !important;
+        font-size: 18px;
+        font-weight: 700;
         color: #1e293b;
     }
 }
@@ -27,37 +94,35 @@
         grid-template-columns: repeat(3, 1fr);
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 768px) {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    @media (max-width: 500px) {
-        grid-template-columns: repeat(1, 1fr);
+    @media (max-width: 480px) {
+        grid-template-columns: 1fr;
     }
 }
 
-.paginationWrapper {
-    display: flex;
-    justify-content: center;
-}
-
 .programCardItem {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
-    border-radius: $radius-base;
-    box-shadow: $shadow-sm;
-    @include transition-standard;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 
     &:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: $shadow-lg;
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px -10px rgba(199, 33, 39, 0.2);
     }
 
     :global(.ant-card-cover) {
         height: 125px;
-        background: #f1f5f9;
-        position: relative;
         overflow: hidden;
+        position: relative;
+        background: #f1f5f9;
 
         img {
             width: 100%;
@@ -65,89 +130,123 @@
             object-fit: cover;
             transition: transform 0.5s ease;
         }
-
-        .emptyThumb {
-            @include flex-center;
-            height: 100%;
-            color: #cbd5e1;
-            font-size: 40px;
-            background: #f8fafc;
-        }
-
-        .statusBadgeSticky {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 2;
-
-            :global(.ant-tag) {
-                font-size: 10px;
-                margin: 0;
-                border-radius: 4px;
-                font-weight: 600;
-                border: none;
-                backdrop-filter: blur(4px);
-                background-color: rgba(255, 255, 255, 0.85);
-                color: #1e293b;
-
-                &:global(.ant-tag-purple) {
-                    background-color: rgba(147, 51, 234, 0.9);
-                    color: white;
-                }
-
-                &:global(.ant-tag-green) {
-                    background-color: rgba(34, 197, 94, 0.9);
-                    color: white;
-                }
-            }
-        }
     }
 
-
-    .cardTitleSection {
-        margin-bottom: 8px;
-
-        .levelBadgeText {
-            color: $primary-color;
-            font-weight: 600;
-            font-size: 11px;
-        }
-
-        .titleText {
-            margin-top: 4px;
-            margin-bottom: 4px;
-            color: #1e293b;
-            font-size: 15px;
-        }
-    }
-
-    .instructorSection {
-        margin-bottom: 8px;
-
-        .label {
-            color: $text-muted;
-            font-size: 11px;
-        }
-
-        .name {
-            color: #64748b;
-            font-size: 13px;
-        }
-    }
-
-    .cardDivider {
-        margin: 8px 0;
-        border: 0.1px solid #f1f5f9;
-    }
-
-    .cardFooter {
+    :global(.ant-card-body) {
+        padding: 16px;
+        flex: 1;
         display: flex;
-        justify-content: space-between;
-        color: $text-muted;
-        font-size: 11px;
+        flex-direction: column;
     }
 }
 
+.cardHeader {
+    margin-bottom: 10px;
+
+    .levelBadgeText {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        color: #C72127;
+    }
+
+    .titleText {
+        margin: 8px 0 0 0 !important;
+        font-size: 16px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        color: #1e293b;
+    }
+}
+
+.cardBodyRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .creatorInfo {
+        .creatorLabel {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .creatorName {
+            font-size: 13px;
+            color: #1e293b;
+        }
+    }
+
+    .statusTag {
+        font-weight: 600;
+        font-size: 10px;
+        border-radius: 4px;
+    }
+}
+
+.progressSection {
+    margin: 12px 0;
+    
+    .progressHeader {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        
+        .progressLabel {
+            font-size: 11px;
+            color: #64748b;
+        }
+        
+        .progressValue {
+            font-size: 13px;
+            color: #0f172a;
+        }
+    }
+    
+    .progressBar {
+        height: 6px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        overflow: hidden;
+        
+        .progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, #C72127 0%, #ef4444 100%);
+            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+            &.finished {
+                background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            }
+        }
+    }
+}
+
+.cardDivider {
+    border: 0;
+    border-top: 1px solid #f1f5f9;
+    margin: 0 0 10px 0;
+}
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+    margin-top: auto;
+}
+
+.paginationWrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+
 .loadingContainer {
-    padding: 60px 40px;
+    padding: 100px 0;
+    text-align: center;
 }

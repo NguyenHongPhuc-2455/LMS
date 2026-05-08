@@ -80,9 +80,21 @@ const getTopLearners = async (req, res) => {
     }
 };
 
+const searchProgress = async (req, res) => {
+    try {
+        const { q, courseId } = req.query;
+        const progress = await statsService.searchStudentsProgress(q, courseId);
+        res.json(progress);
+    } catch (error) {
+        console.error('Error in searchProgress controller:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getCourseProgress,
+    searchProgress,
     trackLearningTime,
     getMyLearningStats,
     getMyLearningSummary,

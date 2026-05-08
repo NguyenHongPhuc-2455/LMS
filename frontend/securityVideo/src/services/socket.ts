@@ -1,6 +1,10 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+// Ứu tiên VITE_SOCKET_URL nếu có, sau đó tự động suy ra từ VITE_API_URL (bằng cách xóa '/api')
+const SOCKET_URL = 
+    import.meta.env.VITE_SOCKET_URL ||
+    import.meta.env.VITE_API_URL?.replace('/api', '') ||
+    'http://localhost:5000';
 
 let socket: Socket | null = null;
 
@@ -8,7 +12,10 @@ export const socketService = {
     connect: (userId: number) => {
         if (socket) return socket;
 
-        socket = io(SOCKET_URL);
+        socket = io(SOCKET_URL, {
+            withCredentials: true,
+            transports: ['websocket', 'polling']
+        });
 
         socket.on('connect', () => {
             console.log('🔌 Đã kết nối tới Socket server');

@@ -3,6 +3,7 @@ const courseService = require('../services/course.service');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 const { generateStreamToken } = require('../utils/streamToken');
+const { createVideoToken } = require('../utils/crypto');
 const { lessonSelect } = require('../services/video.service');
 
 exports.getCourses = catchAsync(async (req, res) => {
@@ -69,10 +70,18 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
             let securedVideoUrl = l.video_url;
 
             if (hasAccess || l.is_free) {
-                if (securedVideoUrl && securedVideoUrl.startsWith('/public/hls/')) {
-                    const token = generateStreamToken(userId, l.id, req.ip);
-                    const fileName = securedVideoUrl.split('/').pop() || 'master.m3u8';
-                    securedVideoUrl = `/api/videos/stream/${token}/${fileName}`;
+                if (securedVideoUrl) {
+                    // Chấp nhận cả /public/hls/ hoặc hls/ (dạng lưu mới cho R2)
+                    if (securedVideoUrl.startsWith('/public/hls/') || securedVideoUrl.startsWith('hls/')) {
+                        const token = generateStreamToken(userId, l.id, req.ip);
+                        // Lấy tên file từ DB, nếu không có mặc định là master.m3u8
+                        const fileName = securedVideoUrl.split('/').pop();
+                        const finalFileName = (fileName && fileName.includes('.m3u8')) ? fileName : 'master.m3u8';
+                        securedVideoUrl = `/api/videos/stream/${token}/${finalFileName}`;
+                    } else if (securedVideoUrl.includes('cloudinary.com') || securedVideoUrl.startsWith('http')) {
+                        // Trả thẳng link gốc cho Cloudinary hoặc link ngoài theo yêu cầu (Bỏ Token/Proxy)
+                        securedVideoUrl = l.video_url;
+                    }
                 }
             }
 
@@ -205,13 +214,39 @@ exports.getSectionDetail = catchAsync(async (req, res) => {
     });
 
     if (!section) throw new ApiError(404, 'Không tìm thấy chương học');
+
+    const userId = req.user.id;
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('instructor');
+
+    // Secure URLs
+    section.lessons = section.lessons.map(l => {
+        let securedVideoUrl = l.video_url;
+        if (securedVideoUrl && (l.is_free || isAdmin)) {
+            if (securedVideoUrl.startsWith('/public/hls/')) {
+                const token = generateStreamToken(userId, l.id, req.ip);
+                const fileName = securedVideoUrl.split('/').pop() || 'master.m3u8';
+                securedVideoUrl = `/api/videos/stream/${token}/${fileName}`;
+            } else if (securedVideoUrl.includes('cloudinary.com') || securedVideoUrl.startsWith('http')) {
+                const encryptedUrl = createVideoToken(securedVideoUrl, req.ip);
+                securedVideoUrl = `/api/videos/secure-stream/${encodeURIComponent(encryptedUrl)}`;
+            }
+        }
+        return { ...l, video_url: securedVideoUrl };
+    });
+
     res.json(section);
 });
 
 exports.getMyCourses = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const enrollments = await prisma.enrollment.findMany({
-        where: { user_id: userId },
+        where: { 
+            user_id: userId,
+            course: {
+                deleted_at: null
+            }
+        },
         include: {
             course: {
                 include: {
