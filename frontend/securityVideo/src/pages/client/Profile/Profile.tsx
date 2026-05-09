@@ -6,7 +6,7 @@ import styles from './Profile.module.scss';
 
 // Sub-components
 import ProfileHeader from './components/ProfileHeader';
-import ProfileEditModal from './components/ProfileEditModal';
+import { ProfileEditModal } from './components/ProfileEditModal';
 // import ProfileSections from './components/ProfileSections';
 import { LearningStatsChart } from '../../../components';
 
@@ -47,7 +47,11 @@ const Profile: React.FC = () => {
             phone: user.phone,
             gender: user.gender,
             dob: user.dob ? dayjs(user.dob) : null,
-            avatar: user.avatar
+            avatar: user.avatar,
+            employee_id: user.employee_id,
+            department: user.department,
+            position: user.position,
+            join_date: user.join_date ? dayjs(user.join_date) : null
         });
     };
 
@@ -56,7 +60,8 @@ const Profile: React.FC = () => {
         try {
             const payload = {
                 ...values,
-                dob: values.dob ? values.dob.toISOString() : null
+                dob: values.dob ? values.dob.toISOString() : null,
+                join_date: values.join_date ? values.join_date.toISOString() : null
             };
             const data = await userService.updateProfile(payload);
             localStorage.setItem('user', JSON.stringify(data.user));

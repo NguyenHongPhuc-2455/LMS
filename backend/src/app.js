@@ -23,7 +23,7 @@ const { globalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
 
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 const allowedOrigins = [
     // 'https://frostbite-payphone-rerun.ngrok-free.dev',

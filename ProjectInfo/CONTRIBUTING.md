@@ -1,6 +1,7 @@
-# Quy ước lập trình & Đóng góp (CONTRIBUTING)
+Tài liệu này quy định các chuẩn mực về code, cấu trúc và quy trình làm việc trong dự án RitaVo LMS. 
 
-Tài liệu này quy định các chuẩn mực về code, cấu trúc và quy trình làm việc trong dự án RitaVo LMS.
+> [!IMPORTANT]
+> Mọi lập trình viên mới cần đọc kỹ **[Quy chuẩn Phát triển (Development Standards)](file:///d:/SercurityVideo/ProjectInfo/DEVELOPMENT_STANDARDS.md)** trước khi bắt đầu tạo mới bất kỳ Component hoặc Service nào.
 
 ## 📐 1. Quy ước đặt tên (Naming Convention)
 

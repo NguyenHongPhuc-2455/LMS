@@ -26,6 +26,10 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   ├── src/
 │   │   ├── configs/               # Cấu hình hệ thống (Prisma, DB)
 │   │   ├── controllers/           # Nhận Request & Trả Response
+│   │   │   ├── auth.controller.js     # Đăng ký, Đăng nhập, Refresh Token
+│   │   │   ├── user.controller.js     # Quản lý thành viên & Hồ sơ
+│   │   │   ├── course.controller.js   # Quản lý khóa học & Nội dung bài học
+│   │   │   ├── program.controller.js  # Quản lý lộ trình học tập
 │   │   │   ├── category.controller.js # Quản lý danh mục
 │   │   │   ├── courseRequest.controller.js # Duyệt yêu cầu khóa học
 │   │   │   ├── programRequest.controller.js # Duyệt yêu cầu lộ trình
@@ -33,11 +37,17 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   │   ├── comment.controller.js  # CRUD bình luận
 │   │   │   └── notification.controller.js # Quản lý thông báo
 │   │   ├── services/              # (Core) Logic nghiệp vụ chính
+│   │   │   ├── auth.service.js        # Logic xác thực & JWT
+│   │   │   ├── user.service.js        # Logic người dùng & phân quyền
+│   │   │   ├── course.service.js      # Logic khóa học & Xử lý cascade delete
+│   │   │   ├── program.service.js     # Logic lộ trình & Tiến độ học tập
+│   │   │   ├── video.service.js       # Logic dọn dẹp R2 & Xử lý video
 │   │   │   ├── category.service.js    # Logic danh mục
 │   │   │   ├── courseRequest.service.js # Logic duyệt yêu cầu
 │   │   │   ├── stats.service.js       # Tính toán tiến độ học viên
 │   │   │   ├── comment.service.js     # Logic bình luận (Facebook-style 2 cấp)
 │   │   │   └── notification.service.js # Tạo & phát thông báo Realtime
+
 │   │   ├── routes/                # Luồng API
 │   │   │   ├── category.routes.js     # /api/categories/*
 │   │   │   ├── course-request.routes.js # /api/course-requests/*

@@ -1,9 +1,6 @@
-import { Modal, Form, Input, Select, Button, Row, Col } from 'antd';
+import { Modal, Form, Input, Select, Button, Row, Col, DatePicker } from 'antd';
 
-interface RoleData {
-    id: number;
-    name: string;
-}
+import type { Role as RoleData } from '../../../../types/user';
 
 interface UserFormModalProps {
     open: boolean;
@@ -13,7 +10,7 @@ interface UserFormModalProps {
     loading: boolean;
 }
 
-export default function UserFormModal({ open, onCancel, onSuccess, roles, loading }: UserFormModalProps) {
+export const UserFormModal = ({ open, onCancel, onSuccess, roles, loading }: UserFormModalProps) => {
     const [form] = Form.useForm();
 
     const handleFinish = async (values: any) => {
@@ -93,6 +90,32 @@ export default function UserFormModal({ open, onCancel, onSuccess, roles, loadin
 
                         <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, min: 6 }]}>
                             <Input.Password placeholder="Tối thiểu 6 ký tự" />
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Row gutter={24}>
+                    <Col span={12}>
+                        <Form.Item name="employee_id" label="Mã nhân sự">
+                            <Input placeholder="MS-1234" />
+                        </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                        <Form.Item name="join_date" label="Ngày vào làm">
+                            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Row gutter={24}>
+                    <Col span={12}>
+                        <Form.Item name="department" label="Phòng ban">
+                            <Input placeholder="Phòng CNTT" />
+                        </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                        <Form.Item name="position" label="Vị trí">
+                            <Input placeholder="Nhân viên" />
                         </Form.Item>
                     </Col>
                 </Row>

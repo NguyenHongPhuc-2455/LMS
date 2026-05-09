@@ -31,6 +31,10 @@ model User {
   dob           DateTime?
   gender        String?   @db.VarChar(20)
   bio           String?   @db.Text
+  employee_id   String?   @unique @db.VarChar(50)
+  department    String?   @db.VarChar(100)
+  position      String?   @db.VarChar(100)
+  join_date     DateTime?
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
   deleted_at    DateTime? // Soft Delete

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Button, Space, Tag,
     message, Typography, Card, Modal, Input, Tooltip
@@ -11,43 +11,39 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../../services/user.service';
 import styles from './UserManagement.module.scss';
+import type { User as UserData, Role as RoleData } from '../../../types/user';
+export type { UserData, RoleData };
 
 // New specialized components
-import UserTable from './components/UserTable';
-import UserFormModal from './components/UserFormModal';
+import { UserTable } from './components/UserTable';
+import { UserFormModal } from './components/UserFormModal';
 
 const { Title, Text } = Typography;
 
-export interface RoleData {
-    id: number;
-    name: string;
-    description: string;
-}
 
-export interface UserData {
-    id: number;
-    username: string;
-    email: string;
-    full_name: string | null;
-    avatar: string | null;
-    phone: string | null;
-    created_at: string;
-    roles: RoleData[];
-    enrollments_count: number;
-    enrolled_courses: { id: number; title: string }[];
-}
 
 export default function UserManagement() {
     // Pagination & Search State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+
+    // Debounce Logic
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1); // Reset to first page on search
+        }, 500);
+
+        return () => clearTimeout(handler);
+    }, [search]);
 
     // React Query
     const { data: usersData, isLoading: usersLoading } = useQuery({
-        queryKey: ['users', page, pageSize, search],
-        queryFn: () => userService.getAll({ page, limit: pageSize, search }),
+        queryKey: ['users', page, pageSize, debouncedSearch],
+        queryFn: () => userService.getAll({ page, limit: pageSize, search: debouncedSearch }),
         placeholderData: (previousData) => previousData,
     });
 
@@ -145,13 +141,43 @@ export default function UserManagement() {
                 const user = users.find(u => u.id === id);
                 if (user) {
                     const { roles: userRoles, ...rest } = user;
-                    newEditData[id as number] = { ...rest, role_id: userRoles[0]?.id };
+                    const firstRole = userRoles?.[0];
+                    const roleId = (firstRole && typeof firstRole === 'object') ? firstRole.id : undefined;
+                    newEditData[id as number] = { ...rest, role_id: roleId, gender: user.gender };
                 }
             }
         });
         setEditData(newEditData);
         setIsBatchEditMode(false); // Close the selection mode
     };
+
+    const startRowEditing = useCallback((record: UserData) => {
+        setIsDeleteMode(false);
+        setIsBatchEditMode(false);
+        
+        setEditingKeys(prev => {
+            if (prev.includes(record.id)) return prev;
+            return [...prev, record.id];
+        });
+
+        setEditData(prev => {
+            if (prev[record.id]) return prev;
+            const { roles: userRoles, ...rest } = record;
+            const firstRole = userRoles?.[0];
+            const roleId = (firstRole && typeof firstRole === 'object') ? firstRole.id : undefined;
+            return { ...prev, [record.id]: { ...rest, role_id: roleId } };
+        });
+    }, []);
+
+    const updateEditData = useCallback((id: number, field: string, value: any) => {
+        setEditData(prev => ({
+            ...prev,
+            [id]: {
+                ...prev[id],
+                [field]: value
+            }
+        }));
+    }, []);
 
     const handleCreateFinish = async (values: any) => {
         try {
@@ -291,6 +317,8 @@ export default function UserManagement() {
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={setSelectedRowKeys}
                     onRevokeAccess={handleRevokeAccess}
+                    onUpdate={updateEditData}
+                    onStartEdit={startRowEditing}
                     pagination={{
                         current: page,
                         pageSize: pageSize,

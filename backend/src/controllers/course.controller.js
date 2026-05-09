@@ -14,101 +14,10 @@ exports.getCourses = catchAsync(async (req, res) => {
 
 exports.getCourseDetail = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const userId = req.user?.id;
-
-    const course = await courseService.getCourseById(id);
-    if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
-
-    // Logic kiểm tra tiến độ và quyền truy cập
-    let completedLessonIds = [];
-    if (userId) {
-        const completions = await prisma.lessonCompleted.findMany({
-            where: { user_id: userId, lesson_id: { in: course.sections.flatMap(s => s.lessons.map(l => l.id)) } },
-            select: { lesson_id: true }
-        });
-        completedLessonIds = completions.map(c => c.lesson_id);
-    }
-
-    const isAdmin = req.user?.roles?.includes('admin');
-    const isOwner = course.instructor_id === userId;
-
-    let hasAccess = false;
-    if (userId) {
-        // Kiểm tra quyền truy cập trực tiếp HOẶC thông qua Lộ trình học (Program)
-        const [enrollment, programEnrollment] = await Promise.all([
-            prisma.enrollment.findUnique({
-                where: { user_id_course_id: { user_id: userId, course_id: parseInt(id) } }
-            }),
-            prisma.programEnrollment.findFirst({
-                where: {
-                    user_id: userId,
-                    program: {
-                        courses: {
-                            some: { course_id: parseInt(id) }
-                        }
-                    }
-                }
-            })
-        ]);
-
-        if (enrollment || programEnrollment || isAdmin || isOwner) hasAccess = true;
-    }
-
-    let requestStatus = null;
-    if (userId) {
-        const reqAccess = await prisma.courseRequest.findFirst({
-            where: { user_id: userId, course_id: parseInt(id) },
-            orderBy: { created_at: 'desc' }
-        });
-        if (reqAccess) requestStatus = reqAccess.status;
-    }
-
-    // Transform lessons based on access
-    course.sections = course.sections.map(s => ({
-        ...s,
-        lessons: s.lessons.map(l => {
-            let securedVideoUrl = l.video_url;
-
-            if (hasAccess || l.is_free) {
-                if (securedVideoUrl) {
-                    // Chấp nhận cả /public/hls/ hoặc hls/ (dạng lưu mới cho R2)
-                    if (securedVideoUrl.startsWith('/public/hls/') || securedVideoUrl.startsWith('hls/')) {
-                        const token = generateStreamToken(userId, l.id, req.ip);
-                        // Lấy tên file từ DB, nếu không có mặc định là master.m3u8
-                        const fileName = securedVideoUrl.split('/').pop();
-                        const finalFileName = (fileName && fileName.includes('.m3u8')) ? fileName : 'master.m3u8';
-                        securedVideoUrl = `/api/videos/stream/${token}/${finalFileName}`;
-                    } else if (securedVideoUrl.includes('cloudinary.com') || securedVideoUrl.startsWith('http')) {
-                        // Trả thẳng link gốc cho Cloudinary hoặc link ngoài theo yêu cầu (Bỏ Token/Proxy)
-                        securedVideoUrl = l.video_url;
-                    }
-                }
-            }
-
-            return {
-                ...l,
-                isCompleted: completedLessonIds.includes(l.id),
-                video_url: (hasAccess || l.is_free) ? securedVideoUrl : null,
-                ...(!hasAccess && !l.is_free && {
-                    content: 'Nội dung này đã bị khóa. Vui lòng liên hệ quản trị viên để mở khóa.'
-                })
-            };
-        })
-    }));
-
-    // Calculate progress and next lesson
-    let nextLessonId = null;
-    let isCourseFinished = false;
-    if (userId && hasAccess) {
-        const allLessons = course.sections.flatMap(s => s.lessons);
-        const nextLesson = allLessons.find(l => !completedLessonIds.includes(l.id));
-        nextLessonId = nextLesson ? nextLesson.id : (allLessons.length > 0 ? allLessons[0].id : null);
-        isCourseFinished = allLessons.length > 0 && completedLessonIds.length === allLessons.length;
-    }
-
-    res.json({ ...course, hasAccess, requestStatus, nextLessonId, isCourseFinished });
-
+    const course = await courseService.getEnrichedCourseDetail(id, req.user, req.ip);
+    res.json(course);
 });
+
 
 exports.createCourse = catchAsync(async (req, res) => {
     const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
@@ -150,12 +59,10 @@ exports.updateCourse = catchAsync(async (req, res) => {
 
 exports.deleteCourse = catchAsync(async (req, res) => {
     const { id } = req.params;
-    await prisma.course.update({
-        where: { id: parseInt(id) },
-        data: { deleted_at: new Date() }
-    });
-    res.json({ message: 'Đã xóa khóa học' });
+    await courseService.softDeleteCourse(id);
+    res.json({ message: 'Đã xóa khóa học và toàn bộ nội dung liên quan' });
 });
+
 
 exports.createSection = catchAsync(async (req, res) => {
     const { course_id, title, order } = req.body;
@@ -181,9 +88,10 @@ exports.createSection = catchAsync(async (req, res) => {
 
 exports.deleteSection = catchAsync(async (req, res) => {
     const { id } = req.params;
-    await prisma.section.delete({ where: { id: parseInt(id) } });
-    res.json({ message: 'Đã xóa chương' });
+    await courseService.deleteSection(id);
+    res.json({ message: 'Đã xóa chương và toàn bộ bài học liên quan' });
 });
+
 
 exports.updateSection = catchAsync(async (req, res) => {
     const { id } = req.params;

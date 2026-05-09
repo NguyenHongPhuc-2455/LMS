@@ -4,16 +4,7 @@ import styles from '../UserManagement.module.scss';
 
 const { Text } = Typography;
 
-interface RoleData {
-    id: number;
-    name: string;
-}
-
-interface UserData {
-    id: number;
-    roles: RoleData[];
-    enrollments_count: number;
-}
+import type { User as UserData } from '../../../../types/user';
 
 interface UserStatisticsProps {
     users: UserData[];
@@ -30,19 +21,19 @@ export default function UserStatistics({ users, loading }: UserStatisticsProps) 
         },
         {
             title: 'Giảng viên',
-            value: users.filter(u => u.roles.some(r => r.name === 'instructor')).length,
+            value: users.filter(u => u.roles.some((r: any) => (typeof r === 'object' ? r.name : r) === 'instructor')).length,
             icon: <IdcardOutlined className={`${styles.statsIcon} ${styles.instructor}`} />,
             type: 'instructor'
         },
         {
             title: 'Quản trị viên',
-            value: users.filter(u => u.roles.some(r => r.name === 'admin')).length,
+            value: users.filter(u => u.roles.some((r: any) => (typeof r === 'object' ? r.name : r) === 'admin')).length,
             icon: <CrownOutlined className={`${styles.statsIcon} ${styles.admin}`} />,
             type: 'admin'
         },
         {
             title: 'Khóa học bán',
-            value: users.reduce((a, b) => a + b.enrollments_count, 0),
+            value: users.reduce((a, b) => a + (b.enrollments_count || 0), 0),
             icon: <BookOutlined className={`${styles.statsIcon} ${styles.courses}`} />,
             type: 'courses'
         }

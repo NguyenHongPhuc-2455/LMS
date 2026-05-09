@@ -188,7 +188,7 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                     }
 
                     // CHỈ HOÀN THÀNH KHI XEM THẬT >= 95%
-                    if (duration > 0 && watchedTime / duration >= 0.95) {
+                    if (duration > 0 && watchedTime / duration >= 0.99) {
                         handleVideoComplete();
                     } else {
                         console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự.');
@@ -212,7 +212,7 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                     const duration = playerRef.current.duration();
                     const watchedTime = maxWatchedTimeRef.current;
 
-                    if (duration > 0 && watchedTime / duration >= 0.95) {
+                    if (duration > 0 && watchedTime / duration >= 0.99) {
                         handleVideoComplete();
                     }
                 }

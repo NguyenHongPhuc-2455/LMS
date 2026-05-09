@@ -114,7 +114,7 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
 | GET | `/profile` | Thông tin tài khoản hiện tại | ✅ |
-| PUT | `/profile` | Cập nhật hồ sơ (Họ tên, Email, Phone, DOB, Gender, Avatar) | ✅ |
+| PUT | `/profile` | Cập nhật hồ sơ (Họ tên, Email, Phone, DOB, Gender, Avatar, Mã nhân sự, Phòng ban, Vị trí, Ngày vào làm) | ✅ |
 | GET | `/` | Danh sách thành viên (Admin) | ✅ (Admin) |
 | POST | `/` | Tạo mới người dùng (Admin) | ✅ (Admin) |
 | PUT | `/:id` | Cập nhật thông tin người dùng (Admin) | ✅ (Admin) |
@@ -123,7 +123,7 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 ---
 
-## 📈 8. Statistics (`/stats`)
+## 📈 8. Statistics & Learning Tracking (`/stats`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -135,7 +135,21 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 ---
 
-## 💳 9. Payments (`/payments`)
+## 🖼️ 9. Hero Banners (`/hero-banners`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/` | Lấy danh sách banner đang hoạt động | 🔓 |
+| GET | `/admin` | Danh sách banner đầy đủ (Admin) | ✅ (Admin) |
+| POST | `/` | Tạo banner mới | ✅ (Admin) |
+| PUT | `/:id` | Cập nhật banner | ✅ (Admin) |
+| DELETE | `/:id` | Xóa banner | ✅ (Admin) |
+
+---
+
+## 💳 10. Payments (`/payments`) - [PLANNED]
+
+*Lưu ý: Module này hiện đang trong quá trình phát triển.*
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -144,7 +158,7 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 ---
 
-## 💬 10. Comments (`/comments`)
+## 💬 11. Comments (`/comments`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -156,11 +170,11 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 ---
 
-## 🔔 11. Notifications (`/notifications`)
+## 🔔 12. Notifications (`/notifications`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
-| GET | `/` | Lấy danh sách thông báo của user (tối đa 50) | ✅ |
+| GET | `/` | Lấy danh sách thông báo của user | ✅ |
 | PUT | `/:id/read` | Đánh dấu đã đọc | ✅ |
 | PUT | `/read-all` | Đánh dấu tất cả đã đọc | ✅ |
 | DELETE | `/:id` | Xóa một thông báo | ✅ |

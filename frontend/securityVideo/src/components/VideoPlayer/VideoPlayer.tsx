@@ -53,7 +53,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
                 const duration = videoRef.current.duration;
                 const watchedTime = maxWatchedTimeRef.current;
 
-                if (duration > 0 && watchedTime / duration >= 0.95) {
+                if (duration > 0 && watchedTime / duration >= 0.99) {
                     handleComplete();
                 }
             }
@@ -75,8 +75,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
         const duration = video ? video.duration : 0;
         const watchedTime = maxWatchedTimeRef.current;
 
-        // RULE: Chỉ hoàn thành khi xem thực đạt 95%
-        if (duration > 0 && watchedTime / duration < 0.95) return;
+        // RULE: Chỉ hoàn thành khi xem thực đạt 100% (99% cho sai số)
+        if (duration > 0 && watchedTime / duration < 0.99) return;
 
         hasTriggeredEndRef.current = true;
         stopProgressCheck();
