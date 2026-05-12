@@ -23,6 +23,14 @@ export const courseService = {
         const response = await api.get('/courses/my-courses');
         return response.data;
     },
+    getMandatoryCourses: async () => {
+        const response = await api.get('/courses/mandatory');
+        return response.data;
+    },
+    getMandatoryOverdueReport: async () => {
+        const response = await api.get('/courses/mandatory-overdue-report');
+        return response.data;
+    },
     enroll: async (courseId: number) => {
         const response = await api.post(`/courses/${courseId}/enroll`);
         return response.data;

@@ -79,7 +79,7 @@ export default function VideoLessonForm({
                         label="Chống tua video"
                         valuePropName="checked"
                         initialValue={true}
-                        tooltip="Bật để ngăn học viên kéo thanh tua tới nội dung chưa xem"
+                        tooltip="Bật để ngăn nhân sự kéo thanh tua tới nội dung chưa xem"
                     >
                         <Switch
                             checkedChildren="🔒 Bật"
@@ -96,8 +96,8 @@ export default function VideoLessonForm({
                             Tài liệu đính kèm (PDF - Tùy chọn)
                         </Text>
                         <Form.Item name="attachment_url" label="Link tài liệu (GG Drive, OneDrive...)">
-                            <Input 
-                                placeholder="Dán link tài liệu tại đây" 
+                            <Input
+                                placeholder="Dán link tài liệu tại đây"
                                 suffix={
                                     <Upload
                                         beforeUpload={(file) => {

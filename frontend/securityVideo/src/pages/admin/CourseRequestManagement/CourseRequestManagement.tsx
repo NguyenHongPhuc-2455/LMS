@@ -94,7 +94,7 @@ export default function CourseRequestManagement() {
     };
 
     const filteredCourseRequests = courseRequests.filter(req =>
-        selectedCategoryId === null || 
+        selectedCategoryId === null ||
         (selectedCategoryId === -1 ? !req.course?.category_id : req.course?.category_id === selectedCategoryId)
     );
 
@@ -147,7 +147,7 @@ export default function CourseRequestManagement() {
         <div className={styles.courseRequestsContainer}>
             <div style={{ marginBottom: 20 }}>
                 <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Duyệt yêu cầu truy cập</Title>
-                <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của học viên</Typography.Text>
+                <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của nhân sự</Typography.Text>
             </div>
 
             <Card className="glass-card" style={{ borderRadius: '16px' }}>

@@ -165,7 +165,7 @@ export default function CourseProgress() {
 
     const columns = [
         {
-            title: 'Học viên',
+            title: 'nhân sự',
             key: 'student',
             ...getColumnSearchProps('fullName'),
             render: (record: StudentProgress) => (
@@ -222,7 +222,7 @@ export default function CourseProgress() {
             <div className={styles.pageHeader}>
                 <div style={{ marginBottom: 20 }}>
                     <Title level={4} style={{ margin: 0 }}>Tiến độ học tập</Title>
-                    <Typography.Text type="secondary">Theo dõi quá trình hoàn thành khóa học của học viên</Typography.Text>
+                    <Typography.Text type="secondary">Theo dõi quá trình hoàn thành khóa học của nhân sự</Typography.Text>
                 </div>
             </div>
 
@@ -300,7 +300,7 @@ export default function CourseProgress() {
                         }
                     } as any}
                     bordered
-                    locale={{ emptyText: selectedCourse ? 'Chưa có học viên nào tham gia khóa học này' : 'Vui lòng chọn khóa học để xem dữ liệu' }}
+                    locale={{ emptyText: selectedCourse ? 'Chưa có nhân sự nào tham gia khóa học này' : 'Vui lòng chọn khóa học để xem dữ liệu' }}
                 />
             </Card>
         </div>

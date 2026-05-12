@@ -15,12 +15,13 @@ const getUsers = async (query) => {
 
     const where = {
         deleted_at: null,
+        ...(query.department_id && { department_id: parseInt(query.department_id) }),
         OR: [
             { username: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } },
             { full_name: { contains: search, mode: 'insensitive' } },
             { employee_id: { contains: search, mode: 'insensitive' } },
-            { department: { contains: search, mode: 'insensitive' } }
+            { department: { name: { contains: search, mode: 'insensitive' } } }
         ]
     };
 
@@ -28,13 +29,29 @@ const getUsers = async (query) => {
         prisma.user.findMany({
             where,
             include: {
+                department: true,
                 user_roles: { include: { role: true } },
                 enrollments: {
+                    where: {
+                        course: {
+                            deleted_at: null
+                        }
+                    },
                     include: {
                         course: { select: { title: true } }
                     }
                 },
-                _count: { select: { enrollments: true } }
+                _count: { 
+                    select: { 
+                        enrollments: {
+                            where: {
+                                course: {
+                                    deleted_at: null
+                                }
+                            }
+                        }
+                    } 
+                }
             },
             skip,
             take: limit,
@@ -44,9 +61,10 @@ const getUsers = async (query) => {
     ]);
 
     const safeUsers = users.map(u => {
-        const { password_hash, user_roles, enrollments, ...data } = u;
+        const { password_hash, user_roles, enrollments, department, ...data } = u;
         return {
             ...data,
+            department: department?.name || '',
             roles: user_roles.map(ur => ur.role),
             enrollments_count: u._count.enrollments,
             enrolled_courses: enrollments.map(e => ({ id: e.course_id, title: e.course.title }))
@@ -101,6 +119,7 @@ const updateUser = async (id, updateData) => {
             data: {
                 ...data,
                 employee_id,
+                department_id: data.department_id ? parseInt(data.department_id) : undefined,
                 join_date: parseDate(join_date),
                 dob: parseDate(data.dob),
             }
@@ -127,15 +146,17 @@ const getProfile = async (id) => {
     const user = await prisma.user.findUnique({
         where: { id },
         include: {
+            department: true,
             user_roles: { include: { role: true } }
         }
     });
 
     if (!user) throw new ApiError(404, 'Người dùng không tồn tại');
 
-    const { password_hash, user_roles, ...safeUser } = user;
+    const { password_hash, user_roles, department, ...safeUser } = user;
     return {
         ...safeUser,
+        department: department?.name || '',
         roles: user_roles.map(ur => ur.role.name)
     };
 };
@@ -177,17 +198,20 @@ const updateProfile = async (id, updateData) => {
         data: {
             ...data,
             employee_id: empId,
+            department_id: data.department_id ? parseInt(data.department_id) : undefined,
             dob: parseDate(dob),
             join_date: parseDate(data.join_date)
         },
         include: {
+            department: true,
             user_roles: { include: { role: true } }
         }
     });
 
-    const { password_hash, user_roles: ur, ...safeUser } = updatedUser;
+    const { password_hash, user_roles: ur, department: d, ...safeUser } = updatedUser;
     return {
         ...safeUser,
+        department: d?.name || '',
         roles: ur.map(item => item.role.name)
     };
 };
@@ -210,6 +234,7 @@ const createUser = async (userData) => {
             username,
             email,
             employee_id,
+            department_id: rest.department_id ? parseInt(rest.department_id) : undefined,
             join_date: parseDate(join_date),
             password_hash: hashed,
             user_roles: {
@@ -225,6 +250,21 @@ const deleteUser = async (id, currentUserId) => {
     }
     return await prisma.user.update({
         where: { id: parseInt(id) },
+        data: { deleted_at: new Date() }
+    });
+};
+
+const deleteBatchUsers = async (ids, currentUserId) => {
+    const validIds = ids
+        .map(id => parseInt(id))
+        .filter(id => id !== currentUserId);
+
+    if (validIds.length === 0) {
+        throw new ApiError(400, 'Không có người dùng hợp lệ để xóa hoặc bạn đang cố gắng tự xóa chính mình');
+    }
+
+    return await prisma.user.updateMany({
+        where: { id: { in: validIds } },
         data: { deleted_at: new Date() }
     });
 };
@@ -260,6 +300,7 @@ module.exports = {
     updateProfile,
     createUser,
     deleteUser,
+    deleteBatchUsers,
     revokeCourseAccess,
     getRoles
 };

@@ -189,7 +189,7 @@ export default function Navbar() {
                     <div className={styles.userDropdownTrigger}>
                         <div className={styles.userInfoText}>
                             <Text strong className={styles.userNameText}>{user?.full_name || user?.username}</Text>
-                            <Text className={styles.userRoleText}>{isAdmin ? 'Quản trị viên' : 'Học viên'}</Text>
+                            <Text className={styles.userRoleText}>{isAdmin ? 'Quản trị viên' : 'nhân sự'}</Text>
                         </div>
                         <Avatar
                             src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.username || 'U')}&background=4880FF&color=fff&size=200`}

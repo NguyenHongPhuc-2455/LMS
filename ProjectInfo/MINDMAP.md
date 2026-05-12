@@ -31,7 +31,7 @@ mindmap
         Standardized UI["Standardized Dashboard Layout"]
       Quản Trị ["Quản Trị (Admin Operations)"]
         Request Tracking["Duyệt yêu cầu (Course/Program)"]
-        Progress Monitoring["Theo dõi tiến độ học viên"]
+        Progress Monitoring["Theo dõi tiến độ nhân sự"]
         User Management["Quản lý người dùng & Phân quyền"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
         Enrollment["Đăng ký học"]
@@ -72,8 +72,8 @@ Cấu trúc phân cấp đa tầng: `Category` -> `Course` -> `Section` -> `Less
 
 ### 4. Khối Quản Trị & Thông báo Realtime
 Dành riêng cho Admin để vận hành hệ thống:
-- **Duyệt yêu cầu**: Hệ thống quản lý yêu cầu tham gia khóa học/lộ trình từ học viên.
-- **Theo dõi tiến độ**: Admin có thể xem chi tiết phần trăm hoàn thành của từng học viên trong mỗi khóa học.
+- **Duyệt yêu cầu**: Hệ thống quản lý yêu cầu tham gia khóa học/lộ trình từ nhân sự.
+- **Theo dõi tiến độ**: Admin có thể xem chi tiết phần trăm hoàn thành của từng nhân sự trong mỗi khóa học.
 - **Thông báo Realtime**: Push qua Socket.io khi có người phản hồi bình luận hoặc có yêu cầu mới cần duyệt.
 - Click thông báo để nhảy thẳng tới vị trí cần xử lý (bình luận hoặc trang duyệt).
 

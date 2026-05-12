@@ -72,8 +72,8 @@ export default function QuizLessonForm({ sections, form }: QuizLessonFormProps) 
                                 <Form.List name={[name, 'options']}>
                                     {(optFields, { add: addOpt, remove: removeOpt }) => (
                                         <div className={styles.quizOptionsWrapper}>
-                                            {optFields.map((optField, oIdx) => (
-                                                <Row key={optField.key} gutter={8} align="middle" className={styles.quizOptionRow} style={{ marginBottom: 12 }}>
+                                            {optFields.map(({ key, ...optField }, oIdx) => (
+                                                <Row key={key} gutter={8} align="middle" className={styles.quizOptionRow} style={{ marginBottom: 12 }}>
                                                     <Col span={3}>
                                                         <Form.Item {...optField} name={[optField.name, 'is_correct']} valuePropName="checked" noStyle>
                                                             <Radio

@@ -50,7 +50,7 @@ export default function ProgramList() {
                     programService.getMyPrograms().catch(() => []),
                     statsService.getMyLearningSummary().catch(() => ({ completedCourses: 0 }))
                 ]);
-                
+
                 const finalPrograms = (Array.isArray(allData) ? allData : []).map(p => {
                     const enrolled = (Array.isArray(myData) ? myData : []).find(mp => mp.id === p.id);
                     return enrolled ? { ...p, progressPercent: enrolled.progressPercent } : p;
@@ -78,8 +78,8 @@ export default function ProgramList() {
     const myProgramIds = new Set(myPrograms.map(p => p.id));
 
     const filteredPrograms = programs.filter(p => {
-        const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.description?.toLowerCase().includes(searchQuery.toLowerCase());
         if (!matchesSearch) return false;
 
         if (activeFilter === 'PRIVATE') return p.is_private;
@@ -95,7 +95,7 @@ export default function ProgramList() {
 
     return (
         <div className={styles.programListContainer}>
-                {/* <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                     <Title level={2} className={styles.headerTitle}>Lộ trình học</Title>
                     <Text type="secondary">Lộ trình học tập được thiết kế bài bản từ nhiều khóa học</Text>
                 </div> */}
@@ -126,7 +126,7 @@ export default function ProgramList() {
                     </div>
                     <div className={styles.info}>
                         <div className={styles.value}>{totalFellowStudents}</div>
-                        <div className={styles.label}>Học viên cùng lộ trình</div>
+                        <div className={styles.label}>nhân sự cùng lộ trình</div>
                     </div>
                 </div>
             </div> */}
@@ -134,39 +134,39 @@ export default function ProgramList() {
             {/* Filter Bar Modernized */}
             <div className={styles.modernFilterBar}>
                 <div className={styles.filterGroup}>
-                    <button 
+                    <button
                         className={`${styles.filterPill} ${activeFilter === 'ALL' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('ALL')}
                     >
                         Tất cả lộ trình
                     </button>
                     <div className={styles.separator} />
-                    <button 
+                    <button
                         className={`${styles.filterPill} ${activeFilter === 'Cơ bản' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('Cơ bản')}
                     >
                         Cơ bản
                     </button>
-                    <button 
+                    <button
                         className={`${styles.filterPill} ${activeFilter === 'Trung cấp' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('Trung cấp')}
                     >
                         Trung cấp
                     </button>
-                    <button 
+                    <button
                         className={`${styles.filterPill} ${activeFilter === 'Nâng cao' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('Nâng cao')}
                     >
                         Nâng cao
                     </button>
                     <div className={styles.separator} />
-                    <button 
+                    <button
                         className={`${styles.filterPill} ${activeFilter === 'PRIVATE' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('PRIVATE')}
                     >
                         Riêng tư
                     </button>
-                    <button 
+                    <button
                         className={`${styles.filterPill} ${activeFilter === 'PUBLIC' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('PUBLIC')}
                     >
@@ -190,8 +190,8 @@ export default function ProgramList() {
             {/* Discovery Section */}
             <div className={styles.sectionHeader}>
                 <Title level={4} className={styles.sectionTitle}>
-                    {activeFilter === 'ALL' 
-                        ? 'Khám phá lộ trình' 
+                    {activeFilter === 'ALL'
+                        ? 'Khám phá lộ trình'
                         : `Lộ trình: ${activeFilter === 'PRIVATE' ? 'Riêng tư' : activeFilter === 'PUBLIC' ? 'Công khai' : activeFilter}`}
                 </Title>
             </div>
@@ -202,11 +202,11 @@ export default function ProgramList() {
                 <>
                     <div className={styles.programsGrid}>
                         {displayed.map(p => (
-                            <ProgramCard 
-                                key={p.id} 
-                                program={p} 
-                                navigate={navigate} 
-                                isEnrolled={myProgramIds.has(p.id)} 
+                            <ProgramCard
+                                key={p.id}
+                                program={p}
+                                navigate={navigate}
+                                isEnrolled={myProgramIds.has(p.id)}
                             />
                         ))}
                     </div>
@@ -237,9 +237,9 @@ function ProgramCard({ program: p, navigate, isEnrolled: enrolledProp }: { progr
             className={styles.programCardItem}
             cover={
                 <div className={styles.cardCoverWrapper}>
-                    <img 
-                        src={p.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'} 
-                        alt={p.title} 
+                    <img
+                        src={p.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'}
+                        alt={p.title}
                     />
                 </div>
             }
@@ -269,9 +269,9 @@ function ProgramCard({ program: p, navigate, isEnrolled: enrolledProp }: { progr
                         <Text strong className={styles.progressValue}>{progress}%</Text>
                     </div>
                     <div className={styles.progressBar}>
-                        <div 
+                        <div
                             className={`${styles.progressFill} ${progress === 100 ? styles.finished : ''}`}
-                            style={{ width: `${progress}%` }} 
+                            style={{ width: `${progress}%` }}
                         />
                     </div>
                 </div>
@@ -281,7 +281,7 @@ function ProgramCard({ program: p, navigate, isEnrolled: enrolledProp }: { progr
 
             <div className={styles.cardFooter}>
                 <Space size={4}><BookOutlined /> {p._count?.courses || 0} khóa học</Space>
-                <Space size={4}><TeamOutlined /> {p._count?.enrollments || 0} học viên</Space>
+                <Space size={4}><TeamOutlined /> {p._count?.enrollments || 0} nhân sự</Space>
             </div>
         </Card>
     );

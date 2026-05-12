@@ -1,5 +1,5 @@
 const prisma = require('../configs/prisma');
-const notificationService = require('./notification.service');
+const events = require('../utils/events');
 
 exports.createComment = async (data) => {
     let finalParentId = data.parent_id ? parseInt(data.parent_id) : null;
@@ -53,16 +53,10 @@ exports.createComment = async (data) => {
             });
 
             if (parentComment && parentComment.user_id !== data.user_id) {
-                const courseId = parentComment.lesson.section.course_id;
-                const lessonId = parentComment.lesson.id;
-                const commentId = newComment.id;
-
-                await notificationService.createNotification({
-                    userId: parentComment.user_id,
-                    title: 'Phản hồi bình luận mới',
-                    message: `Ai đó đã phản hồi bình luận của bạn trong bài học: ${parentComment.lesson.title}`,
-                    type: 'COMMENT_REPLY',
-                    link: `/course/${courseId}/learning?lessonId=${lessonId}#comment-${commentId}`
+                events.emit('comment.reply', {
+                    parentComment,
+                    newComment,
+                    lesson: parentComment.lesson
                 });
             }
         } catch (error) {

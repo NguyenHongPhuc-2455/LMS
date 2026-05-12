@@ -51,6 +51,14 @@ exports.batchUpdateUsers = catchAsync(async (req, res) => {
     res.json({ message: `Đã cập nhật thành công ${users.length} thành viên` });
 });
 
+exports.batchDeleteUsers = catchAsync(async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) throw new ApiError(400, 'Dữ liệu không hợp lệ');
+
+    await userService.deleteBatchUsers(ids, req.user.id);
+    res.json({ message: `Đã xóa thành công ${ids.length} thành viên` });
+});
+
 exports.revokeCourseAccess = catchAsync(async (req, res) => {
     const { userId, courseId } = req.body;
     await userService.revokeCourseAccess(userId, courseId);

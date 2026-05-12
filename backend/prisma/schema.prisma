@@ -20,6 +20,15 @@ model Role {
   @@map("roles")
 }
 
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  users       User[]
+
+  @@map("departments")
+}
+
 model User {
   id            Int       @id @default(autoincrement())
   username      String    @unique @db.VarChar(100)
@@ -32,12 +41,14 @@ model User {
   gender        String?   @db.VarChar(20)
   bio           String?   @db.Text
   employee_id   String?   @unique @db.VarChar(50)
-  department    String?   @db.VarChar(100)
+  department_id Int?
   position      String?   @db.VarChar(100)
   join_date     DateTime?
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
   deleted_at    DateTime? // Soft Delete
+
+  department       Department? @relation(fields: [department_id], references: [id], onDelete: SetNull)
 
   user_roles       UserRole[]
   instructed_courses Course[]     @relation("Instructor")
@@ -101,6 +112,8 @@ model Course {
   requirements    String?      @db.Text
   status        CourseStatus @default(DRAFT)
   is_private    Boolean      @default(false)
+  is_mandatory  Boolean      @default(false)  // Bắt buộc cho nhân viên mới
+  mandatory_deadline_days Int @default(60)    // Số ngày hạn chót kể từ join_date
   created_at    DateTime     @default(now())
   updated_at    DateTime     @updatedAt
   deleted_at    DateTime?

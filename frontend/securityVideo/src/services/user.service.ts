@@ -9,7 +9,7 @@ export interface UserListResponse {
 }
 
 export const userService = {
-    getAll: async (params?: { page: number; limit: number; search?: string }): Promise<UserListResponse> => {
+    getAll: async (params?: { page: number; limit: number; search?: string; department_id?: number }): Promise<UserListResponse> => {
         const response = await api.get('/users', { params });
         return response.data;
     },

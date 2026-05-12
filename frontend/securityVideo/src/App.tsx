@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { App as AntdApp, ConfigProvider, theme, Skeleton } from 'antd';
 
 import { MainLayout, AdminLayout } from '@/components';
+import { ROUTES } from './constants/routes';
 
 // Shared Components
 const Profile = lazy(() => import('./pages/client/Profile/Profile'));
@@ -26,9 +27,6 @@ const Contact = lazy(() => import('./pages/client/Contact/Contact'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard/AdminDashboard'));
-const CourseManagement = lazy(() => import('./pages/admin/CourseManagement/CourseManagement'));
-const SectionManagement = lazy(() => import('./pages/admin/SectionManagement/SectionManagement'));
-const LessonManagement = lazy(() => import('./pages/admin/LessonManagement/LessonManagement'));
 const UserManagement = lazy(() => import('./pages/admin/UserManagement/UserManagement'));
 const CourseRequestManagement = lazy(() => import('./pages/admin/CourseRequestManagement/CourseRequestManagement'));
 const ProgramManagement = lazy(() => import('./pages/admin/ProgramManagement/ProgramManagement'));
@@ -36,6 +34,8 @@ const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement/C
 const CourseProgress = lazy(() => import('./pages/admin/CourseProgress/CourseProgress'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement/BannerManagement'));
 const UnifiedContent = lazy(() => import('./pages/admin/UnifiedContent/UnifiedContent'));
+const DepartmentManagement = lazy(() => import('./pages/admin/DepartmentManagement/DepartmentManagement'));
+const OnboardingReport = lazy(() => import('./pages/admin/OnboardingReport/OnboardingReport'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -73,39 +73,40 @@ function App() {
             <Routes>
 
               {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path={ROUTES.LOGIN} element={<Login />} />
+              <Route path={ROUTES.REGISTER} element={<Register />} />
+              <Route path="/" element={<Navigate to={ROUTES.HOME} replace />} />
 
               {/* Private SPA Routes with Header */}
               <Route element={<MainLayout />}>
-                <Route path="/home" element={<Home />} />
-                <Route path="/course" element={<CourseList />} />
-                <Route path="/categories" element={<CategorizedCourses />} />
+                <Route path={ROUTES.HOME} element={<Home />} />
+                <Route path={ROUTES.COURSE_LIST} element={<CourseList />} />
+                <Route path={ROUTES.CATEGORIES || "/categories"} element={<CategorizedCourses />} />
                 <Route path="/categories/:id" element={<CategoryCourseView />} />
-                <Route path="/my-courses" element={<MyCourses />} />
+                <Route path={ROUTES.MY_COURSES} element={<MyCourses />} />
                 <Route path="/course/:id" element={<CourseDetail />} />
                 <Route path="/course/:id/learning" element={<CourseLearning />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/programs" element={<ProgramList />} />
+                <Route path={ROUTES.PROFILE} element={<Profile />} />
+                <Route path={ROUTES.PROGRAMS} element={<ProgramList />} />
                 <Route path="/programs/:id" element={<ProgramDetail />} />
-                <Route path="/my-programs" element={<MyPrograms />} />
-                <Route path="/contact" element={<Contact />} />
+                <Route path={ROUTES.MY_PROGRAMS} element={<MyPrograms />} />
+                <Route path={ROUTES.CONTACT} element={<Contact />} />
               </Route>
 
               {/* Admin Routes with DashStack Layout */}
-              <Route path="/admin" element={<AdminLayout />}>
+              <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
-                <Route path="courses" element={<CourseManagement />} />
-                <Route path="sections" element={<SectionManagement />} />
-                <Route path="lessons" element={<LessonManagement />} />
-                <Route path="content" element={<UnifiedContent />} />
+                <Route path="courses" element={<UnifiedContent />} />
+                <Route path="courses/:courseId/sections" element={<UnifiedContent />} />
+                <Route path="courses/:courseId/sections/:sectionId/lessons" element={<UnifiedContent />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="requests" element={<CourseRequestManagement />} />
                 <Route path="programs" element={<ProgramManagement />} />
                 <Route path="categories" element={<CategoryManagement />} />
                 <Route path="progress" element={<CourseProgress />} />
                 <Route path="banners" element={<BannerManagement />} />
+                <Route path="departments" element={<DepartmentManagement />} />
+                <Route path="onboarding-report" element={<OnboardingReport />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

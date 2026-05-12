@@ -147,6 +147,18 @@
     }
 }
 
+.actionBtn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+    
+    &:hover {
+        background: rgba(0, 0, 0, 0.05) !important;
+        transform: scale(1.1);
+    }
+}
+
 .deleteModeTag {
     border-radius: 12px;
     padding: 0 12px;

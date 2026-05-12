@@ -14,7 +14,7 @@ interface UserStatisticsProps {
 export default function UserStatistics({ users, loading }: UserStatisticsProps) {
     const statsData = [
         {
-            title: 'Học viên',
+            title: 'nhân sự',
             value: users.length,
             icon: <TeamOutlined className={`${styles.statsIcon} ${styles.student}`} />,
             type: 'student'

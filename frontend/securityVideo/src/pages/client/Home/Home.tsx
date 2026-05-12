@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import styles from './Home.module.scss';
 
 import HeroSection from './components/HeroSection';
+import MandatoryCourseBanner from '../../../components/MandatoryCourseBanner/MandatoryCourseBanner';
 
 const { Title, Text } = Typography;
 
@@ -162,6 +163,9 @@ export default function Home() {
                 <Row gutter={[24, 24]}>
                     {/* Left column: in-progress + categories */}
                     <Col xs={24} lg={16}>
+                        {/* Banner cảnh báo khóa học bắt buộc */}
+                        <MandatoryCourseBanner />
+
                         {inProgressCourses.length > 0 && (
                             <div className={styles.inProgressWrapper}>
                                 <div className={styles.sectionHeader} style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -264,7 +268,7 @@ export default function Home() {
                             <div className={styles.lbHeader} style={{ background: '#C72127' }}>
                                 <Title level={4} style={{ margin: 0, color: '#fff' }}>
                                     <TrophyOutlined style={{ marginRight: '8px' }} />
-                                    Top học viên tháng này
+                                    Top nhân sự tháng này
                                 </Title>
                             </div>
                             <div className={styles.lbList}>

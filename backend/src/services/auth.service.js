@@ -49,13 +49,46 @@ exports.login = async (username, password) => {
         throw new ApiError(401, 'Sai tài khoản hoặc mật khẩu');
     }
 
+    // ✅ Tự động set join_date = hôm nay nếu chưa có (lần đăng nhập đầu tiên)
+    let isFirstLogin = false;
+    if (!user.join_date) {
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { join_date: new Date() }
+        });
+        isFirstLogin = true;
+    }
+
     const roleNames = user.user_roles.map(ur => ur.role.name);
     const payload = { id: user.id, username: user.username, roles: roleNames };
     const tokens = generateTokens(payload);
 
+    // ✅ Lấy danh sách khóa học bắt buộc để thông báo (nếu lần đầu login hoặc còn khóa chưa xong)
+    let mandatoryCourses = [];
+    try {
+        const today = new Date();
+        const joinDate = user.join_date || new Date();
+
+        mandatoryCourses = await prisma.course.findMany({
+            where: { is_mandatory: true, deleted_at: null },
+            select: { id: true, title: true, thumbnail: true, mandatory_deadline_days: true }
+        });
+
+        mandatoryCourses = mandatoryCourses.map(course => {
+            const deadlineDate = new Date(joinDate);
+            deadlineDate.setDate(deadlineDate.getDate() + course.mandatory_deadline_days);
+            const remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+            return { ...course, remainingDays };
+        });
+    } catch (e) {
+        mandatoryCourses = [];
+    }
+
     return {
         ...tokens,
-        user: { id: user.id, username: user.username, roles: roleNames }
+        user: { id: user.id, username: user.username, roles: roleNames },
+        isFirstLogin,
+        mandatoryCourses
     };
 };
 

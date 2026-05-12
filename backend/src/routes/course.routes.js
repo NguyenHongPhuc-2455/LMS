@@ -7,6 +7,8 @@ const courseValidation = require('../validations/course.validation');
 
 router.get('/', authMiddleware.verifyToken, courseController.getCourses);
 router.get('/my-courses', authMiddleware.verifyToken, courseController.getMyCourses);
+router.get('/mandatory', authMiddleware.verifyToken, courseController.getMyMandatoryCourses);
+router.get('/mandatory-overdue-report', authMiddleware.verifyToken, authMiddleware.isAdmin, courseController.getMandatoryOverdueReport);
 router.get('/:id', authMiddleware.verifyToken, validate(courseValidation.getById), courseController.getCourseDetail);
 
 // Chỉ Instructor hoặc Admin mới có quyền tạo/sửa/xóa khóa học

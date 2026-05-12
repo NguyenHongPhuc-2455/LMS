@@ -78,7 +78,7 @@ export default function LessonFormModal({
             ]}
             width={1000}
             style={{ top: 100 }}
-            destroyOnClose
+            destroyOnClose={true}
         >
             {!editingId && (
                 <div className={styles.segmentedWrapper} style={{ marginBottom: 16 }}>

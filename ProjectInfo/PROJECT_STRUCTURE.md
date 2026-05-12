@@ -44,7 +44,7 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   │   ├── video.service.js       # Logic dọn dẹp R2 & Xử lý video
 │   │   │   ├── category.service.js    # Logic danh mục
 │   │   │   ├── courseRequest.service.js # Logic duyệt yêu cầu
-│   │   │   ├── stats.service.js       # Tính toán tiến độ học viên
+│   │   │   ├── stats.service.js       # Tính toán tiến độ nhân sự
 │   │   │   ├── comment.service.js     # Logic bình luận (Facebook-style 2 cấp)
 │   │   │   └── notification.service.js # Tạo & phát thông báo Realtime
 
@@ -91,9 +91,9 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 
 ### 2. Luồng Duyệt yêu cầu & Tiến độ
 `Student Registration` -> `Admin Dashboard` -> `Approval`:
-- Khi học viên đăng ký khóa học/lộ trình riêng tư, yêu cầu được đẩy về `CourseRequestManagement`.
-- Admin duyệt -> Học viên được cấp quyền truy cập (`enrollment`).
-- Admin có thể xem **Tiến độ học tập** theo thời gian thực (phần trăm hoàn thành) của từng học viên.
+- Khi nhân sự đăng ký khóa học/lộ trình riêng tư, yêu cầu được đẩy về `CourseRequestManagement`.
+- Admin duyệt -> nhân sự được cấp quyền truy cập (`enrollment`).
+- Admin có thể xem **Tiến độ học tập** theo thời gian thực (phần trăm hoàn thành) của từng nhân sự.
 
 ### 3. Luồng Bình luận (Facebook-style, 2 cấp)
 `CourseLearning` -> `CommentSection` -> `commentService` -> Backend:

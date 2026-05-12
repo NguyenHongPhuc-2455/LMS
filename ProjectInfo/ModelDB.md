@@ -1,5 +1,5 @@
 1. Nhóm quản lý Người dùng (Users & Roles)
-Đây là nền tảng để phân quyền giữa Học viên (Student), Giảng viên (Instructor) và Admin.
+Đây là nền tảng để phân quyền giữa nhân sự (Student), Giảng viên (Instructor) và Admin.
 
 - **users**: Lưu thông tin cơ bản (id, email, password, full_name, avatar, bio, phone, dob, gender, employee_id, department, position, join_date).
 - **roles**: Lưu các loại quyền (Admin, Instructor, Student).
@@ -20,7 +20,7 @@ Nhóm các khóa học lại thành một lộ trình hoàn chỉnh.
 
 - **learning_programs**: Thông tin lộ trình (title, description, instructor_id, status, is_private).
 - **program_courses**: Bảng trung gian liên kết `LearningProgram` và `Course` với cột `order` để sắp xếp thứ tự học.
-- **program_enrollments**: Lưu vết học viên đã tham gia lộ trình.
+- **program_enrollments**: Lưu vết nhân sự đã tham gia lộ trình.
 
 4. Nhóm Yêu cầu & Ghi danh (Requests & Enrollments)
 Quản lý quyền truy cập nội dung riêng tư.
@@ -40,7 +40,7 @@ Quản lý quyền truy cập nội dung riêng tư.
 - **questions**: Nội dung câu hỏi và giải thích.
 - **options**: Các lựa chọn trả lời, đánh dấu `is_correct`.
 - **quiz_attempts**: Lưu vết mỗi lần làm bài (score, status: IN_PROGRESS, COMPLETED).
-- **student_answers**: Lưu chi tiết câu trả lời học viên đã chọn trong mỗi lần làm bài.
+- **student_answers**: Lưu chi tiết câu trả lời nhân sự đã chọn trong mỗi lần làm bài.
 
 7. Nhóm Bình luận & Thông báo (Comments & Notifications)
 - **comments**: Bình luận 2 cấp (Facebook-style).

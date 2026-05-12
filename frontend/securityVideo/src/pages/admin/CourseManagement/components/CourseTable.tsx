@@ -1,4 +1,4 @@
-import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input } from 'antd';
+import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag } from 'antd';
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -13,6 +13,7 @@ interface Course {
     description: string;
     thumbnail: string;
     is_private: boolean;
+    is_mandatory: boolean; // Added mandatory field
     level: string;
     category_id?: number | null;
     created_at: string;
@@ -148,7 +149,7 @@ export default function CourseTable({
                     className={styles.statusSelect}
                     size="small"
                     showSearch={false}
-                    dropdownClassName={styles.statusPopup}
+                    popupClassName={styles.statusPopup}
                     options={[
                         {
                             value: true,
@@ -163,7 +164,22 @@ export default function CourseTable({
             )
         },
         {
-            title: 'Học viên',
+            title: 'Loại khóa',
+            dataIndex: 'is_mandatory',
+            width: 120,
+            filters: [
+                { text: 'BẮT BUỘC', value: true },
+                { text: 'TỰ CHỌN', value: false },
+            ],
+            onFilter: (value: any, record: Course) => record.is_mandatory === value,
+            render: (isMandatory: boolean) => (
+                <Tag color={isMandatory ? 'volcano' : 'default'}>
+                    {isMandatory ? 'BẮT BUỘC' : 'TỰ CHỌN'}
+                </Tag>
+            )
+        },
+        {
+            title: 'nhân sự',
             key: 'students',
             width: 100,
             sorter: (a: Course, b: Course) => (a._count?.enrollments || 0) - (b._count?.enrollments || 0),

@@ -7,7 +7,7 @@ Tài liệu này hướng dẫn cách phát triển và mở rộng giao diện 
 ## 🏗️ Kiến trúc Layout
 Hệ thống sử dụng 2 Layout chính trong `src/components/Layout/`:
 
-1. **`MainLayout`**: Dành cho giao diện học viên (Client).
+1. **`MainLayout`**: Dành cho giao diện nhân sự (Client).
    - Bao gồm: `AppHeader`, `AppFooter`.
    - Sidebar tự động ẩn/hiện tùy theo trang.
 2. **`AdminLayout`**: Dành cho quản trị viên.

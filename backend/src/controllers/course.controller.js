@@ -20,11 +20,13 @@ exports.getCourseDetail = catchAsync(async (req, res) => {
 
 
 exports.createCourse = catchAsync(async (req, res) => {
-    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
+    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private, is_mandatory, mandatory_deadline_days } = req.body;
     const course = await courseService.createCourse({
         title,
         description,
         is_private: is_private === true || is_private === 'true',
+        is_mandatory: is_mandatory === true || is_mandatory === 'true',
+        mandatory_deadline_days: mandatory_deadline_days ? parseInt(mandatory_deadline_days) : 60,
         category_id: category_id ? parseInt(category_id) : null,
         instructor_id: req.user.id,
         level,
@@ -38,13 +40,15 @@ exports.createCourse = catchAsync(async (req, res) => {
 
 exports.updateCourse = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
+    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private, is_mandatory, mandatory_deadline_days } = req.body;
     const course = await prisma.course.update({
         where: { id: parseInt(id) },
         data: {
             title,
             description,
             is_private: is_private !== undefined ? (is_private === true || is_private === 'true') : undefined,
+            is_mandatory: is_mandatory !== undefined ? (is_mandatory === true || is_mandatory === 'true') : undefined,
+            mandatory_deadline_days: mandatory_deadline_days !== undefined ? parseInt(mandatory_deadline_days) : undefined,
             category_id: category_id ? parseInt(category_id) : undefined,
             level,
             thumbnail,
@@ -178,25 +182,40 @@ exports.getMyCourses = catchAsync(async (req, res) => {
         }
     });
 
-    const coursesWithProgress = await Promise.all(enrollments.map(async (e) => {
-        const course = e.course;
-        const allLessons = course.sections.flatMap(s => s.lessons);
-        const totalLessons = allLessons.length;
+    // Thu thập toàn bộ lesson IDs từ các khóa học đã ghi danh
+    const allLessonIds = enrollments.flatMap(e => 
+        e.course.sections.flatMap(s => s.lessons.map(l => l.id))
+    );
 
-        const completedLessonsData = await prisma.lessonCompleted.findMany({
-            where: {
-                user_id: userId,
-                lesson_id: { in: allLessons.map(l => l.id) }
-            },
-            select: { lesson_id: true }
-        });
-        const completedIdsItems = completedLessonsData.map(c => c.lesson_id);
-        const completedLessons = completedIdsItems.length;
+    // Một query duy nhất lấy toàn bộ tiến độ của user cho tất cả khóa học
+    const allCompletions = await prisma.lessonCompleted.findMany({
+        where: {
+            user_id: userId,
+            lesson_id: { in: allLessonIds }
+        },
+        orderBy: { completed_at: 'desc' }
+    });
+
+    // Tạo Map/Set để tra cứu nhanh
+    const completedSet = new Set(allCompletions.map(c => c.lesson_id));
+
+    const coursesWithProgress = enrollments.map((e) => {
+        const course = e.course;
+        const lessons = course.sections.flatMap(s => s.lessons);
+        const totalLessons = lessons.length;
+
+        const completedInThisCourse = lessons.filter(l => completedSet.has(l.id));
+        const completedCount = completedInThisCourse.length;
 
         // Tìm bài học đầu tiên chưa hoàn thành
-        const nextLesson = allLessons.find(l => !completedIdsItems.includes(l.id));
+        const nextLesson = lessons.find(l => !completedSet.has(l.id));
 
-        const progressPercent = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+        // Tìm hoạt động mới nhất cho khóa học này từ allCompletions
+        const lastCompletionForCourse = allCompletions.find(c => 
+            lessons.some(l => l.id === c.lesson_id)
+        );
+
+        const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
 
         return {
             id: course.id,
@@ -204,19 +223,13 @@ exports.getMyCourses = catchAsync(async (req, res) => {
             thumbnail: course.thumbnail,
             instructor: course.instructor.full_name,
             totalLessons,
-            completedLessons,
+            completedLessons: completedCount,
             progressPercent,
-            nextLessonId: nextLesson ? nextLesson.id : null,
+            nextLessonId: nextLesson ? nextLesson.id : (lessons[0]?.id || null),
             enrolledAt: e.enrolled_at,
-            lastActivity: completedLessonsData.length > 0
-                ? (await prisma.lessonCompleted.findFirst({
-                    where: { user_id: userId, lesson_id: { in: allLessons.map(l => l.id) } },
-                    orderBy: { completed_at: 'desc' },
-                    select: { completed_at: true }
-                }))?.completed_at || e.enrolled_at
-                : e.enrolled_at
+            lastActivity: lastCompletionForCourse?.completed_at || e.enrolled_at
         };
-    }));
+    });
 
     // Sắp xếp theo ngày tham gia mới nhất
     coursesWithProgress.sort((a, b) => new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime());
@@ -290,3 +303,160 @@ exports.completeLesson = catchAsync(async (req, res) => {
         data: completion
     });
 });
+
+/**
+ * Lấy danh sách nhân viên trễ hạn khóa học bắt buộc (dành cho Admin)
+ */
+exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
+    const today = new Date();
+
+    // 1. Lấy tất cả khóa học bắt buộc
+    const mandatoryCourses = await prisma.course.findMany({
+        where: { is_mandatory: true, deleted_at: null },
+        select: { id: true, title: true, mandatory_deadline_days: true }
+    });
+
+    if (mandatoryCourses.length === 0) return res.json([]);
+
+    // 2. Lấy tất cả user có join_date (nhân viên mới theo Phương án 2 - chỉ tính từ ngày hôm nay trở đi)
+    const users = await prisma.user.findMany({
+        where: { join_date: { not: null }, deleted_at: null },
+        select: { id: true, full_name: true, email: true, phone: true, employee_id: true, join_date: true, department: { select: { name: true } } }
+    });
+
+    const overdueList = [];
+
+    for (const user of users) {
+        const userOverdueCourses = [];
+
+        for (const course of mandatoryCourses) {
+            const joinDate = new Date(user.join_date);
+            const deadlineDate = new Date(joinDate);
+            deadlineDate.setDate(deadlineDate.getDate() + course.mandatory_deadline_days);
+
+            const remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+
+            // Chỉ xét những khóa đã quá hạn (remainingDays < 0)
+            if (remainingDays >= 0) continue;
+
+            // Kiểm tra đã hoàn thành chưa
+            const enrollment = await prisma.enrollment.findUnique({
+                where: { user_id_course_id: { user_id: user.id, course_id: course.id } }
+            });
+
+            if (!enrollment) {
+                // Chưa ghi danh = chưa học
+                userOverdueCourses.push({ courseId: course.id, courseTitle: course.title, daysOverdue: Math.abs(remainingDays) });
+                continue;
+            }
+
+            // Kiểm tra tiến độ hoàn thành
+            const lessons = await prisma.lesson.findMany({
+                where: { section: { course_id: course.id } },
+                select: { id: true }
+            });
+            const lessonIds = lessons.map(l => l.id);
+            const completedCount = await prisma.lessonCompleted.count({
+                where: { user_id: user.id, lesson_id: { in: lessonIds } }
+            });
+
+            if (completedCount < lessonIds.length) {
+                userOverdueCourses.push({ courseId: course.id, courseTitle: course.title, daysOverdue: Math.abs(remainingDays) });
+            }
+        }
+
+        if (userOverdueCourses.length > 0) {
+            overdueList.push({
+                userId: user.id,
+                fullName: user.full_name,
+                email: user.email,
+                phone: user.phone,
+                employeeId: user.employee_id,
+                department: user.department?.name,
+                joinDate: user.join_date,
+                overdueCourses: userOverdueCourses
+            });
+        }
+    }
+
+    res.json(overdueList);
+});
+
+/**
+ * Lấy danh sách khóa học bắt buộc kèm trạng thái deadline của user hiện tại
+ */
+exports.getMyMandatoryCourses = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    const today = new Date();
+
+    // Lấy thông tin user (cần join_date)
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { join_date: true }
+    });
+
+    // Nếu không có join_date hoặc join_date trước ngày thiết lập tính năng thì trả rỗng
+    // Phương án 2: chỉ hiển thị nếu join_date tồn tại (Admin đã cấu hình ngày nhận việc)
+    if (!user?.join_date) return res.json([]);
+
+    // Lấy tất cả khóa học bắt buộc
+    const mandatoryCourses = await prisma.course.findMany({
+        where: { is_mandatory: true, deleted_at: null },
+        include: {
+            instructor: { select: { full_name: true } },
+            _count: { select: { sections: true } }
+        }
+    });
+
+    // Lấy tất cả lesson IDs của các khóa bắt buộc
+    const allLessons = await prisma.lesson.findMany({
+        where: { section: { course: { is_mandatory: true, deleted_at: null } } },
+        select: { id: true, section: { select: { course_id: true } } }
+    });
+
+    // Lấy tiến độ của user
+    const completedLessonIds = new Set(
+        (await prisma.lessonCompleted.findMany({
+            where: { user_id: userId, lesson_id: { in: allLessons.map(l => l.id) } },
+            select: { lesson_id: true }
+        })).map(c => c.lesson_id)
+    );
+
+    const result = mandatoryCourses.map(course => {
+        const joinDate = new Date(user.join_date);
+        const deadlineDate = new Date(joinDate);
+        deadlineDate.setDate(deadlineDate.getDate() + course.mandatory_deadline_days);
+        const remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+
+        const courseLessons = allLessons.filter(l => l.section.course_id === course.id);
+        const totalLessons = courseLessons.length;
+        const completedCount = courseLessons.filter(l => completedLessonIds.has(l.id)).length;
+        const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
+        const isCompleted = progressPercent === 100;
+
+        let status = 'NORMAL';
+        if (isCompleted) status = 'COMPLETED';
+        else if (remainingDays < 0) status = 'OVERDUE';
+        else if (remainingDays <= 7) status = 'WARNING';
+
+        return {
+            id: course.id,
+            title: course.title,
+            thumbnail: course.thumbnail,
+            level: course.level,
+            is_mandatory: true,
+            mandatory_deadline_days: course.mandatory_deadline_days,
+            deadlineDate,
+            remainingDays,
+            progressPercent,
+            completedLessons: completedCount,
+            totalLessons,
+            status,  // 'NORMAL' | 'WARNING' | 'OVERDUE' | 'COMPLETED'
+            instructor: course.instructor,
+            _count: course._count
+        };
+    });
+
+    res.json(result);
+});
+

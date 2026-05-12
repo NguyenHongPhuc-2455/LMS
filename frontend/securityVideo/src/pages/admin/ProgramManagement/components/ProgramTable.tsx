@@ -160,13 +160,13 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             key: 'courses',
             width: 100,
             render: (p: Program) => (
-                <Button type="link" onClick={() => onOpenCourseDrawer(p)} style={{ padding: 0 }}>
-                    <Tag color="blue">{p._count?.courses || 0} khóa</Tag>
-                </Button>
+                <Tag color="blue" style={{ cursor: 'pointer' }}>
+                    {p._count?.courses || 0} khóa
+                </Tag>
             )
         },
         {
-            title: 'Học viên',
+            title: 'nhân sự',
             key: 'enroll',
             width: 90,
             render: (p: Program) => (
@@ -205,6 +205,20 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             columns={columns}
             rowKey="id"
             loading={loading}
+            onRow={(record) => ({
+                onClick: (event) => {
+                    // Ngăn mở Drawer khi bấm vào Select, Button, Popconfirm bên trong
+                    const target = event.target as HTMLElement;
+                    if (
+                        target.closest('.ant-select') ||
+                        target.closest('.ant-popover') ||
+                        target.closest('button') ||
+                        target.closest('.ant-popconfirm')
+                    ) return;
+                    onOpenCourseDrawer(record);
+                },
+                style: { cursor: 'pointer' }
+            })}
             pagination={{
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,

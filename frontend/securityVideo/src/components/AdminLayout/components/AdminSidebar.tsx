@@ -10,11 +10,14 @@ import {
     CheckOutlined,
     LineChartOutlined,
     TagsOutlined,
-    PictureOutlined
+    PictureOutlined,
+    ClusterOutlined,
+    WarningOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
 import { socketService } from '../../../services/socket';
+import { ROUTES } from '../../../constants/routes';
 import styles from '../AdminLayout.module.scss';
 
 const { Sider } = Layout;
@@ -62,58 +65,48 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
 
     const menuItems = [
         {
-            key: '/admin',
+            key: ROUTES.ADMIN_DASHBOARD,
             icon: <PieChartOutlined />,
             label: 'Tổng quan',
         },
         {
-            key: '/admin/content',
+            key: ROUTES.ADMIN_COURSES,
             icon: <BookOutlined />,
             label: 'Quản lý nội dung',
         },
-        // {
-        //     key: '/admin/courses',
-        //     icon: <BookOutlined />,
-        //     label: 'Quản lý khóa học',
-        // },
-        // {
-        //     key: '/admin/sections',
-        //     icon: <MenuFoldOutlined />,
-        //     label: 'Quản lý chương học',
-        // },
-        // {
-        //     key: '/admin/lessons',
-        //     icon: <PlaySquareOutlined />,
-        //     label: 'Quản lý bài giảng',
-        // },
         {
-            key: '/admin/programs',
+            key: ROUTES.ADMIN_PROGRAMS,
             icon: <ApartmentOutlined />,
             label: 'Quản lý lộ trình học',
         },
         {
-            key: '/admin/categories',
+            key: ROUTES.ADMIN_CATEGORIES,
             icon: <TagsOutlined />,
             label: 'Quản lý danh mục',
         },
         {
-            key: '/admin/progress',
+            key: ROUTES.ADMIN_PROGRESS,
 
             icon: <LineChartOutlined />,
             label: 'Quản lý tiến độ học tập',
         },
         {
-            key: '/admin/users',
+            key: ROUTES.ADMIN_USERS,
             icon: <UserOutlined />,
-            label: 'Quản lý học viên',
+            label: 'Quản lý nhân sự',
         },
         {
-            key: '/admin/banners',
+            key: ROUTES.ADMIN_DEPARTMENTS,
+            icon: <ClusterOutlined />,
+            label: 'Quản lý phòng ban',
+        },
+        {
+            key: ROUTES.ADMIN_BANNERS,
             icon: <PictureOutlined />,
             label: 'Quản lý Banner Home',
         },
         {
-            key: '/admin/requests',
+            key: ROUTES.ADMIN_REQUESTS,
             icon: <CheckOutlined />,
             label: (
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -127,8 +120,19 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
                     )}
                 </Space>
             ),
+        },
+        {
+            key: ROUTES.ADMIN_ONBOARDING_REPORT,
+            icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
+            label: 'Báo cáo Hội nhập',
         }
     ];
+
+    // ✅ Tìm menu key phù hợp nhất (prefix dài nhất) để highlight đúng khi URL là nested
+    const menuKeys = menuItems.map(item => item.key);
+    const selectedKey = menuKeys
+        .filter(key => location.pathname === key || location.pathname.startsWith(key + '/'))
+        .sort((a, b) => b.length - a.length)[0] || location.pathname;
 
     return (
         <Sider
@@ -138,7 +142,7 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
         >
             <Menu
                 mode="inline"
-                selectedKeys={[location.pathname]}
+                selectedKeys={[selectedKey]}
                 className={styles.adminMenu}
                 onClick={({ key }) => {
                     navigate(key);

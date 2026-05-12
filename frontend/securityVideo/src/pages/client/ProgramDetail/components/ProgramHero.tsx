@@ -41,7 +41,7 @@ export default function ProgramHero({
                         <div className={styles.heroStats}>
                             <div className={styles.statItem}><BookOutlined /> <span>{program._count?.courses || 0} khóa học</span></div>
                             <div className={styles.statDivider} />
-                            <div className={styles.statItem}><TeamOutlined /> <span>{program._count?.enrollments || 0} học viên</span></div>
+                            <div className={styles.statItem}><TeamOutlined /> <span>{program._count?.enrollments || 0} nhân sự</span></div>
                             <div className={styles.statDivider} />
                             <div className={styles.statItem}><CheckCircleOutlined /> <span>Tạo bởi <strong>{program.instructor?.full_name}</strong></span></div>
                         </div>

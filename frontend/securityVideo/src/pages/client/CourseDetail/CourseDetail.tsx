@@ -29,7 +29,7 @@ interface Course {
     is_private: boolean;
     requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
     sections: any[];
-    instructor: { full_name: string };
+    instructor: { full_name: string; email: string; phone?: string };
     nextLessonId?: number | null;
     isCourseFinished?: boolean;
 }

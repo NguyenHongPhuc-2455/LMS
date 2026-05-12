@@ -29,6 +29,7 @@ router.put('/:id',
     userController.updateUser
 );
 router.post('/batch-update', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.batchUpdateUsers);
+router.delete('/batch', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.batchDeleteUsers);
 router.delete('/:id', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.deleteUser);
 router.post('/revoke-course', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.revokeCourseAccess);
 

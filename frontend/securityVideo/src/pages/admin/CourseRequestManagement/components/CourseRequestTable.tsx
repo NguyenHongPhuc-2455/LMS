@@ -23,7 +23,7 @@ export default function RequestTable({
 }: RequestTableProps) {
     const columns = [
         {
-            title: 'Học viên',
+            title: 'nhân sự',
             dataIndex: 'user',
             key: 'user',
             width: 250,

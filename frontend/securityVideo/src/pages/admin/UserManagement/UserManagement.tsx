@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Button, Space, Tag,
-    message, Typography, Card, Modal, Input, Tooltip
+    message, Typography, Card, Modal, Input, Select,
+    App
 } from 'antd';
 import {
     DeleteOutlined, SaveOutlined, CloseOutlined,
-    PlusOutlined, EditOutlined, SearchOutlined, ReloadOutlined
+    PlusOutlined, EditOutlined, SearchOutlined
 } from '@ant-design/icons';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../../services/user.service';
+import { departmentService } from '../../../services/department.service';
 import styles from './UserManagement.module.scss';
 import type { User as UserData, Role as RoleData } from '../../../types/user';
 export type { UserData, RoleData };
@@ -20,14 +22,14 @@ import { UserFormModal } from './components/UserFormModal';
 
 const { Title, Text } = Typography;
 
-
-
 export default function UserManagement() {
+    const { message, modal } = App.useApp();
     // Pagination & Search State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [departmentId, setDepartmentId] = useState<number | undefined>(undefined);
     const [actionLoading, setActionLoading] = useState(false);
 
     // Debounce Logic
@@ -42,248 +44,181 @@ export default function UserManagement() {
 
     // React Query
     const { data: usersData, isLoading: usersLoading } = useQuery({
-        queryKey: ['users', page, pageSize, debouncedSearch],
-        queryFn: () => userService.getAll({ page, limit: pageSize, search: debouncedSearch }),
+        queryKey: ['users', page, pageSize, debouncedSearch, departmentId],
+        queryFn: () => userService.getAll({ page, limit: pageSize, search: debouncedSearch, department_id: departmentId }),
         placeholderData: (previousData) => previousData,
     });
 
     const { data: rolesData } = useQuery({
         queryKey: ['roles'],
         queryFn: userService.getRoles,
-        staleTime: Infinity, // Role dữ liệu tĩnh, không cần fetch lại thường xuyên
+        staleTime: Infinity,
+    });
+
+    const { data: departmentsData } = useQuery({
+        queryKey: ['departments'],
+        queryFn: departmentService.getAll,
+        staleTime: 5 * 60 * 1000,
     });
 
     const users = usersData?.users || [];
     const total = usersData?.total || 0;
     const roles = rolesData || [];
+    const departments = departmentsData || [];
     const loading = usersLoading || actionLoading;
 
     // React Query Client for invalidation
     const queryClient = useQueryClient();
 
-    // Selection & Edit State
+    // Selection State
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-    const [editingKeys, setEditingKeys] = useState<React.Key[]>([]);
-    const [editData, setEditData] = useState<Record<number, any>>({});
-
-    // Modes
     const [isDeleteMode, setIsDeleteMode] = useState(false);
-    const [isBatchEditMode, setIsBatchEditMode] = useState(false);
 
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState<UserData | null>(null);
 
     const resetStates = () => {
-        setEditingKeys([]);
-        setEditData({});
         setSelectedRowKeys([]);
         setIsDeleteMode(false);
-        setIsBatchEditMode(false);
     };
 
-    const handleBatchSave = async () => {
-        if (isDeleteMode) {
-            if (selectedRowKeys.length === 0) return;
-            Modal.confirm({
-                title: `Xác nhận xóa ${selectedRowKeys.length} thành viên?`,
-                content: 'Hành động này không thể hoàn tác.',
-                onOk: async () => {
-                    try {
-                        setActionLoading(true);
-                        await userService.deleteBatch(selectedRowKeys as number[]);
-                        message.success(`Đã xóa thành công ${selectedRowKeys.length} thành viên`);
-                        queryClient.invalidateQueries({ queryKey: ['users'] });
-                        resetStates();
-                    } catch (e: any) {
-                        message.error('Lỗi khi xóa một số thành viên');
-                    } finally {
-                        setActionLoading(false);
-                    }
-                }
-            });
-            return;
-        }
-
-        // Handle Batch Edit
-        const changeCount = Object.keys(editData).length;
-        if (changeCount === 0) {
-            resetStates();
-            return;
-        }
-
-        setActionLoading(true);
-        try {
-            // Chuyển đổi dữ liệu batch edit phù hợp với API
-            const payload = Object.entries(editData).map(([id, data]) => ({
-                id: parseInt(id),
-                ...data
-            }));
-
-            await userService.updateBatch(payload);
-            message.success('Đã lưu thay đổi hàng loạt');
-            queryClient.invalidateQueries({ queryKey: ['users'] });
-            resetStates();
-        } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi lưu thay đổi');
-        } finally {
-            setActionLoading(false);
-        }
-    };
-
-    const startBatchEdit = () => {
-        if (selectedRowKeys.length === 0) {
-            message.warning('Vui lòng chọn ít nhất 1 thành viên để sửa');
-            return;
-        }
-        setEditingKeys(selectedRowKeys);
-        const newEditData = { ...editData };
-        selectedRowKeys.forEach(id => {
-            if (!newEditData[id as number]) {
-                const user = users.find(u => u.id === id);
-                if (user) {
-                    const { roles: userRoles, ...rest } = user;
-                    const firstRole = userRoles?.[0];
-                    const roleId = (firstRole && typeof firstRole === 'object') ? firstRole.id : undefined;
-                    newEditData[id as number] = { ...rest, role_id: roleId, gender: user.gender };
+    const handleBatchDelete = async () => {
+        if (selectedRowKeys.length === 0) return;
+        modal.confirm({
+            title: `Xác nhận xóa ${selectedRowKeys.length} thành viên?`,
+            content: 'Hành động này không thể hoàn tác.',
+            onOk: async () => {
+                try {
+                    setActionLoading(true);
+                    await userService.deleteBatch(selectedRowKeys as number[]);
+                    message.success(`Đã xóa thành công ${selectedRowKeys.length} thành viên`);
+                    queryClient.invalidateQueries({ queryKey: ['users'] });
+                    resetStates();
+                } catch (e: any) {
+                    message.error('Lỗi khi xóa một số thành viên');
+                } finally {
+                    setActionLoading(false);
                 }
             }
         });
-        setEditData(newEditData);
-        setIsBatchEditMode(false); // Close the selection mode
     };
 
-    const startRowEditing = useCallback((record: UserData) => {
-        setIsDeleteMode(false);
-        setIsBatchEditMode(false);
-        
-        setEditingKeys(prev => {
-            if (prev.includes(record.id)) return prev;
-            return [...prev, record.id];
-        });
+    const handleOpenCreate = () => {
+        setEditingUser(null);
+        setIsModalOpen(true);
+    };
 
-        setEditData(prev => {
-            if (prev[record.id]) return prev;
-            const { roles: userRoles, ...rest } = record;
-            const firstRole = userRoles?.[0];
-            const roleId = (firstRole && typeof firstRole === 'object') ? firstRole.id : undefined;
-            return { ...prev, [record.id]: { ...rest, role_id: roleId } };
-        });
+    const handleOpenEdit = useCallback((user: UserData) => {
+        setEditingUser(user);
+        setIsModalOpen(true);
     }, []);
 
-    const updateEditData = useCallback((id: number, field: string, value: any) => {
-        setEditData(prev => ({
-            ...prev,
-            [id]: {
-                ...prev[id],
-                [field]: value
-            }
-        }));
-    }, []);
-
-    const handleCreateFinish = async (values: any) => {
+    const handleModalFinish = async (values: any) => {
         try {
             setActionLoading(true);
-            await userService.create(values);
-            message.success('Tạo người dùng mới thành công');
-            setIsCreateModalOpen(false);
+            if (editingUser) {
+                await userService.updateUser(editingUser.id, values);
+                message.success('Cập nhật thông tin thành công');
+            } else {
+                await userService.create(values);
+                message.success('Tạo người dùng mới thành công');
+            }
+            setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['users'] });
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi lưu dữ liệu');
+            message.error(error.response?.data?.error || 'Lỗi xử lý dữ liệu');
         } finally {
             setActionLoading(false);
         }
     };
 
-    const handleRevokeAccess = async (userId: number, courseId: number) => {
+    const handleRevokeAccess = useCallback(async (userId: number, courseId: number) => {
         try {
             setActionLoading(true);
             await userService.revokeCourse(userId, courseId);
-            message.success('Đã thu hồi quyền truy cập khóa học thành công');
+            message.success('Đã thu hồi quyền truy cập thành công');
             queryClient.invalidateQueries({ queryKey: ['users'] });
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Lỗi khi thu hồi quyền truy cập');
+            message.error(error.response?.data?.error || 'Lỗi khi thu hồi quyền');
         } finally {
             setActionLoading(false);
         }
-    };
+    }, [queryClient, message]);
+
+    const paginationConfig = useMemo(() => ({
+        current: page,
+        pageSize: pageSize,
+        total: total,
+        onChange: (p: number, s: number) => {
+            setPage(p);
+            setPageSize(s);
+        },
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50', '100'],
+        selectProps: { showSearch: false },
+        itemRender: (current: number, type: string, originalElement: any) => {
+            if (type === 'page') {
+                return <a>{current < 10 ? `0${current}` : current}</a>;
+            }
+            return originalElement;
+        }
+    }), [page, pageSize, total]);
 
     return (
         <div className={styles.userManagementContainer} >
             <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
-                    <Title level={4} className={styles.headerTitle}>Quản lý người dùng</Title>
-                    <Text type="secondary">Quản lý, phân quyền và chỉnh sửa thông tin hàng loạt</Text>
+                    <Title level={4} className={styles.headerTitle}>Quản lý nhân sự</Title>
+                    <Text type="secondary">Quản lý thông tin học viên, nhân viên và phân quyền hệ thống</Text>
                 </div>
             </div>
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
                     <div className={styles.headerLeft}>
-                        {editingKeys.length > 0 && (
-                            <Tag color="processing" icon={<EditOutlined />} className="edit-mode-tag">
-                                Đang chỉnh sửa {editingKeys.length} người
-                            </Tag>
-                        )}
+                        <Input
+                            placeholder="Tìm kiếm tên, email, username..."
+                            prefix={<SearchOutlined className={styles.searchIcon} />}
+                            onChange={e => setSearch(e.target.value)}
+                            value={search}
+                            className={styles.searchBar}
+                            allowClear
+                        />
+                        <Select
+                            placeholder="Lọc theo phòng ban"
+                            style={{ width: 200 }}
+                            allowClear
+                            onChange={(val) => {
+                                setDepartmentId(val);
+                                setPage(1);
+                            }}
+                            options={departments.map((d: any) => ({ value: d.id, label: d.name }))}
+                        />
                         {isDeleteMode && (
                             <Tag color="error" className={styles.deleteModeTag}>
-                                Đang chọn {selectedRowKeys.length} người để xóa
-                            </Tag>
-                        )}
-                        {isBatchEditMode && (
-                            <Tag color="warning" className="edit-mode-tag">
-                                Chọn người dùng để sửa hàng loạt ({selectedRowKeys.length})
+                                Chọn {selectedRowKeys.length} người để xóa
                             </Tag>
                         )}
                     </div>
 
                     <Space className={styles.searchBarContainer}>
-                        <Input
-                            placeholder="Tìm kiếm theo tên, email hoặc username..."
-                            prefix={<SearchOutlined className={styles.searchIcon} />}
-                            onPressEnter={e => {
-                                setSearch(e.currentTarget.value);
-                                setPage(1);
-                            }}
-                            onChange={e => {
-                                if (e.target.value === '') {
-                                    setSearch('');
-                                    setPage(1);
-                                }
-                            }}
-                            className={styles.searchBar}
-                            allowClear
-                        />
-                        {(editingKeys.length > 0 || isDeleteMode || isBatchEditMode) ? (
+                        {isDeleteMode ? (
                             <Space>
-                                {isBatchEditMode ? (
-                                    <Button
-                                        type="primary"
-                                        icon={<EditOutlined />}
-                                        onClick={startBatchEdit}
-                                        disabled={selectedRowKeys.length === 0}
-                                    >
-                                        Bắt đầu sửa ({selectedRowKeys.length})
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        type="primary"
-                                        icon={<SaveOutlined />}
-                                        onClick={handleBatchSave}
-                                        loading={loading}
-                                        className={styles.saveBatchBtn}
-                                    >
-                                        Lưu {isDeleteMode ? 'Xóa' : 'Thay đổi'}
-                                    </Button>
-                                )}
+                                <Button
+                                    type="primary"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={handleBatchDelete}
+                                    loading={loading}
+                                    disabled={selectedRowKeys.length === 0}
+                                >
+                                    Xác nhận xóa ({selectedRowKeys.length})
+                                </Button>
                                 <Button icon={<CloseOutlined />} onClick={resetStates}>Hủy</Button>
                             </Space>
                         ) : (
                             <Space>
-                                <Button
-                                    icon={<EditOutlined />}
-                                    onClick={() => setIsBatchEditMode(true)}
-                                >
-                                    Sửa hàng loạt
-                                </Button>
                                 <Button
                                     danger
                                     icon={<DeleteOutlined />}
@@ -294,7 +229,7 @@ export default function UserManagement() {
                                 <Button
                                     type="primary"
                                     icon={<PlusOutlined />}
-                                    onClick={() => setIsCreateModalOpen(true)}
+                                    onClick={handleOpenCreate}
                                     className={styles.adminAddButton}
                                 >
                                     Thêm thành viên
@@ -307,48 +242,26 @@ export default function UserManagement() {
                 <UserTable
                     users={users}
                     roles={roles}
+                    departments={departments}
                     loading={loading}
-                    editingKeys={editingKeys}
-                    setEditingKeys={setEditingKeys}
-                    editData={editData}
-                    setEditData={setEditData}
                     isDeleteMode={isDeleteMode}
-                    isBatchEditMode={isBatchEditMode}
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={setSelectedRowKeys}
                     onRevokeAccess={handleRevokeAccess}
-                    onUpdate={updateEditData}
-                    onStartEdit={startRowEditing}
-                    pagination={{
-                        current: page,
-                        pageSize: pageSize,
-                        total: total,
-                        onChange: (p, s) => {
-                            setPage(p);
-                            setPageSize(s);
-                        },
-                        showSizeChanger: true,
-                        pageSizeOptions: ['10', '20', '50', '100'],
-                        selectProps: { showSearch: false },
-                        itemRender: (current: number, type: string, originalElement: any) => {
-                            if (type === 'page') {
-                                return <a>{current < 10 ? `0${current}` : current}</a>;
-                            }
-                            return originalElement;
-                        }
-                    }}
+                    onRowClick={handleOpenEdit}
+                    pagination={paginationConfig}
                 />
             </Card>
 
             <UserFormModal
-                open={isCreateModalOpen}
-                onCancel={() => setIsCreateModalOpen(false)}
-                onSuccess={handleCreateFinish}
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                onSuccess={handleModalFinish}
                 roles={roles}
+                departments={departments}
                 loading={loading}
+                initialValues={editingUser}
             />
         </div>
     );
 }
-
-

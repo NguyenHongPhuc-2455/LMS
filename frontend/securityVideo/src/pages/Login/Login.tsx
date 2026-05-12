@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
+import { ROUTES } from '../../constants/routes';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { App, Form, Input, Button, Typography, Checkbox } from 'antd';
 import styles from '../Auth.module.scss';
@@ -19,12 +20,14 @@ export default function Login() {
             localStorage.setItem('accessToken', data.accessToken);
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
+
+            const redirectTo = data.user.roles?.includes('admin') ? ROUTES.ADMIN_DASHBOARD : ROUTES.HOME;
+
+            // Đặt cờ vừa đăng nhập để trang chủ hiển thị modal thông báo (nếu có khóa học bắt buộc)
+            sessionStorage.setItem('show_mandatory_modal', 'true');
+
             message.success('Chào mừng bạn đến với eLearning!');
-            if (data.user.roles?.includes('admin')) {
-                navigate('/admin');
-            } else {
-                navigate('/course');
-            }
+            navigate(redirectTo);
         } catch (error: any) {
             message.error(error.response?.data?.message || error.response?.data?.error || 'username hoặc mật khẩu không đúng');
         } finally {
@@ -63,7 +66,6 @@ export default function Login() {
                                 Đăng nhập ngay
                             </Button>
                         </Form.Item>
-
                     </Form>
                 </div>
 
@@ -79,4 +81,3 @@ export default function Login() {
         </div>
     );
 }
-

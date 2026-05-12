@@ -46,13 +46,13 @@ const getOverviewStats = async () => {
         // Hiện tại
         prisma.user.count({ where: { user_roles: { some: { role: { name: 'student' } } } } }),
         prisma.course.count({ where: { deleted_at: null } }),
-        prisma.enrollment.count(),
+        prisma.enrollment.count({ where: { course: { deleted_at: null } } }),
         prisma.courseRequest.count({ where: { status: 'PENDING' } }),
         prisma.programRequest.count({ where: { status: 'PENDING' } }),
         // Hôm qua
         prisma.user.count({ where: { created_at: { lte: yesterday }, user_roles: { some: { role: { name: 'student' } } } } }),
         prisma.course.count({ where: { created_at: { lte: yesterday }, deleted_at: null } }),
-        prisma.enrollment.count({ where: { enrolled_at: { lte: yesterday } } }),
+        prisma.enrollment.count({ where: { enrolled_at: { lte: yesterday }, course: { deleted_at: null } } }),
         prisma.courseRequest.count({ where: { created_at: { lte: yesterday } } }),
         prisma.programRequest.count({ where: { created_at: { lte: yesterday } } }),
         // Tổng yêu cầu hiện tại
@@ -89,7 +89,10 @@ const getEnrollmentTrends = async () => {
             nextDate.setDate(nextDate.getDate() + 1);
 
             const count = await prisma.enrollment.count({
-                where: { enrolled_at: { gte: date, lt: nextDate } }
+                where: { 
+                    enrolled_at: { gte: date, lt: nextDate },
+                    course: { deleted_at: null }
+                }
             });
 
             return {

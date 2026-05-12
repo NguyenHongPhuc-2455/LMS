@@ -139,7 +139,7 @@ export default function HeroSection() {
                         <div className={styles.statDivider} />
                         <div className={styles.statItem}>
                             <div className={styles.statValue}>1,200+</div>
-                            <div className={styles.statLabel}>Học viên</div>
+                            <div className={styles.statLabel}>nhân sự</div>
                         </div>
                         <div className={styles.statDivider} />
                         <div className={styles.statItem}>

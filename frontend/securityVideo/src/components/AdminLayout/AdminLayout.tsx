@@ -97,9 +97,10 @@ const AdminLayout: React.FC = () => {
                     <Drawer
                         placement="left"
                         onClose={() => setDrawerVisible(false)}
+                        destroyOnClose={true}
                         open={drawerVisible}
-                        width={250}
-                        bodyStyle={{ padding: 0 }}
+                        width="250px"
+                        styles={{ body: { padding: 0 } }}
                         className={styles.adminDrawer}
                     >
                         <AdminSidebar isMobile onClose={() => setDrawerVisible(false)} />

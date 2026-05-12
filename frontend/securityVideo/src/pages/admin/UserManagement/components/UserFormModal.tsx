@@ -1,4 +1,6 @@
-import { Modal, Form, Input, Select, Button, Row, Col, DatePicker } from 'antd';
+import React from 'react';
+import { Modal, Form, Input, Select, Button, Row, Col, DatePicker, Space } from 'antd';
+import dayjs from 'dayjs';
 
 import type { Role as RoleData } from '../../../../types/user';
 
@@ -7,37 +9,66 @@ interface UserFormModalProps {
     onCancel: () => void;
     onSuccess: (values: any) => Promise<void>;
     roles: RoleData[];
+    departments: any[];
     loading: boolean;
+    initialValues?: any; // Dữ liệu cũ để sửa
 }
 
-export const UserFormModal = ({ open, onCancel, onSuccess, roles, loading }: UserFormModalProps) => {
+export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, loading, initialValues }: UserFormModalProps) => {
     const [form] = Form.useForm();
+
+    // Reset form khi dữ liệu initial thay đổi
+    React.useEffect(() => {
+        if (open) {
+            if (initialValues) {
+                // Trích xuất role_id từ mảng roles của user
+                let roleId = initialValues.role_id;
+                if (!roleId && initialValues.roles && initialValues.roles.length > 0) {
+                    const firstRole = initialValues.roles[0];
+                    roleId = typeof firstRole === 'object' ? firstRole.id : null;
+                }
+
+                // Xử lý một số trường đặc biệt như date
+                const processedValues = {
+                    ...initialValues,
+                    role_id: roleId ? Number(roleId) : undefined,
+                    join_date: initialValues.join_date ? dayjs(initialValues.join_date) : null,
+                    dob: initialValues.dob ? dayjs(initialValues.dob) : null,
+                };
+                form.setFieldsValue(processedValues);
+            } else {
+                form.resetFields();
+            }
+        }
+    }, [open, initialValues, form, roles]);
 
     const handleFinish = async (values: any) => {
         await onSuccess(values);
-        form.resetFields();
     };
 
     return (
         <Modal
-            title="Tạo thành viên mới"
+            title={initialValues ? "Cập nhật thông tin nhân sự" : "Tạo thành viên mới"}
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="cancel" onClick={onCancel}>
-                    Hủy bỏ
-                </Button>,
-                <Button
-                    key="submit"
-                    type="primary"
-                    loading={loading}
-                    onClick={() => form.submit()}
-                    size="large"
-                    className="btn-primary"
-                    style={{ minWidth: 120 }}
-                >
-                    Tạo ngay
-                </Button>
+                <Space key="footer-actions">
+                    <Button 
+                        onClick={onCancel}
+                        style={{ minWidth: 120, height: 40, borderRadius: '8px' }}
+                    >
+                        Hủy bỏ
+                    </Button>
+                    <Button
+                        type="primary"
+                        loading={loading}
+                        onClick={() => form.submit()}
+                        className="btn-primary"
+                        style={{ minWidth: 120, height: 40, borderRadius: '8px' }}
+                    >
+                        {initialValues ? "Cập nhật" : "Tạo ngay"}
+                    </Button>
+                </Space>
             ]}
             width={800}
             style={{ top: 100 }}
@@ -73,7 +104,7 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, loading }: Use
                             <Select
                                 placeholder="Chọn vai trò"
                                 showSearch={false}
-                                options={roles.map(r => ({ value: r.id, label: r.name.toUpperCase() }))}
+                                options={roles.map(r => ({ value: Number(r.id), label: r.name.toUpperCase() }))}
                             />
                         </Form.Item>
                     </Col>
@@ -88,9 +119,15 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, loading }: Use
                             <Input placeholder="Ví dụ: a@example.com" />
                         </Form.Item>
 
-                        <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, min: 6 }]}>
-                            <Input.Password placeholder="Tối thiểu 6 ký tự" />
+                        <Form.Item name="phone" label="Số điện thoại">
+                            <Input placeholder="Ví dụ: 0912345678" />
                         </Form.Item>
+
+                        {!initialValues && (
+                            <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, min: 6 }]}>
+                                <Input.Password placeholder="Tối thiểu 6 ký tự" />
+                            </Form.Item>
+                        )}
                     </Col>
                 </Row>
 
@@ -109,8 +146,12 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, loading }: Use
 
                 <Row gutter={24}>
                     <Col span={12}>
-                        <Form.Item name="department" label="Phòng ban">
-                            <Input placeholder="Phòng CNTT" />
+                        <Form.Item name="department_id" label="Phòng ban">
+                            <Select
+                                placeholder="Chọn phòng ban"
+                                options={departments.map(d => ({ value: d.id, label: d.name }))}
+                                allowClear
+                            />
                         </Form.Item>
                     </Col>
                     <Col span={12}>

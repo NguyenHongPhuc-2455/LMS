@@ -120,7 +120,7 @@ backend/public/hls/38/
 **File**: `video.service.js` → `ensureHLS()`
 
 Nếu một bải học có `source_url` (link gốc) nhưng chưa có file HLS vật lý trên ổ cứng (do bị xóa hoặc chưa băm):
-1. Khi học viên truy cập, Backend gọi `ensureHLS`.
+1. Khi nhân sự truy cập, Backend gọi `ensureHLS`.
 2. Hệ thống tự động tải file từ `source_url` về thư mục tạm.
 3. Kích hoạt quy trình băm HLS ngầm.
 4. Trình duyệt nhận mã `202 Processing` và tự động retry sau vài giây cho đến khi `master.m3u8` xuất hiện.
@@ -336,7 +336,7 @@ sequenceDiagram
     FFmpeg->>DB: UPDATE video_url, hls_key, hls_iv
     FFmpeg->>FFmpeg: Xóa file .mp4 gốc + enc.key + enc.keyinfo
 
-    Note over Browser: Học viên mở bài học
+    Note over Browser: nhân sự mở bài học
 
     Browser->>ShakaPlayer: Load video
     ShakaPlayer->>Backend: GET /public/hls/38/master.m3u8

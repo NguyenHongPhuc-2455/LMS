@@ -128,10 +128,10 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
 | GET | `/dashboard` | Tổng quan số liệu hệ thống (Admin) | ✅ (Admin) |
-| GET | `/course-progress/:courseId` | Tiến độ toàn bộ học viên của khóa học | ✅ (Admin) |
+| GET | `/course-progress/:courseId` | Tiến độ toàn bộ nhân sự của khóa học | ✅ (Admin) |
 | GET | `/my-learning-time?days=N` | Biểu đồ thời gian học gần đây | ✅ |
 | GET | `/my-learning-summary` | Tổng kết giờ học, Streak, Peak Day | ✅ |
-| GET | `/top-learners` | Bảng xếp hạng học viên chăm chỉ | ✅ |
+| GET | `/top-learners` | Bảng xếp hạng nhân sự chăm chỉ | ✅ |
 
 ---
 

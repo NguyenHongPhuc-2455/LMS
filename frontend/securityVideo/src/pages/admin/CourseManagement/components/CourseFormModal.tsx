@@ -1,6 +1,7 @@
-import { Modal, Form, Row, Col, Input, Select, Space, Upload, Button } from 'antd';
+import { Modal, Form, Row, Col, Input, Select, Space, Upload, Button, Switch, InputNumber } from 'antd';
 import { UploadCloud } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { WarningOutlined } from '@ant-design/icons';
 import styles from '../CourseManagement.module.scss';
 
 const { Option } = Select;
@@ -18,15 +19,18 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
     const [form] = Form.useForm();
     const [thumbFile, setThumbFile] = useState<File | null>(null);
     const [thumbUrl, setThumbUrl] = useState<string>('');
+    const [isMandatory, setIsMandatory] = useState(false);
 
     useEffect(() => {
         if (open) {
             if (editingId && initialValues) {
                 form.setFieldsValue(initialValues);
                 setThumbUrl(initialValues.thumbnail || '');
+                setIsMandatory(!!initialValues.is_mandatory);
             } else {
                 form.resetFields();
                 setThumbUrl('');
+                setIsMandatory(false);
             }
             setThumbFile(null);
         }
@@ -84,6 +88,35 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                                 <Option value={true}>Riêng tư (Cần phê duyệt)</Option>
                             </Select>
                         </Form.Item>
+
+                        <Form.Item
+                            name="is_mandatory"
+                            label="Khóa học bắt buộc"
+                            valuePropName="checked"
+                            initialValue={false}
+                        >
+                            <Switch
+                                checkedChildren="BẮt buộc"
+                                unCheckedChildren="Không bắt buộc"
+                                onChange={(val) => setIsMandatory(val)}
+                            />
+                        </Form.Item>
+
+                        {isMandatory && (
+                            <Form.Item
+                                name="mandatory_deadline_days"
+                                label={
+                                    <span>
+                                        <WarningOutlined style={{ color: '#faad14', marginRight: 6 }} />
+                                        Hạn chót (số ngày kể từ ngày nhận việc)
+                                    </span>
+                                }
+                                initialValue={60}
+                                rules={[{ required: true, message: 'Vui lòng nhập số ngày' }]}
+                            >
+                                <InputNumber min={1} max={365} addonAfter="ngày" style={{ width: '100%' }} />
+                            </Form.Item>
+                        )}
                     </Col>
 
                     {/* Cột phải */}

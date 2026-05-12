@@ -1,51 +1,37 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, Space, Typography, Badge, Avatar, Input, Popconfirm, Button, Modal } from 'antd';
-import { UserOutlined, SearchOutlined, UsergroupAddOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons';
-import type { TableColumnsType } from 'antd';
+import { UsergroupAddOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons';
 import styles from '../UserManagement.module.scss';
 import type { User as UserData, Role as RoleData } from '../../../../types/user';
 
 // Sub-components & Hooks
-import { UserEditableCell } from './UserEditableCell';
 import { useUserTableColumns } from '../hooks/useUserTableColumns';
 
 const { Text } = Typography;
 
-
-
 interface UserTableProps {
     users: UserData[];
     roles: RoleData[];
+    departments: any[];
     loading: boolean;
-    editingKeys: React.Key[];
-    setEditingKeys: (keys: React.Key[]) => void;
-    editData: Record<number, any>;
-    setEditData: (data: any) => void;
     isDeleteMode: boolean;
-    isBatchEditMode: boolean;
     selectedRowKeys: React.Key[];
     onSelectChange: (keys: React.Key[]) => void;
     onRevokeAccess: (userId: number, courseId: number) => void;
-    onUpdate: (id: number, field: string, value: any) => void;
-    onStartEdit: (record: UserData) => void;
+    onRowClick: (record: UserData) => void;
     pagination?: any;
 }
 
 export const UserTable = React.memo(({
     users,
     roles,
+    departments,
     loading,
-    editingKeys,
-    setEditingKeys,
-    editData,
-    setEditData,
     isDeleteMode,
-    isBatchEditMode,
     selectedRowKeys,
     onSelectChange,
     onRevokeAccess,
-    onUpdate,
-    onStartEdit,
+    onRowClick,
     pagination
 }: UserTableProps) => {
     const [courseModalVisible, setCourseModalVisible] = useState(false);
@@ -53,22 +39,18 @@ export const UserTable = React.memo(({
     const [courseSearchText, setCourseSearchText] = useState('');
 
     const { columns } = useUserTableColumns({
-        editingKeys,
         roles,
-        onUpdate,
-        onStartEdit,
+        departments,
         setSelectedUserId,
         setCourseModalVisible
     });
 
-
-    const rowSelection = useMemo(() => (isDeleteMode || isBatchEditMode) ? {
+    const rowSelection = useMemo(() => isDeleteMode ? {
         selectedRowKeys,
         onChange: onSelectChange,
         columnWidth: 50,
-    } : undefined, [isDeleteMode, isBatchEditMode, selectedRowKeys, onSelectChange]);
+    } : undefined, [isDeleteMode, selectedRowKeys, onSelectChange]);
 
-    // Derive selectedUser from users prop to ensure reactivity
     const selectedUser = users.find(u => u.id === selectedUserId);
 
     const filteredUserCourses = selectedUser?.enrolled_courses.filter(c =>
@@ -84,8 +66,24 @@ export const UserTable = React.memo(({
                 loading={loading}
                 rowSelection={rowSelection}
                 pagination={pagination}
-                rowClassName={(record) => editingKeys.includes(record.id) ? `${styles.editableRow} ${styles.active}` : 'premium-row'}
-                scroll={{ x: 2000, y: 600 }}
+                rowClassName={() => 'premium-row'}
+                onRow={(record) => ({
+                    onClick: (event) => {
+                        // Tránh trigger khi bấm vào nút hoặc checkbox
+                        const target = event.target as HTMLElement;
+                        if (
+                            target.closest('.ant-table-selection-column') || 
+                            target.closest('button') || 
+                            target.closest('a') ||
+                            target.closest('.ant-modal')
+                        ) {
+                            return;
+                        }
+                        onRowClick(record);
+                    },
+                    style: { cursor: 'pointer' }
+                })}
+                scroll={{ x: 1800, y: 600 }}
                 virtual
                 bordered
             />
@@ -98,7 +96,8 @@ export const UserTable = React.memo(({
                     </Space>
                 }
                 open={courseModalVisible}
-                onCancel={() => {
+                onCancel={(e) => {
+                    e.stopPropagation();
                     setCourseModalVisible(false);
                     setCourseSearchText('');
                     setSelectedUserId(null);
@@ -110,7 +109,7 @@ export const UserTable = React.memo(({
                 <div style={{ marginBottom: 16 }}>
                     <Input
                         placeholder="Tìm kiếm khóa học của học viên..."
-                        prefix={<SearchOutlined />}
+                        prefix={<BookOutlined />}
                         value={courseSearchText}
                         onChange={e => setCourseSearchText(e.target.value)}
                         allowClear
@@ -132,10 +131,8 @@ export const UserTable = React.memo(({
                                     <Text strong>{course.title}</Text>
                                     <Popconfirm
                                         title="Thu hồi quyền truy cập"
-                                        description="Học viên sẽ không còn thấy khóa học này trong danh sách của họ."
-                                        onConfirm={() => {
-                                            onRevokeAccess(selectedUserId!, course.id);
-                                        }}
+                                        description="Học viên sẽ không còn thấy khóa học này?"
+                                        onConfirm={() => onRevokeAccess(selectedUserId!, course.id)}
                                         okText="Thu hồi"
                                         cancelText="Hủy"
                                         okButtonProps={{ danger: true }}
@@ -147,7 +144,7 @@ export const UserTable = React.memo(({
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <Text type="secondary">Không tìm thấy khóa học nào phù hợp</Text>
+                            <Text type="secondary">Không tìm thấy khóa học nào</Text>
                         </div>
                     )}
                 </div>

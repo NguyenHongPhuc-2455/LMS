@@ -1,5 +1,5 @@
 import { Col, Typography, Tag } from 'antd';
-import { ExperimentOutlined, PlaySquareOutlined, ClockCircleOutlined, GlobalOutlined } from '@ant-design/icons';
+import { ExperimentOutlined, PlaySquareOutlined, ClockCircleOutlined, GlobalOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons';
 import styles from '../CourseDetail.module.scss';
 
 const { Text } = Typography;
@@ -16,7 +16,7 @@ export default function CourseFloatingCard({ course, totalLessons, renderActionB
             <div className={styles.floatingSidebar}>
                 <div className={styles.thumbnailWrapper}>
                     <img
-                        src={course.thumbnail || "https://files.fullstack.edu.vn/f8-prod/courses/2.png"}
+                        src={course.thumbnail || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop"}
                         className={styles.thumbnailImg}
                         alt="Course"
                     />
@@ -52,6 +52,26 @@ export default function CourseFloatingCard({ course, totalLessons, renderActionB
                             </li>
                         ))}
                     </ul>
+
+                    <div className={styles.instructorSection}>
+                        <div className={styles.instructorTitle}>THÔNG TIN GIẢNG VIÊN</div>
+                        <div className={styles.instructorInfo}>
+                            <div className={styles.instructorItem}>
+                                <UserOutlined className={styles.instructorIcon} />
+                                <Text strong>{course.instructor?.full_name}</Text>
+                            </div>
+                            <div className={styles.instructorItem}>
+                                <MailOutlined className={styles.instructorIcon} />
+                                <Text copyable>{course.instructor?.email}</Text>
+                            </div>
+                            {course.instructor?.phone && (
+                                <div className={styles.instructorItem}>
+                                    <PhoneOutlined className={styles.instructorIcon} />
+                                    <Text>{course.instructor?.phone}</Text>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </Col>

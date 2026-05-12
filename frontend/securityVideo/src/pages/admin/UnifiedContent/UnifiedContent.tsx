@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Card, Typography, Button, Space, Breadcrumb, 
-    message, Select, Tooltip, Empty 
+    App, Select, Tooltip, Empty 
 } from 'antd';
 import { 
     ArrowLeftOutlined, 
@@ -11,13 +11,14 @@ import {
     FolderOutlined,
     FileTextOutlined
 } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import { courseService } from '../../../services/course.service';
 import { contentService } from '../../../services/content.service';
 import { categoryService } from '../../../services/category.service';
 import { uploadService } from '../../../services/upload.service';
 import { quizService } from '../../../services/quiz.service';
+import { ROUTES } from '../../../constants/routes';
 
 import CourseTable from '../CourseManagement/components/CourseTable';
 import CourseFormModal from '../CourseManagement/components/CourseFormModal';
@@ -34,10 +35,11 @@ const { Option } = Select;
 type ViewMode = 'COURSE' | 'SECTION' | 'LESSON';
 
 const UnifiedContent: React.FC = () => {
-    const [searchParams, setSearchParams] = useSearchParams();
-    
-    const courseId = searchParams.get('courseId');
-    const sectionId = searchParams.get('sectionId');
+    const { message } = App.useApp();
+    // ✅ Dùng useParams thay vì useSearchParams
+    const { courseId, sectionId } = useParams<{ courseId?: string; sectionId?: string }>();
+    const navigate = useNavigate();
+
     const viewMode: ViewMode = sectionId ? 'LESSON' : (courseId ? 'SECTION' : 'COURSE');
 
     const [categories, setCategories] = useState<any[]>([]);
@@ -103,31 +105,28 @@ const UnifiedContent: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
-    // Navigation Handlers
+    // ✅ Navigation Handlers - Dùng navigate() thay vì setSearchParams()
     const handleCourseClick = (course: any) => {
         setCurrentCourse(course);
-        setSearchParams({ courseId: course.id.toString() });
+        navigate(`${ROUTES.ADMIN_COURSES}/${course.id}/sections`);
     };
 
     const handleSectionClick = (section: any) => {
         setCurrentSection(section);
-        setSearchParams({ 
-            courseId: searchParams.get('courseId')!, 
-            sectionId: section.id.toString() 
-        });
+        navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections/${section.id}/lessons`);
     };
 
     const handleBack = () => {
         if (viewMode === 'LESSON') {
-            setSearchParams({ courseId: searchParams.get('courseId')! });
+            navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections`);
         } else if (viewMode === 'SECTION') {
-            setSearchParams({});
+            navigate(ROUTES.ADMIN_COURSES);
         }
     };
 
     const handleBreadcrumbClick = (mode: ViewMode) => {
-        if (mode === 'COURSE') setSearchParams({});
-        if (mode === 'SECTION') setSearchParams({ courseId: searchParams.get('courseId')! });
+        if (mode === 'COURSE') navigate(ROUTES.ADMIN_COURSES);
+        if (mode === 'SECTION') navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections`);
     };
 
     // Modal Handlers
@@ -195,7 +194,7 @@ const UnifiedContent: React.FC = () => {
                 else await courseService.create(payload);
             } else if (viewMode === 'SECTION') {
                 if (editingData) await contentService.updateSection(editingData.id, values);
-                else await contentService.createSection({ ...values, course_id: Number(searchParams.get('courseId')) });
+                else await contentService.createSection({ ...values, course_id: Number(courseId) });
             } else {
                 // Lesson / Quiz logic
                 if (lessonType === 'QUIZ') {
@@ -204,7 +203,7 @@ const UnifiedContent: React.FC = () => {
                     } else {
                         await quizService.create({
                             ...values,
-                            section_id: Number(searchParams.get('sectionId'))
+                            section_id: Number(sectionId)
                         });
                     }
                 } else {
@@ -218,7 +217,7 @@ const UnifiedContent: React.FC = () => {
                         const totalDuration = (Number(values.duration_min || 0) * 60) + Number(values.duration_sec || 0);
                         const formData = new FormData();
                         formData.append('title', values.title);
-                        formData.append('section_id', searchParams.get('sectionId')!);
+                        formData.append('section_id', sectionId!);
                         formData.append('content', values.content || '');
                         formData.append('order', values.order || '0');
                         formData.append('duration', String(totalDuration));
@@ -266,21 +265,32 @@ const UnifiedContent: React.FC = () => {
                                 className={styles.backBtn}
                             />
                         )}
-                        <Breadcrumb className={styles.breadcrumb}>
-                            <Breadcrumb.Item onClick={() => handleBreadcrumbClick('COURSE')} className={styles.clickable}>
-                                <BookOutlined /> Khóa học
-                            </Breadcrumb.Item>
-                            {currentCourse && (
-                                <Breadcrumb.Item onClick={() => handleBreadcrumbClick('SECTION')} className={styles.clickable}>
-                                    <FolderOutlined /> {currentCourse.title}
-                                </Breadcrumb.Item>
-                            )}
-                            {currentSection && (
-                                <Breadcrumb.Item>
-                                    <FileTextOutlined /> {currentSection.title}
-                                </Breadcrumb.Item>
-                            )}
-                        </Breadcrumb>
+                        <Breadcrumb 
+                            className={styles.breadcrumb}
+                            items={[
+                                {
+                                    title: (
+                                        <span onClick={() => handleBreadcrumbClick('COURSE')} style={{ cursor: 'pointer' }}>
+                                            <BookOutlined /> Khóa học
+                                        </span>
+                                    ),
+                                },
+                                ...(currentCourse ? [{
+                                    title: (
+                                        <span onClick={() => handleBreadcrumbClick('SECTION')} style={{ cursor: 'pointer' }}>
+                                            <FolderOutlined /> {currentCourse.title}
+                                        </span>
+                                    ),
+                                }] : []),
+                                ...(currentSection ? [{
+                                    title: (
+                                        <span>
+                                            <FileTextOutlined /> {currentSection.title}
+                                        </span>
+                                    ),
+                                }] : [])
+                            ]}
+                        />
                         <Tooltip title="Làm mới dữ liệu">
                             <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} />
                         </Tooltip>
@@ -397,7 +407,7 @@ const UnifiedContent: React.FC = () => {
                     onSuccess={handleModalSuccess}
                     editingId={editingData?.id}
                     initialValues={editingData || { section_id: Number(sectionId), order: data.length }}
-                    sections={currentSection ? [currentSection] : []} // Only the current section context
+                    sections={currentSection ? [currentSection] : []}
                     lessonType={lessonType}
                     setLessonType={setLessonType}
                 />
