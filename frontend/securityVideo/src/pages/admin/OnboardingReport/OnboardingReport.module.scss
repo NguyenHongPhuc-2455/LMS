@@ -1,0 +1,51 @@
+@import "../../../styles/variables.scss";
+
+.onboardingReportContainer {
+    padding: 0;
+}
+
+.onboardingReportHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .headerInfo {
+        .headerTitle {
+            margin: 0 !important;
+            color: $text-main;
+        }
+    }
+}
+
+.tableWrapper {
+    :global {
+        .ant-table-thead > tr > th {
+            background: #B8121A !important;
+            color: white !important;
+            border-bottom: none;
+            
+            &::before {
+                display: none;
+            }
+        }
+        
+        .ant-table-tbody > tr:hover > td {
+            background: rgba(184, 18, 26, 0.05) !important;
+        }
+    }
+}
+
+.reloadBtn {
+    border-radius: 8px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+
+    &:hover {
+        color: #B8121A !important;
+        border-color: #B8121A !important;
+    }
+}

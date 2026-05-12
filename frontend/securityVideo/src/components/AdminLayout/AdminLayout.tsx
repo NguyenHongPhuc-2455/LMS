@@ -97,9 +97,9 @@ const AdminLayout: React.FC = () => {
                     <Drawer
                         placement="left"
                         onClose={() => setDrawerVisible(false)}
-                        destroyOnClose={true}
+                        destroyOnHidden={true}
                         open={drawerVisible}
-                        width="250px"
+                        width={250}
                         styles={{ body: { padding: 0 } }}
                         className={styles.adminDrawer}
                     >

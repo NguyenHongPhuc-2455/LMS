@@ -153,7 +153,7 @@ exports.getSectionDetail = catchAsync(async (req, res) => {
 exports.getMyCourses = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const enrollments = await prisma.enrollment.findMany({
-        where: { 
+        where: {
             user_id: userId,
             course: {
                 deleted_at: null
@@ -183,7 +183,7 @@ exports.getMyCourses = catchAsync(async (req, res) => {
     });
 
     // Thu thập toàn bộ lesson IDs từ các khóa học đã ghi danh
-    const allLessonIds = enrollments.flatMap(e => 
+    const allLessonIds = enrollments.flatMap(e =>
         e.course.sections.flatMap(s => s.lessons.map(l => l.id))
     );
 
@@ -198,6 +198,12 @@ exports.getMyCourses = catchAsync(async (req, res) => {
 
     // Tạo Map/Set để tra cứu nhanh
     const completedSet = new Set(allCompletions.map(c => c.lesson_id));
+
+    // Lấy thông tin join_date để tính quá hạn
+    const userData = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { join_date: true }
+    });
 
     const coursesWithProgress = enrollments.map((e) => {
         const course = e.course;
@@ -217,6 +223,13 @@ exports.getMyCourses = catchAsync(async (req, res) => {
 
         const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
 
+        let isOverdue = false;
+        if (course.is_mandatory && userData?.join_date) {
+            const deadline = new Date(userData.join_date);
+            deadline.setDate(deadline.getDate() + (course.mandatory_deadline_days || 0));
+            isOverdue = new Date() > deadline;
+        }
+
         return {
             id: course.id,
             title: course.title,
@@ -227,7 +240,8 @@ exports.getMyCourses = catchAsync(async (req, res) => {
             progressPercent,
             nextLessonId: nextLesson ? nextLesson.id : (lessons[0]?.id || null),
             enrolledAt: e.enrolled_at,
-            lastActivity: lastCompletionForCourse?.completed_at || e.enrolled_at
+            lastActivity: lastCompletionForCourse?.completed_at || e.enrolled_at,
+            isOverdue
         };
     });
 
@@ -359,8 +373,9 @@ exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
             const completedCount = await prisma.lessonCompleted.count({
                 where: { user_id: user.id, lesson_id: { in: lessonIds } }
             });
+            const isCompleted = lessonIds.length > 0 && completedCount === lessonIds.length;
 
-            if (completedCount < lessonIds.length) {
+            if (!isCompleted) {
                 userOverdueCourses.push({ courseId: course.id, courseTitle: course.title, daysOverdue: Math.abs(remainingDays) });
             }
         }
@@ -452,6 +467,7 @@ exports.getMyMandatoryCourses = catchAsync(async (req, res) => {
             completedLessons: completedCount,
             totalLessons,
             status,  // 'NORMAL' | 'WARNING' | 'OVERDUE' | 'COMPLETED'
+            isOverdue: status === 'OVERDUE',
             instructor: course.instructor,
             _count: course._count
         };

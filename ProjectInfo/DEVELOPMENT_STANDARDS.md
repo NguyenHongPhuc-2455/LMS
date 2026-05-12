@@ -93,6 +93,7 @@ Sự nhất quán trong cách đặt tên giúp code dễ đọc và tránh nh�
 - **File Component**: Sử dụng `PascalCase` (Ví dụ: `CoursePlayer.tsx`).
 - **Hook**: Luôn bắt đầu bằng `use` + `camelCase` (Ví dụ: `useAuth`, `useLocalStorage`).
 - **Constant**: Sử dụng `UPPER_SNAKE_CASE` cho các hằng số cố định (Ví dụ: `API_BASE_URL`).
+- **Routing**: **BẮT BUỘC** sử dụng hằng số từ `src/constants/routes.ts` khi điều hướng (navigate) hoặc định nghĩa Route. Tuyệt đối không hard-coded chuỗi URL trực tiếp trong component.
 
 ### 3. Quy tắc đặt tên có ý nghĩa (Semantic Naming):
 - Tránh đặt tên chung chung như `data`, `item`, `list`. Hãy đặt là `courseData`, `lessonItem`, `memberList`.

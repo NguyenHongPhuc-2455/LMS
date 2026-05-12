@@ -213,12 +213,20 @@ export default function Home() {
                                                         <AntButton
                                                             type="primary"
                                                             size="small"
-                                                            style={{ background: '#C72127' }}
+                                                            disabled={course.isOverdue}
+                                                            style={{ 
+                                                                opacity: course.isOverdue ? 0.6 : 1,
+                                                                cursor: course.isOverdue ? 'not-allowed' : 'pointer',
+                                                                backgroundColor: course.isOverdue ? '#bfbfbf' : '#C72127',
+                                                                borderColor: course.isOverdue ? '#bfbfbf' : '#C72127'
+                                                            }}
                                                             onClick={() => {
-                                                                const url = course.nextLessonId
-                                                                    ? `/course/${course.id}/learning?lessonId=${course.nextLessonId}`
-                                                                    : `/course/${course.id}/learning`;
-                                                                navigate(url);
+                                                                if (!course.isOverdue) {
+                                                                    const url = course.nextLessonId
+                                                                        ? `/course/${course.id}/learning?lessonId=${course.nextLessonId}`
+                                                                        : `/course/${course.id}/learning`;
+                                                                    navigate(url);
+                                                                }
                                                             }}
                                                         >
                                                             Tiếp tục

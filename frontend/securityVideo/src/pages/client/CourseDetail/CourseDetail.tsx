@@ -26,6 +26,7 @@ interface Course {
     requirements: string;
     level: string;
     hasAccess: boolean;
+    isOverdue?: boolean;
     is_private: boolean;
     requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
     sections: any[];
@@ -90,6 +91,7 @@ export default function CourseDetail() {
 
     const renderActionButton = () => {
         if (course.hasAccess) {
+            const isOverdue = course.isOverdue;
             const isContinuing = !course.isCourseFinished;
             const targetUrl = course.nextLessonId
                 ? `/course/${course.id}/learning?lessonId=${course.nextLessonId}`
@@ -100,10 +102,16 @@ export default function CourseDetail() {
                     type="primary"
                     size="large"
                     block
-                    className={`${styles.actionBtnStyled} ${styles.btnSuccess}`}
-                    onClick={() => navigate(targetUrl)}
+                    disabled={isOverdue}
+                    className={`${styles.actionBtnStyled} ${!isOverdue ? styles.btnSuccess : ''}`}
+                    style={isOverdue ? { backgroundColor: '#bfbfbf', borderColor: '#bfbfbf', opacity: 0.6, cursor: 'not-allowed' } : {}}
+                    onClick={() => {
+                        if (!isOverdue) {
+                            navigate(targetUrl);
+                        }
+                    }}
                 >
-                    {isContinuing ? "TIẾP TỤC HỌC" : "XEM LẠI KHÓA HỌC"}
+                    {isOverdue ? "ĐÃ KHÓA (QUÁ HẠN)" : (isContinuing ? "TIẾP TỤC HỌC" : "XEM LẠI KHÓA HỌC")}
                 </Button>
             );
         }

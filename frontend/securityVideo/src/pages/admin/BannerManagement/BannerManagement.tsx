@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Switch, message, Typography, Upload } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Switch, message, Typography, Upload, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import { heroBannerService, type HeroBanner } from '../../../services/heroBanner.service';
 
-const { Title } = Typography;
+import styles from './BannerManagement.module.scss';
+
+const { Title, Text } = Typography;
 
 export default function BannerManagement() {
     const [banners, setBanners] = useState<HeroBanner[]>([]);
@@ -103,10 +105,18 @@ export default function BannerManagement() {
 
     const columns = [
         {
+            title: 'Ảnh',
+            dataIndex: 'image_url',
+            key: 'image_url',
+            width: 150,
+            render: (url: string) => <img src={url} alt="Banner" className={styles.bannerPreview} />
+        },
+        {
             title: 'Thứ tự',
             dataIndex: 'order',
             key: 'order',
             width: 80,
+            sorter: (a: HeroBanner, b: HeroBanner) => a.order - b.order,
         },
         {
             title: 'Tiêu đề',
@@ -125,8 +135,8 @@ export default function BannerManagement() {
             key: 'color_code',
             render: (color: string) => (
                 <Space>
-                    <div style={{ width: 20, height: 20, backgroundColor: color || '#C8102E', border: '1px solid #ddd' }}></div>
-                    {color || '#C8102E'}
+                    <div style={{ width: 20, height: 20, backgroundColor: color || '#C8102E', border: '1px solid #ddd', borderRadius: '4px' }}></div>
+                    <Text code>{color || '#C8102E'}</Text>
                 </Space>
             )
         },
@@ -141,6 +151,7 @@ export default function BannerManagement() {
         {
             title: 'Thao tác',
             key: 'action',
+            width: 120,
             render: (_: any, record: HeroBanner) => (
                 <Space size="middle">
                     <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
@@ -151,21 +162,36 @@ export default function BannerManagement() {
     ];
 
     return (
-        <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <Title level={3} style={{ margin: 0 }}>Quản lý Banner Home</Title>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ backgroundColor: '#C72127' }}>
-                    Thêm Banner
-                </Button>
+        <div className={styles.bannerManagementContainer}>
+            <div className={styles.bannerManagementHeader}>
+                <div className={styles.headerInfo}>
+                    <Title level={4} className={styles.headerTitle}>Quản lý Banner Home</Title>
+                    <Text type="secondary">Quản lý nội dung, hình ảnh và thứ tự hiển thị của Banner trên trang chủ</Text>
+                </div>
             </div>
 
-            <Table 
-                columns={columns} 
-                dataSource={banners} 
-                rowKey="id" 
-                loading={loading}
-                pagination={false}
-            />
+            <Card className="glass-card">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+                    <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />} 
+                        onClick={handleAdd} 
+                        className={styles.addButton}
+                    >
+                        Thêm Banner
+                    </Button>
+                </div>
+
+                <div className={styles.tableWrapper}>
+                    <Table 
+                        columns={columns} 
+                        dataSource={banners} 
+                        rowKey="id" 
+                        loading={loading}
+                        pagination={false}
+                    />
+                </div>
+            </Card>
 
             <Modal
                 title={editingBanner ? "Chỉnh sửa Banner" : "Thêm Banner mới"}

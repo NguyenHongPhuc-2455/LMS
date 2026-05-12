@@ -33,25 +33,22 @@ export default function LessonFormModal({
     const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
     const [videoSourceType, setVideoSourceType] = useState<'UPLOAD' | 'LINK'>('UPLOAD');
 
+    // 1. Chỉ Reset Form và nạp dữ liệu khi Modal MỞ LÊN
     useEffect(() => {
         if (open) {
             form.resetFields();
             if (initialValues) {
                 form.setFieldsValue(initialValues);
-
-                // Tự động nhận diện loại nguồn video khi edit
-                if (lessonType === 'VIDEO') {
-                    if (initialValues.video_url && !initialValues.video_url.startsWith('hls/')) {
-                        setVideoSourceType('LINK');
-                    } else {
-                        setVideoSourceType('UPLOAD');
-                    }
+                // Tự động nhận diện loại nguồn video khi mở modal lần đầu
+                if (initialValues.video_url || initialValues.type === 'VIDEO') {
+                    const isExternal = !!initialValues.video_url && !initialValues.video_url.startsWith('hls/');
+                    setVideoSourceType(isExternal ? 'LINK' : 'UPLOAD');
                 }
             }
             setSelectedFile(null);
             setAttachmentFile(null);
         }
-    }, [open, initialValues, form, lessonType]);
+    }, [open, initialValues, form]); 
 
     const handleFinish = async (values: any) => {
         await onSuccess(values, selectedFile, attachmentFile);
@@ -78,7 +75,7 @@ export default function LessonFormModal({
             ]}
             width={1000}
             style={{ top: 100 }}
-            destroyOnClose={true}
+            destroyOnHidden={true}
         >
             {!editingId && (
                 <div className={styles.segmentedWrapper} style={{ marginBottom: 16 }}>
@@ -94,7 +91,11 @@ export default function LessonFormModal({
             )}
 
             <div className={styles.modalBodyScroll}>
-                <Form form={form} layout="vertical" onFinish={handleFinish}>
+                <Form 
+                    form={form} 
+                    layout="vertical" 
+                    onFinish={handleFinish}
+                >
                     {lessonType === 'VIDEO' ? (
                         <VideoLessonForm
                             sections={sections}

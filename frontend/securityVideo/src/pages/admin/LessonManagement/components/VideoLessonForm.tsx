@@ -78,7 +78,6 @@ export default function VideoLessonForm({
                         name="anti_seek"
                         label="Chống tua video"
                         valuePropName="checked"
-                        initialValue={true}
                         tooltip="Bật để ngăn nhân sự kéo thanh tua tới nội dung chưa xem"
                     >
                         <Switch

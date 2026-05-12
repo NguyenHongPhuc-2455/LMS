@@ -56,6 +56,7 @@ const UnifiedContent: React.FC = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingData, setEditingData] = useState<any>(null);
+    const [editingQuizId, setEditingQuizId] = useState<number | null>(null);
     const [lessonType, setLessonType] = useState<'VIDEO' | 'QUIZ'>('VIDEO');
 
     // Fetch Categories
@@ -132,12 +133,39 @@ const UnifiedContent: React.FC = () => {
     // Modal Handlers
     const handleAdd = () => {
         setEditingData(null);
+        setEditingQuizId(null);
+        setLessonType('VIDEO');
         setIsModalOpen(true);
     };
 
-    const handleEdit = (record: any) => {
-        setEditingData(record);
-        if (viewMode === 'LESSON') setLessonType(record.type);
+    const handleEdit = async (record: any) => {
+        if (viewMode === 'LESSON' && record.type === 'QUIZ') {
+            try {
+                message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
+                const quizRes = await quizService.getByLesson(record.id);
+                const quizData = quizRes.data;
+                
+                setEditingQuizId(quizData.id);
+                setEditingData({
+                    ...record,
+                    description: quizData.description,
+                    pass_score: quizData.pass_score,
+                    time_limit: quizData.time_limit,
+                    questions: quizData.questions || []
+                });
+                setLessonType('QUIZ');
+                message.success({ content: 'Hoàn tất', key: 'quiz-loading', duration: 1 });
+            } catch (e) {
+                message.error({ content: 'Không tải được nội dung bài thi', key: 'quiz-loading' });
+                setEditingData(record);
+                setEditingQuizId(null);
+                setLessonType('QUIZ');
+            }
+        } else {
+            setEditingData(record);
+            setEditingQuizId(null);
+            if (viewMode === 'LESSON') setLessonType(record.type);
+        }
         setIsModalOpen(true);
     };
 
@@ -198,8 +226,8 @@ const UnifiedContent: React.FC = () => {
             } else {
                 // Lesson / Quiz logic
                 if (lessonType === 'QUIZ') {
-                    if (editingData) {
-                        await quizService.update(editingData.id, values);
+                    if (editingQuizId) {
+                        await quizService.update(editingQuizId, values);
                     } else {
                         await quizService.create({
                             ...values,

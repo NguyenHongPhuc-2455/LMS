@@ -1,7 +1,7 @@
 1. Nhóm quản lý Người dùng (Users & Roles)
 Đây là nền tảng để phân quyền giữa nhân sự (Student), Giảng viên (Instructor) và Admin.
 
-- **users**: Lưu thông tin cơ bản (id, email, password, full_name, avatar, bio, phone, dob, gender, employee_id, department, position, join_date).
+- **users**: Lưu thông tin cơ bản (id, email, password, full_name, avatar, bio, phone, dob, gender, employee_id, department, position, join_date, **deleted_at**).
 - **roles**: Lưu các loại quyền (Admin, Instructor, Student).
 - **user_roles**: Bảng trung gian kết nối `users` và `roles` (quan hệ n-n).
 
@@ -9,7 +9,9 @@
 Đây là phần phức tạp nhất, cấu trúc theo phân cấp: Khóa học > Chương > Bài học.
 
 - **categories**: Danh mục khóa học (Lập trình, Marketing...).
-- **courses**: Thông tin tổng quan khóa học (title, description, level, thumbnail, instructor_id, status, is_private).
+- **courses**: Thông tin tổng quan khóa học (title, description, level, thumbnail, instructor_id, status, is_private, **is_mandatory**, **mandatory_deadline_days**).
+    - `is_mandatory`: Đánh dấu khóa học hội nhập bắt buộc.
+    - `mandatory_deadline_days`: Số ngày phải hoàn thành kể từ ngày vào làm.
 - **sections**: Các chương trong một khóa học.
 - **lessons**: Các bài học chi tiết. Hỗ trợ 3 loại: `VIDEO`, `DOCUMENT`, `QUIZ`.
     - Chứa `video_url`, `source_url`, `hls_key`, `hls_iv` cho bảo mật video.

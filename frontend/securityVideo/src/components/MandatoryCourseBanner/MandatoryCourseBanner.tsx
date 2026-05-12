@@ -36,7 +36,7 @@ export default function MandatoryCourseBanner() {
             .then(data => {
                 const activeCourses = data.filter((c: MandatoryCourse) => c.status !== 'COMPLETED');
                 setCourses(activeCourses);
-                
+
                 // Nếu có cờ vừa đăng nhập và có khóa học chưa hoàn thành thì hiện Modal
                 if (shouldShowModal && activeCourses.length > 0) {
                     setLoginNotifyModal({ open: true, courses: activeCourses });
@@ -195,8 +195,18 @@ export default function MandatoryCourseBanner() {
                                         type="primary"
                                         size="small"
                                         icon={<ArrowRightOutlined />}
-                                        style={{ background: config.color, borderColor: config.color }}
-                                        onClick={() => navigate(`/course/${course.id}`)}
+                                        disabled={course.status === 'OVERDUE'}
+                                        style={{ 
+                                            opacity: course.status === 'OVERDUE' ? 0.6 : 1,
+                                            cursor: course.status === 'OVERDUE' ? 'not-allowed' : 'pointer',
+                                            backgroundColor: course.status === 'OVERDUE' ? '#bfbfbf' : config.color,
+                                            borderColor: course.status === 'OVERDUE' ? '#bfbfbf' : config.color
+                                        }}
+                                        onClick={() => {
+                                            if (course.status !== 'OVERDUE') {
+                                                navigate(`/course/${course.id}`);
+                                            }
+                                        }}
                                     >
                                         Học ngay
                                     </Button>

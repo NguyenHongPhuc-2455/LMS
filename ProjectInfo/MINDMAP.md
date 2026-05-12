@@ -19,6 +19,7 @@ mindmap
         Global Style System["Variables, Mixins, Global SCSS"]
         Vite SCSS Auto-injection
         Absolute Imports["@/alias cho src/"]
+        Routes Management["Hệ thống ROUTES hằng số"]
         ScrollToTop Navigation
       Hệ Thống Video["Hệ Thống Video (Video Engine)"]
         Local FFmpeg Transcoding
@@ -33,6 +34,7 @@ mindmap
         Request Tracking["Duyệt yêu cầu (Course/Program)"]
         Progress Monitoring["Theo dõi tiến độ nhân sự"]
         User Management["Quản lý người dùng & Phân quyền"]
+        Mandatory Onboarding["Báo cáo & Giám sát Hội nhập"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
         Enrollment["Đăng ký học"]
         Lesson Completion Tracking["Precise Tracking (95%)"]
@@ -93,6 +95,7 @@ Giao diện React hiện đại:
 - [x] Hệ thống Quản lý Danh mục & Phân loại khóa học
 - [x] Hệ thống Duyệt yêu cầu & Theo dõi Tiến độ Admin
 - [x] Đồng bộ hóa giao diện Dashboard (Standardized UI)
+- [x] Hệ thống Khóa học bắt buộc & Báo cáo hội nhập (Mandatory Onboarding)
 - [ ] Tích hợp Livestream dạy học trực tuyến.
 - [ ] App Mobile (React Native) sử dụng chung Backend API.
 - [ ] Hệ thống AI gợi ý khóa học dựa trên hành vi học tập.

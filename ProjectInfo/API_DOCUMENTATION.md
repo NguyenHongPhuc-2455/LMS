@@ -37,6 +37,8 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | PUT | `/sections/:id` | Sửa tiêu đề/thứ tự chương | ✅ |
 | DELETE | `/sections/:id` | Xóa chương học | ✅ |
 | DELETE | `/:id` | Xóa khóa học | ✅ |
+| GET | `/mandatory` | Lấy danh sách khóa học bắt buộc của tôi | ✅ |
+| GET | `/mandatory-overdue-report` | Báo cáo khóa học bắt buộc quá hạn (Admin) | ✅ (Admin) |
 
 ---
 
@@ -118,7 +120,9 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 | GET | `/` | Danh sách thành viên (Admin) | ✅ (Admin) |
 | POST | `/` | Tạo mới người dùng (Admin) | ✅ (Admin) |
 | PUT | `/:id` | Cập nhật thông tin người dùng (Admin) | ✅ (Admin) |
-| DELETE | `/:id` | Xóa tài khoản (Admin) | ✅ (Admin) |
+| DELETE | `/:id` | Xóa tài khoản (Admin - Soft Delete) | ✅ (Admin) |
+| DELETE | `/batch` | Xóa hàng loạt người dùng (Admin) | ✅ (Admin) |
+| POST | `/batch-update` | Cập nhật hàng loạt (Admin) | ✅ (Admin) |
 | POST | `/revoke-course` | Thu hồi quyền truy cập khóa học | ✅ (Admin) |
 
 ---

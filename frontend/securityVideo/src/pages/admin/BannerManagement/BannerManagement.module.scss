@@ -1,0 +1,64 @@
+@import "../../../styles/variables.scss";
+
+.bannerManagementContainer {
+    padding: 0;
+}
+
+.bannerManagementHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .headerInfo {
+        .headerTitle {
+            margin: 0 !important;
+            color: $text-main;
+        }
+    }
+}
+
+.addButton {
+    background-color: #12B76A !important;
+    border-color: #12B76A !important;
+    border-radius: 8px !important;
+    color: white !important;
+    height: 36px !important;
+    padding: 0 16px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+
+    &:hover {
+        background-color: #0e9657 !important;
+        border-color: #0e9657 !important;
+    }
+}
+
+.tableWrapper {
+    :global {
+        .ant-table-thead > tr > th {
+            background: #B8121A !important;
+            color: white !important;
+            border-bottom: none;
+            
+            &::before {
+                display: none;
+            }
+        }
+        
+        .ant-table-tbody > tr:hover > td {
+            background: rgba(184, 18, 26, 0.05) !important;
+        }
+    }
+}
+
+.bannerPreview {
+    width: 120px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid $border-color;
+}

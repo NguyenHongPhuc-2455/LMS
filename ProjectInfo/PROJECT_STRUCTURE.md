@@ -64,6 +64,8 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   ├── src/
 │   │   ├── styles/                # Global Style System (RitaVo Red, Glassmorphism)
 │   │   ├── components/            # Modular Components (Standardized Admin Components)
+│   │   ├── constants/             # Hệ thống hằng số (Routes, Configs)
+│   │   │   └── routes.ts          # Quản lý tập trung toàn bộ URL trong app
 │   │   ├── hooks/                 # Custom React Hooks
 │   │   ├── pages/                 # Admin modules (Course, Lesson, Category, Request, Progress, User)
 │   │   ├── services/              # API Client (Shared axios services)
@@ -71,7 +73,6 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   └── main.tsx               # Entry point
 │   ├── tsconfig.app.json          # Cấu hình Absolute Imports (@/* -> ./src/*)
 │   └── vite.config.ts             # Cấu hình Resolve Alias (@)
-
 │
 ├── docker-compose.yml             # PostgreSQL Setup
 ├── README.md                      # Hướng dẫn cài đặt chính

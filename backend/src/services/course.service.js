@@ -25,7 +25,7 @@ const getAllCourses = async (search = '', categoryId = null) => {
 
 const getCourseById = async (courseId) => {
     return await prisma.course.findFirst({
-        where: { 
+        where: {
             id: parseInt(courseId),
             deleted_at: null
         },
@@ -61,22 +61,34 @@ const getEnrichedCourseDetail = async (courseId, user, ip) => {
     const course = await getCourseById(courseId);
     if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
 
-    // 1. Kiểm tra quyền truy cập & Trạng thái yêu cầu
+    // 1. Kiểm tra quyền truy cập
     const { hasAccess, requestStatus } = await _checkCourseAccess(userId, parseInt(courseId), course.instructor_id, user?.roles);
 
-    // 2. Lấy danh sách bài học đã hoàn thành
+    // 2. Kiểm tra quá hạn
+    let isOverdue = false;
+    if (course.is_mandatory && userId) {
+        const userData = await prisma.user.findUnique({ where: { id: userId }, select: { join_date: true } });
+        if (userData?.join_date) {
+            const deadline = new Date(userData.join_date);
+            deadline.setDate(deadline.getDate() + (course.mandatory_deadline_days || 0));
+            isOverdue = new Date() > deadline;
+        }
+    }
+
+    // 3. Lấy danh sách bài học đã hoàn thành
     const completedLessonIds = await _getCompletedLessonIds(userId, course);
 
-    // 3. Làm giàu dữ liệu cho từng Lesson (Security & Completion status)
-    course.sections = _enrichSections(course.sections, userId, ip, hasAccess, completedLessonIds);
+    // 4. Làm giàu dữ liệu cho từng Lesson
+    course.sections = _enrichSections(course.sections, userId, ip, hasAccess && !isOverdue, completedLessonIds, isOverdue);
 
-    // 4. Tính toán tiến độ & bài học tiếp theo
-    const progress = _calculateCourseProgress(course, completedLessonIds, userId, hasAccess);
+    // 5. Tính toán tiến độ
+    const progress = _calculateCourseProgress(course, completedLessonIds, userId, hasAccess && !isOverdue);
 
     return { 
         ...course, 
         hasAccess, 
-        requestStatus, 
+        requestStatus,
+        isOverdue,
         ...progress 
     };
 };
@@ -88,7 +100,7 @@ const _checkCourseAccess = async (userId, courseId, instructorId, roles = []) =>
 
     const isAdmin = roles.includes('admin');
     const isOwner = instructorId === userId;
-    
+
     if (isAdmin || isOwner) return { hasAccess: true, requestStatus: null };
 
     const [enrollment, programEnrollment, reqAccess] = await Promise.all([
@@ -102,9 +114,9 @@ const _checkCourseAccess = async (userId, courseId, instructorId, roles = []) =>
         })
     ]);
 
-    return { 
-        hasAccess: !!(enrollment || programEnrollment), 
-        requestStatus: reqAccess?.status || null 
+    return {
+        hasAccess: !!(enrollment || programEnrollment),
+        requestStatus: reqAccess?.status || null
     };
 };
 
@@ -118,14 +130,14 @@ const _getCompletedLessonIds = async (userId, course) => {
     return completions.map(c => c.lesson_id);
 };
 
-const _enrichSections = (sections, userId, ip, hasAccess, completedLessonIds) => {
+const _enrichSections = (sections, userId, ip, hasAccess, completedLessonIds, isOverdue = false) => {
     return sections.map(s => ({
         ...s,
         lessons: s.lessons.map(l => {
             let securedVideoUrl = l.video_url;
             const canView = hasAccess || l.is_free;
 
-            if (canView && securedVideoUrl) {
+            if (canView && securedVideoUrl && !isOverdue) {
                 if (securedVideoUrl.startsWith('/public/hls/') || securedVideoUrl.startsWith('hls/')) {
                     const token = generateStreamToken(userId, l.id, ip);
                     const fileName = securedVideoUrl.split('/').pop();
@@ -137,8 +149,8 @@ const _enrichSections = (sections, userId, ip, hasAccess, completedLessonIds) =>
             return {
                 ...l,
                 isCompleted: completedLessonIds.includes(l.id),
-                video_url: canView ? securedVideoUrl : null,
-                ...(!canView && { content: 'Nội dung này đã bị khóa. Vui lòng liên hệ quản trị viên để mở khóa.' })
+                video_url: (canView && !isOverdue) ? securedVideoUrl : null,
+                ...((!canView || isOverdue) && { content: isOverdue ? 'Khóa học này đã bị khóa do quá hạn.' : 'Nội dung này đã bị khóa.' })
             };
         })
     }));
@@ -151,7 +163,7 @@ const _calculateCourseProgress = (course, completedLessonIds, userId, hasAccess)
     if (allLessons.length === 0) return { nextLessonId: null, isCourseFinished: false };
 
     const nextLesson = allLessons.find(l => !completedLessonIds.includes(l.id));
-    
+
     return {
         nextLessonId: nextLesson ? nextLesson.id : allLessons[0].id,
         isCourseFinished: completedLessonIds.length === allLessons.length
@@ -198,7 +210,7 @@ const softDeleteCourse = async (courseId) => {
         // Xóa mềm khóa học
         return await tx.course.update({
             where: { id },
-            data: { 
+            data: {
                 deleted_at: new Date(),
                 status: 'ARCHIVED' // Chuyển trạng thái sang lưu trữ
             }
