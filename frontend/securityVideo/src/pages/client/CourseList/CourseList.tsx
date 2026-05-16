@@ -150,6 +150,8 @@ export default function CourseList() {
             list = list.filter(c => c.progressPercent !== undefined && (c.progressPercent || 0) < 100);
         } else if (statusFilter === 'COMPLETED') {
             list = list.filter(c => (c.progressPercent || 0) === 100);
+        } else if (statusFilter === 'MANDATORY') {
+            list = list.filter(c => c.is_mandatory);
         } else if (statusFilter === 'FAVORITE') {
             list = []; // Placeholder for favorites
         }
@@ -200,6 +202,13 @@ export default function CourseList() {
                         onClick={() => setStatusFilter('ALL')}
                     >
                         Tất cả
+                    </div>
+                    <div
+                        className={`${styles.filterItem} ${statusFilter === 'MANDATORY' ? styles.active : ''}`}
+                        onClick={() => setStatusFilter('MANDATORY')}
+                        style={statusFilter === 'MANDATORY' ? { color: '#fa541c' } : {}}
+                    >
+                        <LockOutlined style={{ marginRight: 4 }} /> Bắt buộc
                     </div>
                     <div
                         className={`${styles.filterItem} ${statusFilter === 'IN_PROGRESS' ? styles.active : ''}`}

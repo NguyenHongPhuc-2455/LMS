@@ -1,4 +1,4 @@
-import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input } from 'antd';
+import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag, Switch } from 'antd';
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -7,40 +7,36 @@ import styles from '../CourseManagement.module.scss';
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
-interface Course {
-    id: number;
-    title: string;
-    description: string;
-    thumbnail: string;
-    is_private: boolean;
-    level: string;
-    category_id?: number | null;
-    created_at: string;
-    updated_at: string;
-    _count?: { sections: number, enrollments: number };
-}
+import { type Course } from '../../../../types/course';
 
 interface CourseTableProps {
     courses: Course[];
     categories: any[];
     loading: boolean;
+    selectedRowKeys: React.Key[];
+    onSelectionChange: (keys: React.Key[]) => void;
     onEdit: (course: Course) => void;
     onDelete: (id: number) => void;
     onNavigateToSections: (id: number) => void;
     onStatusChange: (id: number, isPrivate: boolean) => void;
     onCategoryChange: (id: number, categoryId: number | null) => void;
+    onToggleActive: (id: number, isActive: boolean) => void;
 }
 
 export default function CourseTable({
     courses,
     categories,
     loading,
+    selectedRowKeys,
+    onSelectionChange,
     onEdit,
     onDelete,
     onNavigateToSections,
     onStatusChange,
-    onCategoryChange
+    onCategoryChange,
+    onToggleActive
 }: CourseTableProps) {
+    console.log('CourseTable Props:', { onToggleActive });
     const getColumnSearchProps = (dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
@@ -88,6 +84,8 @@ export default function CourseTable({
             title: 'Khóa học',
             key: 'info',
             dataIndex: 'title',
+            width: 350,
+            fixed: 'left' as const,
             ...getColumnSearchProps('title'),
             sorter: (a: Course, b: Course) => a.title.localeCompare(b.title),
             render: (_: any, c: Course) => (
@@ -113,74 +111,104 @@ export default function CourseTable({
         {
             title: 'Danh mục',
             key: 'category',
-            width: 180,
             filters: categories.map(cat => ({ text: cat.name, value: cat.id })),
             onFilter: (value: any, record: Course) => record.category_id === value,
             render: (c: Course) => (
-                <Select
-                    value={c.category_id}
-                    onChange={(val) => onCategoryChange(c.id, val)}
-                    placeholder="Chưa phân loại"
-                    style={{ width: '100%' }}
-                    size="small"
-                    allowClear
-                    className={styles.statusSelect}
-                    options={categories.map(cat => ({
-                        value: cat.id,
-                        label: cat.name
-                    }))}
-                />
+                <div style={{ minWidth: '110px' }}>
+                    <Select
+                        value={c.category_id}
+                        onChange={(val) => onCategoryChange(c.id, val)}
+                        placeholder="Danh mục"
+                        style={{ width: '100%' }}
+                        size="small"
+                        allowClear
+                        popupMatchSelectWidth={false}
+                        className={styles.statusSelect}
+                        options={categories.map(cat => ({
+                            value: cat.id,
+                            label: cat.name
+                        }))}
+                    />
+                </div>
             ),
         },
         {
             title: 'Trạng thái',
             dataIndex: 'is_private',
-            width: 140,
             filters: [
                 { text: 'RIÊNG TƯ', value: true },
                 { text: 'CÔNG KHAI', value: false },
             ],
             onFilter: (value: any, record: Course) => record.is_private === value,
             render: (isPrivate: boolean, record: Course) => (
-                <Select
-                    value={isPrivate}
-                    onChange={(val) => onStatusChange(record.id, val)}
-                    className={styles.statusSelect}
-                    size="small"
-                    showSearch={false}
-                    dropdownClassName={styles.statusPopup}
-                    options={[
-                        {
-                            value: true,
-                            label: 'RIÊNG TƯ'
-                        },
-                        {
-                            value: false,
-                            label: 'CÔNG KHAI'
-                        }
-                    ]}
-                />
+                <div style={{ minWidth: '110px' }}>
+                    <Select
+                        value={isPrivate}
+                        onChange={(val) => onStatusChange(record.id, val)}
+                        className={styles.statusSelect}
+                        size="small"
+                        showSearch={false}
+                        popupMatchSelectWidth={false}
+                        popupClassName={styles.statusPopup}
+                        options={[
+                            { value: true, label: 'RIÊNG TƯ' },
+                            { value: false, label: 'CÔNG KHAI' }
+                        ]}
+                    />
+                </div>
             )
         },
         {
-            title: 'Học viên',
+            title: 'Hiển thị',
+            key: 'active',
+            filters: [
+                { text: 'Đang mở', value: true },
+                { text: 'Đã đóng', value: false },
+            ],
+            onFilter: (value: any, record: Course) => (!record.deleted_at) === value,
+            render: (_: any, record: Course) => {
+                const isActive = !record.deleted_at;
+                return (
+                    <div style={{ whiteSpace: 'nowrap' }}>
+                        <Switch
+                            checked={isActive}
+                            onChange={(checked) => onToggleActive(record.id, checked)}
+                            size="small"
+                            checkedChildren="ON"
+                            unCheckedChildren="OFF"
+                        />
+                    </div>
+                );
+            }
+        },
+        {
+            title: 'Loại khóa',
+            dataIndex: 'is_mandatory',
+            filters: [
+                { text: 'BẮT BUỘC', value: true },
+                { text: 'TỰ CHỌN', value: false },
+            ],
+            onFilter: (value: any, record: Course) => record.is_mandatory === value,
+            render: (isMandatory: boolean) => (
+                <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    {isMandatory ? 'BẮT BUỘC' : 'TỰ CHỌN'}
+                </span>
+            )
+        },
+        {
+            title: 'nhân sự',
             key: 'students',
-            width: 100,
             sorter: (a: Course, b: Course) => (a._count?.enrollments || 0) - (b._count?.enrollments || 0),
             render: (c: Course) => (
-                <Badge
-                    count={c._count?.enrollments || 0}
-                    showZero
-                    color="#52c41a"
-                    className={styles.studentBadge}
-                />
+                <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    {c._count?.enrollments || 0}
+                </span>
             )
         },
         {
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
-            width: 150,
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
                 <div className={styles.filterPickerWrapper} onKeyDown={(e) => e.stopPropagation()}>
                     <RangePicker
@@ -221,18 +249,18 @@ export default function CourseTable({
                 const recordDate = dayjs(record.created_at);
                 return recordDate.isAfter(start) && recordDate.isBefore(end);
             },
-            render: (date: string) => new Date(date).toLocaleDateString()
+            render: (date: string) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(date).toLocaleDateString()}</span>
         },
         {
             title: 'Cập nhật',
             dataIndex: 'updated_at',
-            width: 150,
-            render: (date: string) => new Date(date).toLocaleDateString()
+            render: (date: string) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(date).toLocaleDateString()}</span>
         },
         {
             title: 'Hành động',
             key: 'actions',
             width: 120,
+            fixed: 'right' as const,
             render: (record: Course) => (
                 <Space>
                     <Button type="text" icon={<Edit size={16} />} onClick={() => onEdit(record)} />
@@ -250,6 +278,10 @@ export default function CourseTable({
             columns={columns}
             rowKey="id"
             loading={loading}
+            rowSelection={{
+                selectedRowKeys,
+                onChange: onSelectionChange,
+            }}
             pagination={{
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
@@ -262,8 +294,7 @@ export default function CourseTable({
                     return originalElement;
                 }
             } as any}
-            scroll={{ x: 1200, y: 600 }}
-            virtual
+            scroll={{ x: 1600, y: 600 }}
             bordered
         />
     );

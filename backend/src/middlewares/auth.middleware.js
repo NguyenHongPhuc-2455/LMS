@@ -1,34 +1,70 @@
 const jwt = require('jsonwebtoken');
+const config = require('../configs/env.config');
+const MESSAGES = require('../constants/messages');
 
 exports.verifyToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
     console.log('[DEBUG] Auth Header received:', authHeader ? 'Present' : 'Missing');
     const token = authHeader?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Truy cập bị từ chối. Vui lòng đăng nhập.' });
+    if (!token) return res.status(401).json({ error: MESSAGES.AUTH.UNAUTHORIZED });
 
     try {
-        const defaultSecret = 'super_secret_key_123';
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || defaultSecret);
+        if (!config.jwt.secret) {
+            console.error('[CRITICAL ERROR] JWT_SECRET is not defined in environment variables');
+            return res.status(500).json({ error: MESSAGES.SYSTEM.MISSING_CONFIG });
+        }
+        const decoded = jwt.verify(token, config.jwt.secret);
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(401).json({ error: 'Token không hợp lệ hoặc đã bị chỉnh sửa.' });
+        res.status(401).json({ error: MESSAGES.AUTH.INVALID_TOKEN });
     }
 };
 
 exports.isAdmin = (req, res, next) => {
-    if (req.user && req.user.roles && req.user.roles.includes('admin')) {
+    if (req.user && req.user.roles && req.user.roles.some(r => r.toLowerCase() === 'admin')) {
         next();
     } else {
-        res.status(403).json({ error: 'Chỉ Admin mới có quyền thực hiện hành động này' });
+        res.status(403).json({ error: MESSAGES.AUTH.ADMIN_REQUIRED });
     }
 };
 
-exports.isInstructor = (req, res, next) => {
-    if (req.user && req.user.roles && (req.user.roles.includes('instructor') || req.user.roles.includes('admin'))) {
+exports.isAdminOrManager = (req, res, next) => {
+    if (!req.user || !req.user.roles) return res.status(403).json({ error: MESSAGES.AUTH.FORBIDDEN });
+    
+    const roles = req.user.roles.map(r => r.toLowerCase());
+    const isAuthorized = roles.includes('admin') || roles.includes('manager');
+
+    if (isAuthorized) {
         next();
     } else {
-        res.status(403).json({ error: 'Chỉ Instructor hoặc Admin mới có quyền thực hiện hành động này' });
+        res.status(403).json({ error: MESSAGES.AUTH.ADMIN_MANAGER_REQUIRED });
+    }
+};
+
+exports.isAdminOrStaffRead = (req, res, next) => {
+    if (!req.user || !req.user.roles) return res.status(403).json({ error: MESSAGES.AUTH.FORBIDDEN });
+    
+    const roles = req.user.roles.map(r => r.toLowerCase());
+    const isAdminOrManager = roles.includes('admin') || roles.includes('manager');
+    const isStaff = roles.includes('instructor') || roles.includes('lecturer');
+
+    // Admin/Manager có toàn quyền (bao gồm cả GET)
+    if (isAdminOrManager) return next();
+
+    // Giảng viên chỉ có quyền Xem (GET)
+    if (isStaff && req.method === 'GET') return next();
+
+    res.status(403).json({ error: MESSAGES.AUTH.FORBIDDEN });
+};
+
+exports.isInstructor = (req, res, next) => {
+    if (!req.user || !req.user.roles) return res.status(403).json({ error: MESSAGES.AUTH.FORBIDDEN });
+    const roles = req.user.roles.map(r => r.toLowerCase());
+    if (roles.includes('instructor') || roles.includes('admin') || roles.includes('manager') || roles.includes('lecturer')) {
+        next();
+    } else {
+        res.status(403).json({ error: MESSAGES.AUTH.FORBIDDEN });
     }
 };
 

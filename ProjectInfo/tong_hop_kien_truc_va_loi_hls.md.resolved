@@ -12,7 +12,7 @@ Tài liệu này tổng hợp toàn bộ quy trình thiết kế mã nguồn, c�
 3. **Kích hoạt FFmpeg ngầm:** Kích hoạt thuật toán máy nghiền để cắt rời file MP4 thành format truyền phát thời gian thực [.m3u8](file:///d:/securityVideo/backend/public/hls/vid_1775706193525/playlist.m3u8) & hàng chục file [.ts](file:///d:/SecurityVideo/backend/prisma.config.ts).
 
 ### 1.2 "Gọt giũa" mọi loại Video tạp nham
-Nhiều học viên tự thu màn hình bằng điện thoại, OBS... sinh ra các format video siêu "dị" khiến trình duyệt không đọc được. Backend của chúng ta đã được cài bộ bùa chú FFMPEG siêu cấp như sau:
+Nhiều nhân sự tự thu màn hình bằng điện thoại, OBS... sinh ra các format video siêu "dị" khiến trình duyệt không đọc được. Backend của chúng ta đã được cài bộ bùa chú FFMPEG siêu cấp như sau:
 
 ```javascript
     .addOptions([
@@ -95,10 +95,10 @@ Dưới đây là 4 bài học sát máu nhất trong lịch sử làm Video Str
 > ---
 >
 > ### 🐞 Lỗi 7: Video Ngoại Tuyến (YouTube/MP4 ngoài) thiếu ổn định & Lỗ hổng Tua Video
-> **Khảo bệnh:** Trình phát `react-player` hoặc Iframe của YouTube thường xuyên lỗi không bắt được sự kiện `onStateChange` hoặc tiến độ `onProgress`. Học viên có thể kéo thanh tiến trình (tua video) để qua bài lập tức mà không học.
+> **Khảo bệnh:** Trình phát `react-player` hoặc Iframe của YouTube thường xuyên lỗi không bắt được sự kiện `onStateChange` hoặc tiến độ `onProgress`. nhân sự có thể kéo thanh tiến trình (tua video) để qua bài lập tức mà không học.
 > 
 > **Thủ phạm:** Các iframe và luồng video ngoài nằm ngoài tầm kiểm soát của ứng dụng React. Đồng thời, việc chặn tua bằng cách so sánh `currentTime` thông thường dễ bị lỗi kẹt video nếu mạng chậm.
 > 
 > **Cách Fix Triệt Để (Kiến trúc hiện tại):** 
 > 1. **Khai tử Video Ngoại tuyến**, ép buộc toàn bộ hệ thống chuyển sang **100% cơ chế băm HLS** nội bộ. Không sử dụng thư viện bên thứ 3 (như react-player hay youtube) để phát video nữa. Mọi video đều do hệ thống nắm chuôi giải mã bằng `shaka-player`.
-> 2. **Chống tua vĩnh viễn bằng Delta:** Không khóa thanh trượt (tránh ảnh hưởng UI), mà đo khoảnh khắc thời gian nhảy vọt (delta). Trong event `onTimeUpdate` của thẻ `<video>`, nếu `video.currentTime - lastTime.current > 1.2` (giây), hệ thống ép `video.currentTime = lastTime` và hiện thông báo cấm tua. Điều này bảo vệ 100% thời gian thực xem của học viên.
+> 2. **Chống tua vĩnh viễn bằng Delta:** Không khóa thanh trượt (tránh ảnh hưởng UI), mà đo khoảnh khắc thời gian nhảy vọt (delta). Trong event `onTimeUpdate` của thẻ `<video>`, nếu `video.currentTime - lastTime.current > 1.2` (giây), hệ thống ép `video.currentTime = lastTime` và hiện thông báo cấm tua. Điều này bảo vệ 100% thời gian thực xem của nhân sự.

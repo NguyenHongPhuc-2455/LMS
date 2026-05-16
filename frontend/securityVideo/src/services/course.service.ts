@@ -1,11 +1,12 @@
 import api from "./api";
 
 export const courseService = {
-    getAll: async (search?: string, categoryId?: number) => {
+    getAll: async (search?: string, categoryId?: number, includeInactive?: boolean) => {
         let url = '/courses';
         const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (categoryId) params.append('categoryId', categoryId.toString());
+        if (includeInactive) params.append('includeInactive', 'true');
         if (params.toString()) url += `?${params.toString()}`;
 
         const response = await api.get(url);
@@ -23,6 +24,14 @@ export const courseService = {
         const response = await api.get('/courses/my-courses');
         return response.data;
     },
+    getMandatoryCourses: async () => {
+        const response = await api.get('/courses/mandatory');
+        return response.data;
+    },
+    getMandatoryOverdueReport: async (type: string = 'overdue') => {
+        const response = await api.get(`/courses/mandatory-overdue-report?type=${type}`);
+        return response.data;
+    },
     enroll: async (courseId: number) => {
         const response = await api.post(`/courses/${courseId}/enroll`);
         return response.data;
@@ -33,6 +42,18 @@ export const courseService = {
     },
     delete: async (id: number) => {
         const response = await api.delete(`/courses/${id}`);
+        return response.data;
+    },
+    restore: async (id: number) => {
+        const response = await api.post(`/courses/${id}/restore`);
+        return response.data;
+    },
+    toggleActive: async (id: number, active: boolean) => {
+        const response = await api.patch(`/courses/${id}/toggle-active`, { active });
+        return response.data;
+    },
+    batchDelete: async (ids: number[]) => {
+        const response = await api.delete('/courses/batch', { data: { ids } });
         return response.data;
     }
 };

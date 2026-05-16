@@ -76,33 +76,33 @@ const CategoryManagement: React.FC = () => {
             dataIndex: 'id',
             key: 'id',
             width: 80,
+            render: (text: any) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>
         },
         {
             title: 'Tên danh mục',
             dataIndex: 'name',
             key: 'name',
-            render: (text: string) => <strong>{text}</strong>,
+            render: (text: string) => <strong style={{ whiteSpace: 'nowrap' }}>{text}</strong>,
         },
         {
             title: 'Mô tả',
             dataIndex: 'description',
             key: 'description',
-            ellipsis: true,
+            render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text || '-'}</span>
         },
         {
             title: 'Số khóa học',
             key: 'courseCount',
-            width: 150,
             align: 'center' as const,
-            render: (_: any, record: Category) => record._count?.courses || 0,
+            render: (_: any, record: Category) => <span style={{ whiteSpace: 'nowrap' }}>{record._count?.courses || 0}</span>,
         },
         {
             title: 'Thao tác',
             key: 'action',
-            width: 150,
+            width: 120,
             align: 'right' as const,
             render: (_: any, record: Category) => (
-                <Space size="small">
+                <Space size="small" style={{ whiteSpace: 'nowrap' }}>
                     <Button
                         type="text"
                         icon={<EditOutlined />}
@@ -160,8 +160,8 @@ const CategoryManagement: React.FC = () => {
                         onClick={handleAdd}
                         style={{
                             borderRadius: '8px',
-                            background: 'C72127',
-                            borderColor: 'C72127',
+                            background: '#C72127',
+                            borderColor: '#C72127',
                             height: '40px',
                             display: 'flex',
                             alignItems: 'center'

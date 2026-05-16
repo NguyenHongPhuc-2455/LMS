@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '') + '/',
 });
 
 // Flag để tránh gọi refresh nhiều lần cùng lúc
@@ -54,7 +54,7 @@ api.interceptors.response.use(
             }
 
             try {
-                const response = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
+                const response = await axios.post(`${api.defaults.baseURL}auth/refresh`, { refreshToken });
                 const { accessToken } = response.data;
 
                 localStorage.setItem('accessToken', accessToken);

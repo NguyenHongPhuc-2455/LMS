@@ -30,8 +30,8 @@ export default function SectionTable({
         {
             title: 'Thứ tự',
             dataIndex: 'order',
-            width: 100,
-            sorter: (a: Section, b: Section) => a.order - b.order
+            sorter: (a: Section, b: Section) => a.order - b.order,
+            render: (text: any) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>
         },
         {
             title: 'Tiêu đề chương',
@@ -43,6 +43,7 @@ export default function SectionTable({
             render: (text: string, record: Section) => (
                 <span
                     className={styles.sectionTitleLink}
+                    style={{ whiteSpace: 'nowrap' }}
                     onClick={() => onNavigateLessons(record.id)}
                 >
                     {text}
@@ -52,14 +53,14 @@ export default function SectionTable({
         {
             title: 'Số bài giảng',
             key: 'lessons',
-            render: (record: Section) => record.lessons?.length || 0
+            render: (record: Section) => <span style={{ whiteSpace: 'nowrap' }}>{record.lessons?.length || 0} bài</span>
         },
         {
             title: 'Hành động',
             key: 'actions',
             width: 150,
             render: (record: Section) => (
-                <Space>
+                <Space style={{ whiteSpace: 'nowrap' }}>
                     <Button type="text" icon={<Edit size={16} />} onClick={() => onEdit(record)} />
                     <Popconfirm title="Xóa chương này?" onConfirm={() => onDelete(record.id)}>
                         <Button type="text" danger icon={<Trash2 size={16} />} />
@@ -88,7 +89,6 @@ export default function SectionTable({
                 }
             } as any}
             scroll={{ y: 500 }}
-            virtual
             bordered
         />
     );

@@ -62,7 +62,7 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                 const duration = playerRef.current.duration();
                 const watchedTime = maxWatchedTimeRef.current;
 
-                if (duration > 0 && watchedTime / duration >= 0.95) {
+                if (duration > 0 && watchedTime / duration >= 0.99) {
                     handleVideoComplete();
                 }
             }
@@ -86,8 +86,8 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
         const watchedTime = maxWatchedTimeRef.current;
 
         // Kiểm tra lại một lần nữa cho chắc chắn
-        if (duration > 0 && watchedTime / duration < 0.95) {
-            console.warn('Chưa xem đủ 95% thời lượng thật sự');
+        if (duration > 0 && watchedTime / duration < 0.99) {
+            console.warn('Chưa xem đủ 100% thời lượng thật sự');
             return;
         }
 
@@ -236,11 +236,11 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
                         return;
                     }
 
-                    // CHỈ HOÀN THÀNH KHI XEM THẬT >= 95%
-                    if (duration > 0 && watchedTime / duration >= 0.95) {
+                    // CHỈ HOÀN THÀNH KHI XEM THẬT >= 100%
+                    if (duration > 0 && watchedTime / duration >= 0.99) {
                         handleVideoComplete();
                     } else {
-                        console.log('Video kết thúc nhưng chưa xem đủ 95% thật sự. Không tính hoàn thành.');
+                        console.log('Video kết thúc nhưng chưa xem đủ 100% thật sự. Không tính hoàn thành.');
                         player.pause();
                         player.currentTime(maxWatchedTimeRef.current);
                     }

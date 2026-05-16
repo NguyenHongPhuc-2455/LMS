@@ -1,9 +1,11 @@
 require('dotenv').config();
+const config = require('./src/configs/env.config');
+
 console.log('=== ENV CHECK ===');
-console.log('PORT:', process.env.PORT);
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('PORT:', config.app.port);
+console.log('NODE_ENV:', config.app.env);
+console.log('DATABASE_URL exists:', !!config.db.url);
+console.log('JWT_SECRET exists:', !!config.jwt.secret);
 console.log('=================');
 
 process.on('uncaughtException', (err) => {
@@ -18,6 +20,10 @@ const http = require('http');
 const app = require('./src/app');
 const socketUtils = require('./src/utils/socket');
 const prisma = require('./src/configs/prisma');
+const { initNotificationListener } = require('./src/listeners/notification.listener');
+
+// Khởi tạo listeners
+initNotificationListener();
 
 // Fix PostgreSQL sequences automatically on startup
 async function fixPostgresSequences() {
@@ -32,7 +38,7 @@ async function fixPostgresSequences() {
 fixPostgresSequences();
 
 const server = http.createServer(app);
-const PORT = process.env.PORT || 5000;
+const PORT = config.app.port;
 
 // Khởi tạo Socket.io
 socketUtils.init(server);

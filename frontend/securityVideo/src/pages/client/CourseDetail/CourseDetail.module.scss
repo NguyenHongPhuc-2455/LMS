@@ -202,3 +202,35 @@
 .loaderContainerCenter {
     padding: 50px;
 }
+
+.instructorSection {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #f0f0f0;
+    text-align: left;
+}
+
+.instructorTitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: #666;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+}
+
+.instructorInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.instructorItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .instructorIcon {
+        color: #C72127;
+        font-size: 16px;
+    }
+}

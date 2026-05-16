@@ -257,6 +257,9 @@ export default function LessonManagement() {
     };
 
     const startEditing = async (lesson: Lesson) => {
+        window.alert(`ĐANG MỞ EDIT BÀI: ${lesson.title} (ID: ${lesson.id}) - LOẠI: ${lesson.type}`);
+        console.log('--- START EDITING ---', lesson);
+        
         // Cài đặt loại bài học trước để modal biết render form nào
         const type = lesson.type === 'QUIZ' ? 'QUIZ' : 'VIDEO';
         setLessonType(type);
@@ -264,8 +267,15 @@ export default function LessonManagement() {
         if (lesson.type === 'QUIZ') {
             try {
                 message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
+                console.log('Đang gọi API lấy trắc nghiệm cho bài học:', lesson.id);
                 const data = await quizService.getByLesson(lesson.id);
+                console.log('Dữ liệu API trả về:', data);
                 const quizData = data.data;
+                
+                if (!quizData) {
+                    throw new Error('Dữ liệu Quiz trả về bị rỗng (null/undefined)');
+                }
+                
                 setEditingQuizId(quizData.id);
 
                 setEditingLesson({
@@ -274,11 +284,12 @@ export default function LessonManagement() {
                     description: quizData.description,
                     pass_score: quizData.pass_score,
                     time_limit: quizData.time_limit,
-                    questions: quizData.questions
+                    questions: quizData.questions || []
                 });
                 message.success({ content: 'Hoàn tất', key: 'quiz-loading', duration: 1 });
-            } catch (e) {
-                message.error({ content: 'Không tải được nội dung bài thi', key: 'quiz-loading' });
+            } catch (e: any) {
+                console.error('Lỗi khi tải Quiz:', e);
+                message.error({ content: `Lỗi: ${e.message || 'Không tải được nội dung bài thi'}`, key: 'quiz-loading' });
                 setEditingLesson({
                     ...lesson,
                     section_id: lesson.section_id || selectedSectionId
@@ -341,7 +352,9 @@ export default function LessonManagement() {
                             const nextOrder = lessons.length > 0 ? Math.max(...lessons.map(l => l.order || 0)) + 1 : 1;
                             setEditingLesson({
                                 order: nextOrder,
-                                section_id: selectedSectionId
+                                section_id: selectedSectionId,
+                                pass_score: 80,
+                                anti_seek: true
                             });
                             setEditingQuizId(null);
                             setLessonType('VIDEO');

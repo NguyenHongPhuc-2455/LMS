@@ -10,3 +10,4 @@ export { default as VideoJsPlayer } from './VideoJsPlayer/VideoJsPlayer';
 export { default as VideoPlayer, type VideoPlayerRef } from './VideoPlayer/VideoPlayer';
 export { default as ServerLinkPlayer } from './ServerLinkPlayer/ServerLinkPlayer';
 export { default as LearningStatsChart } from './LearningStatsChart/LearningStatsChart';
+export { default as MandatoryCourseBanner } from './MandatoryCourseBanner/MandatoryCourseBanner';

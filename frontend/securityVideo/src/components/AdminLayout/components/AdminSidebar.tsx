@@ -1,34 +1,43 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Layout, Menu, Badge, Space } from 'antd';
 import {
     PieChartOutlined,
     BookOutlined,
     UserOutlined,
     MenuFoldOutlined,
+    MenuUnfoldOutlined,
     PlaySquareOutlined,
     ApartmentOutlined,
     CheckOutlined,
     LineChartOutlined,
     TagsOutlined,
-    PictureOutlined
+    PictureOutlined,
+    ClusterOutlined,
+    WarningOutlined,
+    IdcardOutlined
 } from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
+import { departmentService } from '../../../services/department.service';
 import { socketService } from '../../../services/socket';
+import { ROUTES } from '../../../constants/routes';
 import styles from '../AdminLayout.module.scss';
 
 const { Sider } = Layout;
 
 interface AdminSidebarProps {
     isMobile?: boolean;
+    collapsed?: boolean;
     onClose?: () => void;
 }
 
-export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
+const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [pendingCount, setPendingCount] = React.useState<number>(0);
+    const [departments, setDepartments] = React.useState<any[]>([]);
 
     const fetchCounts = React.useCallback(async () => {
         try {
@@ -39,81 +48,98 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
         }
     }, []);
 
+    const fetchDepartments = React.useCallback(async () => {
+        try {
+            const data = await departmentService.getAll();
+            setDepartments(data);
+        } catch (error) {
+            console.error('Failed to fetch departments:', error);
+        }
+    }, []);
+
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const userId = user?.id;
 
     React.useEffect(() => {
         fetchCounts();
+        fetchDepartments();
 
         if (userId) {
-            // Đảm bảo kết nối Socket và đăng ký và lắng nghe
             const socket = socketService.connect(userId);
-
             socket.on('updatePendingRequestCount', (data: { count: number }) => {
                 setPendingCount(data.count);
             });
-
             return () => {
                 socket.off('updatePendingRequestCount');
             };
         }
-    }, [userId, fetchCounts]);
+    }, [userId, fetchCounts, fetchDepartments]);
 
+    // ✅ Xử lý Menu Items động
     const menuItems = [
         {
-            key: '/admin',
+            key: ROUTES.ADMIN_DASHBOARD,
             icon: <PieChartOutlined />,
             label: 'Tổng quan',
         },
         {
-            key: '/admin/content',
+            key: ROUTES.ADMIN_COURSES,
             icon: <BookOutlined />,
             label: 'Quản lý nội dung',
         },
-        // {
-        //     key: '/admin/courses',
-        //     icon: <BookOutlined />,
-        //     label: 'Quản lý khóa học',
-        // },
-        // {
-        //     key: '/admin/sections',
-        //     icon: <MenuFoldOutlined />,
-        //     label: 'Quản lý chương học',
-        // },
-        // {
-        //     key: '/admin/lessons',
-        //     icon: <PlaySquareOutlined />,
-        //     label: 'Quản lý bài giảng',
-        // },
         {
-            key: '/admin/programs',
+            key: ROUTES.ADMIN_PROGRAMS,
             icon: <ApartmentOutlined />,
             label: 'Quản lý lộ trình học',
         },
         {
-            key: '/admin/categories',
+            key: ROUTES.ADMIN_CATEGORIES,
             icon: <TagsOutlined />,
             label: 'Quản lý danh mục',
         },
         {
-            key: '/admin/progress',
-
+            key: ROUTES.ADMIN_PROGRESS,
             icon: <LineChartOutlined />,
             label: 'Quản lý tiến độ học tập',
         },
         {
-            key: '/admin/users',
+            key: 'user-management-parent',
             icon: <UserOutlined />,
-            label: 'Quản lý học viên',
+            label: 'Quản lý nhân sự',
+            children: [
+                {
+                    key: ROUTES.ADMIN_USERS,
+                    label: 'Tất cả nhân sự',
+                },
+                ...departments.map(dept => ({
+                    key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
+                    label: dept.name,
+                }))
+            ]
         },
         {
-            key: '/admin/banners',
+            key: ROUTES.ADMIN_DEPARTMENTS,
+            icon: <ClusterOutlined />,
+            label: 'Quản lý phòng ban',
+        },
+        {
+            key: ROUTES.ADMIN_POSITIONS,
+            icon: <ApartmentOutlined />,
+            label: 'Quản lý vị trí',
+        },
+        {
+            key: ROUTES.ADMIN_ROLES,
+            icon: <IdcardOutlined />,
+            label: 'Quản lý vai trò',
+        },
+        {
+            key: ROUTES.ADMIN_BANNERS,
             icon: <PictureOutlined />,
             label: 'Quản lý Banner Home',
         },
         {
-            key: '/admin/requests',
+            key: ROUTES.ADMIN_REQUESTS,
             icon: <CheckOutlined />,
             label: (
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -127,18 +153,39 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
                     )}
                 </Space>
             ),
+        },
+        {
+            key: ROUTES.ADMIN_ONBOARDING_REPORT,
+            icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
+            label: 'Báo cáo',
         }
     ];
+
+    // ✅ Logic highlight chính xác
+    const currentPath = location.pathname;
+    const currentDeptId = searchParams.get('departmentId');
+
+    let selectedKey = currentPath;
+    if (currentPath === ROUTES.ADMIN_USERS && currentDeptId) {
+        selectedKey = `${ROUTES.ADMIN_USERS}?departmentId=${currentDeptId}`;
+    }
+
+    // Luôn mở rộng menu "Quản lý nhân sự" nếu đang ở trang nhân sự
+    const openKeys = currentPath.startsWith(ROUTES.ADMIN_USERS) ? ['user-management-parent'] : [];
 
     return (
         <Sider
             theme="light"
             width={250}
+            collapsedWidth={80}
+            collapsed={collapsed}
             className={styles.adminSidebar}
+            trigger={null}
         >
             <Menu
                 mode="inline"
-                selectedKeys={[location.pathname]}
+                selectedKeys={[selectedKey]}
+                defaultOpenKeys={openKeys}
                 className={styles.adminMenu}
                 onClick={({ key }) => {
                     navigate(key);
@@ -148,4 +195,8 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
             />
         </Sider>
     );
-}
+});
+
+AdminSidebar.displayName = 'AdminSidebar';
+
+export default AdminSidebar;

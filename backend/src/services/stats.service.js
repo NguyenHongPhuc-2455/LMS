@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../configs/prisma');
+
 const moment = require('moment');
 
 /**
@@ -18,164 +18,135 @@ const getTodayStr = () => {
     return moment().format('YYYY-MM-DD');
 };
 
+/**
+ * Helper to calculate percentage trend between current and previous values
+ */
+const calculateTrend = (current, previous) => {
+    if (!previous || previous === 0) return { percent: '0%', isUp: true };
+    const diff = ((current - previous) / previous) * 100;
+    return {
+        percent: `${Math.abs(diff).toFixed(1)}%`,
+        isUp: diff >= 0
+    };
+};
+
+/**
+ * Lấy số liệu tổng quan (Sinh viên, Khóa học, Đăng ký, Yêu cầu chờ)
+ */
+const getOverviewStats = async () => {
+    const yesterday = moment().subtract(1, 'day').endOf('day').toDate();
+
+    const [
+        totalStudents, totalCourses, totalEnrollments,
+        coursePending, programPending,
+        yesterdayStudents, yesterdayCourses, yesterdayEnrollments,
+        yesterdayCourseRequests, yesterdayProgramRequests,
+        currentCourseRequests, currentProgramRequests
+    ] = await Promise.all([
+        // Hiện tại
+        prisma.user.count({ where: { deleted_at: null } }),
+        prisma.course.count({ where: { deleted_at: null } }),
+        prisma.enrollment.count({ where: { course: { deleted_at: null } } }),
+        prisma.courseRequest.count({ where: { status: 'PENDING' } }),
+        prisma.programRequest.count({ where: { status: 'PENDING' } }),
+        // Hôm qua
+        prisma.user.count({ where: { created_at: { lte: yesterday }, deleted_at: null } }),
+        prisma.course.count({ where: { created_at: { lte: yesterday }, deleted_at: null } }),
+        prisma.enrollment.count({ where: { enrolled_at: { lte: yesterday }, course: { deleted_at: null } } }),
+        prisma.courseRequest.count({ where: { created_at: { lte: yesterday } } }),
+        prisma.programRequest.count({ where: { created_at: { lte: yesterday } } }),
+        // Tổng yêu cầu hiện tại
+        prisma.courseRequest.count(),
+        prisma.programRequest.count()
+    ]);
+
+    const pendingRequests = coursePending + programPending;
+    const currentTotalRequests = currentCourseRequests + currentProgramRequests;
+    const yesterdayTotalRequests = yesterdayCourseRequests + yesterdayProgramRequests;
+
+    return {
+        totalStudents: { value: totalStudents, ...calculateTrend(totalStudents, yesterdayStudents) },
+        totalCourses: { value: totalCourses, ...calculateTrend(totalCourses, yesterdayCourses) },
+        totalEnrollments: { value: totalEnrollments, ...calculateTrend(totalEnrollments, yesterdayEnrollments) },
+        pendingRequests: { value: pendingRequests, ...calculateTrend(currentTotalRequests, yesterdayTotalRequests) }
+    };
+};
+
+/**
+ * Lấy xu hướng đăng ký trong 7 ngày gần nhất
+ */
+const getEnrollmentTrends = async () => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        d.setHours(0, 0, 0, 0);
+        return d;
+    });
+
+    return await Promise.all(
+        last7Days.map(async (date) => {
+            const nextDate = new Date(date);
+            nextDate.setDate(nextDate.getDate() + 1);
+
+            const count = await prisma.enrollment.count({
+                where: { 
+                    enrolled_at: { gte: date, lt: nextDate },
+                    course: { deleted_at: null }
+                }
+            });
+
+            return {
+                name: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+                enrollments: count
+            };
+        })
+    );
+};
+
+/**
+ * Lấy danh sách 5 khóa học có nhiều học viên nhất
+ */
+const getTopCoursesByEnrollment = async () => {
+    const topCoursesData = await prisma.enrollment.groupBy({
+        where: { course: { deleted_at: null } },
+        by: ['course_id'],
+        _count: { course_id: true },
+        orderBy: { _count: { course_id: 'desc' } },
+        take: 10
+    });
+
+    const topCourses = (await Promise.all(
+        topCoursesData.map(async (item) => {
+            const course = await prisma.course.findFirst({
+                where: { id: item.course_id, deleted_at: null },
+                select: { title: true }
+            });
+            if (!course) return null;
+            return {
+                title: course.title,
+                count: item._count.course_id
+            };
+        })
+    )).filter(Boolean).slice(0, 5);
+
+    return topCourses;
+};
+
 const getDashboardStats = async () => {
     try {
-        const yesterday = moment().subtract(1, 'day').endOf('day').toDate();
+        const [overview, enrollmentTrends, topCourses] = await Promise.all([
+            getOverviewStats(),
+            getEnrollmentTrends(),
+            getTopCoursesByEnrollment()
+        ]);
 
-        // 1. Overview counts (Current)
-        const totalStudents = await prisma.user.count({
-            where: {
-                user_roles: {
-                    some: {
-                        role: { name: 'student' }
-                    }
-                }
-            }
-        });
-
-        const totalCourses = await prisma.course.count({
-            where: { deleted_at: null }
-        });
-
-        const totalEnrollments = await prisma.enrollment.count();
-
-        const coursePending = await prisma.courseRequest.count({
-            where: { status: 'PENDING' }
-        });
-
-        const programPending = await prisma.programRequest.count({
-            where: { status: 'PENDING' }
-        });
-
-        const pendingRequests = coursePending + programPending;
-
-        // 1b. Historical counts (Yesterday)
-        const yesterdayStudents = await prisma.user.count({
-            where: {
-                created_at: { lte: yesterday },
-                user_roles: {
-                    some: {
-                        role: { name: 'student' }
-                    }
-                }
-            }
-        });
-
-        const yesterdayCourses = await prisma.course.count({
-            where: {
-                created_at: { lte: yesterday },
-                deleted_at: null
-            }
-        });
-
-        const yesterdayEnrollments = await prisma.enrollment.count({
-            where: { enrolled_at: { lte: yesterday } }
-        });
-
-        const yesterdayCourseRequests = await prisma.courseRequest.count({
-            where: { created_at: { lte: yesterday } }
-        });
-        const yesterdayProgramRequests = await prisma.programRequest.count({
-            where: { created_at: { lte: yesterday } }
-        });
-        const yesterdayTotalRequests = yesterdayCourseRequests + yesterdayProgramRequests;
-        const currentTotalRequests = await prisma.courseRequest.count() + await prisma.programRequest.count();
-
-        // Helper to calculate trend
-        const calculateTrend = (current, previous) => {
-            if (!previous || previous === 0) return { percent: '0%', isUp: true };
-            const diff = ((current - previous) / previous) * 100;
-            return {
-                percent: `${Math.abs(diff).toFixed(1)}%`,
-                isUp: diff >= 0
-            };
-        };
-
-        const studentTrend = calculateTrend(totalStudents, yesterdayStudents);
-        const courseTrend = calculateTrend(totalCourses, yesterdayCourses);
-        const enrollmentTrend = calculateTrend(totalEnrollments, yesterdayEnrollments);
-        const requestTrend = calculateTrend(currentTotalRequests, yesterdayTotalRequests);
-
-        // 2. Enrollment Trend (Last 7 days)
-        const last7Days = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            d.setHours(0, 0, 0, 0);
-            return d;
-        });
-
-        const enrollmentTrends = await Promise.all(
-            last7Days.map(async (date) => {
-                const nextDate = new Date(date);
-                nextDate.setDate(nextDate.getDate() + 1);
-
-                const count = await prisma.enrollment.count({
-                    where: {
-                        enrolled_at: {
-                            gte: date,
-                            lt: nextDate
-                        }
-                    }
-                });
-
-                return {
-                    name: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-                    enrollments: count
-                };
-            })
-        );
-
-        // 3. Top Courses by enrollment
-        const topCoursesData = await prisma.enrollment.groupBy({
-            where: {
-                course: {
-                    deleted_at: null
-                }
-            },
-            by: ['course_id'],
-            _count: {
-                course_id: true
-            },
-            orderBy: {
-                _count: {
-                    course_id: 'desc'
-                }
-            },
-            take: 10 // Fetch more to filter later if needed, but top 5 is usually enough
-        });
-
-        const topCourses = (await Promise.all(
-            topCoursesData.map(async (item) => {
-                const course = await prisma.course.findFirst({
-                    where: { 
-                        id: item.course_id,
-                        deleted_at: null
-                    },
-                    select: { title: true }
-                });
-                if (!course) return null;
-                return {
-                    title: course.title,
-                    count: item._count.course_id
-                };
-            })
-        )).filter(Boolean).slice(0, 5);
-
-        return {
-            overview: {
-                totalStudents: { value: totalStudents, ...studentTrend },
-                totalCourses: { value: totalCourses, ...courseTrend },
-                totalEnrollments: { value: totalEnrollments, ...enrollmentTrend },
-                pendingRequests: { value: pendingRequests, ...requestTrend }
-            },
-            enrollmentTrends,
-            topCourses
-        };
+        return { overview, enrollmentTrends, topCourses };
     } catch (error) {
         console.error('Error in stats service:', error);
         throw error;
     }
 };
+
 
 const getStudentsProgressByCourse = async (courseId) => {
     try {
@@ -210,15 +181,28 @@ const getStudentsProgressByCourse = async (courseId) => {
             }
         });
 
-        // 3. Calculate progress for each student
-        const progressData = await Promise.all(enrollments.map(async (e) => {
-            const completedCount = await prisma.lessonCompleted.count({
-                where: {
-                    user_id: e.user_id,
-                    lesson_id: { in: lessonIds }
-                }
-            });
+        const userIds = enrollments.map(e => e.user_id);
 
+        // 3. Tối ưu: Lấy số lượng bài học đã hoàn thành của tất cả học viên trong 1 câu truy vấn
+        const completionCounts = await prisma.lessonCompleted.groupBy({
+            by: ['user_id'],
+            where: {
+                user_id: { in: userIds },
+                lesson_id: { in: lessonIds }
+            },
+            _count: {
+                lesson_id: true
+            }
+        });
+
+        const completionMap = {};
+        completionCounts.forEach(c => {
+            completionMap[c.user_id] = c._count.lesson_id;
+        });
+
+        // 4. Tổng hợp dữ liệu
+        const progressData = enrollments.map((e) => {
+            const completedCount = completionMap[e.user_id] || 0;
             const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
 
             return {
@@ -231,7 +215,8 @@ const getStudentsProgressByCourse = async (courseId) => {
                 progressPercent: progressPercent,
                 enrolledAt: e.enrolled_at
             };
-        }));
+        });
+
 
         return progressData;
     } catch (error) {
@@ -339,11 +324,62 @@ const getUserLearningStats = async (userId, days = 7) => {
     }
 };
 
+/**
+ * Tính toán chuỗi ngày học tập (Hiện tại & Kỷ lục)
+ */
+const calculateStreak = (allSessions) => {
+    let currentStreak = 0;
+    let longestStreak = 0;
+
+    if (!allSessions || allSessions.length === 0) return { currentStreak, longestStreak };
+
+    // Lấy danh sách các ngày đã học, sắp xếp từ mới nhất đến cũ nhất
+    const sessionDates = Array.from(new Set(allSessions.map(s => getDBDateStr(s.date))))
+        .sort((a, b) => b.localeCompare(a));
+
+    if (sessionDates.length > 0) {
+        const todayStr = getTodayStr();
+        const yesterdayStr = moment().subtract(1, 'day').format('YYYY-MM-DD');
+
+        // A. Tính chuỗi hiện tại (Current Streak)
+        // Chỉ tính nếu ngày gần nhất là hôm nay hoặc hôm qua
+        if (sessionDates[0] === todayStr || sessionDates[0] === yesterdayStr) {
+            let streakCount = 1;
+            for (let i = 0; i < sessionDates.length - 1; i++) {
+                const d1 = moment(sessionDates[i]);
+                const d2 = moment(sessionDates[i + 1]);
+                if (d1.diff(d2, 'days') === 1) {
+                    streakCount++;
+                } else {
+                    break;
+                }
+            }
+            currentStreak = streakCount;
+        }
+
+        // B. Tính chuỗi kỷ lục (Longest Streak)
+        let maxStreak = 1;
+        let tempStreak = 1;
+        for (let i = 0; i < sessionDates.length - 1; i++) {
+            const d1 = moment(sessionDates[i]);
+            const d2 = moment(sessionDates[i + 1]);
+            if (d1.diff(d2, 'days') === 1) {
+                tempStreak++;
+            } else {
+                maxStreak = Math.max(maxStreak, tempStreak);
+                tempStreak = 1;
+            }
+        }
+        longestStreak = Math.max(maxStreak, tempStreak);
+    }
+
+    return { currentStreak, longestStreak };
+};
+
 const getUserLearningSummary = async (userId) => {
     try {
         const id = parseInt(userId);
 
-        // 1. All time stats
         const allSessions = await prisma.learningSession.findMany({
             where: { user_id: id },
             orderBy: { date: 'desc' }
@@ -351,6 +387,7 @@ const getUserLearningSummary = async (userId) => {
 
         console.log(`[DEBUG] getUserLearningSummary for userId: ${id}, found ${allSessions.length} sessions`);
 
+        // 1. All time stats
         const totalSeconds = allSessions.reduce((acc, s) => acc + s.duration, 0);
         const totalHours = Math.floor(totalSeconds / 3600);
         const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
@@ -375,50 +412,7 @@ const getUserLearningSummary = async (userId) => {
         const peakDay = activeDaysCount === 0 ? 'Chưa có' : dayNames[peakDayIndex];
 
         // 4. Streak calculation
-        let currentStreak = 0;
-        let longestStreak = 0;
-
-        if (allSessions.length > 0) {
-            // Lấy danh sách các ngày đã học, sắp xếp từ mới nhất đến cũ nhất
-            const sessionDates = Array.from(new Set(allSessions.map(s => getDBDateStr(s.date))))
-                .sort((a, b) => b.localeCompare(a));
-
-            if (sessionDates.length > 0) {
-                const todayStr = getTodayStr();
-                const yesterdayStr = moment().subtract(1, 'day').format('YYYY-MM-DD');
-
-                // A. Tính chuỗi hiện tại (Current Streak)
-                // Chỉ tính nếu ngày gần nhất là hôm nay hoặc hôm qua
-                if (sessionDates[0] === todayStr || sessionDates[0] === yesterdayStr) {
-                    let streakCount = 1;
-                    for (let i = 0; i < sessionDates.length - 1; i++) {
-                        const d1 = moment(sessionDates[i]);
-                        const d2 = moment(sessionDates[i + 1]);
-                        if (d1.diff(d2, 'days') === 1) {
-                            streakCount++;
-                        } else {
-                            break;
-                        }
-                    }
-                    currentStreak = streakCount;
-                }
-
-                // B. Tính chuỗi kỷ lục (Longest Streak)
-                let maxStreak = 1;
-                let tempStreak = 1;
-                for (let i = 0; i < sessionDates.length - 1; i++) {
-                    const d1 = moment(sessionDates[i]);
-                    const d2 = moment(sessionDates[i + 1]);
-                    if (d1.diff(d2, 'days') === 1) {
-                        tempStreak++;
-                    } else {
-                        maxStreak = Math.max(maxStreak, tempStreak);
-                        tempStreak = 1;
-                    }
-                }
-                longestStreak = Math.max(maxStreak, tempStreak);
-            }
-        }
+        const { currentStreak, longestStreak } = calculateStreak(allSessions);
 
         return {
             totalHoursDisplay,
@@ -434,6 +428,7 @@ const getUserLearningSummary = async (userId) => {
         throw error;
     }
 };
+
 
 const getGlobalLearningTrends = async (days = 7) => {
     try {
@@ -562,17 +557,31 @@ const searchStudentsProgress = async (searchTerm, courseId = null) => {
             }
         });
 
-        const progressData = await Promise.all(enrollments.map(async (e) => {
+        // Lấy tất cả userIds và lessonIds cần kiểm tra để tối ưu hóa
+        const userIds = enrollments.map(e => e.user_id);
+        const allLessonIdsInvolved = [...new Set(enrollments.flatMap(e => e.course.sections.flatMap(s => s.lessons.map(l => l.id))))];
+
+        // Lấy dữ liệu hoàn thành bài học trong 1 câu truy vấn
+        const completionCounts = await prisma.lessonCompleted.groupBy({
+            by: ['user_id', 'lesson_id'],
+            where: {
+                user_id: { in: userIds },
+                lesson_id: { in: allLessonIdsInvolved }
+            }
+        });
+
+        // Xây dựng map để truy xuất nhanh: completionMap[userId][lessonId] = true
+        const completionMap = {};
+        completionCounts.forEach(c => {
+            if (!completionMap[c.user_id]) completionMap[c.user_id] = new Set();
+            completionMap[c.user_id].add(c.lesson_id);
+        });
+
+        const progressData = enrollments.map((e) => {
             const lessonIds = e.course.sections.flatMap(s => s.lessons.map(l => l.id));
             const totalLessons = lessonIds.length;
 
-            const completedCount = await prisma.lessonCompleted.count({
-                where: {
-                    user_id: e.user_id,
-                    lesson_id: { in: lessonIds }
-                }
-            });
-
+            const completedCount = lessonIds.filter(id => completionMap[e.user_id]?.has(id)).length;
             const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
 
             return {
@@ -589,7 +598,8 @@ const searchStudentsProgress = async (searchTerm, courseId = null) => {
                 categoryId: e.course.category_id,
                 categoryName: e.course.category?.name
             };
-        }));
+        });
+
 
         return progressData;
     } catch (error) {

@@ -14,7 +14,7 @@ interface StatSummaryProps {
 export default function StatSummary({ stats }: StatSummaryProps) {
     const statCards = [
         {
-            title: 'Tổng Học Viên',
+            title: 'Tổng nhân sự',
             value: stats?.overview?.totalStudents?.value?.toLocaleString() || '0',
             percent: stats?.overview?.totalStudents?.percent || '0%',
             isUp: stats?.overview?.totalStudents?.isUp ?? true,

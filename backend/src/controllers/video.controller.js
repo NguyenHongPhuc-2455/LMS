@@ -169,6 +169,23 @@ exports.uploadAttachment = catchAsync(async (req, res) => {
 /**
  * Endpoint phục vụ file Manifest .m3u8 (HLS từ R2)
  */
+/**
+ * Ghi đè URL chìa khóa trong file Manifest (.m3u8) để chèn Token bảo mật
+ */
+const rewriteManifestWithSignedKey = (content, lessonId, ip) => {
+    const normalizedIp = ip.replace('::ffff:', '');
+    const token = createVideoToken(`key-${lessonId}`, normalizedIp);
+    const signedKeyUrl = `/api/videos/key/${lessonId}?token=${encodeURIComponent(token)}`;
+
+    return content.replace(
+        new RegExp(`URI="/api/videos/key/${lessonId}"`, 'g'),
+        `URI="${signedKeyUrl}"`
+    );
+};
+
+/**
+ * Endpoint phục vụ file Manifest .m3u8 (HLS từ R2)
+ */
 exports.streamProxy = catchAsync(async (req, res) => {
     let { token, filePath } = req.params;
 
@@ -183,28 +200,18 @@ exports.streamProxy = catchAsync(async (req, res) => {
         const safeFilePath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
 
         if (safeFilePath.endsWith('.key') || safeFilePath.endsWith('.keyinfo')) {
-            return res.status(403).json({ error: 'Truy cập bị từ chối. Key chỉ được cấp qua kênh bảo mật riêng.' });
+            return res.status(403).json({ error: 'Truy cập bị từ chối.' });
         }
 
         const r2Key = `hls/${lessonId}/${safeFilePath}`;
-        console.log(`[STREAM R2] Lesson: ${lessonId}, Key: ${r2Key}`);
+        const response = await getFileStream(r2Key);
 
         if (safeFilePath.endsWith('.m3u8')) {
-            const response = await getFileStream(r2Key);
             let content = '';
-
             return new Promise((resolve, reject) => {
                 response.Body.on('data', chunk => content += chunk.toString());
                 response.Body.on('end', () => {
-                    const normalizedIp = req.ip.replace('::ffff:', '');
-                    const token = createVideoToken(`key-${lessonId}`, normalizedIp);
-                    const signedKeyUrl = `/api/videos/key/${lessonId}?token=${encodeURIComponent(token)}`;
-
-                    const newContent = content.replace(
-                        new RegExp(`URI="/api/videos/key/${lessonId}"`, 'g'),
-                        `URI="${signedKeyUrl}"`
-                    );
-
+                    const newContent = rewriteManifestWithSignedKey(content, lessonId, req.ip);
                     res.set('Content-Type', 'application/x-mpegURL');
                     res.send(newContent);
                     resolve();
@@ -213,19 +220,19 @@ exports.streamProxy = catchAsync(async (req, res) => {
             });
         }
 
-        const r2Response = await getFileStream(r2Key);
         res.set({
             'Content-Type': safeFilePath.endsWith('.ts') ? 'video/mp2t' : 'application/octet-stream',
             'Access-Control-Allow-Origin': req.headers.origin || '*',
             'Access-Control-Allow-Credentials': 'true',
             'Cache-Control': 'no-store'
         });
-        r2Response.Body.pipe(res);
+        response.Body.pipe(res);
     } catch (err) {
         console.error('[STREAM FATAL ERROR]', err);
         return res.status(500).json({ error: err.message });
     }
 });
+
 
 /**
  * Proxy stream link trực tiếp (Cloudinary, v.v.) qua Token AES

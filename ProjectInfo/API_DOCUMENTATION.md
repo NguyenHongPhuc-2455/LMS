@@ -37,6 +37,8 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | PUT | `/sections/:id` | Sửa tiêu đề/thứ tự chương | ✅ |
 | DELETE | `/sections/:id` | Xóa chương học | ✅ |
 | DELETE | `/:id` | Xóa khóa học | ✅ |
+| GET | `/mandatory` | Lấy danh sách khóa học bắt buộc của tôi | ✅ |
+| GET | `/mandatory-overdue-report` | Báo cáo khóa học bắt buộc quá hạn (Admin) | ✅ (Admin) |
 
 ---
 
@@ -114,28 +116,44 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
 | GET | `/profile` | Thông tin tài khoản hiện tại | ✅ |
-| PUT | `/profile` | Cập nhật hồ sơ (Họ tên, Email, Phone, DOB, Gender, Avatar) | ✅ |
+| PUT | `/profile` | Cập nhật hồ sơ (Họ tên, Email, Phone, DOB, Gender, Avatar, Mã nhân sự, Phòng ban, Vị trí, Ngày vào làm) | ✅ |
 | GET | `/` | Danh sách thành viên (Admin) | ✅ (Admin) |
 | POST | `/` | Tạo mới người dùng (Admin) | ✅ (Admin) |
 | PUT | `/:id` | Cập nhật thông tin người dùng (Admin) | ✅ (Admin) |
-| DELETE | `/:id` | Xóa tài khoản (Admin) | ✅ (Admin) |
+| DELETE | `/:id` | Xóa tài khoản (Admin - Soft Delete) | ✅ (Admin) |
+| DELETE | `/batch` | Xóa hàng loạt người dùng (Admin) | ✅ (Admin) |
+| POST | `/batch-update` | Cập nhật hàng loạt (Admin) | ✅ (Admin) |
 | POST | `/revoke-course` | Thu hồi quyền truy cập khóa học | ✅ (Admin) |
 
 ---
 
-## 📈 8. Statistics (`/stats`)
+## 📈 8. Statistics & Learning Tracking (`/stats`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
 | GET | `/dashboard` | Tổng quan số liệu hệ thống (Admin) | ✅ (Admin) |
-| GET | `/course-progress/:courseId` | Tiến độ toàn bộ học viên của khóa học | ✅ (Admin) |
+| GET | `/course-progress/:courseId` | Tiến độ toàn bộ nhân sự của khóa học | ✅ (Admin) |
 | GET | `/my-learning-time?days=N` | Biểu đồ thời gian học gần đây | ✅ |
 | GET | `/my-learning-summary` | Tổng kết giờ học, Streak, Peak Day | ✅ |
-| GET | `/top-learners` | Bảng xếp hạng học viên chăm chỉ | ✅ |
+| GET | `/top-learners` | Bảng xếp hạng nhân sự chăm chỉ | ✅ |
 
 ---
 
-## 💳 9. Payments (`/payments`)
+## 🖼️ 9. Hero Banners (`/hero-banners`)
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/` | Lấy danh sách banner đang hoạt động | 🔓 |
+| GET | `/admin` | Danh sách banner đầy đủ (Admin) | ✅ (Admin) |
+| POST | `/` | Tạo banner mới | ✅ (Admin) |
+| PUT | `/:id` | Cập nhật banner | ✅ (Admin) |
+| DELETE | `/:id` | Xóa banner | ✅ (Admin) |
+
+---
+
+## 💳 10. Payments (`/payments`) - [PLANNED]
+
+*Lưu ý: Module này hiện đang trong quá trình phát triển.*
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -144,7 +162,7 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 ---
 
-## 💬 10. Comments (`/comments`)
+## 💬 11. Comments (`/comments`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
@@ -156,11 +174,11 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 
 ---
 
-## 🔔 11. Notifications (`/notifications`)
+## 🔔 12. Notifications (`/notifications`)
 
 | Method | Endpoint | Description | Auth? |
 | :--- | :--- | :--- | :--- |
-| GET | `/` | Lấy danh sách thông báo của user (tối đa 50) | ✅ |
+| GET | `/` | Lấy danh sách thông báo của user | ✅ |
 | PUT | `/:id/read` | Đánh dấu đã đọc | ✅ |
 | PUT | `/read-all` | Đánh dấu tất cả đã đọc | ✅ |
 | DELETE | `/:id` | Xóa một thông báo | ✅ |

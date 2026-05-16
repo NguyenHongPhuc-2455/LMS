@@ -1,42 +1,34 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../configs/prisma');
 
-const getAllActiveBanners = async () => {
+exports.getAllActiveBanners = async () => {
     return await prisma.heroBanner.findMany({
         where: { is_active: true },
         orderBy: { order: 'asc' }
     });
 };
 
-const getAllBanners = async () => {
+exports.getAllBanners = async () => {
     return await prisma.heroBanner.findMany({
         orderBy: { order: 'asc' }
     });
 };
 
-const createBanner = async (data) => {
+exports.createBanner = async (data) => {
     return await prisma.heroBanner.create({
         data
     });
 };
 
-const updateBanner = async (id, data) => {
+exports.updateBanner = async (id, data) => {
     return await prisma.heroBanner.update({
         where: { id: parseInt(id) },
         data
     });
 };
 
-const deleteBanner = async (id) => {
+exports.deleteBanner = async (id) => {
     return await prisma.heroBanner.delete({
         where: { id: parseInt(id) }
     });
 };
 
-module.exports = {
-    getAllActiveBanners,
-    getAllBanners,
-    createBanner,
-    updateBanner,
-    deleteBanner
-};

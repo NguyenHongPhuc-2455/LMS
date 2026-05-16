@@ -12,8 +12,9 @@ export interface Course {
     level: string;
     thumbnail: string;
     category?: { name: string };
-    instructor?: { full_name: string; username: string };
+    instructor?: { full_name: string; username: string; email: string; phone?: string };
     is_private: boolean;
+    is_mandatory?: boolean; // Added mandatory field
     created_at: string;
     _count?: { sections: number };
     progressPercent?: number; // Added progress field
@@ -37,6 +38,11 @@ export default function CourseCard({ course }: CourseCardProps) {
                         alt={course.title} 
                         className={styles.thumbnailImg} 
                     />
+                    {course.is_mandatory && (
+                        <div className={styles.mandatoryBadge}>
+                            <Tag color="volcano" icon={<RocketOutlined />}>BẮT BUỘC</Tag>
+                        </div>
+                    )}
                 </div>
             }
             onClick={() => navigate(`/course/${course.id}`)}
@@ -52,9 +58,14 @@ export default function CourseCard({ course }: CourseCardProps) {
                     <Text strong className={styles.creatorName}>{course.instructor?.full_name || 'Hệ thống'}</Text>
                 </Space>
                 <div className="card-badge-container">
-                    <Tag color={course.is_private ? 'purple' : 'green'} className={styles.statusTag}>
-                        {course.is_private ? "RIÊNG TƯ" : "CÔNG KHAI"}
-                    </Tag>
+                    <Space size={4} wrap>
+                        {course.is_mandatory && (
+                            <Tag color="orange" className={styles.statusTag}>ONBOARDING</Tag>
+                        )}
+                        <Tag color={course.is_private ? 'purple' : 'green'} className={styles.statusTag}>
+                            {course.is_private ? "RIÊNG TƯ" : "CÔNG KHAI"}
+                        </Tag>
+                    </Space>
                 </div>
             </div>
 

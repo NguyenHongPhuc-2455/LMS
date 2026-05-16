@@ -1,11 +1,24 @@
 .programManagementContainer {
     padding: 0;
+
+    // Hiệu ứng hover để biết dòng có thể click được
+    :global {
+        .ant-table-tbody>tr.ant-table-row:hover>td {
+            background: rgba(199, 33, 39, 0.03) !important;
+        }
+
+        .ant-table-tbody>tr>td {
+            transition: background 0.2s ease;
+        }
+    }
 }
 
 .pageHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 20px;
 
     .headerInfo {
@@ -52,6 +65,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
     margin-bottom: 20px;
 }
 

@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Modal, Form, Input, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Modal, Form, Input, message, Button } from 'antd';
 import { categoryService, type Category } from '@/services/category.service';
 
 interface CategoryFormModalProps {
@@ -17,6 +17,8 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 }) => {
     const [form] = Form.useForm();
 
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         if (visible) {
             if (category) {
@@ -33,6 +35,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
+            setLoading(true);
             if (category) {
                 await categoryService.updateCategory(category.id, values);
                 message.success('Cập nhật danh mục thành công');
@@ -43,9 +46,10 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             onSuccess();
         } catch (error: any) {
             console.error('Submit failed:', error);
-            if (error.response?.data?.error) {
-                message.error(error.response.data.error);
-            }
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi lưu dữ liệu';
+            message.error(errorMsg);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -54,10 +58,18 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             title={category ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
             open={visible}
             onCancel={onCancel}
-            onOk={handleSubmit}
-            okText={category ? 'Cập nhật' : 'Thêm mới'}
-            cancelText="Hủy"
+            footer={
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                        Hủy
+                    </Button>
+                    <Button type="primary" onClick={handleSubmit} loading={loading} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                        {category ? 'Cập nhật' : 'Thêm mới'}
+                    </Button>
+                </div>
+            }
             destroyOnClose
+            style={{ top: 60 }}
         >
             <Form
                 form={form}

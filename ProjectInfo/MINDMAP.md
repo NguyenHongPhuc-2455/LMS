@@ -19,6 +19,7 @@ mindmap
         Global Style System["Variables, Mixins, Global SCSS"]
         Vite SCSS Auto-injection
         Absolute Imports["@/alias cho src/"]
+        Routes Management["Hệ thống ROUTES hằng số"]
         ScrollToTop Navigation
       Hệ Thống Video["Hệ Thống Video (Video Engine)"]
         Local FFmpeg Transcoding
@@ -31,8 +32,9 @@ mindmap
         Standardized UI["Standardized Dashboard Layout"]
       Quản Trị ["Quản Trị (Admin Operations)"]
         Request Tracking["Duyệt yêu cầu (Course/Program)"]
-        Progress Monitoring["Theo dõi tiến độ học viên"]
+        Progress Monitoring["Theo dõi tiến độ nhân sự"]
         User Management["Quản lý người dùng & Phân quyền"]
+        Mandatory Onboarding["Báo cáo & Giám sát Hội nhập"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
         Enrollment["Đăng ký học"]
         Lesson Completion Tracking["Precise Tracking (95%)"]
@@ -72,8 +74,8 @@ Cấu trúc phân cấp đa tầng: `Category` -> `Course` -> `Section` -> `Less
 
 ### 4. Khối Quản Trị & Thông báo Realtime
 Dành riêng cho Admin để vận hành hệ thống:
-- **Duyệt yêu cầu**: Hệ thống quản lý yêu cầu tham gia khóa học/lộ trình từ học viên.
-- **Theo dõi tiến độ**: Admin có thể xem chi tiết phần trăm hoàn thành của từng học viên trong mỗi khóa học.
+- **Duyệt yêu cầu**: Hệ thống quản lý yêu cầu tham gia khóa học/lộ trình từ nhân sự.
+- **Theo dõi tiến độ**: Admin có thể xem chi tiết phần trăm hoàn thành của từng nhân sự trong mỗi khóa học.
 - **Thông báo Realtime**: Push qua Socket.io khi có người phản hồi bình luận hoặc có yêu cầu mới cần duyệt.
 - Click thông báo để nhảy thẳng tới vị trí cần xử lý (bình luận hoặc trang duyệt).
 
@@ -93,6 +95,7 @@ Giao diện React hiện đại:
 - [x] Hệ thống Quản lý Danh mục & Phân loại khóa học
 - [x] Hệ thống Duyệt yêu cầu & Theo dõi Tiến độ Admin
 - [x] Đồng bộ hóa giao diện Dashboard (Standardized UI)
+- [x] Hệ thống Khóa học bắt buộc & Báo cáo hội nhập (Mandatory Onboarding)
 - [ ] Tích hợp Livestream dạy học trực tuyến.
 - [ ] App Mobile (React Native) sử dụng chung Backend API.
 - [ ] Hệ thống AI gợi ý khóa học dựa trên hành vi học tập.

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const videoController = require('../controllers/video.controller');
-const courseController = require('../controllers/course.controller');
+const enrollmentController = require('../controllers/enrollment.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate');
 const lessonValidation = require('../validations/lesson.validation');
@@ -48,7 +48,7 @@ router.delete('/:id', authMiddleware.verifyToken, authMiddleware.isInstructor, v
 router.get('/key/:lessonId', authMiddleware.verifyToken, validate(lessonValidation.getByLessonId), videoController.getVideoKey);
 
 // Đánh dấu hoàn thành bài học (Mọi Student/User)
-router.post('/complete/:lessonId', authMiddleware.verifyToken, validate(lessonValidation.getByLessonId), courseController.completeLesson);
+router.post('/complete/:lessonId', authMiddleware.verifyToken, validate(lessonValidation.getByLessonId), enrollmentController.completeLesson);
 
 // Quét lại thông tin thời lượng
 router.post('/reprobe/:id', authMiddleware.verifyToken, authMiddleware.isInstructor, validate(lessonValidation.getById), videoController.reprobeVideo);

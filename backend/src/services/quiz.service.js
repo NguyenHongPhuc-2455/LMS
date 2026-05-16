@@ -1,8 +1,39 @@
 const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
 
+/**
+ * Đồng bộ hóa câu hỏi và lựa chọn của Quiz
+ */
+const syncQuizQuestions = async (tx, quizId, questions) => {
+    if (!questions || questions.length === 0) return;
+
+    // Xóa câu hỏi cũ nếu là Update
+    await tx.question.deleteMany({ where: { quiz_id: parseInt(quizId) } });
+
+    for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const createdQ = await tx.question.create({
+            data: {
+                quiz_id: parseInt(quizId),
+                content: q.content,
+                explanation: q.explanation || '',
+                order: i
+            }
+        });
+
+        if (q.options && q.options.length > 0) {
+            await tx.option.createMany({
+                data: q.options.map(opt => ({
+                    question_id: createdQ.id,
+                    content: opt.content,
+                    is_correct: opt.is_correct === true || opt.is_correct === 'true'
+                }))
+            });
+        }
+    }
+};
+
 const createQuiz = async (data) => {
-    // Validate
     if (!data.title || !data.section_id) throw new ApiError(400, "Missing title or section_id");
 
     return await prisma.$transaction(async (tx) => {
@@ -27,41 +58,18 @@ const createQuiz = async (data) => {
         });
 
         // 3. Create Questions and Options
-        if (data.questions && data.questions.length > 0) {
-            for (let i = 0; i < data.questions.length; i++) {
-                const q = data.questions[i];
-                const createdQ = await tx.question.create({
-                    data: {
-                        quiz_id: quiz.id,
-                        content: q.content,
-                        explanation: q.explanation || '',
-                        order: i
-                    }
-                });
-
-                if (q.options && q.options.length > 0) {
-                    await tx.option.createMany({
-                        data: q.options.map(opt => ({
-                            question_id: createdQ.id,
-                            content: opt.content,
-                            is_correct: opt.is_correct === true || opt.is_correct === 'true'
-                        }))
-                    });
-                }
-            }
-        }
+        await syncQuizQuestions(tx, quiz.id, data.questions);
 
         return await tx.quiz.findUnique({
             where: { id: quiz.id },
             include: {
                 lesson: true,
-                questions: {
-                    include: { options: true }
-                }
+                questions: { include: { options: true } }
             }
         });
     });
 };
+
 
 const getQuizByLessonId = async (lessonId, userId = null) => {
     const parsedLessonId = parseInt(lessonId);
@@ -226,35 +234,14 @@ const updateQuiz = async (quizId, data) => {
             }
         });
 
-        if (data.questions && data.questions.length > 0) {
-            await tx.question.deleteMany({ where: { quiz_id: parseInt(quizId) } });
-
-            for (let i = 0; i < data.questions.length; i++) {
-                const q = data.questions[i];
-                const createdQ = await tx.question.create({
-                    data: {
-                        quiz_id: parseInt(quizId),
-                        content: q.content,
-                        explanation: q.explanation || '',
-                        order: i
-                    }
-                });
-
-                if (q.options && q.options.length > 0) {
-                    await tx.option.createMany({
-                        data: q.options.map(opt => ({
-                            question_id: createdQ.id,
-                            content: opt.content,
-                            is_correct: opt.is_correct === true || opt.is_correct === 'true'
-                        }))
-                    });
-                }
-            }
+        if (data.questions) {
+            await syncQuizQuestions(tx, quizId, data.questions);
         }
 
         return updatedQuiz;
     });
 };
+
 
 const deleteQuiz = async (quizId) => {
     const quiz = await prisma.quiz.findUnique({ where: { id: parseInt(quizId) } });

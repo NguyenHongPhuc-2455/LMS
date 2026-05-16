@@ -26,10 +26,13 @@ interface Course {
     requirements: string;
     level: string;
     hasAccess: boolean;
+    canAccess?: boolean; // New field
+    accessReason?: string; // New field
+    isOverdue?: boolean;
     is_private: boolean;
     requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
     sections: any[];
-    instructor: { full_name: string };
+    instructor: { full_name: string; email: string; phone?: string };
     nextLessonId?: number | null;
     isCourseFinished?: boolean;
 }
@@ -89,7 +92,23 @@ export default function CourseDetail() {
     const totalLessons = course.sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
 
     const renderActionButton = () => {
+        // Kiểm tra quyền truy cập sớm (Early Access)
+        if (course.canAccess === false) {
+            return (
+                <Button
+                    size="large"
+                    block
+                    disabled
+                    className={styles.actionBtnStyled}
+                    style={{ backgroundColor: '#f5f5f5', color: '#8c8c8c' }}
+                >
+                    {course.accessReason || 'KHÓA HỌC CHƯA MỞ'}
+                </Button>
+            );
+        }
+
         if (course.hasAccess) {
+            const isOverdue = course.isOverdue;
             const isContinuing = !course.isCourseFinished;
             const targetUrl = course.nextLessonId
                 ? `/course/${course.id}/learning?lessonId=${course.nextLessonId}`
@@ -100,10 +119,16 @@ export default function CourseDetail() {
                     type="primary"
                     size="large"
                     block
-                    className={`${styles.actionBtnStyled} ${styles.btnSuccess}`}
-                    onClick={() => navigate(targetUrl)}
+                    disabled={isOverdue}
+                    className={`${styles.actionBtnStyled} ${!isOverdue ? styles.btnSuccess : ''}`}
+                    style={isOverdue ? { backgroundColor: '#bfbfbf', borderColor: '#bfbfbf', opacity: 0.6, cursor: 'not-allowed' } : {}}
+                    onClick={() => {
+                        if (!isOverdue) {
+                            navigate(targetUrl);
+                        }
+                    }}
                 >
-                    {isContinuing ? "TIẾP TỤC HỌC" : "XEM LẠI KHÓA HỌC"}
+                    {isOverdue ? "ĐÃ KHÓA (QUÁ HẠN)" : (isContinuing ? "TIẾP TỤC HỌC" : "XEM LẠI KHÓA HỌC")}
                 </Button>
             );
         }

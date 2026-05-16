@@ -39,12 +39,12 @@ export default function QuizLessonForm({ sections, form }: QuizLessonFormProps) 
 
                     <Row gutter={12}>
                         <Col span={12}>
-                            <Form.Item name="pass_score" label="Mức điểm Đạt (%)" initialValue={80}>
+                            <Form.Item name="pass_score" label="Mức điểm Đạt (%)">
                                 <InputNumber min={0} max={100} style={{ width: '100%' }} />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="time_limit" label="Thời gian (Giây) - 0 = Không hạn" initialValue={null}>
+                            <Form.Item name="time_limit" label="Thời gian (Giây) - 0 = Không hạn">
                                 <InputNumber min={0} style={{ width: '100%' }} />
                             </Form.Item>
                         </Col>
@@ -72,8 +72,8 @@ export default function QuizLessonForm({ sections, form }: QuizLessonFormProps) 
                                 <Form.List name={[name, 'options']}>
                                     {(optFields, { add: addOpt, remove: removeOpt }) => (
                                         <div className={styles.quizOptionsWrapper}>
-                                            {optFields.map((optField, oIdx) => (
-                                                <Row key={optField.key} gutter={8} align="middle" className={styles.quizOptionRow} style={{ marginBottom: 12 }}>
+                                            {optFields.map(({ key, ...optField }, oIdx) => (
+                                                <Row key={key} gutter={8} align="middle" className={styles.quizOptionRow} style={{ marginBottom: 12 }}>
                                                     <Col span={3}>
                                                         <Form.Item {...optField} name={[optField.name, 'is_correct']} valuePropName="checked" noStyle>
                                                             <Radio

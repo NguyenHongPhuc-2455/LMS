@@ -26,6 +26,10 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   ├── src/
 │   │   ├── configs/               # Cấu hình hệ thống (Prisma, DB)
 │   │   ├── controllers/           # Nhận Request & Trả Response
+│   │   │   ├── auth.controller.js     # Đăng ký, Đăng nhập, Refresh Token
+│   │   │   ├── user.controller.js     # Quản lý thành viên & Hồ sơ
+│   │   │   ├── course.controller.js   # Quản lý khóa học & Nội dung bài học
+│   │   │   ├── program.controller.js  # Quản lý lộ trình học tập
 │   │   │   ├── category.controller.js # Quản lý danh mục
 │   │   │   ├── courseRequest.controller.js # Duyệt yêu cầu khóa học
 │   │   │   ├── programRequest.controller.js # Duyệt yêu cầu lộ trình
@@ -33,11 +37,17 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   │   ├── comment.controller.js  # CRUD bình luận
 │   │   │   └── notification.controller.js # Quản lý thông báo
 │   │   ├── services/              # (Core) Logic nghiệp vụ chính
+│   │   │   ├── auth.service.js        # Logic xác thực & JWT
+│   │   │   ├── user.service.js        # Logic người dùng & phân quyền
+│   │   │   ├── course.service.js      # Logic khóa học & Xử lý cascade delete
+│   │   │   ├── program.service.js     # Logic lộ trình & Tiến độ học tập
+│   │   │   ├── video.service.js       # Logic dọn dẹp R2 & Xử lý video
 │   │   │   ├── category.service.js    # Logic danh mục
 │   │   │   ├── courseRequest.service.js # Logic duyệt yêu cầu
-│   │   │   ├── stats.service.js       # Tính toán tiến độ học viên
+│   │   │   ├── stats.service.js       # Tính toán tiến độ nhân sự
 │   │   │   ├── comment.service.js     # Logic bình luận (Facebook-style 2 cấp)
 │   │   │   └── notification.service.js # Tạo & phát thông báo Realtime
+
 │   │   ├── routes/                # Luồng API
 │   │   │   ├── category.routes.js     # /api/categories/*
 │   │   │   ├── course-request.routes.js # /api/course-requests/*
@@ -54,6 +64,8 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   ├── src/
 │   │   ├── styles/                # Global Style System (RitaVo Red, Glassmorphism)
 │   │   ├── components/            # Modular Components (Standardized Admin Components)
+│   │   ├── constants/             # Hệ thống hằng số (Routes, Configs)
+│   │   │   └── routes.ts          # Quản lý tập trung toàn bộ URL trong app
 │   │   ├── hooks/                 # Custom React Hooks
 │   │   ├── pages/                 # Admin modules (Course, Lesson, Category, Request, Progress, User)
 │   │   ├── services/              # API Client (Shared axios services)
@@ -61,7 +73,6 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   └── main.tsx               # Entry point
 │   ├── tsconfig.app.json          # Cấu hình Absolute Imports (@/* -> ./src/*)
 │   └── vite.config.ts             # Cấu hình Resolve Alias (@)
-
 │
 ├── docker-compose.yml             # PostgreSQL Setup
 ├── README.md                      # Hướng dẫn cài đặt chính
@@ -81,9 +92,9 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 
 ### 2. Luồng Duyệt yêu cầu & Tiến độ
 `Student Registration` -> `Admin Dashboard` -> `Approval`:
-- Khi học viên đăng ký khóa học/lộ trình riêng tư, yêu cầu được đẩy về `CourseRequestManagement`.
-- Admin duyệt -> Học viên được cấp quyền truy cập (`enrollment`).
-- Admin có thể xem **Tiến độ học tập** theo thời gian thực (phần trăm hoàn thành) của từng học viên.
+- Khi nhân sự đăng ký khóa học/lộ trình riêng tư, yêu cầu được đẩy về `CourseRequestManagement`.
+- Admin duyệt -> nhân sự được cấp quyền truy cập (`enrollment`).
+- Admin có thể xem **Tiến độ học tập** theo thời gian thực (phần trăm hoàn thành) của từng nhân sự.
 
 ### 3. Luồng Bình luận (Facebook-style, 2 cấp)
 `CourseLearning` -> `CommentSection` -> `commentService` -> Backend:

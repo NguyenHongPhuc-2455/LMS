@@ -7,115 +7,33 @@ const { createVideoToken } = require('../utils/crypto');
 const { lessonSelect } = require('../services/video.service');
 
 exports.getCourses = catchAsync(async (req, res) => {
-    const { search, categoryId } = req.query;
-    const courses = await courseService.getAllCourses(search, categoryId);
+    const { search, categoryId, includeInactive } = req.query;
+    const courses = await courseService.getAllCourses(search, categoryId, includeInactive, req.user);
     res.json(courses);
 });
 
 exports.getCourseDetail = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const userId = req.user?.id;
-
-    const course = await courseService.getCourseById(id);
-    if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
-
-    // Logic kiểm tra tiến độ và quyền truy cập
-    let completedLessonIds = [];
-    if (userId) {
-        const completions = await prisma.lessonCompleted.findMany({
-            where: { user_id: userId, lesson_id: { in: course.sections.flatMap(s => s.lessons.map(l => l.id)) } },
-            select: { lesson_id: true }
-        });
-        completedLessonIds = completions.map(c => c.lesson_id);
-    }
-
-    const isAdmin = req.user?.roles?.includes('admin');
-    const isOwner = course.instructor_id === userId;
-
-    let hasAccess = false;
-    if (userId) {
-        // Kiểm tra quyền truy cập trực tiếp HOẶC thông qua Lộ trình học (Program)
-        const [enrollment, programEnrollment] = await Promise.all([
-            prisma.enrollment.findUnique({
-                where: { user_id_course_id: { user_id: userId, course_id: parseInt(id) } }
-            }),
-            prisma.programEnrollment.findFirst({
-                where: {
-                    user_id: userId,
-                    program: {
-                        courses: {
-                            some: { course_id: parseInt(id) }
-                        }
-                    }
-                }
-            })
-        ]);
-
-        if (enrollment || programEnrollment || isAdmin || isOwner) hasAccess = true;
-    }
-
-    let requestStatus = null;
-    if (userId) {
-        const reqAccess = await prisma.courseRequest.findFirst({
-            where: { user_id: userId, course_id: parseInt(id) },
-            orderBy: { created_at: 'desc' }
-        });
-        if (reqAccess) requestStatus = reqAccess.status;
-    }
-
-    // Transform lessons based on access
-    course.sections = course.sections.map(s => ({
-        ...s,
-        lessons: s.lessons.map(l => {
-            let securedVideoUrl = l.video_url;
-
-            if (hasAccess || l.is_free) {
-                if (securedVideoUrl) {
-                    // Chấp nhận cả /public/hls/ hoặc hls/ (dạng lưu mới cho R2)
-                    if (securedVideoUrl.startsWith('/public/hls/') || securedVideoUrl.startsWith('hls/')) {
-                        const token = generateStreamToken(userId, l.id, req.ip);
-                        // Lấy tên file từ DB, nếu không có mặc định là master.m3u8
-                        const fileName = securedVideoUrl.split('/').pop();
-                        const finalFileName = (fileName && fileName.includes('.m3u8')) ? fileName : 'master.m3u8';
-                        securedVideoUrl = `/api/videos/stream/${token}/${finalFileName}`;
-                    } else if (securedVideoUrl.includes('cloudinary.com') || securedVideoUrl.startsWith('http')) {
-                        // Trả thẳng link gốc cho Cloudinary hoặc link ngoài theo yêu cầu (Bỏ Token/Proxy)
-                        securedVideoUrl = l.video_url;
-                    }
-                }
-            }
-
-            return {
-                ...l,
-                isCompleted: completedLessonIds.includes(l.id),
-                video_url: (hasAccess || l.is_free) ? securedVideoUrl : null,
-                ...(!hasAccess && !l.is_free && {
-                    content: 'Nội dung này đã bị khóa. Vui lòng liên hệ quản trị viên để mở khóa.'
-                })
-            };
-        })
-    }));
-
-    // Calculate progress and next lesson
-    let nextLessonId = null;
-    let isCourseFinished = false;
-    if (userId && hasAccess) {
-        const allLessons = course.sections.flatMap(s => s.lessons);
-        const nextLesson = allLessons.find(l => !completedLessonIds.includes(l.id));
-        nextLessonId = nextLesson ? nextLesson.id : (allLessons.length > 0 ? allLessons[0].id : null);
-        isCourseFinished = allLessons.length > 0 && completedLessonIds.length === allLessons.length;
-    }
-
-    res.json({ ...course, hasAccess, requestStatus, nextLessonId, isCourseFinished });
-
+    const course = await courseService.getEnrichedCourseDetail(id, req.user, req.ip);
+    res.json(course);
 });
 
+
 exports.createCourse = catchAsync(async (req, res) => {
-    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
+    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private, is_mandatory, mandatory_deadline_days, apply_scope, mandatory_targets, mandatory_start_date, mandatory_end_date, allow_early_access } = req.body;
+    const isMandatoryVal = is_mandatory === true || is_mandatory === 'true';
     const course = await courseService.createCourse({
         title,
         description,
         is_private: is_private === true || is_private === 'true',
+        is_mandatory: isMandatoryVal,
+        mandatory_at: isMandatoryVal ? new Date() : null,
+        apply_scope: apply_scope || 'ALL_EMPLOYEE',
+        mandatory_targets: mandatory_targets ? mandatory_targets : null,
+        mandatory_deadline_days: mandatory_deadline_days ? parseInt(mandatory_deadline_days) : 60,
+        mandatory_start_date: mandatory_start_date ? new Date(mandatory_start_date) : null,
+        mandatory_end_date: mandatory_end_date ? new Date(mandatory_end_date) : null,
+        allow_early_access: allow_early_access !== undefined ? (allow_early_access === true || allow_early_access === 'true') : true,
         category_id: category_id ? parseInt(category_id) : null,
         instructor_id: req.user.id,
         level,
@@ -129,13 +47,36 @@ exports.createCourse = catchAsync(async (req, res) => {
 
 exports.updateCourse = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private } = req.body;
+    const { title, description, category_id, level, thumbnail, intro_video_url, learning_outcomes, requirements, is_private, is_mandatory, mandatory_deadline_days, apply_scope, mandatory_targets, mandatory_start_date, mandatory_end_date, allow_early_access } = req.body;
+    
+    const existingCourse = await prisma.course.findUnique({ where: { id: parseInt(id) } });
+    if (!existingCourse) throw new ApiError(404, 'Không tìm thấy khóa học');
+
+    let mandatory_at = undefined;
+    const isMandatoryVal = is_mandatory !== undefined ? (is_mandatory === true || is_mandatory === 'true') : undefined;
+    
+    if (isMandatoryVal !== undefined) {
+        if (isMandatoryVal && !existingCourse.is_mandatory) {
+            mandatory_at = new Date();
+        } else if (!isMandatoryVal) {
+            mandatory_at = null;
+        }
+    }
+
     const course = await prisma.course.update({
         where: { id: parseInt(id) },
         data: {
             title,
             description,
             is_private: is_private !== undefined ? (is_private === true || is_private === 'true') : undefined,
+            is_mandatory: isMandatoryVal,
+            mandatory_at,
+            apply_scope: apply_scope !== undefined ? apply_scope : undefined,
+            mandatory_targets: mandatory_targets !== undefined ? mandatory_targets : undefined,
+            mandatory_deadline_days: mandatory_deadline_days !== undefined ? parseInt(mandatory_deadline_days) : undefined,
+            mandatory_start_date: mandatory_start_date !== undefined ? (mandatory_start_date ? new Date(mandatory_start_date) : null) : undefined,
+            mandatory_end_date: mandatory_end_date !== undefined ? (mandatory_end_date ? new Date(mandatory_end_date) : null) : undefined,
+            allow_early_access: allow_early_access !== undefined ? (allow_early_access === true || allow_early_access === 'true') : undefined,
             category_id: category_id ? parseInt(category_id) : undefined,
             level,
             thumbnail,
@@ -150,235 +91,39 @@ exports.updateCourse = catchAsync(async (req, res) => {
 
 exports.deleteCourse = catchAsync(async (req, res) => {
     const { id } = req.params;
-    await prisma.course.update({
-        where: { id: parseInt(id) },
-        data: { deleted_at: new Date() }
-    });
-    res.json({ message: 'Đã xóa khóa học' });
+    await courseService.softDeleteCourse(id);
+    res.json({ message: 'Đã xóa khóa học và toàn bộ nội dung liên quan' });
 });
 
-exports.createSection = catchAsync(async (req, res) => {
-    const { course_id, title, order } = req.body;
-
-    // Nếu không có order, tự động lấy số lượng hiện tại + 1 để đẩy xuống cuối
-    let finalOrder = parseInt(order);
-    if (isNaN(finalOrder)) {
-        const count = await prisma.section.count({
-            where: { course_id: parseInt(course_id) }
-        });
-        finalOrder = count + 1;
+exports.batchDeleteCourses = catchAsync(async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+        throw new ApiError(400, 'Danh sách ID không hợp lệ');
     }
-
-    const section = await prisma.section.create({
-        data: {
-            title,
-            course_id: parseInt(course_id),
-            order: finalOrder
-        }
-    });
-    res.status(201).json(section);
+    const result = await courseService.batchDeleteCourses(ids);
+    res.json({ message: `Đã xóa thành công ${result.successCount} khóa học`, results: result.results });
 });
 
-exports.deleteSection = catchAsync(async (req, res) => {
+exports.toggleActiveStatus = catchAsync(async (req, res) => {
     const { id } = req.params;
-    await prisma.section.delete({ where: { id: parseInt(id) } });
-    res.json({ message: 'Đã xóa chương' });
+    const { active } = req.body;
+    await courseService.toggleActiveStatus(id, active);
+    res.json({ message: active ? 'Đã khôi phục khóa học' : 'Đã tạm ẩn khóa học' });
 });
 
-exports.updateSection = catchAsync(async (req, res) => {
+exports.restoreCourse = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const { title, order } = req.body;
-    const section = await prisma.section.update({
-        where: { id: parseInt(id) },
-        data: {
-            title,
-            order: order !== undefined ? parseInt(order) : undefined
-        }
-    });
-    res.json(section);
+    await courseService.restoreCourse(id);
+    res.json({ message: 'Đã khôi phục khóa học thành công' });
 });
 
-exports.getSectionDetail = catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const section = await prisma.section.findUnique({
-        where: { id: parseInt(id) },
-        include: {
-            lessons: {
-                select: lessonSelect,
-                orderBy: [
-                    { order: 'asc' },
-                    { id: 'asc' }
-                ]
-            }
-        }
-    });
-
-    if (!section) throw new ApiError(404, 'Không tìm thấy chương học');
-
-    const userId = req.user.id;
-    const roles = req.user.roles || [];
-    const isAdmin = roles.includes('admin') || roles.includes('instructor');
-
-    // Secure URLs
-    section.lessons = section.lessons.map(l => {
-        let securedVideoUrl = l.video_url;
-        if (securedVideoUrl && (l.is_free || isAdmin)) {
-            if (securedVideoUrl.startsWith('/public/hls/')) {
-                const token = generateStreamToken(userId, l.id, req.ip);
-                const fileName = securedVideoUrl.split('/').pop() || 'master.m3u8';
-                securedVideoUrl = `/api/videos/stream/${token}/${fileName}`;
-            } else if (securedVideoUrl.includes('cloudinary.com') || securedVideoUrl.startsWith('http')) {
-                const encryptedUrl = createVideoToken(securedVideoUrl, req.ip);
-                securedVideoUrl = `/api/videos/secure-stream/${encodeURIComponent(encryptedUrl)}`;
-            }
-        }
-        return { ...l, video_url: securedVideoUrl };
-    });
-
-    res.json(section);
+/**
+ * Lấy báo cáo Onboarding (Đúng hạn / Trễ hạn)
+ */
+exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
+    const { type = 'overdue' } = req.query; // 'overdue' hoặc 'ontime'
+    const resultList = await courseService.getMandatoryOverdueReport(type);
+    res.json(resultList);
 });
 
-exports.getMyCourses = catchAsync(async (req, res) => {
-    const userId = req.user.id;
-    const enrollments = await prisma.enrollment.findMany({
-        where: { 
-            user_id: userId,
-            course: {
-                deleted_at: null
-            }
-        },
-        include: {
-            course: {
-                include: {
-                    instructor: {
-                        select: { full_name: true }
-                    },
-                    sections: {
-                        orderBy: { order: 'asc' },
-                        include: {
-                            lessons: {
-                                select: { id: true, order: true },
-                                orderBy: [
-                                    { order: 'asc' },
-                                    { id: 'asc' }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
 
-    const coursesWithProgress = await Promise.all(enrollments.map(async (e) => {
-        const course = e.course;
-        const allLessons = course.sections.flatMap(s => s.lessons);
-        const totalLessons = allLessons.length;
-
-        const completedLessonsData = await prisma.lessonCompleted.findMany({
-            where: {
-                user_id: userId,
-                lesson_id: { in: allLessons.map(l => l.id) }
-            },
-            select: { lesson_id: true }
-        });
-        const completedIdsItems = completedLessonsData.map(c => c.lesson_id);
-        const completedLessons = completedIdsItems.length;
-
-        // Tìm bài học đầu tiên chưa hoàn thành
-        const nextLesson = allLessons.find(l => !completedIdsItems.includes(l.id));
-
-        const progressPercent = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
-
-        return {
-            id: course.id,
-            title: course.title,
-            thumbnail: course.thumbnail,
-            instructor: course.instructor.full_name,
-            totalLessons,
-            completedLessons,
-            progressPercent,
-            nextLessonId: nextLesson ? nextLesson.id : null,
-            enrolledAt: e.enrolled_at,
-            lastActivity: completedLessonsData.length > 0
-                ? (await prisma.lessonCompleted.findFirst({
-                    where: { user_id: userId, lesson_id: { in: allLessons.map(l => l.id) } },
-                    orderBy: { completed_at: 'desc' },
-                    select: { completed_at: true }
-                }))?.completed_at || e.enrolled_at
-                : e.enrolled_at
-        };
-    }));
-
-    // Sắp xếp theo ngày tham gia mới nhất
-    coursesWithProgress.sort((a, b) => new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime());
-
-    res.json(coursesWithProgress);
-});
-
-exports.enrollCourse = catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const course = await prisma.course.findUnique({ where: { id: parseInt(id) } });
-    if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
-    if (course.is_private) throw new ApiError(400, 'Khóa học này là riêng tư');
-    const enrollment = await prisma.enrollment.upsert({
-        where: { user_id_course_id: { user_id: userId, course_id: parseInt(id) } },
-        update: {},
-        create: { user_id: userId, course_id: parseInt(id) }
-    });
-    res.json({ message: 'Tham gia thành công', data: enrollment });
-});
-
-exports.completeLesson = catchAsync(async (req, res) => {
-    const { lessonId } = req.params;
-    const userId = req.user.id;
-
-    if (!lessonId) throw new ApiError(400, 'Thiếu Lesson ID');
-
-    const lesson = await prisma.lesson.findUnique({
-        where: { id: parseInt(lessonId) },
-        include: { section: true }
-    });
-
-    if (!lesson) throw new ApiError(404, 'Không tìm thấy bài học');
-
-    if (!lesson.is_free) {
-        const isAdmin = req.user?.roles?.includes('admin');
-        const course = await prisma.course.findUnique({ where: { id: lesson.section.course_id } });
-        const isOwner = course?.instructor_id === userId;
-
-        if (!isAdmin && !isOwner) {
-            const enrollment = await prisma.enrollment.findUnique({
-                where: { user_id_course_id: { user_id: userId, course_id: lesson.section.course_id } }
-            });
-            const programEnrollment = await prisma.programEnrollment.findFirst({
-                where: { user_id: userId, program: { courses: { some: { course_id: lesson.section.course_id } } } }
-            });
-
-            if (!enrollment && !programEnrollment) {
-                throw new ApiError(403, 'Bạn không thể hoàn thành bài học của khóa học chưa đăng ký');
-            }
-        }
-    }
-
-    const completion = await prisma.lessonCompleted.upsert({
-        where: {
-            user_id_lesson_id: {
-                user_id: userId,
-                lesson_id: parseInt(lessonId)
-            }
-        },
-        update: { completed_at: new Date() },
-        create: {
-            user_id: userId,
-            lesson_id: parseInt(lessonId)
-        }
-    });
-
-    res.json({
-        status: 'success',
-        message: 'Lesson marked as completed',
-        data: completion
-    });
-});

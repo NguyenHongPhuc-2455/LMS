@@ -7,26 +7,8 @@ import styles from '../ProgramManagement.module.scss';
 const { Text } = Typography;
 const { Option } = Select;
 
-interface Course {
-    id: number;
-    title: string;
-    thumbnail: string;
-    level: string;
-}
-
-interface Program {
-    id: number;
-    title: string;
-    description: string;
-    thumbnail: string;
-    level: string;
-    status: string;
-    is_private: boolean;
-    created_at: string;
-    instructor: { full_name: string };
-    courses: { order: number; course: Course }[];
-    _count: { enrollments: number; courses: number };
-}
+import { type Course } from '../../../../types/course';
+import { type Program } from '../../../../types/program';
 
 interface ProgramTableProps {
     programs: Program[];
@@ -85,7 +67,9 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             title: 'Lộ trình học',
             key: 'info',
             width: 350,
+            minWidth: 300,
             dataIndex: 'title',
+            fixed: 'left' as const,
             ...getColumnSearchProps('title'),
             render: (_: any, p: Program) => (
                 <div className={styles.programInfoCell}>
@@ -100,7 +84,8 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
         {
             title: 'Trạng thái',
             key: 'status',
-            width: 160,
+            width: 150,
+            minWidth: 150,
             filters: [
                 { text: 'DRAFT', value: 'DRAFT' },
                 { text: 'PUBLISHED', value: 'PUBLISHED' },
@@ -113,46 +98,50 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
                 return p.status === value;
             },
             render: (p: Program) => (
-                <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                    <Select
-                        size="small"
-                        value={p.status}
-                        showSearch={false}
-                        onChange={async (val) => {
-                            try {
-                                await programService.update(p.id, { status: val });
-                                message.success('Đã cập nhật trạng thái');
-                                onRefresh();
-                            } catch {
-                                message.error('Lỗi khi cập nhật');
-                            }
-                        }}
-                        style={{ width: '100%' }}
-                        className="status-select-inline"
-                    >
-                        <Option value="DRAFT">Nháp</Option>
-                        <Option value="PUBLISHED">Phát hành</Option>
-                        <Option value="ARCHIVED">Lưu trữ</Option>
-                    </Select>
-                    <Select
-                        size="small"
-                        value={p.is_private}
-                        showSearch={false}
-                        onChange={async (val) => {
-                            try {
-                                await programService.update(p.id, { is_private: val });
-                                message.success('Đã cập nhật chế độ truy cập');
-                                onRefresh();
-                            } catch {
-                                message.error('Lỗi khi cập nhật');
-                            }
-                        }}
-                        style={{ width: '100%' }}
-                    >
-                        <Option value={false}>CÔNG KHAI</Option>
-                        <Option value={true}>RIÊNG TƯ</Option>
-                    </Select>
-                </Space>
+                <div style={{ minWidth: '100px' }}>
+                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                        <Select
+                            size="small"
+                            value={p.status}
+                            showSearch={false}
+                            popupMatchSelectWidth={false}
+                            onChange={async (val) => {
+                                try {
+                                    await programService.update(p.id, { status: val });
+                                    message.success('Đã cập nhật trạng thái');
+                                    onRefresh();
+                                } catch {
+                                    message.error('Lỗi khi cập nhật');
+                                }
+                            }}
+                            style={{ width: '100%' }}
+                            className="status-select-inline"
+                        >
+                            <Option value="DRAFT">Nháp</Option>
+                            <Option value="PUBLISHED">Phát hành</Option>
+                            <Option value="ARCHIVED">Lưu trữ</Option>
+                        </Select>
+                        <Select
+                            size="small"
+                            value={p.is_private}
+                            showSearch={false}
+                            popupMatchSelectWidth={false}
+                            onChange={async (val) => {
+                                try {
+                                    await programService.update(p.id, { is_private: val });
+                                    message.success('Đã cập nhật chế độ truy cập');
+                                    onRefresh();
+                                } catch {
+                                    message.error('Lỗi khi cập nhật');
+                                }
+                            }}
+                            style={{ width: '100%' }}
+                        >
+                            <Option value={false}>CÔNG KHAI</Option>
+                            <Option value={true}>RIÊNG TƯ</Option>
+                        </Select>
+                    </Space>
+                </div>
             )
         },
         {
@@ -160,34 +149,32 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             key: 'courses',
             width: 100,
             render: (p: Program) => (
-                <Button type="link" onClick={() => onOpenCourseDrawer(p)} style={{ padding: 0 }}>
-                    <Tag color="blue">{p._count?.courses || 0} khóa</Tag>
-                </Button>
+                <span style={{ color: '#000', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    {p._count?.courses || 0} khóa
+                </span>
             )
         },
         {
-            title: 'Học viên',
+            title: 'nhân sự',
             key: 'enroll',
-            width: 90,
+            width: 100,
             render: (p: Program) => (
-                <Badge
-                    count={p._count?.enrollments || 0}
-                    showZero
-                    color="#52c41a"
-                    className="student-badge"
-                />
+                <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    {p._count?.enrollments || 0}
+                </span>
             )
         },
         {
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             width: 120,
-            render: (d: string) => new Date(d).toLocaleDateString('vi-VN')
+            render: (d: string) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(d).toLocaleDateString('vi-VN')}</span>
         },
         {
             title: 'Hành động',
             key: 'actions',
             width: 100,
+            fixed: 'right' as const,
             render: (p: Program) => (
                 <Space>
                     <Button type="text" icon={<Edit size={16} />} onClick={() => onEdit(p)} />
@@ -202,9 +189,23 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
     return (
         <Table
             dataSource={programs}
-            columns={columns}
+            columns={columns as any}
             rowKey="id"
             loading={loading}
+            onRow={(record) => ({
+                onClick: (event) => {
+                    // Ngăn mở Drawer khi bấm vào Select, Button, Popconfirm bên trong
+                    const target = event.target as HTMLElement;
+                    if (
+                        target.closest('.ant-select') ||
+                        target.closest('.ant-popover') ||
+                        target.closest('button') ||
+                        target.closest('.ant-popconfirm')
+                    ) return;
+                    onOpenCourseDrawer(record);
+                },
+                style: { cursor: 'pointer' }
+            })}
             pagination={{
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
@@ -217,8 +218,7 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
                     return originalElement;
                 }
             } as any}
-            scroll={{ y: 600 }}
-            virtual
+            scroll={{ x: 1000, y: 600 }}
             bordered
         />
     );

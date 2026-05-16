@@ -4,18 +4,8 @@ import styles from '../ProgramManagement.module.scss';
 
 const { Text } = Typography;
 
-interface Course {
-    id: number;
-    title: string;
-    thumbnail: string;
-    level: string;
-}
-
-interface Program {
-    id: number;
-    title: string;
-    courses: { order: number; course: Course }[];
-}
+import { type Course } from '../../../../types/course';
+import { type Program } from '../../../../types/program';
 
 interface ProgramCourseDrawerProps {
     open: boolean;

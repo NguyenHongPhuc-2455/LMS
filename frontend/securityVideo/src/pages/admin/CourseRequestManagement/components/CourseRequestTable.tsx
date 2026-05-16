@@ -23,7 +23,7 @@ export default function RequestTable({
 }: RequestTableProps) {
     const columns = [
         {
-            title: 'Học viên',
+            title: 'nhân sự',
             dataIndex: 'user',
             key: 'user',
             width: 250,
@@ -32,7 +32,7 @@ export default function RequestTable({
             filterSearch: true,
             onFilter: (value: any, record: any) => record.user.full_name === value,
             render: (user: any) => (
-                <Space>
+                <Space style={{ whiteSpace: 'nowrap' }}>
                     <UserOutlined />
                     <div>
                         <div style={{ fontWeight: 600 }}>{user.full_name}</div>
@@ -50,7 +50,7 @@ export default function RequestTable({
             filterSearch: true,
             onFilter: (value: any, record: any) => record[type]?.title === value,
             render: (item: any) => (
-                <Space>
+                <Space style={{ whiteSpace: 'nowrap' }}>
                     {type === 'course' ? <BookOutlined /> : <ApartmentOutlined style={{ color: '#6366f1' }} />}
                     <span style={{ fontWeight: 500 }}>{item?.title}</span>
                 </Space>
@@ -60,15 +60,13 @@ export default function RequestTable({
             title: 'Lý do',
             dataIndex: 'reason',
             key: 'reason',
-            width: 200,
-            render: (text: string) => text || <i style={{ color: '#94a3b8' }}>Không có lý do</i>
+            render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text || <i style={{ color: '#94a3b8' }}>Không có lý do</i>}</span>
         },
         {
             title: 'Ngày gửi',
             dataIndex: 'created_at',
             key: 'created_at',
-            width: 150,
-            render: (date: string) => new Date(date).toLocaleString('vi-VN')
+            render: (date: string) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(date).toLocaleString('vi-VN')}</span>
         },
         {
             title: 'Thao tác',
@@ -76,7 +74,7 @@ export default function RequestTable({
             width: 180,
             fixed: 'right' as const,
             render: (_: any, record: any) => (
-                <Space size="middle">
+                <Space size="middle" style={{ whiteSpace: 'nowrap' }}>
                     <Button
                         type="primary"
                         className={styles.approveBtn}

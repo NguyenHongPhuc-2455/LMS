@@ -4,6 +4,7 @@ import { Sidebar, AppHeader, AppFooter } from '../';
 
 import { Layout } from 'antd';
 import styles from './MainLayout.module.scss';
+import MandatoryCourseBanner from '../MandatoryCourseBanner/MandatoryCourseBanner';
 
 const { Content } = Layout;
 
@@ -30,7 +31,8 @@ const MainLayout: React.FC = () => {
                     </div>
                 </Content>
             </Layout>
-            {/* <AppFooter /> */}
+            {/* Banner hiển thị icon nổi trên mọi trang */}
+            <MandatoryCourseBanner hideBanner={true} />
         </Layout>
     );
 };
