@@ -84,6 +84,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 20px;
 
     .headerInfo {
@@ -133,16 +135,40 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 20px;
 
     .headerLeft {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 12px;
 
         .headerTitle {
             margin: 0;
             color: $text-main;
+        }
+    }
+
+    .headerRight {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .inactiveToggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-right: 16px;
+        border-right: 1px solid #e2e8f0;
+
+        .toggleLabel {
+            font-size: 13px;
+            color: #64748b;
+            white-space: nowrap;
         }
     }
 }
@@ -152,7 +178,7 @@
     align-items: center !important;
     justify-content: center !important;
     transition: all 0.2s !important;
-    
+
     &:hover {
         background: rgba(0, 0, 0, 0.05) !important;
         transform: scale(1.1);

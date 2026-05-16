@@ -93,30 +93,64 @@ body {
 
 /* KHÓA CỨNG THANH TIẾN TRÌNH - CHỐNG CLICK/KÉO */
 .vjs-anti-seek .vjs-progress-control {
-    pointer-events: none !important;
+  pointer-events: none !important;
 }
 
 .vjs-anti-seek .vjs-play-progress::before {
-    display: none !important;
+  display: none !important;
 }
 
 /* Khi đã hoàn thành: Khôi phục tương tác */
 .vjs-completed .vjs-progress-control {
-    pointer-events: auto !important;
+  pointer-events: auto !important;
 }
 
 .vjs-completed .vjs-play-progress::before {
-    display: block !important;
+  display: block !important;
 }
 
 /* Native Player */
 .anti-seek-native video::-webkit-media-controls-timeline {
-    display: none !important;
+  display: none !important;
 }
 
 .completed-native video::-webkit-media-controls-timeline {
-    display: block !important;
+  display: block !important;
 }
 
+/* Global Zebra Striping for Tables */
+.ant-table-tbody>tr:nth-child(even)>td {
+  background-color: #f2f2f2 !important;
+}
 
-
+/* Fixed Columns Style */
+.ant-table-cell-fix-left,
+.ant-table-cell-fix-right {
+  background-color: #fff !important;
+  z-index: 5 !important;
+}
+
+.ant-table-tbody>tr:nth-child(even)>.ant-table-cell-fix-left,
+.ant-table-tbody>tr:nth-child(even)>.ant-table-cell-fix-right {
+  background-color: #f2f2f2 !important;
+}
+
+/* Pagination numbers style */
+.page-number {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Global Auto-width for all tables - Optimized */
+.ant-table-cell span:not(.ant-select-selection-item),
+.ant-table-cell .ant-space,
+.ant-table-cell .ant-typography:not(.ant-typography-secondary) {
+  white-space: nowrap;
+}
+
+/* Allow complex components to handle their own wrapping to prevent overlap */
+.ant-table-cell .ant-select,
+.ant-table-cell .ant-switch,
+.ant-table-cell .ant-typography-secondary {
+  white-space: normal !important;
+}

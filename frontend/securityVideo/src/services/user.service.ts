@@ -9,7 +9,7 @@ export interface UserListResponse {
 }
 
 export const userService = {
-    getAll: async (params?: { page: number; limit: number; search?: string; department_id?: number }): Promise<UserListResponse> => {
+    getAll: async (params?: { page: number; limit: number; search?: string; department_id?: number; position_id?: number; include_inactive?: boolean }): Promise<UserListResponse> => {
         const response = await api.get('/users', { params });
         return response.data;
     },
@@ -47,6 +47,10 @@ export const userService = {
     },
     revokeCourse: async (userId: number, courseId: number): Promise<{ message: string }> => {
         const response = await api.post('/users/revoke-course', { userId, courseId });
+        return response.data;
+    },
+    toggleStatus: async (id: number, isActive: boolean): Promise<{ message: string }> => {
+        const response = await api.patch(`/users/${id}/toggle-status`, { isActive });
         return response.data;
     },
     updateUser: async (id: number, data: Partial<User>): Promise<{ message: string }> => {

@@ -26,6 +26,8 @@ interface Course {
     requirements: string;
     level: string;
     hasAccess: boolean;
+    canAccess?: boolean; // New field
+    accessReason?: string; // New field
     isOverdue?: boolean;
     is_private: boolean;
     requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
@@ -90,6 +92,21 @@ export default function CourseDetail() {
     const totalLessons = course.sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
 
     const renderActionButton = () => {
+        // Kiểm tra quyền truy cập sớm (Early Access)
+        if (course.canAccess === false) {
+            return (
+                <Button
+                    size="large"
+                    block
+                    disabled
+                    className={styles.actionBtnStyled}
+                    style={{ backgroundColor: '#f5f5f5', color: '#8c8c8c' }}
+                >
+                    {course.accessReason || 'KHÓA HỌC CHƯA MỞ'}
+                </Button>
+            );
+        }
+
         if (course.hasAccess) {
             const isOverdue = course.isOverdue;
             const isContinuing = !course.isCourseFinished;

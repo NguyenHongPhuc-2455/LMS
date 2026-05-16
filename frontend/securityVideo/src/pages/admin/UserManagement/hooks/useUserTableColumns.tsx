@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { Space, Input, Button, Typography, Badge, Avatar, Tag } from 'antd';
-import { SearchOutlined, UserOutlined, BookOutlined, CrownOutlined, IdcardOutlined } from '@ant-design/icons';
+import { Space, Input, Button, Typography, Switch, message } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import type { InputRef, TableColumnType, TableColumnsType } from 'antd';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
 import Highlighter from 'react-highlight-words';
@@ -15,15 +15,19 @@ type DataIndex = keyof UserData;
 interface UseUserTableColumnsProps {
     roles: RoleData[];
     departments: any[];
+    positions: any[];
     setSelectedUserId: (id: number | null) => void;
     setCourseModalVisible: (visible: boolean) => void;
+    onRefresh: () => void;
 }
 
 export function useUserTableColumns({
     roles,
     departments,
+    positions,
     setSelectedUserId,
-    setCourseModalVisible
+    setCourseModalVisible,
+    onRefresh
 }: UseUserTableColumnsProps) {
     const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
@@ -78,14 +82,14 @@ export function useUserTableColumns({
 
     const columns: TableColumnsType<UserData> = useMemo(() => [
         {
-            title: 'Mã nhân sự',
+            title: 'MNS',
             dataIndex: 'employee_id',
             key: 'employee_id',
             width: 130,
             fixed: 'left',
             sorter: (a, b) => (a.employee_id || '').localeCompare(b.employee_id || ''),
             ...getColumnSearchProps('employee_id', 'Tìm mã...'),
-            render: (text) => <Text strong color="blue">{text || '-'}</Text>
+            render: (text) => <Text strong style={{ color: '#000' }}>{text || '-'}</Text>
         },
         {
             title: 'Họ tên & Tài khoản',
@@ -94,39 +98,34 @@ export function useUserTableColumns({
             fixed: 'left',
             ...getColumnSearchProps('username', 'Tìm tên hoặc username...'),
             render: (_, record) => (
-                <Space className={styles.userInfoWrapper}>
-                    <Avatar
-                        src={record.avatar}
-                        icon={!record.avatar && <UserOutlined />}
-                        className={styles.userAvatar}
-                    />
-                    <div className={styles.userTextStack}>
-                        <Text strong className={styles.fullName}>{record.full_name || record.username}</Text>
-                        <Text type="secondary" className={styles.username}>@{record.username}</Text>
-                    </div>
-                </Space>
+                <div className={styles.userTextStack}>
+                    <Text strong className={styles.fullName}>{record.full_name || record.username}</Text>
+                    <Text type="secondary" className={styles.username}>@{record.username}</Text>
+                </div>
             )
         },
         {
             title: 'Phòng ban',
             dataIndex: 'department',
             key: 'department',
-            width: 180,
             filters: departments.map(d => ({ text: d.name, value: d.name })),
             onFilter: (value: any, record: UserData) => record.department === value,
-            render: (text) => <Tag color="cyan">{text || 'Chưa xếp'}</Tag>
+            render: (text) => <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>{text || 'Chưa xếp'}</span>
         },
         {
             title: 'Vị trí',
             dataIndex: 'position',
             key: 'position',
-            width: 150,
-            render: (text) => text || '-'
+            filters: positions.map(p => ({ text: p.name, value: p.name })),
+            onFilter: (value: any, record: UserData) => record.position === value,
+            render: (text, record: any) => {
+                const posName = text || positions.find(p => p.id === record.position_id)?.name || '-';
+                return <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>{posName}</span>;
+            }
         },
         {
             title: 'Vai trò',
             key: 'roles',
-            width: 160,
             filters: [
                 { text: 'Quản trị viên', value: 'admin' },
                 { text: 'Giảng viên', value: 'instructor' },
@@ -140,15 +139,14 @@ export function useUserTableColumns({
                 });
             },
             render: (_, record) => (
-                <Space wrap>
+                <Space wrap={false}>
                     {record.roles?.map((role: any) => (
-                        <Tag 
-                            key={typeof role === 'object' ? role.id : role} 
-                            color={role.name === 'admin' ? 'gold' : (role.name === 'instructor' ? 'purple' : 'blue')} 
-                            icon={role.name === 'admin' ? <CrownOutlined /> : <IdcardOutlined />}
+                        <span
+                            key={typeof role === 'object' ? role.id : role}
+                            style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}
                         >
                             {(typeof role === 'object' ? role.name : role).toUpperCase()}
-                        </Tag>
+                        </span>
                     ))}
                 </Space>
             )
@@ -156,11 +154,10 @@ export function useUserTableColumns({
         {
             title: 'Thông tin liên hệ',
             key: 'contact',
-            width: 250,
             render: (_, record) => (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <Text size="small">{record.email}</Text>
-                    <Text type="secondary" size="small">{record.phone || '-'}</Text>
+                <div style={{ display: 'flex', flexDirection: 'column', whiteSpace: 'nowrap' }}>
+                    <Text style={{ fontSize: '12px' }}>{record.email}</Text>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>{record.phone || '-'}</Text>
                 </div>
             )
         },
@@ -168,24 +165,45 @@ export function useUserTableColumns({
             title: 'Ngày vào làm',
             dataIndex: 'join_date',
             key: 'join_date',
-            width: 140,
-            render: (text) => text ? dayjs(text).format('DD/MM/YYYY') : '-'
+            render: (text) => <span style={{ whiteSpace: 'nowrap' }}>{text ? dayjs(text).format('DD/MM/YYYY') : '-'}</span>
+        },
+        {
+            title: 'Hoạt động',
+            key: 'active',
+            render: (_, record) => (
+                <div onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                        size="small"
+                        checked={!record.deleted_at}
+                        onChange={async (checked) => {
+                            try {
+                                const { userService } = await import('../../../../services/user.service');
+                                await userService.toggleStatus(record.id, !checked);
+                                message.success('Cập nhật trạng thái thành công');
+                                onRefresh();
+                            } catch (error) {
+                                message.error('Lỗi khi cập nhật trạng thái');
+                            }
+                        }}
+                    />
+                </div>
+            )
         },
         {
             title: 'Khóa học',
             key: 'enrolled_courses',
-            width: 180,
             render: (_, record) => (
                 <Button
                     type="link"
                     size="small"
+                    style={{ whiteSpace: 'nowrap' }}
                     onClick={(e) => {
                         e.stopPropagation();
                         setSelectedUserId(record.id);
                         setCourseModalVisible(true);
                     }}
                 >
-                    <BookOutlined /> {record.enrolled_courses?.length || 0} khóa
+                    {record.enrolled_courses?.length || 0} khóa
                 </Button>
             )
         },
@@ -193,10 +211,9 @@ export function useUserTableColumns({
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
-            width: 160,
-            render: (text) => dayjs(text).format('DD/MM/YYYY')
+            render: (text) => <span style={{ whiteSpace: 'nowrap' }}>{dayjs(text).format('DD/MM/YYYY')}</span>
         }
-    ], [departments, getColumnSearchProps, setCourseModalVisible, setSelectedUserId]);
+    ], [departments, positions, getColumnSearchProps, setCourseModalVisible, setSelectedUserId]);
 
     return { columns, getColumnSearchProps };
 }

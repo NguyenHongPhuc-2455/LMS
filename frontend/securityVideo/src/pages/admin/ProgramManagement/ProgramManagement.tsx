@@ -18,26 +18,8 @@ import ProgramCourseDrawer from './components/ProgramCourseDrawer';
 
 const { Title, Text } = Typography;
 
-interface Course {
-    id: number;
-    title: string;
-    thumbnail: string;
-    level: string;
-}
-
-interface Program {
-    id: number;
-    title: string;
-    description: string;
-    thumbnail: string;
-    level: string;
-    status: string;
-    is_private: boolean;
-    created_at: string;
-    instructor: { full_name: string };
-    courses: { order: number; course: Course }[];
-    _count: { enrollments: number; courses: number };
-}
+import { type Course } from '../../../types/course';
+import { type Program } from '../../../types/program';
 
 export default function ProgramManagement() {
     const [programs, setPrograms] = useState<Program[]>([]);
@@ -48,6 +30,7 @@ export default function ProgramManagement() {
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
     const [addingCourseId, setAddingCourseId] = useState<number | null>(null);
+    const [submitting, setSubmitting] = useState(false);
 
     const fetchPrograms = async () => {
         setLoading(true);
@@ -74,6 +57,7 @@ export default function ProgramManagement() {
     }, []);
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
+        setSubmitting(true);
         try {
             let finalThumbnail = values.thumbnail; // Lấy URL từ ô input nếu có
             if (thumbFile) {
@@ -95,8 +79,11 @@ export default function ProgramManagement() {
             setIsModalOpen(false);
             setEditingProgram(null);
             fetchPrograms();
-        } catch {
-            message.error('Lỗi khi lưu Lộ trình học');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi lưu Lộ trình học';
+            message.error(errorMsg);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -210,6 +197,7 @@ export default function ProgramManagement() {
                 onSuccess={handleSave}
                 editingId={editingProgram?.id}
                 initialValues={editingProgram}
+                loading={submitting}
             />
 
             <ProgramCourseDrawer

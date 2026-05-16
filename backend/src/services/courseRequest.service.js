@@ -61,7 +61,7 @@ const requestAccess = async (userId, courseId, reason) => {
     });
 
     events.emit('course.request_new', { request: newRequest, student, course });
-    
+
     // Cập nhật số lượng cho Admin
     await statsService.emitPendingRequestsCountToAdmins();
 
@@ -73,7 +73,7 @@ const requestAccess = async (userId, courseId, reason) => {
  */
 const getMyRequests = async (userId) => {
     return await prisma.courseRequest.findMany({
-        where: { 
+        where: {
             user_id: userId,
             course: { deleted_at: null }
         },
@@ -89,7 +89,7 @@ const getMyRequests = async (userId) => {
  */
 const getPendingRequests = async () => {
     return await prisma.courseRequest.findMany({
-        where: { 
+        where: {
             status: 'PENDING',
             course: { deleted_at: null }
         },

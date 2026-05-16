@@ -16,11 +16,14 @@ export interface User {
     bio?: string;
     employee_id?: string;
     department?: string;
+    department_id?: number;
     position?: string;
+    position_id?: number;
     join_date?: string;
     roles: string[] | Role[];
     created_at: string;
     updated_at: string;
     enrolled_courses?: { id: number; title: string }[];
     enrollments_count?: number;
+    deleted_at?: string;
 }

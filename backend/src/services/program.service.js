@@ -58,28 +58,39 @@ const getProgramById = async (id) => {
 };
 
 const createProgram = async (data) => {
-    const program = await prisma.learningProgram.create({ data, include });
+    const { _count, ...createInclude } = include;
+    const program = await prisma.learningProgram.create({
+        data,
+        include: createInclude
+    });
     return {
         ...program,
         _count: {
-            ...program._count,
-            courses: program.courses.length
+            enrollments: 0,
+            courses: 0
         }
     };
 };
 
 const updateProgram = async (id, data) => {
+    const { _count, ...updateInclude } = include;
     const program = await prisma.learningProgram.update({
         where: { id: parseInt(id) },
         data: { ...data, updated_at: new Date() },
-        include
+        include: updateInclude
     });
+
+    // Fetch counts separately or use current ones
+    const counts = await prisma.learningProgram.findUnique({
+        where: { id: parseInt(id) },
+        select: {
+            _count: { select: { enrollments: true, courses: true } }
+        }
+    });
+
     return {
         ...program,
-        _count: {
-            ...program._count,
-            courses: program.courses.length
-        }
+        _count: counts._count
     };
 };
 
@@ -186,18 +197,18 @@ const getEnrichedProgramDetail = async (id, user) => {
     if (isEnrolled && userId) {
         const sortedCourses = program.courses.sort((a, b) => a.order - b.order);
         const courseIds = sortedCourses.map(pc => pc.course.id);
-        
+
         // Tối ưu N+1: Lấy tất cả bài học và trạng thái hoàn thành trong 2 queries
         const allLessons = await prisma.lesson.findMany({
             where: { section: { course_id: { in: courseIds } } },
             select: { id: true, section: { select: { course_id: true } } }
         });
-        
+
         const allCompleted = await prisma.lessonCompleted.findMany({
             where: { user_id: userId, lesson_id: { in: allLessons.map(l => l.id) } },
             select: { lesson_id: true }
         });
-        
+
         const completedIds = new Set(allCompleted.map(c => c.lesson_id));
         const courseLessonMap = {};
         allLessons.forEach(l => {
@@ -217,7 +228,7 @@ const getEnrichedProgramDetail = async (id, user) => {
             const completed = lessonIds.filter(id => completedIds.has(id)).length;
             const isFinished = total > 0 && completed === total;
             const isLocked = (isAdmin || isInstructor) ? false : !previousCourseFinished;
-            
+
             previousCourseFinished = isFinished;
 
             return {
@@ -241,7 +252,7 @@ const getEnrichedMyPrograms = async (userId) => {
     if (programs.length === 0) return [];
 
     const allCourseIds = [...new Set(programs.flatMap(p => p.courses.map(pc => pc.course.id)))];
-    
+
     // Tối ưu N+1: Lấy toàn bộ bài học và hoàn thành của tất cả lộ trình
     const [allLessons, allCompleted] = await Promise.all([
         prisma.lesson.findMany({
@@ -249,17 +260,21 @@ const getEnrichedMyPrograms = async (userId) => {
             select: { id: true, section: { select: { course_id: true } } }
         }),
         prisma.lessonCompleted.findMany({
-            where: { user_id: userId, lesson_id: { in: (await prisma.lesson.findMany({
-                where: { section: { course_id: { in: allCourseIds } } },
-                select: { id: true }
-            })).map(l => l.id) } },
+            where: {
+                user_id: userId, lesson_id: {
+                    in: (await prisma.lesson.findMany({
+                        where: { section: { course_id: { in: allCourseIds } } },
+                        select: { id: true }
+                    })).map(l => l.id)
+                }
+            },
             select: { lesson_id: true }
         })
     ]);
 
     const completedIds = new Set(allCompleted.map(c => c.lesson_id));
     const courseStatsMap = {}; // courseId -> { total, completed }
-    
+
     allLessons.forEach(l => {
         const cid = l.section.course_id;
         if (!courseStatsMap[cid]) courseStatsMap[cid] = { total: 0, completed: 0 };
@@ -291,7 +306,7 @@ const getEnrichedMyPrograms = async (userId) => {
 
 const getMyPrograms = async (userId) => {
     const enrollments = await prisma.programEnrollment.findMany({
-        where: { 
+        where: {
             user_id: userId,
             program: { deleted_at: null }
         },

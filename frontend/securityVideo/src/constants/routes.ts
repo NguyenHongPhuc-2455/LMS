@@ -20,5 +20,7 @@ export const ROUTES = {
     ADMIN_PROGRESS: '/admin/progress',
     ADMIN_BANNERS: '/admin/banners',
     ADMIN_DEPARTMENTS: '/admin/departments',
+    ADMIN_POSITIONS: '/admin/positions',
+    ADMIN_ROLES: '/admin/roles',
     ADMIN_ONBOARDING_REPORT: '/admin/onboarding-report',
 };

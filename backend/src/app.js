@@ -19,6 +19,8 @@ const sectionRoutes = require('./routes/section.routes');
 const categoryRoutes = require('./routes/category.routes');
 const courseRequestRoutes = require('./routes/courseRequest.routes');
 const departmentRoutes = require('./routes/department.routes');
+const positionRoutes = require('./routes/position.routes');
+const roleRoutes = require('./routes/role.routes');
 
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
@@ -55,6 +57,17 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Simple request logger for debugging
+app.use((req, res, next) => {
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEBUG] ${req.method} ${req.url}`);
+        if (req.method === 'POST' || req.method === 'PUT') {
+            console.log('[DEBUG] Body:', JSON.stringify(req.body, null, 2));
+        }
+    }
+    next();
+});
 
 // Global Rate Limiting - Move AFTER CORS
 app.use(globalLimiter);
@@ -98,6 +111,8 @@ app.use('/api/sections', sectionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/hero-banners', heroBannerRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/positions', positionRoutes);
+app.use('/api/roles', roleRoutes);
 
 
 // Centralized Error Handling

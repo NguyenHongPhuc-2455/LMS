@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import {
     Button, Space, Tag,
-    message, Typography, Card, Modal, Input, Select,
-    App
+    Typography, Card, Input, Select,
+    App, Switch
 } from 'antd';
 import {
-    DeleteOutlined, SaveOutlined, CloseOutlined,
-    PlusOutlined, EditOutlined, SearchOutlined
+    DeleteOutlined, CloseOutlined,
+    PlusOutlined, SearchOutlined
 } from '@ant-design/icons';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { userService } from '../../../services/user.service';
 import { departmentService } from '../../../services/department.service';
+import { positionService } from '../../../services/position.service';
 import styles from './UserManagement.module.scss';
 import type { User as UserData, Role as RoleData } from '../../../types/user';
 export type { UserData, RoleData };
@@ -24,28 +26,51 @@ const { Title, Text } = Typography;
 
 export default function UserManagement() {
     const { message, modal } = App.useApp();
+    const [searchParams, setSearchParams] = useSearchParams();
+
     // Pagination & Search State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [departmentId, setDepartmentId] = useState<number | undefined>(undefined);
+
+    // Đồng bộ departmentId từ URL
+    const urlDeptId = searchParams.get('departmentId');
+    const [departmentId, setDepartmentId] = useState<number | undefined>(
+        urlDeptId ? parseInt(urlDeptId) : undefined
+    );
+    const [positionId, setPositionId] = useState<number | undefined>();
+    const [includeInactive, setIncludeInactive] = useState(false);
+
     const [actionLoading, setActionLoading] = useState(false);
 
-    // Debounce Logic
+    // Khi URL thay đổi (ví dụ bấm từ sidebar), cập nhật lại state local
+    useEffect(() => {
+        const id = searchParams.get('departmentId');
+        setDepartmentId(id ? parseInt(id) : undefined);
+        setPage(1); // Reset trang khi đổi phòng ban
+    }, [searchParams]);
+
+    // Debounce Logic cho ô tìm kiếm
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearch(search);
-            setPage(1); // Reset to first page on search
+            setPage(1);
         }, 500);
-
         return () => clearTimeout(handler);
     }, [search]);
 
     // React Query
     const { data: usersData, isLoading: usersLoading } = useQuery({
-        queryKey: ['users', page, pageSize, debouncedSearch, departmentId],
-        queryFn: () => userService.getAll({ page, limit: pageSize, search: debouncedSearch, department_id: departmentId }),
+        queryKey: ['users', page, pageSize, debouncedSearch, departmentId, positionId, includeInactive],
+        queryFn: () => userService.getAll({
+            page,
+            limit: pageSize,
+            search: debouncedSearch,
+            department_id: departmentId,
+            position_id: positionId,
+            include_inactive: includeInactive
+        }),
         placeholderData: (previousData) => previousData,
     });
 
@@ -61,13 +86,19 @@ export default function UserManagement() {
         staleTime: 5 * 60 * 1000,
     });
 
+    const { data: positionsData } = useQuery({
+        queryKey: ['positions'],
+        queryFn: positionService.getAll,
+        staleTime: 5 * 60 * 1000,
+    });
+
     const users = usersData?.users || [];
     const total = usersData?.total || 0;
     const roles = rolesData || [];
     const departments = departmentsData || [];
+    const positions = positionsData || [];
     const loading = usersLoading || actionLoading;
 
-    // React Query Client for invalidation
     const queryClient = useQueryClient();
 
     // Selection State
@@ -165,6 +196,18 @@ export default function UserManagement() {
         }
     }), [page, pageSize, total]);
 
+    // Cập nhật URL khi người dùng chọn lọc trên UI
+    const handleDepartmentChange = (val: number | undefined) => {
+        startTransition(() => {
+            if (val) {
+                searchParams.set('departmentId', val.toString());
+            } else {
+                searchParams.delete('departmentId');
+            }
+            setSearchParams(searchParams);
+        });
+    };
+
     return (
         <div className={styles.userManagementContainer} >
             <div className={styles.userManagementHeader}>
@@ -187,13 +230,19 @@ export default function UserManagement() {
                         />
                         <Select
                             placeholder="Lọc theo phòng ban"
-                            style={{ width: 200 }}
+                            style={{ width: 180 }}
                             allowClear
-                            onChange={(val) => {
-                                setDepartmentId(val);
-                                setPage(1);
-                            }}
+                            value={departmentId}
+                            onChange={handleDepartmentChange}
                             options={departments.map((d: any) => ({ value: d.id, label: d.name }))}
+                        />
+                        <Select
+                            placeholder="Lọc theo vị trí"
+                            style={{ width: 180 }}
+                            allowClear
+                            value={positionId}
+                            onChange={(val) => { setPositionId(val); setPage(1); }}
+                            options={positions.map((p: any) => ({ value: p.id, label: p.name }))}
                         />
                         {isDeleteMode && (
                             <Tag color="error" className={styles.deleteModeTag}>
@@ -202,53 +251,66 @@ export default function UserManagement() {
                         )}
                     </div>
 
-                    <Space className={styles.searchBarContainer}>
-                        {isDeleteMode ? (
-                            <Space>
-                                <Button
-                                    type="primary"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={handleBatchDelete}
-                                    loading={loading}
-                                    disabled={selectedRowKeys.length === 0}
-                                >
-                                    Xác nhận xóa ({selectedRowKeys.length})
-                                </Button>
-                                <Button icon={<CloseOutlined />} onClick={resetStates}>Hủy</Button>
-                            </Space>
-                        ) : (
-                            <Space>
-                                <Button
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={() => setIsDeleteMode(true)}
-                                >
-                                    Xóa nhiều
-                                </Button>
-                                <Button
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                    onClick={handleOpenCreate}
-                                    className={styles.adminAddButton}
-                                >
-                                    Thêm thành viên
-                                </Button>
-                            </Space>
-                        )}
-                    </Space>
+                    <div className={styles.headerRight}>
+                        <Space size={16}>
+                            <div className={styles.inactiveToggle}>
+                                <Text className={styles.toggleLabel}>Hiện tất cả NS</Text>
+                                <Switch
+                                    size="small"
+                                    checked={includeInactive}
+                                    onChange={setIncludeInactive}
+                                />
+                            </div>
+
+                            {isDeleteMode ? (
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={handleBatchDelete}
+                                        loading={loading}
+                                        disabled={selectedRowKeys.length === 0}
+                                    >
+                                        Xác nhận xóa ({selectedRowKeys.length})
+                                    </Button>
+                                    <Button icon={<CloseOutlined />} onClick={resetStates}>Hủy</Button>
+                                </Space>
+                            ) : (
+                                <Space>
+                                    <Button
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => setIsDeleteMode(true)}
+                                    >
+                                        Xóa nhiều
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        icon={<PlusOutlined />}
+                                        onClick={handleOpenCreate}
+                                        className={styles.adminAddButton}
+                                    >
+                                        Thêm thành viên
+                                    </Button>
+                                </Space>
+                            )}
+                        </Space>
+                    </div>
                 </div>
 
                 <UserTable
                     users={users}
                     roles={roles}
                     departments={departments}
+                    positions={positions}
                     loading={loading}
                     isDeleteMode={isDeleteMode}
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={setSelectedRowKeys}
                     onRevokeAccess={handleRevokeAccess}
                     onRowClick={handleOpenEdit}
+                    onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
                     pagination={paginationConfig}
                 />
             </Card>
@@ -259,6 +321,7 @@ export default function UserManagement() {
                 onSuccess={handleModalFinish}
                 roles={roles}
                 departments={departments}
+                positions={positions}
                 loading={loading}
                 initialValues={editingUser}
             />

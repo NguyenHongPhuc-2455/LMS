@@ -36,6 +36,8 @@ const BannerManagement = lazy(() => import('./pages/admin/BannerManagement/Banne
 const UnifiedContent = lazy(() => import('./pages/admin/UnifiedContent/UnifiedContent'));
 const DepartmentManagement = lazy(() => import('./pages/admin/DepartmentManagement/DepartmentManagement'));
 const OnboardingReport = lazy(() => import('./pages/admin/OnboardingReport/OnboardingReport'));
+const PositionManagement = lazy(() => import('./pages/admin/PositionManagement/PositionManagement'));
+const RoleManagement = lazy(() => import('./pages/admin/RoleManagement/RoleManagement'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -106,6 +108,8 @@ function App() {
                 <Route path="progress" element={<CourseProgress />} />
                 <Route path="banners" element={<BannerManagement />} />
                 <Route path="departments" element={<DepartmentManagement />} />
+                <Route path="positions" element={<PositionManagement />} />
+                <Route path="roles" element={<RoleManagement />} />
                 <Route path="onboarding-report" element={<OnboardingReport />} />
                 <Route path="profile" element={<Profile />} />
               </Route>

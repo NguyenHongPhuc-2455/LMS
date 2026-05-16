@@ -3,6 +3,8 @@
     background: #F5F6FA;
     font-family: 'Outfit', 'Inter', sans-serif;
     padding-top: 66px; // Bù cho fixed header
+    --sidebar-width: 250px;
+    --sidebar-collapsed-width: 80px;
 
     @media (max-width: 768px) {
         padding-top: 60px;
@@ -12,15 +14,84 @@
 .adminSidebar {
     border-right: 1px solid #E0E0E0;
     background: #FFFFFF;
-    overflow: auto;
+    overflow-y: auto;
     height: calc(100vh - 66px);
     position: sticky;
     top: 66px;
     z-index: 100;
-    transition: all 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: width;
+
+    // Custom Scrollbar
+    &::-webkit-scrollbar {
+        width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: transparent;
+        border-radius: 4px;
+    }
+    &:hover::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+    }
 
     @media (max-width: 1024px) {
-        display: none; // Ẩn sidebar thật trên tablet/mobile
+        display: none;
+    }
+
+    :global(.ant-layout-sider-children) {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        
+        &::-webkit-scrollbar {
+            width: 0px; // Hide inner scrollbar to avoid double bars
+        }
+    }
+}
+
+.sidebarWrapper {
+    position: relative;
+    display: flex;
+    z-index: 101;
+
+    @media (max-width: 1024px) {
+        display: none;
+    }
+}
+
+.collapseToggle {
+    position: fixed;
+    top: 82px;
+    left: 235px;
+    z-index: 110;
+    width: 28px;
+    height: 28px;
+    background: #fff !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease;
+    will-change: left;
+    cursor: pointer;
+
+    &:hover {
+        color: #C72127 !important;
+        border-color: #C72127 !important;
+        box-shadow: 0 4px 12px rgba(199, 33, 39, 0.15);
+        transform: scale(1.1);
+    }
+
+    &.collapsed {
+        left: 66px;
+    }
+
+    :global(.anticon) {
+        font-size: 12px;
     }
 }
 
@@ -30,9 +101,12 @@
 }
 
 .adminMainLayout {
-    transition: all 0.2s ease 0s;
     display: flex;
     flex-direction: row;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    contain: layout;
 }
 
 .adminAddButton {
@@ -59,13 +133,19 @@
         margin: 0 !important;
         display: inline-flex !important;
         align-items: center !important;
-        transform: translateY(1px); // Đôi khi cần nhích xuống 1px để cân mắt
+        transform: translateY(1px);
     }
 }
 
 .adminContent {
     padding: 24px 30px;
     min-height: 280px;
+    flex: 1;
+    min-width: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    backface-visibility: hidden;
+    perspective: 1000px;
 
     @media (max-width: 768px) {
         padding: 16px;
@@ -257,5 +337,11 @@
         .ant-drawer-body {
             padding: 0;
         }
+    }
+}
+
+:global {
+    .ant-drawer-body {
+        padding: 0;
     }
 }

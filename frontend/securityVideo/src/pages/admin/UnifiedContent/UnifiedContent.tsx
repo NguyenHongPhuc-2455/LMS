@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Card, Typography, Button, Space, Breadcrumb, 
-    App, Select, Tooltip, Empty 
+    App, Select, Tooltip, Empty, 
+    Popconfirm
 } from 'antd';
 import { 
     ArrowLeftOutlined, 
@@ -18,6 +19,9 @@ import { contentService } from '../../../services/content.service';
 import { categoryService } from '../../../services/category.service';
 import { uploadService } from '../../../services/upload.service';
 import { quizService } from '../../../services/quiz.service';
+import { departmentService } from '../../../services/department.service';
+import { positionService } from '../../../services/position.service';
+import { userService } from '../../../services/user.service';
 import { ROUTES } from '../../../constants/routes';
 
 import CourseTable from '../CourseManagement/components/CourseTable';
@@ -43,7 +47,11 @@ const UnifiedContent: React.FC = () => {
     const viewMode: ViewMode = sectionId ? 'LESSON' : (courseId ? 'SECTION' : 'COURSE');
 
     const [categories, setCategories] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [positions, setPositions] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+    const [includeInactive, setIncludeInactive] = useState<boolean>(false);
     
     // Navigation State for Breadcrumbs
     const [currentCourse, setCurrentCourse] = useState<any>(null);
@@ -58,10 +66,22 @@ const UnifiedContent: React.FC = () => {
     const [editingData, setEditingData] = useState<any>(null);
     const [editingQuizId, setEditingQuizId] = useState<number | null>(null);
     const [lessonType, setLessonType] = useState<'VIDEO' | 'QUIZ'>('VIDEO');
+    const [submitting, setSubmitting] = useState(false);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-    // Fetch Categories
+    // Fetch Metadata
     useEffect(() => {
-        categoryService.getAllCategories().then(setCategories).catch(() => message.error('Lỗi tải danh mục'));
+        Promise.all([
+            categoryService.getAllCategories(),
+            departmentService.getAll(),
+            positionService.getAll(),
+            userService.getAll({ limit: 1000, page: 1 })
+        ]).then(([cats, depts, pos, userResp]) => {
+            setCategories(cats);
+            setDepartments(depts);
+            setPositions(pos);
+            setUsers(userResp.users || []);
+        }).catch(() => message.error('Lỗi tải dữ liệu metadata'));
     }, []);
 
     // Sync Breadcrumb Names
@@ -92,7 +112,7 @@ const UnifiedContent: React.FC = () => {
                 const courseData = await courseService.getById(Number(courseId));
                 setData(courseData.sections || []);
             } else {
-                const courses = await courseService.getAll('', selectedCategoryId || undefined);
+                const courses = await courseService.getAll('', selectedCategoryId || undefined, includeInactive);
                 setData(courses);
             }
         } catch (error) {
@@ -100,7 +120,7 @@ const UnifiedContent: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [courseId, sectionId, selectedCategoryId]);
+    }, [courseId, sectionId, selectedCategoryId, includeInactive]);
 
     useEffect(() => {
         fetchData();
@@ -183,6 +203,25 @@ const UnifiedContent: React.FC = () => {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedRowKeys.length === 0) return;
+        
+        setLoading(true);
+        try {
+            const ids = selectedRowKeys.map(key => Number(key));
+            if (viewMode === 'COURSE') {
+                await courseService.batchDelete(ids);
+                message.success(`Đã xóa thành công ${selectedRowKeys.length} khóa học`);
+            }
+            setSelectedRowKeys([]);
+            fetchData();
+        } catch (error) {
+            message.error('Lỗi khi xóa hàng loạt');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleCourseStatusChange = async (id: number, isPrivate: boolean) => {
         try {
             await courseService.update(id, { is_private: isPrivate });
@@ -190,6 +229,16 @@ const UnifiedContent: React.FC = () => {
             fetchData();
         } catch (e) {
             message.error('Lỗi khi cập nhật trạng thái');
+        }
+    };
+
+    const handleCourseToggleActive = async (id: number, isActive: boolean) => {
+        try {
+            await courseService.toggleActive(id, isActive);
+            message.success(isActive ? 'Đã khôi phục khóa học' : 'Đã tạm ẩn khóa học');
+            fetchData();
+        } catch (e) {
+            message.error('Lỗi khi thay đổi trạng thái');
         }
     };
 
@@ -204,6 +253,7 @@ const UnifiedContent: React.FC = () => {
     };
 
     const handleModalSuccess = async (values: any, ...args: any[]) => {
+        setSubmitting(true);
         try {
             if (viewMode === 'COURSE') {
                 const thumbFile = args[0];
@@ -262,8 +312,11 @@ const UnifiedContent: React.FC = () => {
             message.success('Đã lưu thành công');
             setIsModalOpen(false);
             fetchData();
-        } catch (e) {
-            message.error('Lỗi khi lưu dữ liệu');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi lưu dữ liệu';
+            message.error(errorMsg);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -340,7 +393,33 @@ const UnifiedContent: React.FC = () => {
                                         <Option key={cat.id} value={cat.id}>{cat.name}</Option>
                                     ))}
                                 </Select>
+                                <Select
+                                    placeholder="Trạng thái"
+                                    style={{ width: 160 }}
+                                    value={includeInactive}
+                                    onChange={setIncludeInactive}
+                                    options={[
+                                        { value: false, label: 'Đang mở' },
+                                        { value: true, label: 'Tất cả (gồm đã đóng)' }
+                                    ]}
+                                />
                             </Space>
+                        )}
+                        {viewMode === 'COURSE' && selectedRowKeys.length > 0 && (
+                            <Popconfirm
+                                title={`Xóa vĩnh viễn ${selectedRowKeys.length} khóa học đã chọn?`}
+                                onConfirm={handleBulkDelete}
+                                okText="Xóa ngay"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button
+                                    danger
+                                    loading={loading}
+                                >
+                                    Xóa {selectedRowKeys.length} đã chọn
+                                </Button>
+                            </Popconfirm>
                         )}
                         <Button 
                             type="primary" 
@@ -380,11 +459,14 @@ const UnifiedContent: React.FC = () => {
                                 courses={data} 
                                 categories={categories}
                                 loading={loading}
+                                selectedRowKeys={selectedRowKeys}
+                                onSelectionChange={setSelectedRowKeys}
                                 onEdit={handleEdit} 
                                 onDelete={handleDelete}
                                 onNavigateToSections={(id) => handleCourseClick(data.find(c => c.id === id))}
                                 onStatusChange={handleCourseStatusChange}
                                 onCategoryChange={handleCourseCategoryChange}
+                                onToggleActive={handleCourseToggleActive}
                             />
                         )}
                         {viewMode === 'SECTION' && (
@@ -417,6 +499,10 @@ const UnifiedContent: React.FC = () => {
                     editingId={editingData?.id}
                     initialValues={editingData}
                     categories={categories}
+                    departments={departments}
+                    positions={positions}
+                    users={users}
+                    loading={submitting}
                 />
             )}
             {viewMode === 'SECTION' && (
@@ -426,6 +512,7 @@ const UnifiedContent: React.FC = () => {
                     onSuccess={handleModalSuccess}
                     editingId={editingData?.id}
                     initialValues={editingData || { order: data.length }}
+                    loading={submitting}
                 />
             )}
             {viewMode === 'LESSON' && (
@@ -438,6 +525,7 @@ const UnifiedContent: React.FC = () => {
                     sections={currentSection ? [currentSection] : []}
                     lessonType={lessonType}
                     setLessonType={setLessonType}
+                    loading={submitting}
                 />
             )}
         </div>

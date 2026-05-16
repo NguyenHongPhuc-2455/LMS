@@ -14,8 +14,9 @@ const getUsers = async (query) => {
     const skip = (page - 1) * limit;
 
     const where = {
-        deleted_at: null,
+        ...(query.include_inactive !== 'true' && { deleted_at: null }),
         ...(query.department_id && { department_id: parseInt(query.department_id) }),
+        ...(query.position_id && { position_id: parseInt(query.position_id) }),
         OR: [
             { username: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } },
@@ -30,6 +31,7 @@ const getUsers = async (query) => {
             where,
             include: {
                 department: true,
+                position: true,
                 user_roles: { include: { role: true } },
                 enrollments: {
                     where: {
@@ -41,8 +43,8 @@ const getUsers = async (query) => {
                         course: { select: { title: true } }
                     }
                 },
-                _count: { 
-                    select: { 
+                _count: {
+                    select: {
                         enrollments: {
                             where: {
                                 course: {
@@ -50,7 +52,7 @@ const getUsers = async (query) => {
                                 }
                             }
                         }
-                    } 
+                    }
                 }
             },
             skip,
@@ -61,10 +63,13 @@ const getUsers = async (query) => {
     ]);
 
     const safeUsers = users.map(u => {
-        const { password_hash, user_roles, enrollments, department, ...data } = u;
+        const { password_hash, user_roles, enrollments, department, position, ...data } = u;
         return {
             ...data,
+            department_id: u.department_id,
+            position_id: u.position_id,
             department: department?.name || '',
+            position: position?.name || '',
             roles: user_roles.map(ur => ur.role),
             enrollments_count: u._count.enrollments,
             enrolled_courses: enrollments.map(e => ({ id: e.course_id, title: e.course.title }))
@@ -85,18 +90,22 @@ const parseDate = (date) => (date === null || date === '') ? null : (date ? new 
  * Cập nhật thông tin người dùng (Admin)
  */
 const updateUser = async (id, updateData) => {
-    const { 
-        id: _, 
-        updated_at, 
-        role_id, 
-        employee_id, 
-        join_date, 
-        roles, 
-        user_roles, 
-        enrollments_count, 
-        enrolled_courses, 
+    const {
+        id: _,
+        updated_at,
+        role_id,
+        employee_id,
+        join_date,
+        roles,
+        user_roles,
+        enrollments_count,
+        enrolled_courses,
         _count,
-        ...data 
+        department,
+        position,
+        department_id,
+        position_id,
+        ...data
     } = updateData;
 
     // Kiểm tra employee_id duy nhất nếu có thay đổi
@@ -114,15 +123,19 @@ const updateUser = async (id, updateData) => {
     }
 
     return await prisma.$transaction(async (tx) => {
+        // Prepare update data
+        const finalData = {
+            ...data,
+            employee_id: employee_id || undefined,
+            department_id: (department_id !== undefined && department_id !== null) ? parseInt(String(department_id), 10) : null,
+            position_id: (position_id !== undefined && position_id !== null) ? parseInt(String(position_id), 10) : null,
+            join_date: parseDate(join_date),
+            dob: parseDate(updateData.dob)
+        };
+
         const user = await tx.user.update({
             where: { id: parseInt(id) },
-            data: {
-                ...data,
-                employee_id,
-                department_id: data.department_id ? parseInt(data.department_id) : undefined,
-                join_date: parseDate(join_date),
-                dob: parseDate(data.dob),
-            }
+            data: finalData
         });
 
         if (role_id) {
@@ -147,16 +160,18 @@ const getProfile = async (id) => {
         where: { id },
         include: {
             department: true,
+            position: true,
             user_roles: { include: { role: true } }
         }
     });
 
     if (!user) throw new ApiError(404, 'Người dùng không tồn tại');
 
-    const { password_hash, user_roles, department, ...safeUser } = user;
+    const { password_hash, user_roles, department, position, ...safeUser } = user;
     return {
         ...safeUser,
         department: department?.name || '',
+        position: position?.name || '',
         roles: user_roles.map(ur => ur.role.name)
     };
 };
@@ -165,20 +180,24 @@ const getProfile = async (id) => {
  * Cập nhật thông tin cá nhân
  */
 const updateProfile = async (id, updateData) => {
-    const { 
-        id: _, 
-        updated_at, 
-        role_id, 
-        employee_id: empId, 
-        roles, 
-        user_roles, 
-        enrollments_count, 
-        enrolled_courses, 
+    const {
+        id: _,
+        updated_at,
+        role_id,
+        employee_id: empId,
+        roles,
+        user_roles,
+        enrollments_count,
+        enrolled_courses,
         _count,
+        department,
+        position,
+        department_id,
+        position_id,
         dob,
-        ...data 
+        ...data
     } = updateData;
-    
+
     // Kiểm tra employee_id duy nhất
     if (empId) {
         const existingUser = await prisma.user.findFirst({
@@ -198,20 +217,23 @@ const updateProfile = async (id, updateData) => {
         data: {
             ...data,
             employee_id: empId,
-            department_id: data.department_id ? parseInt(data.department_id) : undefined,
+            department_id: updateData.department_id ? parseInt(updateData.department_id) : null,
+            position_id: updateData.position_id ? parseInt(updateData.position_id) : null,
             dob: parseDate(dob),
-            join_date: parseDate(data.join_date)
+            join_date: parseDate(updateData.join_date)
         },
         include: {
             department: true,
+            position: true,
             user_roles: { include: { role: true } }
         }
     });
 
-    const { password_hash, user_roles: ur, department: d, ...safeUser } = updatedUser;
+    const { password_hash, user_roles: ur, department: d, position: p, ...safeUser } = updatedUser;
     return {
         ...safeUser,
         department: d?.name || '',
+        position: p?.name || '',
         roles: ur.map(item => item.role.name)
     };
 };
@@ -220,7 +242,7 @@ const updateProfile = async (id, updateData) => {
  * Tạo người dùng mới (Admin)
  */
 const createUser = async (userData) => {
-    const { username, email, password, role_id, employee_id, join_date, ...rest } = userData;
+    const { username, email, password, role_id, employee_id, join_date, department_id, position_id, ...rest } = userData;
 
     if (employee_id) {
         const existingUser = await prisma.user.findUnique({ where: { employee_id } });
@@ -234,23 +256,25 @@ const createUser = async (userData) => {
             username,
             email,
             employee_id,
-            department_id: rest.department_id ? parseInt(rest.department_id) : undefined,
+            department_id: (department_id !== undefined && department_id !== null) ? parseInt(String(department_id), 10) : null,
+            position_id: (position_id !== undefined && position_id !== null) ? parseInt(String(position_id), 10) : null,
             join_date: parseDate(join_date),
             password_hash: hashed,
             user_roles: {
-                create: { role_id: parseInt(role_id) || 3 }
+                create: { role_id: role_id ? parseInt(String(role_id), 10) : 3 }
             }
         }
     });
 };
 
 const deleteUser = async (id, currentUserId) => {
-    if (parseInt(id) === currentUserId) {
+    const userId = parseInt(id);
+    if (userId === currentUserId) {
         throw new ApiError(400, 'Bạn không thể tự xóa chính mình');
     }
-    return await prisma.user.update({
-        where: { id: parseInt(id) },
-        data: { deleted_at: new Date() }
+    
+    return await prisma.user.delete({
+        where: { id: userId }
     });
 };
 
@@ -263,9 +287,8 @@ const deleteBatchUsers = async (ids, currentUserId) => {
         throw new ApiError(400, 'Không có người dùng hợp lệ để xóa hoặc bạn đang cố gắng tự xóa chính mình');
     }
 
-    return await prisma.user.updateMany({
-        where: { id: { in: validIds } },
-        data: { deleted_at: new Date() }
+    return await prisma.user.deleteMany({
+        where: { id: { in: validIds } }
     });
 };
 
@@ -289,6 +312,25 @@ const revokeCourseAccess = async (userId, courseId) => {
     });
 };
 
+const restoreUser = async (id) => {
+    return await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: { deleted_at: null }
+    });
+};
+
+/**
+ * Bật/Tắt trạng thái hoạt động của người dùng
+ */
+const toggleUserStatus = async (id, currentIsActive) => {
+    return await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: {
+            deleted_at: currentIsActive ? new Date() : null
+        }
+    });
+};
+
 const getRoles = async () => {
     return await prisma.role.findMany();
 };
@@ -301,6 +343,8 @@ module.exports = {
     createUser,
     deleteUser,
     deleteBatchUsers,
+    restoreUser,
+    toggleUserStatus,
     revokeCourseAccess,
     getRoles
 };

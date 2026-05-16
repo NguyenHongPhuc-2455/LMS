@@ -16,6 +16,7 @@ interface LessonFormModalProps {
     sections: any[];
     lessonType: 'VIDEO' | 'QUIZ';
     setLessonType: (type: 'VIDEO' | 'QUIZ') => void;
+    loading?: boolean;
 }
 
 export default function LessonFormModal({
@@ -26,7 +27,8 @@ export default function LessonFormModal({
     initialValues,
     sections,
     lessonType,
-    setLessonType
+    setLessonType,
+    loading
 }: LessonFormModalProps) {
     const [form] = Form.useForm();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -59,20 +61,22 @@ export default function LessonFormModal({
             title={editingId ? "Chỉnh sửa Bài Giảng" : "Đăng Bài Giảng Mới"}
             open={open}
             onCancel={onCancel}
-            footer={[
-                <Button key="cancel" onClick={onCancel} size="large">
-                    Hủy bỏ
-                </Button>,
-                <Button
-                    key="submit"
-                    type="primary"
-                    icon={lessonType === 'VIDEO' ? <ShieldCheck size={18} /> : undefined}
-                    onClick={() => form.submit()}
-                    size="large"
-                >
-                    {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Lưu bài học" : "Lưu bài trắc nghiệm")}
-                </Button>
-            ]}
+            footer={
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                        Hủy bỏ
+                    </Button>
+                    <Button 
+                        type="primary" 
+                        onClick={() => form.submit()} 
+                        loading={loading}
+                        icon={lessonType === 'VIDEO' ? <ShieldCheck size={18} /> : undefined}
+                        style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}
+                    >
+                        {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Lưu bài học" : "Lưu bài trắc nghiệm")}
+                    </Button>
+                </div>
+            }
             width={1000}
             style={{ top: 100 }}
             destroyOnHidden={true}

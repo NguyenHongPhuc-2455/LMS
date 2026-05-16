@@ -12,12 +12,12 @@ router.use(authMiddleware.verifyToken);
 router.post('/', validate(courseRequestValidation.requestAccess), courseRequestController.requestAccess);
 router.get('/my-requests', courseRequestController.getMyRequests);
 
-// Admin routes - Chỉ Admin mới có quyền phê duyệt/từ chối
-router.get('/pending', authMiddleware.isAdmin, courseRequestController.getPendingRequests);
-router.post('/approve-bulk', authMiddleware.isAdmin, validate(courseRequestValidation.bulkAction), courseRequestController.approveBulk);
-router.post('/reject-bulk', authMiddleware.isAdmin, validate(courseRequestValidation.bulkAction), courseRequestController.rejectBulk);
-router.patch('/:id/approve', authMiddleware.isAdmin, courseRequestController.approveRequest);
-router.patch('/:id/reject', authMiddleware.isAdmin, courseRequestController.rejectRequest);
+// Admin/Manager routes - Phê duyệt/từ chối yêu cầu
+router.get('/pending', authMiddleware.isAdminOrManager, courseRequestController.getPendingRequests);
+router.post('/approve-bulk', authMiddleware.isAdminOrManager, validate(courseRequestValidation.bulkAction), courseRequestController.approveBulk);
+router.post('/reject-bulk', authMiddleware.isAdminOrManager, validate(courseRequestValidation.bulkAction), courseRequestController.rejectBulk);
+router.patch('/:id/approve', authMiddleware.isAdminOrManager, courseRequestController.approveRequest);
+router.patch('/:id/reject', authMiddleware.isAdminOrManager, courseRequestController.rejectRequest);
 
 
 module.exports = router;

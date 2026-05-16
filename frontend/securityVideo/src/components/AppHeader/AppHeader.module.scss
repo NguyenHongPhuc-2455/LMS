@@ -12,8 +12,9 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1001;
+    z-index: 999;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 
     @media (max-width: 768px) {
         padding: 0 16px;
@@ -98,8 +99,14 @@
     padding: 6px 18px;
     height: 40px;
     font-size: 14px;
-    transition: all 0.2s ease;
-    box-shadow: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+
+    &:hover, &:focus {
+        border-color: #C8102E !important;
+        box-shadow: 0 4px 12px rgba(200, 16, 46, 0.08) !important;
+        background: #fff;
+    }
 
     :global {
         .ant-input-prefix {

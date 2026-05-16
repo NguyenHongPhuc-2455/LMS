@@ -7,6 +7,7 @@ interface SectionFormModalProps {
     onSuccess: (values: any) => Promise<void>;
     editingId: number | null;
     initialValues?: any;
+    loading?: boolean;
 }
 
 export default function SectionFormModal({
@@ -14,7 +15,8 @@ export default function SectionFormModal({
     onCancel,
     onSuccess,
     editingId,
-    initialValues
+    initialValues,
+    loading
 }: SectionFormModalProps) {
     const [form] = Form.useForm();
 
@@ -37,12 +39,16 @@ export default function SectionFormModal({
             title={editingId ? "Chỉnh sửa Chương" : "Thêm Chương Mới"}
             open={open}
             onCancel={onCancel}
-            footer={[
-                <Button key="cancel" onClick={onCancel} size="large">Hủy</Button>,
-                <Button key="submit" type="primary" onClick={() => form.submit()} size="large">
-                    {editingId ? "Cập nhật" : "Tạo mới"}
-                </Button>
-            ]}
+            footer={
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                        Hủy
+                    </Button>
+                    <Button type="primary" onClick={() => form.submit()} loading={loading} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                        {editingId ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                </div>
+            }
             style={{ top: 100 }}
         >
             <Form form={form} layout="vertical" onFinish={handleFinish}>

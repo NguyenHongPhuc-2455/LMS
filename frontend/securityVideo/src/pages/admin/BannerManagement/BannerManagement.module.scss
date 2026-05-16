@@ -39,17 +39,17 @@
 
 .tableWrapper {
     :global {
-        .ant-table-thead > tr > th {
+        .ant-table-thead>tr>th {
             background: #B8121A !important;
             color: white !important;
             border-bottom: none;
-            
+
             &::before {
                 display: none;
             }
         }
-        
-        .ant-table-tbody > tr:hover > td {
+
+        .ant-table-tbody>tr:hover>td {
             background: rgba(184, 18, 26, 0.05) !important;
         }
     }

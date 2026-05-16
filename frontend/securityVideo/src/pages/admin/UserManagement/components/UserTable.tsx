@@ -4,6 +4,7 @@ import { UsergroupAddOutlined, DeleteOutlined, BookOutlined } from '@ant-design/
 import styles from '../UserManagement.module.scss';
 import type { User as UserData, Role as RoleData } from '../../../../types/user';
 
+
 // Sub-components & Hooks
 import { useUserTableColumns } from '../hooks/useUserTableColumns';
 
@@ -13,12 +14,14 @@ interface UserTableProps {
     users: UserData[];
     roles: RoleData[];
     departments: any[];
+    positions: any[];
     loading: boolean;
     isDeleteMode: boolean;
     selectedRowKeys: React.Key[];
     onSelectChange: (keys: React.Key[]) => void;
     onRevokeAccess: (userId: number, courseId: number) => void;
     onRowClick: (record: UserData) => void;
+    onRefresh: () => void;
     pagination?: any;
 }
 
@@ -26,12 +29,14 @@ export const UserTable = React.memo(({
     users,
     roles,
     departments,
+    positions,
     loading,
     isDeleteMode,
     selectedRowKeys,
     onSelectChange,
     onRevokeAccess,
     onRowClick,
+    onRefresh,
     pagination
 }: UserTableProps) => {
     const [courseModalVisible, setCourseModalVisible] = useState(false);
@@ -41,8 +46,10 @@ export const UserTable = React.memo(({
     const { columns } = useUserTableColumns({
         roles,
         departments,
+        positions,
         setSelectedUserId,
-        setCourseModalVisible
+        setCourseModalVisible,
+        onRefresh
     });
 
     const rowSelection = useMemo(() => isDeleteMode ? {
@@ -72,8 +79,9 @@ export const UserTable = React.memo(({
                         // Tránh trigger khi bấm vào nút hoặc checkbox
                         const target = event.target as HTMLElement;
                         if (
-                            target.closest('.ant-table-selection-column') || 
-                            target.closest('button') || 
+                            target.closest('.ant-table-selection-column') ||
+                            target.closest('button') ||
+                            target.closest('.ant-switch') ||
                             target.closest('a') ||
                             target.closest('.ant-modal')
                         ) {
@@ -84,7 +92,6 @@ export const UserTable = React.memo(({
                     style: { cursor: 'pointer' }
                 })}
                 scroll={{ x: 1800, y: 600 }}
-                virtual
                 bordered
             />
 

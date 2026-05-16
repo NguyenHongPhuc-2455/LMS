@@ -4,10 +4,46 @@ const { lessonSelect } = require('./video.service');
 
 const { generateStreamToken } = require('../utils/streamToken');
 
-const getAllCourses = async (search = '', categoryId = null) => {
-    return await prisma.course.findMany({
+const { NEW_EMPLOYEE_THRESHOLD_DAYS } = require('../constants/system');
+
+const isUserInCourseScope = (userData, course, isEnrolled = false) => {
+    if (isEnrolled) return true;
+
+    const scope = course.apply_scope || 'ALL_EMPLOYEE';
+    const targets = Array.isArray(course.mandatory_targets) ? course.mandatory_targets : [];
+    
+    // 1. Check New Employee status if needed
+    const isNewScope = scope.startsWith('NEW_EMPLOYEE');
+    if (isNewScope) {
+        if (!userData.join_date) return false;
+        const today = new Date();
+        const joinDate = new Date(userData.join_date);
+        const diffDays = Math.ceil((today.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > NEW_EMPLOYEE_THRESHOLD_DAYS) return false;
+    }
+
+    // 2. Check scope
+    if (scope === 'ALL_EMPLOYEE' || scope === 'NEW_EMPLOYEE') return true;
+    
+    if (scope === 'BY_DEPARTMENT' || scope === 'NEW_EMPLOYEE_BY_DEPARTMENT') {
+        return userData.department_id && targets.includes(userData.department_id);
+    }
+    
+    if (scope === 'BY_POSITION' || scope === 'NEW_EMPLOYEE_BY_POSITION') {
+        return userData.position_id && targets.includes(userData.position_id);
+    }
+    
+    if (scope === 'SPECIFIC_USER') {
+        return targets.includes(userData.id);
+    }
+    
+    return true;
+};
+
+const getAllCourses = async (search = '', categoryId = null, includeInactive = false, user = null) => {
+    let courses = await prisma.course.findMany({
         where: {
-            deleted_at: null,
+            ...(includeInactive !== true && includeInactive !== 'true' && { deleted_at: null }),
             ...(search && {
                 title: { contains: search, mode: 'insensitive' }
             }),
@@ -21,6 +57,23 @@ const getAllCourses = async (search = '', categoryId = null) => {
             _count: { select: { sections: true, enrollments: true } }
         }
     });
+
+    // Lọc các khóa học hiển thị theo Phạm vi áp dụng (Nếu không phải admin)
+    if (user) {
+        const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+        if (!isAdmin) {
+            const userData = await prisma.user.findUnique({ 
+                where: { id: user.id }, 
+                select: { id: true, department_id: true, position_id: true, join_date: true } 
+            });
+            
+            if (userData) {
+                courses = courses.filter(course => isUserInCourseScope(userData, course));
+            }
+        }
+    }
+
+    return courses;
 };
 
 const getCourseById = async (courseId) => {
@@ -61,35 +114,53 @@ const getEnrichedCourseDetail = async (courseId, user, ip) => {
     const course = await getCourseById(courseId);
     if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
 
-    // 1. Kiểm tra quyền truy cập
-    const { hasAccess, requestStatus } = await _checkCourseAccess(userId, parseInt(courseId), course.instructor_id, user?.roles);
+    // 1. Kiểm tra quyền truy cập cơ bản (Đã ghi danh/Admin/Chủ sở hữu)
+    let { hasAccess, requestStatus, enrolledAt } = await _checkCourseAccess(userId, parseInt(courseId), course.instructor_id, user?.roles);
 
-    // 2. Kiểm tra quá hạn
-    let isOverdue = false;
-    if (course.is_mandatory && userId) {
-        const userData = await prisma.user.findUnique({ where: { id: userId }, select: { join_date: true } });
-        if (userData?.join_date) {
-            const deadline = new Date(userData.join_date);
-            deadline.setDate(deadline.getDate() + (course.mandatory_deadline_days || 0));
-            isOverdue = new Date() > deadline;
+    // 2. Tính toán trạng thái thời hạn và quyền truy cập đặc biệt (Early Access/Overdue)
+    const { calculateCourseStatus } = require('../utils/courseStatus');
+    const userData = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { id: true, join_date: true, department_id: true, position_id: true } }) : null;
+
+    const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+    const isOwner = course.instructor_id === userId;
+
+    // 2.5. Kiểm tra phạm vi hiển thị (Visibility Scope)
+    if (!isAdmin && !isOwner && userData) {
+        const inScope = isUserInCourseScope(userData, course);
+        if (!inScope) {
+            throw new ApiError(403, 'Bạn không thuộc đối tượng được phân phối khóa học này.');
         }
     }
 
-    // 3. Lấy danh sách bài học đã hoàn thành
+    // Lấy danh sách bài học đã hoàn thành để tính progress thực tế cho statusInfo
     const completedLessonIds = await _getCompletedLessonIds(userId, course);
+    const allLessonIds = course.sections.flatMap(s => s.lessons.map(l => l.id));
+    const progressPercent = allLessonIds.length > 0 ? Math.round((completedLessonIds.length / allLessonIds.length) * 100) : 0;
+
+    const statusInfo = calculateCourseStatus(course, userData, progressPercent, enrolledAt);
+
+    // Nếu là học viên (không phải admin/owner) và canAccess = false, thì chặn hasAccess
+    if (!isAdmin && !isOwner && !statusInfo.canAccess) {
+        hasAccess = false;
+    }
 
     // 4. Làm giàu dữ liệu cho từng Lesson
-    course.sections = _enrichSections(course.sections, userId, ip, hasAccess && !isOverdue, completedLessonIds, isOverdue);
+    course.sections = _enrichSections(course.sections, userId, ip, hasAccess && !statusInfo.isOverdue, completedLessonIds, statusInfo.isOverdue);
 
     // 5. Tính toán tiến độ
-    const progress = _calculateCourseProgress(course, completedLessonIds, userId, hasAccess && !isOverdue);
+    const progress = _calculateCourseProgress(course, completedLessonIds, userId, hasAccess && !statusInfo.isOverdue);
 
-    return { 
-        ...course, 
-        hasAccess, 
+    return {
+        ...course,
+        hasAccess,
         requestStatus,
-        isOverdue,
-        ...progress 
+        isOverdue: statusInfo.isOverdue,
+        status: statusInfo.status,
+        remainingDays: statusInfo.remainingDays,
+        canAccess: statusInfo.canAccess,
+        accessReason: statusInfo.reason,
+        deadlineDate: statusInfo.deadlineDate,
+        ...progress
     };
 };
 
@@ -116,7 +187,8 @@ const _checkCourseAccess = async (userId, courseId, instructorId, roles = []) =>
 
     return {
         hasAccess: !!(enrollment || programEnrollment),
-        requestStatus: reqAccess?.status || null
+        requestStatus: reqAccess?.status || null,
+        enrolledAt: enrollment?.enrolled_at || null
     };
 };
 
@@ -170,6 +242,27 @@ const _calculateCourseProgress = (course, completedLessonIds, userId, hasAccess)
     };
 };
 
+const restoreCourse = async (courseId) => {
+    const id = parseInt(courseId);
+    return await prisma.course.update({
+        where: { id },
+        data: {
+            deleted_at: null,
+            status: 'PUBLISHED'
+        }
+    });
+};
+
+const toggleActiveStatus = async (courseId, active) => {
+    const id = parseInt(courseId);
+    return await prisma.course.update({
+        where: { id },
+        data: {
+            deleted_at: active ? null : new Date()
+        }
+    });
+};
+
 const softDeleteCourse = async (courseId) => {
     const id = parseInt(courseId);
 
@@ -182,40 +275,45 @@ const softDeleteCourse = async (courseId) => {
     // Xóa file vật lý trên Cloudflare R2
     const videoService = require('./video.service');
     for (const lesson of lessons) {
-        await videoService.deleteVideoFiles(lesson.id);
+        try {
+            await videoService.deleteVideoFiles(lesson.id);
+        } catch (error) {
+            console.error(`Lỗi khi xóa video bài học ${lesson.id}:`, error);
+        }
     }
 
-    // 2. Thực hiện xóa trong transaction
+    // 2. Thực hiện xóa cứng trong transaction
     return await prisma.$transaction(async (tx) => {
-        // 0. Xóa khỏi toàn bộ lộ trình học liên quan
-        await tx.programCourse.deleteMany({
-            where: { course_id: id }
-        });
+        // Xóa các liên kết trước
+        await tx.programCourse.deleteMany({ where: { course_id: id } });
+        await tx.enrollment.deleteMany({ where: { course_id: id } });
+        await tx.courseRequest.deleteMany({ where: { course_id: id } });
+        await tx.wishlist.deleteMany({ where: { course_id: id } });
+        await tx.review.deleteMany({ where: { course_id: id } });
 
-        // 1. Dọn dẹp ghi danh và yêu cầu để đồng bộ dữ liệu quản lý User
-        await tx.enrollment.deleteMany({
-            where: { course_id: id }
-        });
+        // Xóa các chương học (sẽ cascade xóa Lesson, Quiz, Comment...)
+        await tx.section.deleteMany({ where: { course_id: id } });
 
-        await tx.courseRequest.deleteMany({
-            where: { course_id: id }
-        });
-
-        // 2. Xóa cứng các chương (Section)
-        await tx.section.deleteMany({
-            where: { course_id: id }
-        });
-
-
-        // Xóa mềm khóa học
-        return await tx.course.update({
-            where: { id },
-            data: {
-                deleted_at: new Date(),
-                status: 'ARCHIVED' // Chuyển trạng thái sang lưu trữ
-            }
+        // Cuối cùng là xóa vĩnh viễn khóa học
+        return await tx.course.delete({
+            where: { id }
         });
     });
+};
+const batchDeleteCourses = async (ids) => {
+    const results = [];
+    let successCount = 0;
+    for (const id of ids) {
+        try {
+            await softDeleteCourse(id);
+            results.push({ id, status: 'success' });
+            successCount++;
+        } catch (error) {
+            console.error(`Lỗi khi xóa khóa học ${id}:`, error);
+            results.push({ id, status: 'error', message: error.message });
+        }
+    }
+    return { successCount, results };
 };
 const createCourse = async (data) => {
     return await prisma.course.create({ data });
@@ -245,13 +343,118 @@ const deleteSection = async (id) => {
     });
 };
 
+const getMandatoryOverdueReport = async (type = 'overdue') => {
+    // 1. Lấy tất cả khóa học bắt buộc
+    const mandatoryCourses = await prisma.course.findMany({
+        where: { is_mandatory: true, deleted_at: null },
+        select: { 
+            id: true, title: true, mandatory_deadline_days: true, 
+            mandatory_start_date: true, mandatory_end_date: true, 
+            allow_early_access: true, apply_scope: true, mandatory_targets: true 
+        }
+    });
+
+    if (mandatoryCourses.length === 0) return [];
+
+    // 2. Lấy tất cả user có join_date
+    const users = await prisma.user.findMany({
+        where: { join_date: { not: null }, deleted_at: null },
+        select: { 
+            id: true, full_name: true, email: true, phone: true, 
+            employee_id: true, join_date: true, department_id: true, 
+            position_id: true, department: { select: { name: true } } 
+        }
+    });
+
+    const { calculateCourseStatus } = require('../utils/courseStatus');
+    const resultList = [];
+    const today = new Date();
+
+    for (const user of users) {
+        const userCourses = [];
+
+
+        const enrollments = await prisma.enrollment.findMany({
+            where: { user_id: user.id, course_id: { in: mandatoryCourses.map(c => c.id) } },
+            select: { course_id: true, enrolled_at: true }
+        });
+        const enrollmentMap = {};
+        enrollments.forEach(e => { enrollmentMap[e.course_id] = e.enrolled_at; });
+
+        for (const course of mandatoryCourses) {
+            const isEnrolled = !!enrollmentMap[course.id];
+            if (!isUserInCourseScope(user, course, isEnrolled)) continue;
+
+            const statusInfo = calculateCourseStatus(course, user, 0, enrollmentMap[course.id]);
+
+            // Kiểm tra tiến độ thực tế
+            const lessons = await prisma.lesson.findMany({
+                where: { section: { course_id: course.id } },
+                select: { id: true }
+            });
+            const lessonIds = lessons.map(l => l.id);
+
+            let isCompleted = false;
+            let progress = 0;
+            if (lessonIds.length > 0) {
+                const completedCount = await prisma.lessonCompleted.count({
+                    where: { user_id: user.id, lesson_id: { in: lessonIds } }
+                });
+                isCompleted = completedCount === lessonIds.length;
+                progress = Math.round((completedCount / lessonIds.length) * 100);
+            }
+
+            // Phân loại
+            const isOverdue = !isCompleted && statusInfo.isOverdue;
+            const isOnTime = isCompleted || (!statusInfo.isOverdue);
+
+            if (type === 'overdue' && isOverdue) {
+                userCourses.push({ 
+                    courseId: course.id, 
+                    courseTitle: course.title, 
+                    daysOverdue: Math.abs(statusInfo.remainingDays),
+                    progress 
+                });
+            } else if (type === 'ontime' && isOnTime) {
+                userCourses.push({ 
+                    courseId: course.id, 
+                    courseTitle: course.title, 
+                    isCompleted,
+                    progress,
+                    remainingDays: statusInfo.remainingDays
+                });
+            }
+        }
+
+        if (userCourses.length > 0) {
+            resultList.push({
+                userId: user.id,
+                fullName: user.full_name,
+                email: user.email,
+                phone: user.phone,
+                employeeId: user.employee_id,
+                department: user.department?.name,
+                joinDate: user.join_date,
+                courses: userCourses
+            });
+        }
+    }
+
+    return resultList;
+};
+
 module.exports = {
     getAllCourses,
     getCourseById,
     getEnrichedCourseDetail,
     createCourse,
     softDeleteCourse,
-    deleteSection
+    batchDeleteCourses,
+    deleteSection,
+    restoreCourse,
+    toggleActiveStatus,
+    getMandatoryOverdueReport,
+    isUserInCourseScope
 };
 
 

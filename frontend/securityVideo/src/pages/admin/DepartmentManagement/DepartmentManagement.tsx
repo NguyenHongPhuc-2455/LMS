@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, message, Space, Card, Typography, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ApartmentOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import api from '../../../services/api';
 import styles from '../UserManagement/UserManagement.module.scss'; // Reusing styles for consistency
 
@@ -40,7 +40,7 @@ const DepartmentManagement: React.FC = () => {
     }, []);
 
     const filteredDepartments = useMemo(() => {
-        return departments.filter(d => 
+        return departments.filter(d =>
             d.name.toLowerCase().includes(search.toLowerCase()) ||
             (d.description && d.description.toLowerCase().includes(search.toLowerCase()))
         );
@@ -101,43 +101,29 @@ const DepartmentManagement: React.FC = () => {
             title: 'Mã phòng',
             dataIndex: 'id',
             key: 'id',
-            width: 120,
-            render: (id: number) => <Text strong color="blue">DEPT-{id}</Text>
+            render: (id: number) => <Text strong style={{ color: '#000', whiteSpace: 'nowrap' }}>DEPT-{id}</Text>
         },
         {
             title: 'Tên phòng ban',
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => (
-                <Space>
-                    <div style={{ 
-                        background: 'rgba(24, 144, 255, 0.1)', 
-                        padding: '8px', 
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}>
-                        <ApartmentOutlined style={{ color: '#1890ff' }} />
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: '15px' }}>{text}</span>
-                </Space>
+                <span style={{ fontWeight: 600, fontSize: '15px', color: '#000', whiteSpace: 'nowrap' }}>{text}</span>
             ),
         },
         {
             title: 'Mô tả',
             dataIndex: 'description',
             key: 'description',
-            ellipsis: true,
-            render: (text: string) => text || <Text type="secondary">Chưa có mô tả</Text>
+            render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text || <Text type="secondary">Chưa có mô tả</Text>}</span>
         },
         {
             title: 'Nhân sự',
             key: 'userCount',
-            width: 150,
             render: (record: Department) => (
-                <Tag color="blue" style={{ borderRadius: '4px', fontWeight: 500 }}>
+                <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
                     {record._count?.users || 0} nhân viên
-                </Tag>
+                </span>
             ),
         },
         {
@@ -145,18 +131,18 @@ const DepartmentManagement: React.FC = () => {
             key: 'action',
             width: 120,
             render: (_: any, record: Department) => (
-                <Space size="middle">
-                    <Button 
-                        type="text" 
-                        icon={<EditOutlined />} 
+                <Space size="middle" style={{ whiteSpace: 'nowrap' }}>
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
                         onClick={() => handleEdit(record)}
                         className={styles.actionBtn}
                         style={{ color: '#1890ff' }}
                     />
-                    <Button 
-                        type="text" 
-                        icon={<DeleteOutlined />} 
-                        danger 
+                    <Button
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        danger
                         onClick={() => handleDelete(record.id)}
                         className={styles.actionBtn}
                     />
@@ -186,16 +172,16 @@ const DepartmentManagement: React.FC = () => {
                             style={{ width: 350 }}
                             allowClear
                         />
-                         <Tag color="processing" icon={<ApartmentOutlined />} style={{ marginLeft: 8 }}>
+                        <span style={{ marginLeft: 12, color: '#666', fontSize: '14px' }}>
                             Tổng cộng {departments.length} phòng ban
-                        </Tag>
+                        </span>
                     </div>
 
                     <Space className={styles.searchBarContainer}>
-                        <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />} 
-                            onClick={handleAdd} 
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleAdd}
                             className={styles.adminAddButton}
                         >
                             Thêm phòng ban
@@ -203,12 +189,12 @@ const DepartmentManagement: React.FC = () => {
                     </Space>
                 </div>
 
-                <Table 
-                    columns={columns} 
-                    dataSource={filteredDepartments} 
-                    rowKey="id" 
+                <Table
+                    columns={columns}
+                    dataSource={filteredDepartments}
+                    rowKey="id"
                     loading={loading}
-                    pagination={{ 
+                    pagination={{
                         pageSize: 10,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
@@ -227,25 +213,27 @@ const DepartmentManagement: React.FC = () => {
                 open={isModalOpen}
                 onCancel={() => setIsModalOpen(false)}
                 footer={[
-                    <Button 
-                        key="cancel" 
-                        onClick={() => setIsModalOpen(false)}
-                        style={{ minWidth: 120, height: 40, borderRadius: '8px' }}
-                    >
-                        Hủy bỏ
-                    </Button>,
-                    <Button 
-                        key="submit" 
-                        type="primary" 
-                        onClick={handleModalOk} 
-                        className="btn-primary"
-                        style={{ minWidth: 120, height: 40, borderRadius: '8px' }}
-                    >
-                        {editingDept ? 'Cập nhật' : 'Thêm mới'}
-                    </Button>
+                    <div key="footer-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <Button
+                            key="cancel"
+                            onClick={() => setIsModalOpen(false)}
+                            style={{ minWidth: 100, height: 40, borderRadius: '8px' }}
+                        >
+                            Hủy bỏ
+                        </Button>
+                        <Button
+                            key="submit"
+                            type="primary"
+                            onClick={handleModalOk}
+                            style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}
+                        >
+                            {editingDept ? 'Cập nhật' : 'Thêm mới'}
+                        </Button>
+                    </div>
                 ]}
                 destroyOnClose
                 width={500}
+                style={{ top: 60 }}
             >
                 <Form form={form} layout="vertical" style={{ marginTop: '20px' }}>
                     <Form.Item

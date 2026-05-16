@@ -8,12 +8,11 @@ const programRequestValidation = require('../validations/programRequest.validati
 // User routes
 router.post('/', authMiddleware.verifyToken, validate(programRequestValidation.requestAccess), programRequestController.requestAccess);
 
-// Admin routes
-router.get('/pending', authMiddleware.verifyToken, authMiddleware.isAdmin, programRequestController.getPendingRequests);
-router.post('/approve-bulk', authMiddleware.verifyToken, authMiddleware.isAdmin, validate(programRequestValidation.bulkAction), programRequestController.approveBulk);
-router.post('/reject-bulk', authMiddleware.verifyToken, authMiddleware.isAdmin, validate(programRequestValidation.bulkAction), programRequestController.rejectBulk);
-router.patch('/:id/approve', authMiddleware.verifyToken, authMiddleware.isAdmin, programRequestController.approveRequest);
-router.patch('/:id/reject', authMiddleware.verifyToken, authMiddleware.isAdmin, programRequestController.rejectRequest);
-
+// Admin/Manager routes
+router.get('/pending', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, programRequestController.getPendingRequests);
+router.post('/approve-bulk', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, validate(programRequestValidation.bulkAction), programRequestController.approveBulk);
+router.post('/reject-bulk', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, validate(programRequestValidation.bulkAction), programRequestController.rejectBulk);
+router.patch('/:id/approve', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, programRequestController.approveRequest);
+router.patch('/:id/reject', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, programRequestController.rejectRequest);
 
 module.exports = router;

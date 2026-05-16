@@ -21,7 +21,13 @@ export default function Login() {
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
 
-            const redirectTo = data.user.roles?.includes('admin') ? ROUTES.ADMIN_DASHBOARD : ROUTES.HOME;
+            const userRoles = data.user.roles || [];
+            const isAdminOrManager = userRoles.some((r: any) => {
+                const roleName = typeof r === 'string' ? r : r.name;
+                return ['admin', 'manager'].includes(roleName?.toLowerCase());
+            });
+
+            const redirectTo = isAdminOrManager ? ROUTES.ADMIN_DASHBOARD : ROUTES.HOME;
 
             // Đặt cờ vừa đăng nhập để trang chủ hiển thị modal thông báo (nếu có khóa học bắt buộc)
             sessionStorage.setItem('show_mandatory_modal', 'true');

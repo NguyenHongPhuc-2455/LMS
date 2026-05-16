@@ -25,6 +25,21 @@ export default function Home() {
     const [sortType, setSortType] = useState('progress_desc');
 
     useEffect(() => {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            const userRoles = user.roles || [];
+            const isAdminOrManager = userRoles.some((r: any) => {
+                const roleName = typeof r === 'string' ? r : r.name;
+                return ['admin', 'manager'].includes(roleName?.toLowerCase());
+            });
+            if (isAdminOrManager) {
+                navigate('/admin', { replace: true });
+            }
+        }
+    }, [navigate]);
+
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 // Fetch myCourses independently so filter logic always runs
@@ -164,7 +179,7 @@ export default function Home() {
                     {/* Left column: in-progress + categories */}
                     <Col xs={24} lg={16}>
                         {/* Banner cảnh báo khóa học bắt buộc */}
-                        <MandatoryCourseBanner />
+                        <MandatoryCourseBanner hideFloating={true} hideDrawer={true} />
 
                         {inProgressCourses.length > 0 && (
                             <div className={styles.inProgressWrapper}>

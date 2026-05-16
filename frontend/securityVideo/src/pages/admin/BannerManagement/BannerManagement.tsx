@@ -89,11 +89,20 @@ export default function BannerManagement() {
     const handleOk = async () => {
         try {
             const values = await form.validateFields();
+            // Đảm bảo các trường bắt buộc ở backend luôn có giá trị mặc định
+            const submissionData = {
+                ...values,
+                title: values.title || 'Home Banner',
+                description: values.description || '',
+                stat_value: values.stat_value || '',
+                color_code: values.color_code || '#C8102E'
+            };
+
             if (editingBanner) {
-                await heroBannerService.update(editingBanner.id, values);
+                await heroBannerService.update(editingBanner.id, submissionData);
                 message.success('Cập nhật banner thành công');
             } else {
-                await heroBannerService.create(values);
+                await heroBannerService.create(submissionData);
                 message.success('Tạo banner mới thành công');
             }
             setIsModalOpen(false);
@@ -117,35 +126,16 @@ export default function BannerManagement() {
             key: 'order',
             width: 80,
             sorter: (a: HeroBanner, b: HeroBanner) => a.order - b.order,
-        },
-        {
-            title: 'Tiêu đề',
-            dataIndex: 'title',
-            key: 'title',
-        },
-        {
-            title: 'Mô tả',
-            dataIndex: 'description',
-            key: 'description',
-            ellipsis: true,
-        },
-        {
-            title: 'Màu nền',
-            dataIndex: 'color_code',
-            key: 'color_code',
-            render: (color: string) => (
-                <Space>
-                    <div style={{ width: 20, height: 20, backgroundColor: color || '#C8102E', border: '1px solid #ddd', borderRadius: '4px' }}></div>
-                    <Text code>{color || '#C8102E'}</Text>
-                </Space>
-            )
+            render: (text: any) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>
         },
         {
             title: 'Trạng thái',
             dataIndex: 'is_active',
             key: 'is_active',
             render: (active: boolean, record: HeroBanner) => (
-                <Switch checked={active} onChange={() => handleToggleStatus(record.id, active)} />
+                <div style={{ whiteSpace: 'nowrap' }}>
+                    <Switch checked={active} onChange={() => handleToggleStatus(record.id, active)} />
+                </div>
             )
         },
         {
@@ -153,7 +143,7 @@ export default function BannerManagement() {
             key: 'action',
             width: 120,
             render: (_: any, record: HeroBanner) => (
-                <Space size="middle">
+                <Space size="middle" style={{ whiteSpace: 'nowrap' }}>
                     <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                     <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} />
                 </Space>
@@ -196,65 +186,53 @@ export default function BannerManagement() {
             <Modal
                 title={editingBanner ? "Chỉnh sửa Banner" : "Thêm Banner mới"}
                 open={isModalOpen}
-                onOk={handleOk}
                 onCancel={() => setIsModalOpen(false)}
                 width={700}
-                okText="Lưu"
-                cancelText="Hủy"
-                okButtonProps={{ style: { backgroundColor: '#C72127' } }}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <Button onClick={() => setIsModalOpen(false)} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                            Hủy
+                        </Button>
+                        <Button type="primary" onClick={handleOk} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                            {editingBanner ? 'Lưu' : 'Thêm mới'}
+                        </Button>
+                    </div>
+                }
             >
                 <Form
                     form={form}
                     layout="vertical"
-                    initialValues={{ is_active: true, color_code: '#C8102E' }}
+                    initialValues={{ is_active: true }}
                 >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}>
-                            <Input placeholder="VD: Khóa học đa dạng" />
-                        </Form.Item>
-                        <Form.Item name="stat_value" label="Số liệu (Stat)">
-                            <Input placeholder="VD: 24+ khóa học" />
-                        </Form.Item>
-                    </div>
-
-                    <Form.Item name="description" label="Mô tả">
-                        <Input.TextArea rows={3} placeholder="Mô tả ngắn gọn về banner..." />
+                    <Form.Item name="image_url" label="Hình ảnh Banner" rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập URL ảnh' }]}>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Upload
+                                name="image"
+                                listType="picture-card"
+                                className="avatar-uploader"
+                                showUploadList={false}
+                                action={`${import.meta.env.VITE_API_URL}/upload/image`}
+                                headers={{ Authorization: `Bearer ${localStorage.getItem('accessToken')}` }}
+                                onChange={handleUpload}
+                            >
+                                {imageUrl ? (
+                                    <img src={imageUrl} alt="banner" style={{ width: '100%' }} />
+                                ) : (
+                                    <div>
+                                        {uploading ? <LoadingOutlined /> : <PlusOutlined />}
+                                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                                    </div>
+                                )}
+                            </Upload>
+                            <Input 
+                                placeholder="Dán URL ảnh vào đây" 
+                                onChange={(e) => form.setFieldsValue({ image_url: e.target.value })}
+                                value={imageUrl}
+                            />
+                        </Space>
                     </Form.Item>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'end' }}>
-                        <Form.Item name="image_url" label="Hình ảnh Banner">
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                                <Upload
-                                    name="image"
-                                    listType="picture-card"
-                                    className="avatar-uploader"
-                                    showUploadList={false}
-                                    action={`${import.meta.env.VITE_API_URL}/upload/image`}
-                                    headers={{ Authorization: `Bearer ${localStorage.getItem('accessToken')}` }}
-                                    onChange={handleUpload}
-                                >
-                                    {imageUrl ? (
-                                        <img src={imageUrl} alt="banner" style={{ width: '100%' }} />
-                                    ) : (
-                                        <div>
-                                            {uploading ? <LoadingOutlined /> : <PlusOutlined />}
-                                            <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
-                                        </div>
-                                    )}
-                                </Upload>
-                                <Input 
-                                    placeholder="Dán URL ảnh vào đây" 
-                                    onChange={(e) => form.setFieldsValue({ image_url: e.target.value })}
-                                    value={imageUrl}
-                                />
-                            </Space>
-                        </Form.Item>
-                        <Form.Item name="color_code" label="Mã màu nền">
-                            <Input placeholder="#C8102E" />
-                        </Form.Item>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <Form.Item name="order" label="Thứ tự">
                             <InputNumber min={0} style={{ width: '100%' }} />
                         </Form.Item>

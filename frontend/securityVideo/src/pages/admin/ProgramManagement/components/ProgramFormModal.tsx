@@ -11,9 +11,10 @@ interface ProgramFormModalProps {
     onSuccess: (values: any, thumbFile: File | null) => Promise<void>;
     editingId?: number | null;
     initialValues?: any;
+    loading?: boolean;
 }
 
-export default function ProgramFormModal({ open, onCancel, onSuccess, editingId, initialValues }: ProgramFormModalProps) {
+export default function ProgramFormModal({ open, onCancel, onSuccess, editingId, initialValues, loading }: ProgramFormModalProps) {
     const [form] = Form.useForm();
     const [thumbFile, setThumbFile] = useState<File | null>(null);
     const [thumbUrl, setThumbUrl] = useState<string>('');
@@ -40,7 +41,16 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
             title={editingId ? 'Chỉnh sửa Lộ trình học' : 'Tạo Lộ trình học mới'}
             open={open}
             onCancel={onCancel}
-            footer={null}
+            footer={
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                        Hủy
+                    </Button>
+                    <Button type="primary" onClick={() => form.submit()} loading={loading} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                        {editingId ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                </div>
+            }
             width={640}
         >
             <Form form={form} layout="vertical" onFinish={handleFinish}>
@@ -110,7 +120,6 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                     </Space>
                 </Form.Item>
 
-                <Button type="primary" htmlType="submit" block size="large">Hoàn tất</Button>
             </Form>
         </Modal>
     );

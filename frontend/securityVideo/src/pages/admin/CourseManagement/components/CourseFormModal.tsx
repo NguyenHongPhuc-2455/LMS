@@ -1,43 +1,87 @@
-import { Modal, Form, Row, Col, Input, Select, Space, Upload, Button, Switch, InputNumber } from 'antd';
+import { Modal, Form, Row, Col, Input, Select, Space, Upload, Button, Switch, InputNumber, Typography, Tag, DatePicker } from 'antd';
 import { UploadCloud } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { WarningOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { WarningOutlined, UserAddOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import styles from '../CourseManagement.module.scss';
+import { UserSelectionModal } from './UserSelectionModal';
 
 const { Option } = Select;
+const { Text, Title } = Typography;
+
+import { type Course } from '../../../../types/course';
 
 interface CourseFormModalProps {
     open: boolean;
     onCancel: () => void;
-    onSuccess: (values: any, thumbFile: File | null) => Promise<void>;
+    onSuccess: (values: Partial<Course>, thumbFile: File | null) => Promise<void>;
     editingId?: number | null;
-    initialValues?: any;
+    initialValues?: Partial<Course>;
     categories: any[];
+    departments: any[];
+    positions: any[];
+    users: any[];
+    loading?: boolean;
 }
 
-export default function CourseFormModal({ open, onCancel, onSuccess, editingId, initialValues, categories }: CourseFormModalProps) {
+export default function CourseFormModal({ open, onCancel, onSuccess, editingId, initialValues, categories, departments, positions, users, loading }: CourseFormModalProps) {
     const [form] = Form.useForm();
     const [thumbFile, setThumbFile] = useState<File | null>(null);
     const [thumbUrl, setThumbUrl] = useState<string>('');
     const [isMandatory, setIsMandatory] = useState(false);
+    const [applyScope, setApplyScope] = useState<string>('ALL_EMPLOYEE');
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    
+    const [deadlineType, setDeadlineType] = useState<'days' | 'range'>('days');
+    
+    const selectedUserIds = Form.useWatch('mandatory_targets', form);
+    const watchDeadlineType = Form.useWatch('deadline_type', form);
+
+    useEffect(() => {
+        if (watchDeadlineType) {
+            setDeadlineType(watchDeadlineType);
+        }
+    }, [watchDeadlineType]);
 
     useEffect(() => {
         if (open) {
             if (editingId && initialValues) {
-                form.setFieldsValue(initialValues);
-                setThumbUrl(initialValues.thumbnail || '');
                 setIsMandatory(!!initialValues.is_mandatory);
+                setApplyScope(initialValues.apply_scope || 'ALL_EMPLOYEE');
+                setThumbUrl(initialValues.thumbnail || '');
+                
+                const dtype = (initialValues.mandatory_start_date && initialValues.mandatory_end_date) ? 'range' : 'days';
+                setDeadlineType(dtype);
+
+                form.setFieldsValue({
+                    ...initialValues,
+                    deadline_type: dtype,
+                    mandatory_date_range: (initialValues.mandatory_start_date && initialValues.mandatory_end_date) 
+                        ? [dayjs(initialValues.mandatory_start_date), dayjs(initialValues.mandatory_end_date)] 
+                        : null,
+                    allow_early_access: initialValues.allow_early_access !== undefined ? initialValues.allow_early_access : true
+                });
             } else {
                 form.resetFields();
                 setThumbUrl('');
                 setIsMandatory(false);
+                setApplyScope('ALL_EMPLOYEE');
             }
             setThumbFile(null);
         }
     }, [open, editingId, initialValues, form]);
 
     const handleFinish = async (values: any) => {
-        await onSuccess(values, thumbFile);
+        const { deadline_type, mandatory_date_range, ...rest } = values;
+        
+        const finalValues = {
+            ...rest,
+            mandatory_deadline_days: deadline_type === 'days' ? rest.mandatory_deadline_days : null,
+            mandatory_start_date: deadline_type === 'range' && mandatory_date_range ? mandatory_date_range[0].toISOString() : null,
+            mandatory_end_date: deadline_type === 'range' && mandatory_date_range ? mandatory_date_range[1].toISOString() : null
+        };
+        
+        await onSuccess(finalValues, thumbFile);
     };
 
     return (
@@ -45,94 +89,182 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
             title={editingId ? "Chỉnh sửa Khóa học" : "Khởi tạo Khóa học"}
             open={open}
             onCancel={onCancel}
-            footer={[
-                <Button key="cancel" onClick={onCancel} size="large">Hủy</Button>,
-                <Button key="submit" type="primary" onClick={() => form.submit()} size="large" style={{ minWidth: 150 }}>
-                    {editingId ? "Cập nhật" : "Tạo khóa học"}
-                </Button>
-            ]}
-            width={900}
-            style={{ top: 100 }}
+            footer={
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                        Hủy
+                    </Button>
+                    <Button type="primary" onClick={() => form.submit()} loading={loading} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                        {editingId ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                </div>
+            }
+            width={1100}
+            style={{ top: editingId ? 20 : 60 }}
         >
-            <Form form={form} layout="vertical" onFinish={handleFinish}>
+            <Form form={form} layout="vertical" onFinish={handleFinish} key={editingId || 'new'} style={{ marginTop: 20 }}>
                 <Row gutter={24}>
-                    {/* Cột trái */}
-                    <Col span={12}>
-                        <Form.Item name="title" label="Tiêu đề" rules={[{ required: true }]}>
-                            <Input placeholder="Nhập tiêu đề khóa học" />
-                        </Form.Item>
-
-                        <Form.Item name="level" label="Trình độ" initialValue="Cơ bản">
-                            <Select showSearch={false}>
-                                <Option value="Cơ bản">Cơ bản</Option>
-                                <Option value="Trung cấp">Trung cấp</Option>
-                                <Option value="Nâng cao">Nâng cao</Option>
-                            </Select>
-                        </Form.Item>
-
-                        <Form.Item name="category_id" label="Danh mục">
-                            <Select placeholder="Chọn danh mục" allowClear>
-                                {categories.map(cat => (
-                                    <Option key={cat.id} value={cat.id}>{cat.name}</Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
-
-                        <Form.Item name="description" label="Mô tả">
-                            <Input.TextArea rows={4} placeholder="Mô tả tóm tắt về khóa học" />
-                        </Form.Item>
-
-                        <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false}>
-                            <Select showSearch={false}>
-                                <Option value={false}>Công khai (Tự động cấp quyền)</Option>
-                                <Option value={true}>Riêng tư (Cần phê duyệt)</Option>
-                            </Select>
-                        </Form.Item>
-
-                        <Form.Item
-                            name="is_mandatory"
-                            label="Khóa học bắt buộc"
-                            valuePropName="checked"
-                            initialValue={false}
-                        >
-                            <Switch
-                                checkedChildren="BẮt buộc"
-                                unCheckedChildren="Không bắt buộc"
-                                onChange={(val) => setIsMandatory(val)}
-                            />
-                        </Form.Item>
-
-                        {isMandatory && (
-                            <Form.Item
-                                name="mandatory_deadline_days"
-                                label={
-                                    <span>
-                                        <WarningOutlined style={{ color: '#faad14', marginRight: 6 }} />
-                                        Hạn chót (số ngày kể từ ngày nhận việc)
-                                    </span>
-                                }
-                                initialValue={60}
-                                rules={[{ required: true, message: 'Vui lòng nhập số ngày' }]}
-                            >
-                                <InputNumber min={1} max={365} addonAfter="ngày" style={{ width: '100%' }} />
+                    {/* Cột 1: Thông tin cơ bản */}
+                    <Col span={8}>
+                        <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '12px', height: '100%', border: '1px solid #eee' }}>
+                            <Title level={5} style={{ marginBottom: 20, fontSize: '14px', color: '#B8121A', textTransform: 'uppercase', fontWeight: 700 }}>
+                                1. Thông tin cơ bản
+                            </Title>
+                            
+                            <Form.Item name="title" label="Tiêu đề khóa học" rules={[{ required: true }]} style={{ marginBottom: 20 }}>
+                                <Input placeholder="Nhập tiêu đề..." />
                             </Form.Item>
-                        )}
+
+                            <Row gutter={12}>
+                                <Col span={12}>
+                                    <Form.Item name="level" label="Trình độ" initialValue="Cơ bản" style={{ marginBottom: 20 }}>
+                                        <Select>
+                                            <Option value="Cơ bản">Cơ bản</Option>
+                                            <Option value="Trung cấp">Trung cấp</Option>
+                                            <Option value="Nâng cao">Nâng cao</Option>
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item name="category_id" label="Danh mục" style={{ marginBottom: 20 }}>
+                                        <Select placeholder="Chọn" allowClear>
+                                            {categories.map(cat => (
+                                                <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Form.Item name="description" label="Mô tả tóm tắt" style={{ marginBottom: 20 }}>
+                                <Input.TextArea rows={4} placeholder="Mô tả nội dung chính..." />
+                            </Form.Item>
+
+                            <Form.Item name="is_private" label="Chế độ truy cập" initialValue={false} style={{ marginBottom: 0 }}>
+                                <Select>
+                                    <Option value={false}>Công khai (Tất cả học viên)</Option>
+                                    <Option value={true}>Riêng tư (Cần được chỉ định)</Option>
+                                </Select>
+                            </Form.Item>
+                        </div>
                     </Col>
 
-                    {/* Cột phải */}
-                    <Col span={12}>
-                        <Form.Item name="thumbnail" label="Hình ảnh khóa học (Thumbnail)">
-                            <Space direction="vertical" className={styles.fullWidth} style={{ width: '100%' }}>
+                    {/* Cột 2: Đối tượng áp dụng & Bắt buộc */}
+                    <Col span={8}>
+                        <div style={{ 
+                            padding: '20px', 
+                            background: '#f8f9fa', 
+                            borderRadius: '12px', 
+                            height: '100%',
+                            border: '1px solid #eee',
+                            transition: 'all 0.3s'
+                        }}>
+                            <Title level={5} style={{ marginBottom: 20, fontSize: '14px', color: '#B8121A', textTransform: 'uppercase', fontWeight: 700 }}>
+                                2. Đối tượng áp dụng
+                            </Title>
+
+                            <Form.Item name="apply_scope" label="Phạm vi áp dụng" initialValue="ALL_EMPLOYEE" style={{ marginBottom: 20 }}>
+                                <Select onChange={val => setApplyScope(val)}>
+                                    <Option value="ALL_EMPLOYEE">Toàn bộ nhân viên</Option>
+                                    <Option value="BY_DEPARTMENT">Theo phòng ban</Option>
+                                    <Option value="BY_POSITION">Theo vị trí</Option>
+                                    <Option value="SPECIFIC_USER">Nhân viên cụ thể</Option>
+                                    <Option value="NEW_EMPLOYEE">Chỉ nhân viên mới</Option>
+                                    <Option value="NEW_EMPLOYEE_BY_DEPARTMENT">NV mới - Phòng ban</Option>
+                                    <Option value="NEW_EMPLOYEE_BY_POSITION">NV mới - Vị trí</Option>
+                                </Select>
+                            </Form.Item>
+
+                            {['BY_DEPARTMENT', 'NEW_EMPLOYEE_BY_DEPARTMENT'].includes(applyScope) && (
+                                <Form.Item name="mandatory_targets" label="Chọn phòng ban" rules={[{ required: true }]} style={{ marginBottom: 20 }}>
+                                    <Select mode="multiple" placeholder="Chọn..." maxTagCount="responsive">
+                                        {departments?.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            )}
+
+                            {['BY_POSITION', 'NEW_EMPLOYEE_BY_POSITION'].includes(applyScope) && (
+                                <Form.Item name="mandatory_targets" label="Chọn vị trí" rules={[{ required: true }]} style={{ marginBottom: 20 }}>
+                                    <Select mode="multiple" placeholder="Chọn..." maxTagCount="responsive">
+                                        {positions?.map(p => <Option key={p.id} value={p.id}>{p.name}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            )}
+
+                            {applyScope === 'SPECIFIC_USER' && (
+                                <Form.Item name="mandatory_targets" label="Nhân viên áp dụng" rules={[{ required: true }]} style={{ marginBottom: 20 }}>
+                                    <Button block type="dashed" icon={<UserAddOutlined />} onClick={() => setIsUserModalOpen(true)} style={{ height: 40 }}>
+                                        {selectedUserIds?.length || 0} nhân viên đã chọn
+                                    </Button>
+                                </Form.Item>
+                            )}
+
+                            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px dashed #d9d9d9' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                    <Title level={5} style={{ marginBottom: 0, fontSize: '14px', color: isMandatory ? '#cf1322' : '#8c8c8c', textTransform: 'uppercase', fontWeight: 700 }}>
+                                        Khóa học bắt buộc
+                                    </Title>
+                                    <Form.Item name="is_mandatory" valuePropName="checked" noStyle>
+                                        <Switch 
+                                            checkedChildren="BẬT" 
+                                            unCheckedChildren="TẮT" 
+                                            onChange={val => setIsMandatory(val)}
+                                        />
+                                    </Form.Item>
+                                </div>
+
+                                {isMandatory ? (
+                                    <div style={{ background: 'rgba(255,255,255,0.8)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                        <Form.Item name="deadline_type" label="Thiết lập thời hạn (Deadline)" initialValue="days" style={{ marginBottom: 15 }}>
+                                            <Select onChange={val => setDeadlineType(val)}>
+                                                <Option value="days">Số ngày từ khi vào làm/gửi</Option>
+                                                <Option value="range">Khoảng ngày cố định</Option>
+                                            </Select>
+                                        </Form.Item>
+
+                                        {deadlineType === 'days' ? (
+                                            <Form.Item name="mandatory_deadline_days" label="Hạn chót (ngày)" initialValue={60} rules={[{ required: true }]} style={{ marginBottom: 0 }}>
+                                                <InputNumber min={1} addonAfter="ngày" style={{ width: '100%' }} />
+                                            </Form.Item>
+                                        ) : (
+                                            <>
+                                                <Form.Item name="mandatory_date_range" label="Thời gian áp dụng" rules={[{ required: true }]} style={{ marginBottom: 15 }}>
+                                                    <DatePicker.RangePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder={['Từ ngày', 'Đến ngày']} />
+                                                </Form.Item>
+                                                <Form.Item name="allow_early_access" label="Cho phép học trước thời hạn" valuePropName="checked" initialValue={true} style={{ marginBottom: 0 }}>
+                                                    <Switch checkedChildren="BẬT" unCheckedChildren="TẮT" />
+                                                </Form.Item>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                                        <Text type="secondary" strong>Khóa học tự nguyện</Text>
+                                        <Text type="secondary" style={{ fontSize: '12px', textAlign: 'center', marginTop: 4 }}>Nhân sự được chọn có thể học bất cứ lúc nào</Text>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Col>
+
+                    {/* Cột 3: Hình ảnh & Nội dung */}
+                    <Col span={8}>
+                        <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '12px', height: '100%', border: '1px solid #eee' }}>
+                            <Title level={5} style={{ marginBottom: 20, fontSize: '14px', color: '#8c8c8c', textTransform: 'uppercase', fontWeight: 700 }}>
+                                3. Hình ảnh & Nội dung
+                            </Title>
+
+                            <Form.Item name="thumbnail" label="Ảnh đại diện (Thumbnail)" style={{ marginBottom: 20 }}>
                                 <Input
-                                    placeholder="Dán URL ảnh hoặc chọn file"
+                                    placeholder="URL hoặc chọn file"
                                     value={thumbUrl}
-                                    onChange={(e) => {
+                                    onChange={e => {
                                         setThumbUrl(e.target.value);
                                         form.setFieldsValue({ thumbnail: e.target.value });
                                     }}
                                     suffix={
                                         <Upload
-                                            beforeUpload={(file) => {
+                                            beforeUpload={file => {
                                                 setThumbFile(file);
                                                 const reader = new FileReader();
                                                 reader.onload = e => setThumbUrl(e.target?.result as string);
@@ -141,29 +273,39 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                                             }}
                                             showUploadList={false}
                                         >
-                                            <UploadCloud size={18} className={styles.uploadIcon} style={{ cursor: 'pointer' }} />
+                                            <UploadCloud size={18} style={{ cursor: 'pointer', color: '#B8121A' }} />
                                         </Upload>
                                     }
                                 />
                                 {thumbUrl && (
-                                    <div style={{ textAlign: 'center' }}>
-                                        <img src={thumbUrl} className={styles.thumbPreview} alt="Preview" style={{ maxHeight: '100px', width: 'auto' }} />
+                                    <div style={{ marginTop: 15, textAlign: 'center', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd', background: '#fff', padding: '4px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <img src={thumbUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                 )}
-                            </Space>
-                        </Form.Item>
+                            </Form.Item>
 
-                        <Form.Item name="learning_outcomes" label="Bạn sẽ học được gì? (Mỗi dòng một ý)">
-                            <Input.TextArea rows={3} placeholder="Mục tiêu đầu ra của khóa học..." />
-                        </Form.Item>
+                            <Form.Item name="learning_outcomes" label="Mục tiêu bài học" style={{ marginBottom: 20 }}>
+                                <Input.TextArea rows={3} placeholder="Học viên sẽ nhận được gì..." />
+                            </Form.Item>
 
-                        <Form.Item name="requirements" label="Yêu cầu (Mỗi dòng một ý)">
-                            <Input.TextArea rows={3} placeholder="Các kiến thức cần chuẩn bị..." />
-                        </Form.Item>
+                            <Form.Item name="requirements" label="Yêu cầu tham gia" style={{ marginBottom: 0 }}>
+                                <Input.TextArea rows={3} placeholder="Kiến thức/Công cụ cần có..." />
+                            </Form.Item>
+                        </div>
                     </Col>
                 </Row>
-
             </Form>
+
+            <UserSelectionModal
+                open={isUserModalOpen}
+                onCancel={() => setIsUserModalOpen(false)}
+                users={users}
+                initialSelectedIds={form.getFieldValue('mandatory_targets') || []}
+                onOk={(selectedIds) => {
+                    form.setFieldsValue({ mandatory_targets: selectedIds });
+                    setIsUserModalOpen(false);
+                }}
+            />
         </Modal>
     );
 }

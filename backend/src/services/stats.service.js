@@ -44,13 +44,13 @@ const getOverviewStats = async () => {
         currentCourseRequests, currentProgramRequests
     ] = await Promise.all([
         // Hiện tại
-        prisma.user.count({ where: { user_roles: { some: { role: { name: 'student' } } } } }),
+        prisma.user.count({ where: { deleted_at: null } }),
         prisma.course.count({ where: { deleted_at: null } }),
         prisma.enrollment.count({ where: { course: { deleted_at: null } } }),
         prisma.courseRequest.count({ where: { status: 'PENDING' } }),
         prisma.programRequest.count({ where: { status: 'PENDING' } }),
         // Hôm qua
-        prisma.user.count({ where: { created_at: { lte: yesterday }, user_roles: { some: { role: { name: 'student' } } } } }),
+        prisma.user.count({ where: { created_at: { lte: yesterday }, deleted_at: null } }),
         prisma.course.count({ where: { created_at: { lte: yesterday }, deleted_at: null } }),
         prisma.enrollment.count({ where: { enrolled_at: { lte: yesterday }, course: { deleted_at: null } } }),
         prisma.courseRequest.count({ where: { created_at: { lte: yesterday } } }),

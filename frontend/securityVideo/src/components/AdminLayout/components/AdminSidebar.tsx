@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Layout, Menu, Badge, Space } from 'antd';
 import {
     PieChartOutlined,
     BookOutlined,
     UserOutlined,
     MenuFoldOutlined,
+    MenuUnfoldOutlined,
     PlaySquareOutlined,
     ApartmentOutlined,
     CheckOutlined,
@@ -12,10 +13,12 @@ import {
     TagsOutlined,
     PictureOutlined,
     ClusterOutlined,
-    WarningOutlined
+    WarningOutlined,
+    IdcardOutlined
 } from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
+import { departmentService } from '../../../services/department.service';
 import { socketService } from '../../../services/socket';
 import { ROUTES } from '../../../constants/routes';
 import styles from '../AdminLayout.module.scss';
@@ -24,14 +27,17 @@ const { Sider } = Layout;
 
 interface AdminSidebarProps {
     isMobile?: boolean;
+    collapsed?: boolean;
     onClose?: () => void;
 }
 
-export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
+const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [pendingCount, setPendingCount] = React.useState<number>(0);
+    const [departments, setDepartments] = React.useState<any[]>([]);
 
     const fetchCounts = React.useCallback(async () => {
         try {
@@ -42,27 +48,35 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
         }
     }, []);
 
+    const fetchDepartments = React.useCallback(async () => {
+        try {
+            const data = await departmentService.getAll();
+            setDepartments(data);
+        } catch (error) {
+            console.error('Failed to fetch departments:', error);
+        }
+    }, []);
+
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const userId = user?.id;
 
     React.useEffect(() => {
         fetchCounts();
+        fetchDepartments();
 
         if (userId) {
-            // Đảm bảo kết nối Socket và đăng ký và lắng nghe
             const socket = socketService.connect(userId);
-
             socket.on('updatePendingRequestCount', (data: { count: number }) => {
                 setPendingCount(data.count);
             });
-
             return () => {
                 socket.off('updatePendingRequestCount');
             };
         }
-    }, [userId, fetchCounts]);
+    }, [userId, fetchCounts, fetchDepartments]);
 
+    // ✅ Xử lý Menu Items động
     const menuItems = [
         {
             key: ROUTES.ADMIN_DASHBOARD,
@@ -86,19 +100,38 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
         },
         {
             key: ROUTES.ADMIN_PROGRESS,
-
             icon: <LineChartOutlined />,
             label: 'Quản lý tiến độ học tập',
         },
         {
-            key: ROUTES.ADMIN_USERS,
+            key: 'user-management-parent',
             icon: <UserOutlined />,
             label: 'Quản lý nhân sự',
+            children: [
+                {
+                    key: ROUTES.ADMIN_USERS,
+                    label: 'Tất cả nhân sự',
+                },
+                ...departments.map(dept => ({
+                    key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
+                    label: dept.name,
+                }))
+            ]
         },
         {
             key: ROUTES.ADMIN_DEPARTMENTS,
             icon: <ClusterOutlined />,
             label: 'Quản lý phòng ban',
+        },
+        {
+            key: ROUTES.ADMIN_POSITIONS,
+            icon: <ApartmentOutlined />,
+            label: 'Quản lý vị trí',
+        },
+        {
+            key: ROUTES.ADMIN_ROLES,
+            icon: <IdcardOutlined />,
+            label: 'Quản lý vai trò',
         },
         {
             key: ROUTES.ADMIN_BANNERS,
@@ -124,25 +157,35 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
         {
             key: ROUTES.ADMIN_ONBOARDING_REPORT,
             icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
-            label: 'Báo cáo Hội nhập',
+            label: 'Báo cáo',
         }
     ];
 
-    // ✅ Tìm menu key phù hợp nhất (prefix dài nhất) để highlight đúng khi URL là nested
-    const menuKeys = menuItems.map(item => item.key);
-    const selectedKey = menuKeys
-        .filter(key => location.pathname === key || location.pathname.startsWith(key + '/'))
-        .sort((a, b) => b.length - a.length)[0] || location.pathname;
+    // ✅ Logic highlight chính xác
+    const currentPath = location.pathname;
+    const currentDeptId = searchParams.get('departmentId');
+
+    let selectedKey = currentPath;
+    if (currentPath === ROUTES.ADMIN_USERS && currentDeptId) {
+        selectedKey = `${ROUTES.ADMIN_USERS}?departmentId=${currentDeptId}`;
+    }
+
+    // Luôn mở rộng menu "Quản lý nhân sự" nếu đang ở trang nhân sự
+    const openKeys = currentPath.startsWith(ROUTES.ADMIN_USERS) ? ['user-management-parent'] : [];
 
     return (
         <Sider
             theme="light"
             width={250}
+            collapsedWidth={80}
+            collapsed={collapsed}
             className={styles.adminSidebar}
+            trigger={null}
         >
             <Menu
                 mode="inline"
                 selectedKeys={[selectedKey]}
+                defaultOpenKeys={openKeys}
                 className={styles.adminMenu}
                 onClick={({ key }) => {
                     navigate(key);
@@ -152,4 +195,8 @@ export default function AdminSidebar({ isMobile, onClose }: AdminSidebarProps) {
             />
         </Sider>
     );
-}
+});
+
+AdminSidebar.displayName = 'AdminSidebar';
+
+export default AdminSidebar;

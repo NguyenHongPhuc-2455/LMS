@@ -3,16 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
 import { categoryService, type Category } from '../../../services/category.service';
+import { departmentService } from '../../../services/department.service';
+import { positionService } from '../../../services/position.service';
+import { userService } from '../../../services/user.service';
 
 import {
-    Plus
+    Plus, Trash2
 } from 'lucide-react';
 import {
     Card, Button, Input, Typography,
-    message, Tooltip, Space, Select
+    message, Tooltip, Space, Select,
+    Popconfirm
 } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import styles from './CourseManagement.module.scss';
+
+import { type Course } from '../../../types/course';
 
 // New specialized components
 import CourseTable from './components/CourseTable';
@@ -20,40 +26,36 @@ import CourseFormModal from './components/CourseFormModal';
 
 const { Title, Text } = Typography;
 
-interface Course {
-    id: number;
-    title: string;
-    description: string;
-    thumbnail: string;
-    is_private: boolean;
-    level: string;
-    intro_video_url?: string;
-    learning_outcomes?: string;
-    requirements?: string;
-    category_id?: number | null;
-    created_at: string;
-    updated_at: string;
-    _count?: { sections: number, enrollments: number };
-}
-
 export default function CourseManagement() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [positions, setPositions] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+    const [includeInactive, setIncludeInactive] = useState<boolean>(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const navigate = useNavigate();
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [courseData, catData] = await Promise.all([
-                courseService.getAll(),
-                categoryService.getAllCategories()
+            const [courseData, catData, deptData, posData, userResp] = await Promise.all([
+                courseService.getAll(undefined, undefined, includeInactive),
+                categoryService.getAllCategories(),
+                departmentService.getAll(),
+                positionService.getAll(),
+                userService.getAll({ limit: 1000, page: 1 })
             ]);
             setCourses(courseData);
             setCategories(catData);
+            setDepartments(deptData);
+            setPositions(posData);
+            setUsers(userResp.users || []);
         } catch (e) {
             message.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -63,9 +65,10 @@ export default function CourseManagement() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [includeInactive]);
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
+        setSubmitting(true);
         try {
             let finalThumbnail = values.thumbnail; // Lấy URL từ ô input nếu có
 
@@ -89,9 +92,12 @@ export default function CourseManagement() {
             setIsModalOpen(false);
             setEditingCourse(null);
             fetchData();
-        } catch (e) {
-            message.error('Lỗi lưu khóa học');
-            throw e;
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi lưu khóa học';
+            message.error(errorMsg);
+            throw error;
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -104,6 +110,16 @@ export default function CourseManagement() {
             message.error('Lỗi khi cập nhật trạng thái');
         }
     };
+    
+    const handleToggleActive = async (id: number, isActive: boolean) => {
+        try {
+            await courseService.toggleActive(id, isActive);
+            message.success(isActive ? 'Đã khôi phục khóa học thành công' : 'Đã tạm ẩn khóa học thành công');
+            fetchData();
+        } catch (e) {
+            message.error('Lỗi khi thay đổi trạng thái');
+        }
+    };
 
     const handleDelete = async (id: number) => {
         try {
@@ -111,6 +127,23 @@ export default function CourseManagement() {
             message.success('Đã xóa khóa học');
             fetchData();
         } catch (e) { message.error('Lỗi khi xóa khóa học'); }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedRowKeys.length === 0) return;
+        
+        setLoading(true);
+        try {
+            const ids = selectedRowKeys.map(key => Number(key));
+            await courseService.batchDelete(ids);
+            message.success(`Đã xóa thành công ${selectedRowKeys.length} khóa học`);
+            setSelectedRowKeys([]);
+            fetchData();
+        } catch (error) {
+            message.error('Lỗi khi xóa hàng loạt');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCategoryChange = async (courseId: number, categoryId: number | null) => {
@@ -124,8 +157,8 @@ export default function CourseManagement() {
     };
 
     const filteredCourses = courses.filter(c => {
-        const matchesCategory = selectedCategoryId === null || 
-                              (selectedCategoryId === -1 ? !c.category_id : c.category_id === selectedCategoryId);
+        const matchesCategory = selectedCategoryId === null ||
+            (selectedCategoryId === -1 ? !c.category_id : c.category_id === selectedCategoryId);
         return matchesCategory;
     });
 
@@ -156,6 +189,16 @@ export default function CourseManagement() {
                                 </Select.Option>
                             ))}
                         </Select>
+                        <Select
+                            placeholder="Trạng thái"
+                            style={{ width: 140 }}
+                            value={includeInactive}
+                            onChange={setIncludeInactive}
+                            options={[
+                                { value: false, label: 'Đang mở' },
+                                { value: true, label: 'Tất cả (gồm đã đóng)' }
+                            ]}
+                        />
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
@@ -164,22 +207,44 @@ export default function CourseManagement() {
                             />
                         </Tooltip>
                     </Space>
-                    <Button
-                        type="primary"
-                        onClick={() => { setEditingCourse(null); setIsModalOpen(true); }}
-                        icon={<Plus size={16} />}
-                        className={styles.adminAddButton}
-                    >
-                        Khóa học mới
-                    </Button>
+                    <Space size={12}>
+                        {selectedRowKeys.length > 0 && (
+                            <Popconfirm
+                                title={`Xóa vĩnh viễn ${selectedRowKeys.length} khóa học đã chọn?`}
+                                onConfirm={handleBulkDelete}
+                                okText="Xóa ngay"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button
+                                    danger
+                                    icon={<Trash2 size={16} />}
+                                    loading={loading}
+                                >
+                                    Xóa {selectedRowKeys.length} đã chọn
+                                </Button>
+                            </Popconfirm>
+                        )}
+                        <Button
+                            type="primary"
+                            onClick={() => { setEditingCourse(null); setIsModalOpen(true); }}
+                            icon={<Plus size={16} />}
+                            className={styles.adminAddButton}
+                        >
+                            Khóa học mới
+                        </Button>
+                    </Space>
                 </div>
                 <CourseTable
                     courses={filteredCourses}
                     categories={categories}
                     loading={loading}
+                    selectedRowKeys={selectedRowKeys}
+                    onSelectionChange={setSelectedRowKeys}
                     onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
                     onStatusChange={handleStatusChange}
                     onCategoryChange={handleCategoryChange}
+                    onToggleActive={handleToggleActive}
                     onDelete={handleDelete}
                     onNavigateToSections={(id) => navigate(`/admin/sections?courseId=${id}`)}
                 />
@@ -192,9 +257,14 @@ export default function CourseManagement() {
                 editingId={editingCourse?.id}
                 initialValues={editingCourse}
                 categories={categories}
+                departments={departments}
+                positions={positions}
+                users={users}
+                loading={submitting}
             />
         </div>
     );
 }
+
 
 

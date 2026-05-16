@@ -2,13 +2,15 @@ const prisma = require('../configs/prisma');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ApiError = require('../utils/ApiError');
+const config = require('../configs/env.config');
 
 const hashPassword = (password) => crypto.createHash('sha256').update(password).digest('hex');
 
 const generateTokens = (payload) => {
-    const secret = process.env.JWT_SECRET || 'super_secret_key_123';
-    const accessToken = jwt.sign(payload, secret, { expiresIn: '15m' });
-    const refreshToken = jwt.sign(payload, secret, { expiresIn: '7d' });
+    if (!config.jwt.secret) throw new ApiError(500, 'Hệ thống chưa được cấu hình JWT_SECRET');
+    const secret = config.jwt.secret;
+    const accessToken = jwt.sign(payload, secret, { expiresIn: config.jwt.expiresIn });
+    const refreshToken = jwt.sign(payload, secret, { expiresIn: config.jwt.refreshExpiresIn });
     return { accessToken, refreshToken };
 };
 
@@ -42,7 +44,11 @@ exports.register = async (data) => {
 exports.login = async (username, password) => {
     const user = await prisma.user.findUnique({
         where: { username },
-        include: { user_roles: { include: { role: true } } }
+        include: {
+            user_roles: { include: { role: true } },
+            department: true,
+            position: true
+        }
     });
 
     if (!user || user.password_hash !== hashPassword(password)) {
@@ -63,26 +69,25 @@ exports.login = async (username, password) => {
     const payload = { id: user.id, username: user.username, roles: roleNames };
     const tokens = generateTokens(payload);
 
-    // ✅ Lấy danh sách khóa học bắt buộc để thông báo (nếu lần đầu login hoặc còn khóa chưa xong)
+    // ✅ Lấy danh sách khóa học bắt buộc để thông báo (Sử dụng service chung để đảm bảo logic thống nhất)
     let mandatoryCourses = [];
     try {
-        const today = new Date();
-        const joinDate = user.join_date || new Date();
-
-        mandatoryCourses = await prisma.course.findMany({
-            where: { is_mandatory: true, deleted_at: null },
-            select: { id: true, title: true, thumbnail: true, mandatory_deadline_days: true }
-        });
-
-        mandatoryCourses = mandatoryCourses.map(course => {
-            const deadlineDate = new Date(joinDate);
-            deadlineDate.setDate(deadlineDate.getDate() + course.mandatory_deadline_days);
-            const remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
-            return { ...course, remainingDays };
-        });
+        const enrollmentService = require('./enrollment.service');
+        mandatoryCourses = await enrollmentService.getMandatoryCoursesForUser(user.id);
+        
+        // Chỉ lấy các thông tin cần thiết cho FE thông báo
+        mandatoryCourses = mandatoryCourses.map(course => ({
+            id: course.id,
+            title: course.title,
+            thumbnail: course.thumbnail,
+            remainingDays: course.remainingDays,
+            status: course.status
+        }));
     } catch (e) {
+        console.error("Lỗi lấy khóa học bắt buộc khi login:", e);
         mandatoryCourses = [];
     }
+
 
     return {
         ...tokens,
@@ -95,12 +100,13 @@ exports.login = async (username, password) => {
 exports.refresh = async (refreshToken) => {
     if (!refreshToken) throw new ApiError(401, 'Refresh Token là bắt buộc');
 
-    const secret = process.env.JWT_SECRET || 'super_secret_key_123';
-    
+    if (!config.jwt.secret) throw new ApiError(500, 'Hệ thống chưa được cấu hình JWT_SECRET');
+    const secret = config.jwt.secret;
+
     try {
         const payload = jwt.verify(refreshToken, secret);
         const newPayload = { id: payload.id, username: payload.username, roles: payload.roles };
-        const accessToken = jwt.sign(newPayload, secret, { expiresIn: '15m' });
+        const accessToken = jwt.sign(newPayload, secret, { expiresIn: config.jwt.expiresIn });
         return { accessToken };
     } catch (err) {
         throw new ApiError(403, 'Refresh Token không hợp lệ hoặc đã hết hạn');

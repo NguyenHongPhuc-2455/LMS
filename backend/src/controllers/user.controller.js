@@ -65,3 +65,16 @@ exports.revokeCourseAccess = catchAsync(async (req, res) => {
     res.json({ message: 'Đã thu hồi quyền truy cập khóa học thành công' });
 });
 
+exports.restoreUser = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    await userService.restoreUser(id);
+    res.json({ message: 'Đã khôi phục tài khoản thành công' });
+});
+
+exports.toggleUserStatus = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    await userService.toggleUserStatus(id, isActive);
+    res.json({ message: 'Cập nhật trạng thái thành công' });
+});
+
