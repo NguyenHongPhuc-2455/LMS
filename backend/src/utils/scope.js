@@ -5,9 +5,10 @@ const { NEW_EMPLOYEE_THRESHOLD_DAYS } = require('../constants/system');
  * @param {Object} userData Thông tin người dùng (id, department_id, position_id, join_date)
  * @param {Object} entity Thực thể cần kiểm tra (cần có apply_scope và mandatory_targets)
  * @param {boolean} isEnrolled Trạng thái đã ghi danh (nếu đã ghi danh thì luôn có quyền truy cập)
+ * @param {Map} departmentMap Bản đồ ID phòng ban -> parent_id
  * @returns {boolean} true nếu thuộc phạm vi, ngược lại false
  */
-const isUserInScope = (userData, entity, isEnrolled = false) => {
+const isUserInScope = (userData, entity, isEnrolled = false, departmentMap = null) => {
     if (isEnrolled) return true;
     if (!entity) return true;
 
@@ -46,7 +47,21 @@ const isUserInScope = (userData, entity, isEnrolled = false) => {
     if (scope === 'ALL_EMPLOYEE' || scope === 'NEW_EMPLOYEE') return true;
     
     if (scope === 'BY_DEPARTMENT' || scope === 'NEW_EMPLOYEE_BY_DEPARTMENT') {
-        return !!(userData && userData.department_id && normalizedTargets.includes(Number(userData.department_id)));
+        if (!userData || !userData.department_id) return false;
+        const userDeptId = Number(userData.department_id);
+
+        if (normalizedTargets.includes(userDeptId)) return true;
+
+        if (departmentMap) {
+            let currentId = userDeptId;
+            for (let i = 0; i < 5; i++) {
+                const parentId = departmentMap.get(currentId);
+                if (!parentId) break;
+                if (normalizedTargets.includes(Number(parentId))) return true;
+                currentId = Number(parentId);
+            }
+        }
+        return false;
     }
     
     if (scope === 'BY_POSITION' || scope === 'NEW_EMPLOYEE_BY_POSITION') {

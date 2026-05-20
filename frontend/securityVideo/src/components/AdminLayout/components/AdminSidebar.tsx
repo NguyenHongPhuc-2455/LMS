@@ -95,15 +95,9 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             label: 'Quản lý tiến độ học tập',
         },
         {
-            key: 'user-management-parent',
+            key: ROUTES.MANAGER_EMPLOYEES,
             icon: <UserOutlined />,
             label: 'Quản lý nhân sự',
-            children: departments
-                .filter(dept => dept.id === user?.department_id)
-                .map(dept => ({
-                    key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
-                    label: dept.name,
-                }))
         },
         {
             key: ROUTES.ADMIN_REQUESTS,

@@ -67,7 +67,7 @@ export interface InactiveEmployeesResponse {
 }
 
 export const managerService = {
-    getEmployees: async (params?: { page: number; limit: number; search?: string; positionId?: number }): Promise<EmployeeListResponse> => {
+    getEmployees: async (params?: { page: number; limit: number; search?: string; positionId?: number; departmentId?: number }): Promise<EmployeeListResponse> => {
         const response = await api.get('/manager/employees', { params });
         return response.data;
     },

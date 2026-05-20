@@ -6,8 +6,8 @@ const { generateStreamToken } = require('../utils/streamToken');
 
 const { isUserInScope } = require('../utils/scope');
 
-const isUserInCourseScope = (userData, course, isEnrolled = false) => {
-    return isUserInScope(userData, course, isEnrolled);
+const isUserInCourseScope = (userData, course, isEnrolled = false, departmentMap = null) => {
+    return isUserInScope(userData, course, isEnrolled, departmentMap);
 };
 
 const getAllCourses = async (search = '', categoryId = null, includeInactive = false, user = null) => {
@@ -61,9 +61,12 @@ const getAllCourses = async (search = '', categoryId = null, includeInactive = f
                     ...programEnrollments.flatMap(pe => pe.program.courses.map(pc => pc.course_id))
                 ]);
 
+                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+
                 courses = courses.filter(course => {
                     const isEnrolled = enrolledCourseIds.has(course.id);
-                    return isUserInCourseScope(userData, course, isEnrolled);
+                    return isUserInCourseScope(userData, course, isEnrolled, departmentMap);
                 });
             }
         }
@@ -122,7 +125,9 @@ const getEnrichedCourseDetail = async (courseId, user, ip) => {
 
     // 2.5. Kiểm tra phạm vi hiển thị (Visibility Scope)
     if (!isAdmin && !isOwner && userData) {
-        const inScope = isUserInCourseScope(userData, course, hasAccess);
+        const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+        const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+        const inScope = isUserInCourseScope(userData, course, hasAccess, departmentMap);
         if (!inScope) {
             throw new ApiError(403, 'Bạn không thuộc đối tượng được phân phối khóa học này.');
         }
@@ -448,6 +453,9 @@ const getMandatoryOverdueReport = async (type = 'overdue', departmentId = null) 
     const resultList = [];
     const today = new Date();
 
+    const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+    const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+
     for (const user of users) {
         const userCourses = [];
 
@@ -461,7 +469,7 @@ const getMandatoryOverdueReport = async (type = 'overdue', departmentId = null) 
 
         for (const course of mandatoryCourses) {
             const isEnrolled = !!enrollmentMap[course.id];
-            if (!isUserInCourseScope(user, course, isEnrolled)) continue;
+            if (!isUserInCourseScope(user, course, isEnrolled, departmentMap)) continue;
 
             const statusInfo = calculateCourseStatus(course, user, 0, enrollmentMap[course.id]);
 

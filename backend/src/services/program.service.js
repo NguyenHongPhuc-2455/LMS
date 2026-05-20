@@ -51,9 +51,12 @@ const getAllPrograms = async ({ search = '', status, instructorId, user = null }
                 });
                 const enrolledProgramIds = new Set(enrolledPrograms.map(ep => ep.program_id));
 
+                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+
                 programs = programs.filter(program => {
                     const isEnrolled = enrolledProgramIds.has(program.id);
-                    return isUserInScope(userData, program, isEnrolled);
+                    return isUserInScope(userData, program, isEnrolled, departmentMap);
                 });
             }
         }
@@ -259,7 +262,9 @@ const getEnrichedProgramDetail = async (id, user) => {
                 select: { id: true, department_id: true, position_id: true, join_date: true } 
             });
             if (userData) {
-                const inScope = isUserInScope(userData, program, isEnrolled);
+                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+                const inScope = isUserInScope(userData, program, isEnrolled, departmentMap);
                 if (!inScope) {
                     throw new ApiError(403, 'Bạn không thuộc đối tượng được phân phối lộ trình học này.');
                 }

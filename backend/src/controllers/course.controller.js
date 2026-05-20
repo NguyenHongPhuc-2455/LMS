@@ -5,6 +5,7 @@ const ApiError = require('../utils/ApiError');
 const { generateStreamToken } = require('../utils/streamToken');
 const { createVideoToken } = require('../utils/crypto');
 const { lessonSelect } = require('../services/video.service');
+const { notificationQueue } = require('../queues/notification.queue');
 
 const getManagerDepartmentId = async (req) => {
     const userRoles = req.user?.roles || [];
@@ -56,6 +57,15 @@ exports.createCourse = catchAsync(async (req, res) => {
         learning_outcomes,
         requirements
     });
+
+    if (isMandatoryVal) {
+        // Đẩy job tính toán và gửi thông báo vào Redis Queue thay vì xử lý đồng bộ
+        notificationQueue.add('notify_course', {
+            type: 'NOTIFY_MANDATORY_COURSE',
+            payload: { courseId: course.id }
+        }, { removeOnComplete: true, removeOnFail: false });
+    }
+
     res.status(201).json(course);
 });
 
@@ -100,6 +110,15 @@ exports.updateCourse = catchAsync(async (req, res) => {
             updated_at: new Date()
         }
     });
+
+    // Chỉ gửi thông báo nếu khóa học từ không bắt buộc chuyển sang bắt buộc
+    if (isMandatoryVal && !existingCourse.is_mandatory) {
+        notificationQueue.add('notify_course', {
+            type: 'NOTIFY_MANDATORY_COURSE',
+            payload: { courseId: course.id }
+        }, { removeOnComplete: true, removeOnFail: false });
+    }
+
     res.json(course);
 });
 

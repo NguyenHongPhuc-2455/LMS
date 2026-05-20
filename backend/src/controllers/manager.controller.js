@@ -25,17 +25,29 @@ exports.getEmployees = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
-    const positionId = req.query.positionId ? parseInt(req.query.positionId) : undefined;
+    const positionId = req.query.positionId !== 'undefined' && req.query.positionId ? parseInt(req.query.positionId) : undefined;
+    const filterDeptId = req.query.departmentId !== 'undefined' && req.query.departmentId ? parseInt(req.query.departmentId) : undefined;
     const skip = (page - 1) * limit;
 
+    const { getSubDepartmentIds } = require('../utils/departmentHierarchy');
+    const allowedSubDeptIds = await getSubDepartmentIds(managerDeptId);
+
+    let targetDeptIds = allowedSubDeptIds;
+    if (filterDeptId) {
+        if (!allowedSubDeptIds.includes(filterDeptId)) {
+            throw new ApiError(403, 'Bạn không có quyền truy cập dữ liệu của bộ phận này');
+        }
+        targetDeptIds = await getSubDepartmentIds(filterDeptId);
+    }
+
     const where = {
-        department_id: managerDeptId,
+        department_id: { in: targetDeptIds },
         deleted_at: null,
         id: { not: req.user.id }, // Không lấy tài khoản của chính Manager
         user_roles: {
             some: {
                 role: {
-                    name: 'student' // Chỉ lấy tài khoản là học viên/nhân viên thường
+                    name: { in: ['student', 'Employee', 'employee'] }
                 }
             }
         },
@@ -58,7 +70,15 @@ exports.getEmployees = catchAsync(async (req, res) => {
                     where: { course: { deleted_at: null } }
                 },
                 completed_lessons: {
-                    include: { lesson: { select: { course_id: true } } }
+                    include: {
+                        lesson: {
+                            select: {
+                                section: {
+                                    select: { course_id: true }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             skip,
@@ -131,8 +151,10 @@ exports.getEmployeeProgress = catchAsync(async (req, res) => {
         throw new ApiError(404, 'Không tìm thấy thông tin nhân viên');
     }
 
-    // Security Guard Clause: Chỉ được xem nhân viên cùng phòng ban mình
-    if (employee.department_id !== managerDeptId) {
+    // Security Guard Clause: Chỉ được xem nhân viên cùng phòng ban mình hoặc các phòng con
+    const { getSubDepartmentIds } = require('../utils/departmentHierarchy');
+    const subDeptIds = await getSubDepartmentIds(managerDeptId);
+    if (!employee.department_id || !subDeptIds.includes(employee.department_id)) {
         throw new ApiError(403, 'Bạn không có quyền xem thông tin của nhân sự thuộc phòng ban khác');
     }
 
@@ -198,10 +220,13 @@ exports.getInactiveEmployees = catchAsync(async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    const { getSubDepartmentIds } = require('../utils/departmentHierarchy');
+    const subDeptIds = await getSubDepartmentIds(managerDeptId);
+
     // 1. Get all employees in department
     const employees = await prisma.user.findMany({
         where: {
-            department_id: managerDeptId,
+            department_id: { in: subDeptIds },
             deleted_at: null,
             id: { not: req.user.id },
             user_roles: { some: { role: { name: 'student' } } }
@@ -269,7 +294,9 @@ exports.sendReminder = catchAsync(async (req, res) => {
     }
 
     // Security Guard Clause
-    if (employee.department_id !== managerDeptId) {
+    const { getSubDepartmentIds } = require('../utils/departmentHierarchy');
+    const subDeptIds = await getSubDepartmentIds(managerDeptId);
+    if (!employee.department_id || !subDeptIds.includes(employee.department_id)) {
         throw new ApiError(403, 'Bạn không thể gửi nhắc nhở học tập cho nhân sự phòng ban khác');
     }
 

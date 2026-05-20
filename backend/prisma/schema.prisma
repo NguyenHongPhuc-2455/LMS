@@ -21,11 +21,15 @@ model Role {
 }
 
 model Department {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(100)
-  description String?  @db.Text
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(100)
+  description String?      @db.Text
+  parent_id   Int?
+  parent      Department?  @relation("SubDepartments", fields: [parent_id], references: [id], onDelete: Restrict)
+  children    Department[] @relation("SubDepartments")
   users       User[]
 
+  @@unique([name, parent_id])
   @@map("departments")
 }
 

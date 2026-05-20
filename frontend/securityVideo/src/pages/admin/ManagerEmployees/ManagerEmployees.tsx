@@ -3,6 +3,7 @@ import { Table, Input, Select, Button, Typography, Card, Space, Avatar, Progress
 import { UserOutlined, SearchOutlined, ReloadOutlined, BellOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { managerService, type Employee, type CourseProgress } from '@/services/manager.service';
 import { positionService } from '@/services/position.service';
+import { departmentService } from '@/services/department.service';
 import styles from './ManagerEmployees.module.scss';
 
 const { Title, Text } = Typography;
@@ -10,13 +11,25 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 
 export default function ManagerEmployees() {
+    const userStr = localStorage.getItem('user');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const managerDeptId = currentUser?.department_id;
+
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [positions, setPositions] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     
     // Filters & Pagination
     const [search, setSearch] = useState('');
     const [selectedPosition, setSelectedPosition] = useState<number | undefined>(undefined);
+    
+    // Cascading states
+    const [selectedLevel1, setSelectedLevel1] = useState<number | undefined>();
+    const [selectedLevel2, setSelectedLevel2] = useState<number | undefined>();
+    const [selectedLevel3, setSelectedLevel3] = useState<number | undefined>();
+    const [filterDeptId, setFilterDeptId] = useState<number | undefined>(managerDeptId);
+
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
 
@@ -31,13 +44,33 @@ export default function ManagerEmployees() {
     const [reminderText, setReminderText] = useState('Chào bạn, tôi vừa kiểm tra tiến độ học tập và thấy bạn có một số khóa học bắt buộc sắp đến hạn. Vui lòng tập trung hoàn thành đúng hạn nhé!');
     const [reminderLoading, setReminderLoading] = useState(false);
 
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
     useEffect(() => {
         fetchPositions();
+        fetchDepartments();
     }, []);
 
     useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [search]);
+
+    useEffect(() => {
         fetchEmployees();
-    }, [page, selectedPosition]);
+    }, [page, selectedPosition, filterDeptId, debouncedSearch]);
+
+    const fetchDepartments = async () => {
+        try {
+            const data = await departmentService.getAll();
+            setDepartments(data);
+        } catch (err) {
+            console.error('Lỗi tải phòng ban:', err);
+        }
+    };
 
     const fetchPositions = async () => {
         try {
@@ -54,8 +87,9 @@ export default function ManagerEmployees() {
             const data = await managerService.getEmployees({
                 page,
                 limit: 10,
-                search,
-                positionId: selectedPosition
+                search: debouncedSearch,
+                positionId: selectedPosition,
+                departmentId: filterDeptId
             });
             setEmployees(data.employees);
             setTotal(data.total);
@@ -66,19 +100,11 @@ export default function ManagerEmployees() {
         }
     };
 
-    const handleSearch = () => {
-        setPage(1);
-        fetchEmployees();
-    };
-
     const handleReset = () => {
         setSearch('');
         setSelectedPosition(undefined);
+        setFilterDeptId(managerDeptId);
         setPage(1);
-        // We need to fetch with cleared states directly because setState is async
-        setTimeout(() => {
-            fetchEmployees();
-        }, 50);
     };
 
     const handleOpenDetail = async (empId: number) => {
@@ -109,6 +135,65 @@ export default function ManagerEmployees() {
             setReminderLoading(false);
         }
     };
+
+    // Lấy thông tin cây phòng ban của manager
+    useEffect(() => {
+        if (!managerDeptId || departments.length === 0) return;
+        const currentDept = departments.find(d => d.id === managerDeptId);
+        if (!currentDept) return;
+        
+        if (!currentDept.parent_id) {
+            setSelectedLevel1(currentDept.id);
+            setSelectedLevel2(undefined);
+            setSelectedLevel3(undefined);
+        } else {
+            const parentDept = departments.find(d => d.id === currentDept.parent_id);
+            if (parentDept) {
+                if (!parentDept.parent_id) {
+                    setSelectedLevel1(parentDept.id);
+                    setSelectedLevel2(currentDept.id);
+                    setSelectedLevel3(undefined);
+                } else {
+                    const grandParentDept = departments.find(d => d.id === parentDept.parent_id);
+                    if (grandParentDept) {
+                        setSelectedLevel1(grandParentDept.id);
+                        setSelectedLevel2(parentDept.id);
+                        setSelectedLevel3(currentDept.id);
+                    }
+                }
+            }
+        }
+    }, [managerDeptId, departments]);
+
+    const handleLevel1Change = (val: number | undefined) => {
+        // Manager Cấp 1 có thể đổi con
+        setSelectedLevel1(val);
+        setSelectedLevel2(undefined);
+        setSelectedLevel3(undefined);
+        setFilterDeptId(val || managerDeptId);
+        setPage(1);
+    };
+
+    const handleLevel2Change = (val: number | undefined) => {
+        setSelectedLevel2(val);
+        setSelectedLevel3(undefined);
+        setFilterDeptId(val || selectedLevel1 || managerDeptId);
+        setPage(1);
+    };
+
+    const handleLevel3Change = (val: number | undefined) => {
+        setSelectedLevel3(val);
+        setFilterDeptId(val || selectedLevel2 || managerDeptId);
+        setPage(1);
+    };
+
+    const isLevel1Locked = true; // Luôn khóa Khối (vì manager chỉ xem trong khối của mình)
+    const isLevel2Locked = !!departments.find(d => d.id === managerDeptId)?.parent_id; // Nếu manager ở Cấp 2 hoặc 3 -> khóa Cấp 2
+    const isLevel3Locked = !!departments.find(d => d.id === managerDeptId && d.parent_id && departments.find(p => p.id === d.parent_id)?.parent_id); // Nếu manager ở Cấp 3 -> khóa Cấp 3
+
+    const level1Options = departments.filter(d => !d.parent_id);
+    const level2Options = departments.filter(d => selectedLevel1 ? d.parent_id === selectedLevel1 : false);
+    const level3Options = departments.filter(d => selectedLevel2 ? d.parent_id === selectedLevel2 : false);
 
     const columns = [
         {
@@ -192,32 +277,72 @@ export default function ManagerEmployees() {
             </div>
 
             <Card className="glass-card" style={{ marginBottom: 24 }}>
-                <div className={styles.filterWrapper}>
-                    <Space size={16} wrap style={{ width: '100%' }}>
+                <div className={styles.searchBarWrapper}>
+                    <div className={styles.headerLeft}>
                         <Input
-                            placeholder="Tìm tên, mã nhân viên, email..."
+                            placeholder="Tìm kiếm tên, mã nhân viên, email..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            onPressEnter={handleSearch}
-                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-                            style={{ width: 260 }}
+                            prefix={<SearchOutlined className={styles.searchIcon} />}
+                            className={styles.searchBar}
+                            allowClear
                         />
+                        <Space size={8} style={{ display: 'flex', alignItems: 'center' }}>
+                            <Select
+                                placeholder="Chọn Khối"
+                                value={selectedLevel1}
+                                onChange={handleLevel1Change}
+                                style={{ width: 140 }}
+                                allowClear={!isLevel1Locked}
+                                disabled={isLevel1Locked}
+                            >
+                                {level1Options.map(d => (
+                                    <Option key={d.id} value={d.id}>{d.name}</Option>
+                                ))}
+                            </Select>
 
+                            <Select
+                                placeholder="Chọn Phòng ban"
+                                value={selectedLevel2}
+                                onChange={handleLevel2Change}
+                                style={{ width: 150 }}
+                                allowClear={!isLevel2Locked}
+                                disabled={!selectedLevel1 || isLevel2Locked}
+                            >
+                                {level2Options.map(d => (
+                                    <Option key={d.id} value={d.id}>{d.name}</Option>
+                                ))}
+                            </Select>
+
+                            <Select
+                                placeholder="Chọn Tổ/Nhóm"
+                                value={selectedLevel3}
+                                onChange={handleLevel3Change}
+                                style={{ width: 140 }}
+                                allowClear={!isLevel3Locked}
+                                disabled={!selectedLevel2 || isLevel3Locked}
+                            >
+                                {level3Options.map(d => (
+                                    <Option key={d.id} value={d.id}>{d.name}</Option>
+                                ))}
+                            </Select>
+                        </Space>
                         <Select
                             placeholder="Chọn chức vụ"
                             value={selectedPosition}
                             onChange={setSelectedPosition}
-                            style={{ width: 180 }}
+                            style={{ width: 160 }}
                             allowClear
                         >
                             {positions.map(pos => (
                                 <Option key={pos.id} value={pos.id}>{pos.name}</Option>
                             ))}
                         </Select>
+                    </div>
 
-                        <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>Tìm kiếm</Button>
+                    <div className={styles.headerRight}>
                         <Button icon={<ReloadOutlined />} onClick={handleReset}>Làm mới</Button>
-                    </Space>
+                    </div>
                 </div>
 
                 <Table

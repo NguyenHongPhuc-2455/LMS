@@ -15,16 +15,69 @@
     }
 }
 
-.filterWrapper {
-    margin-bottom: 20px;
+.searchBarWrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.6);
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+
+    .headerLeft {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .headerRight {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .searchBar {
+        width: 300px;
+        height: 32px;
+        border-radius: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0 16px;
+
+        &:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+
+        &:focus,
+        &-focused {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            background: #fff;
+        }
+
+        :global(.ant-input-prefix) {
+            margin-right: 10px;
+            color: #94a3b8;
+            font-size: 18px;
+        }
+
+        :global(.ant-input) {
+            font-size: 14px;
+            background: transparent;
+
+            &::placeholder {
+                color: #94a3b8;
+            }
+        }
+    }
+
+    .searchIcon {
+        color: #6366f1;
+        font-size: 18px;
+    }
 }
 
 .detailBtn {

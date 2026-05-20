@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, message, Space, Card, Typography, Tag } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Space, Card, Typography, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import api from '../../../services/api';
 import styles from '../UserManagement/UserManagement.module.scss'; // Reusing styles for consistency
@@ -10,8 +10,10 @@ interface Department {
     id: number;
     name: string;
     description: string | null;
+    parent_id?: number | null;
     _count?: {
         users: number;
+        children?: number;
     };
 }
 
@@ -39,12 +41,73 @@ const DepartmentManagement: React.FC = () => {
         fetchDepartments();
     }, []);
 
-    const filteredDepartments = useMemo(() => {
+    // Xây dựng cấu trúc cây phòng ban
+    const departmentTree = useMemo(() => {
+        const map = new Map<number, any>();
+        departments.forEach(d => {
+            map.set(d.id, { ...d, children: [] });
+        });
+        const tree: any[] = [];
+        departments.forEach(d => {
+            const node = map.get(d.id);
+            if (d.parent_id) {
+                const parent = map.get(d.parent_id);
+                if (parent) {
+                    parent.children.push(node);
+                } else {
+                    tree.push(node);
+                }
+            } else {
+                tree.push(node);
+            }
+        });
+        const cleanTree = (nodes: any[]) => {
+            nodes.forEach(node => {
+                if (node.children.length === 0) {
+                    delete node.children;
+                } else {
+                    cleanTree(node.children);
+                }
+            });
+        };
+        cleanTree(tree);
+        return tree;
+    }, [departments]);
+
+    // Dữ liệu hiển thị trong Table (Cây nếu không tìm kiếm, phẳng nếu có tìm kiếm)
+    const displayedDepartments = useMemo(() => {
+        if (!search) return departmentTree;
         return departments.filter(d =>
             d.name.toLowerCase().includes(search.toLowerCase()) ||
             (d.description && d.description.toLowerCase().includes(search.toLowerCase()))
         );
-    }, [departments, search]);
+    }, [departments, departmentTree, search]);
+
+    // Danh sách phòng ban cha hợp lệ cho ô chọn Parent
+    const parentOptions = useMemo(() => {
+        const level1Ids = new Set(departments.filter(d => !d.parent_id).map(d => d.id));
+
+        const excludedIds = new Set<number>();
+        if (editingDept) {
+            excludedIds.add(editingDept.id);
+            // Loại trừ con cháu để chống vòng lặp
+            const children = departments.filter(d => d.parent_id === editingDept.id);
+            children.forEach(c => {
+                excludedIds.add(c.id);
+                departments.filter(d => d.parent_id === c.id).forEach(gc => excludedIds.add(gc.id));
+            });
+        }
+
+        return departments
+            .filter(d => !excludedIds.has(d.id) && (!d.parent_id || level1Ids.has(d.parent_id)))
+            .map(d => {
+                const level = !d.parent_id ? 'Cấp 1' : 'Cấp 2';
+                return {
+                    value: d.id,
+                    label: `${d.name} (${level})`
+                };
+            });
+    }, [departments, editingDept]);
 
     const handleAdd = () => {
         setEditingDept(null);
@@ -54,14 +117,18 @@ const DepartmentManagement: React.FC = () => {
 
     const handleEdit = (record: Department) => {
         setEditingDept(record);
-        form.setFieldsValue(record);
+        form.setFieldsValue({
+            name: record.name,
+            description: record.description,
+            parent_id: record.parent_id || undefined
+        });
         setIsModalOpen(true);
     };
 
     const handleDelete = (id: number) => {
         Modal.confirm({
             title: 'Xác nhận xóa phòng ban?',
-            content: 'Bạn chỉ có thể xóa phòng ban khi không còn nhân viên nào thuộc phòng này.',
+            content: 'Bạn chỉ có thể xóa phòng ban khi không còn bất kỳ phòng ban con nào và không còn nhân viên trực thuộc.',
             okText: 'Xóa ngay',
             okType: 'danger',
             cancelText: 'Hủy',
@@ -80,18 +147,23 @@ const DepartmentManagement: React.FC = () => {
     const handleModalOk = async () => {
         try {
             const values = await form.validateFields();
+            const payload = {
+                ...values,
+                parent_id: values.parent_id || null
+            };
+
             if (editingDept) {
-                await api.put(`/departments/${editingDept.id}`, values);
+                await api.put(`/departments/${editingDept.id}`, payload);
                 message.success('Cập nhật phòng ban thành công');
             } else {
-                await api.post('/departments', values);
+                await api.post('/departments', payload);
                 message.success('Thêm phòng ban mới thành công');
             }
             setIsModalOpen(false);
             fetchDepartments();
         } catch (error: any) {
             if (error.name !== 'ValidationError') {
-                message.error('Lỗi lưu dữ liệu');
+                message.error(error.response?.data?.message || 'Lỗi lưu dữ liệu');
             }
         }
     };
@@ -101,10 +173,11 @@ const DepartmentManagement: React.FC = () => {
             title: 'Mã phòng',
             dataIndex: 'id',
             key: 'id',
+            width: 150,
             render: (id: number) => <Text strong style={{ color: '#000', whiteSpace: 'nowrap' }}>DEPT-{id}</Text>
         },
         {
-            title: 'Tên phòng ban',
+            title: 'Tên phòng ban / Tổ nhóm',
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => (
@@ -118,8 +191,9 @@ const DepartmentManagement: React.FC = () => {
             render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text || <Text type="secondary">Chưa có mô tả</Text>}</span>
         },
         {
-            title: 'Nhân sự',
+            title: 'Nhân sự trực thuộc',
             key: 'userCount',
+            width: 180,
             render: (record: Department) => (
                 <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
                     {record._count?.users || 0} nhân viên
@@ -156,7 +230,7 @@ const DepartmentManagement: React.FC = () => {
             <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý phòng ban</Title>
-                    <Text type="secondary">Quản lý sơ đồ tổ chức, cơ cấu phòng ban và phân bổ nhân sự</Text>
+                    <Text type="secondary">Quản lý sơ đồ tổ chức 3 cấp (Khối - Phòng ban - Tổ nhóm) và phân bổ nhân sự</Text>
                 </div>
             </div>
 
@@ -173,7 +247,7 @@ const DepartmentManagement: React.FC = () => {
                             allowClear
                         />
                         <span style={{ marginLeft: 12, color: '#666', fontSize: '14px' }}>
-                            Tổng cộng {departments.length} phòng ban
+                            Tổng cộng {departments.length} phòng ban/tổ nhóm
                         </span>
                     </div>
 
@@ -191,11 +265,12 @@ const DepartmentManagement: React.FC = () => {
 
                 <Table
                     columns={columns}
-                    dataSource={filteredDepartments}
+                    dataSource={displayedDepartments}
                     rowKey="id"
                     loading={loading}
+                    defaultExpandAllRows={true}
                     pagination={{
-                        pageSize: 10,
+                        pageSize: 15,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
                                 return <a>{current < 10 ? `0${current}` : current}</a>;
@@ -238,11 +313,26 @@ const DepartmentManagement: React.FC = () => {
                 <Form form={form} layout="vertical" style={{ marginTop: '20px' }}>
                     <Form.Item
                         name="name"
-                        label="Tên phòng ban"
+                        label="Tên phòng ban / Tổ nhóm"
                         rules={[{ required: true, message: 'Vui lòng nhập tên phòng ban' }]}
                     >
-                        <Input placeholder="Ví dụ: Phòng Marketing, IT, Nhân sự..." size="large" />
+                        <Input placeholder="Ví dụ: Khối R&D, IT, Nhóm ERP..." size="large" />
                     </Form.Item>
+
+                    <Form.Item
+                        name="parent_id"
+                        label="Thuộc phòng ban cấp trên"
+                    >
+                        <Select
+                            placeholder="Chọn phòng ban cha (để trống nếu là Khối Cấp 1)"
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            options={parentOptions}
+                            size="large"
+                        />
+                    </Form.Item>
+
                     <Form.Item
                         name="description"
                         label="Mô tả chi tiết"
