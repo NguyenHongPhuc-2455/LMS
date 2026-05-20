@@ -4,40 +4,10 @@ const { lessonSelect } = require('./video.service');
 
 const { generateStreamToken } = require('../utils/streamToken');
 
-const { NEW_EMPLOYEE_THRESHOLD_DAYS } = require('../constants/system');
+const { isUserInScope } = require('../utils/scope');
 
-const isUserInCourseScope = (userData, course, isEnrolled = false) => {
-    if (isEnrolled) return true;
-
-    const scope = course.apply_scope || 'ALL_EMPLOYEE';
-    const targets = Array.isArray(course.mandatory_targets) ? course.mandatory_targets : [];
-    
-    // 1. Check New Employee status if needed
-    const isNewScope = scope.startsWith('NEW_EMPLOYEE');
-    if (isNewScope) {
-        if (!userData.join_date) return false;
-        const today = new Date();
-        const joinDate = new Date(userData.join_date);
-        const diffDays = Math.ceil((today.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays > NEW_EMPLOYEE_THRESHOLD_DAYS) return false;
-    }
-
-    // 2. Check scope
-    if (scope === 'ALL_EMPLOYEE' || scope === 'NEW_EMPLOYEE') return true;
-    
-    if (scope === 'BY_DEPARTMENT' || scope === 'NEW_EMPLOYEE_BY_DEPARTMENT') {
-        return userData.department_id && targets.includes(userData.department_id);
-    }
-    
-    if (scope === 'BY_POSITION' || scope === 'NEW_EMPLOYEE_BY_POSITION') {
-        return userData.position_id && targets.includes(userData.position_id);
-    }
-    
-    if (scope === 'SPECIFIC_USER') {
-        return targets.includes(userData.id);
-    }
-    
-    return true;
+const isUserInCourseScope = (userData, course, isEnrolled = false, departmentMap = null) => {
+    return isUserInScope(userData, course, isEnrolled, departmentMap);
 };
 
 const getAllCourses = async (search = '', categoryId = null, includeInactive = false, user = null) => {
@@ -62,13 +32,42 @@ const getAllCourses = async (search = '', categoryId = null, includeInactive = f
     if (user) {
         const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
         if (!isAdmin) {
-            const userData = await prisma.user.findUnique({ 
-                where: { id: user.id }, 
-                select: { id: true, department_id: true, position_id: true, join_date: true } 
+            const userData = await prisma.user.findUnique({
+                where: { id: user.id },
+                select: { id: true, department_id: true, position_id: true, join_date: true }
             });
-            
+
             if (userData) {
-                courses = courses.filter(course => isUserInCourseScope(userData, course));
+                // Lấy tất cả course_id mà user đã ghi danh (trực tiếp hoặc qua lộ trình học)
+                const [directEnrollments, programEnrollments] = await Promise.all([
+                    prisma.enrollment.findMany({
+                        where: { user_id: user.id },
+                        select: { course_id: true }
+                    }),
+                    prisma.programEnrollment.findMany({
+                        where: { user_id: user.id },
+                        include: {
+                            program: {
+                                include: {
+                                    courses: { select: { course_id: true } }
+                                }
+                            }
+                        }
+                    })
+                ]);
+
+                const enrolledCourseIds = new Set([
+                    ...directEnrollments.map(e => e.course_id),
+                    ...programEnrollments.flatMap(pe => pe.program.courses.map(pc => pc.course_id))
+                ]);
+
+                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+
+                courses = courses.filter(course => {
+                    const isEnrolled = enrolledCourseIds.has(course.id);
+                    return isUserInCourseScope(userData, course, isEnrolled, departmentMap);
+                });
             }
         }
     }
@@ -126,7 +125,9 @@ const getEnrichedCourseDetail = async (courseId, user, ip) => {
 
     // 2.5. Kiểm tra phạm vi hiển thị (Visibility Scope)
     if (!isAdmin && !isOwner && userData) {
-        const inScope = isUserInCourseScope(userData, course);
+        const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+        const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+        const inScope = isUserInCourseScope(userData, course, hasAccess, departmentMap);
         if (!inScope) {
             throw new ApiError(403, 'Bạn không thuộc đối tượng được phân phối khóa học này.');
         }
@@ -138,6 +139,84 @@ const getEnrichedCourseDetail = async (courseId, user, ip) => {
     const progressPercent = allLessonIds.length > 0 ? Math.round((completedLessonIds.length / allLessonIds.length) * 100) : 0;
 
     const statusInfo = calculateCourseStatus(course, userData, progressPercent, enrolledAt);
+
+    // 3. Kiểm tra khóa theo lộ trình học tuần tự (Sequential learning lock)
+    let isLockedByProgram = false;
+    let lockReason = '';
+
+    if (userId && !isAdmin && !isOwner) {
+        // Tìm tất cả lộ trình học mà nhân viên này đã đăng ký và chứa khóa học này
+        const programEnrollments = await prisma.programEnrollment.findMany({
+            where: {
+                user_id: userId,
+                program: {
+                    deleted_at: null,
+                    allow_early_access: false, // Chỉ xét lộ trình học bắt buộc học tuần tự
+                    courses: {
+                        some: { course_id: parseInt(courseId) }
+                    }
+                }
+            },
+            include: {
+                program: {
+                    include: {
+                        courses: {
+                            orderBy: { order: 'asc' },
+                            include: {
+                                course: {
+                                    include: {
+                                        sections: {
+                                            include: {
+                                                lessons: { select: { id: true } }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (programEnrollments.length > 0) {
+            // Lấy tất cả bài học đã hoàn thành của user một lần duy nhất
+            const userCompletions = await prisma.lessonCompleted.findMany({
+                where: { user_id: userId },
+                select: { lesson_id: true }
+            });
+            const completedSet = new Set(userCompletions.map(c => c.lesson_id));
+
+            for (const pe of programEnrollments) {
+                const sortedCourses = pe.program.courses;
+                const currentIndex = sortedCourses.findIndex(pc => pc.course_id === parseInt(courseId));
+
+                if (currentIndex > 0) {
+                    // Kiểm tra xem tất cả các khóa học đứng trước đã hoàn thành chưa
+                    for (let i = 0; i < currentIndex; i++) {
+                        const prevCourse = sortedCourses[i].course;
+                        const prevLessonIds = prevCourse.sections.flatMap(s => s.lessons.map(l => l.id));
+
+                        const total = prevLessonIds.length;
+                        const completed = prevLessonIds.filter(id => completedSet.has(id)).length;
+                        const isFinished = total === 0 || completed === total;
+
+                        if (!isFinished) {
+                            isLockedByProgram = true;
+                            lockReason = `Cần hoàn thành khóa học "${prevCourse.title}".`;
+                            break;
+                        }
+                    }
+                }
+                if (isLockedByProgram) break;
+            }
+        }
+    }
+
+    if (isLockedByProgram) {
+        statusInfo.canAccess = false;
+        statusInfo.reason = lockReason;
+    }
 
     // Nếu là học viên (không phải admin/owner) và canAccess = false, thì chặn hasAccess
     if (!isAdmin && !isOwner && !statusInfo.canAccess) {
@@ -343,32 +422,39 @@ const deleteSection = async (id) => {
     });
 };
 
-const getMandatoryOverdueReport = async (type = 'overdue') => {
+const getMandatoryOverdueReport = async (type = 'overdue', departmentId = null) => {
     // 1. Lấy tất cả khóa học bắt buộc
     const mandatoryCourses = await prisma.course.findMany({
         where: { is_mandatory: true, deleted_at: null },
-        select: { 
-            id: true, title: true, mandatory_deadline_days: true, 
-            mandatory_start_date: true, mandatory_end_date: true, 
-            allow_early_access: true, apply_scope: true, mandatory_targets: true 
+        select: {
+            id: true, title: true, mandatory_deadline_days: true,
+            mandatory_start_date: true, mandatory_end_date: true,
+            allow_early_access: true, apply_scope: true, mandatory_targets: true
         }
     });
 
     if (mandatoryCourses.length === 0) return [];
 
-    // 2. Lấy tất cả user có join_date
+    // 2. Lấy tất cả user có join_date (lọc theo phòng ban nếu là Manager)
     const users = await prisma.user.findMany({
-        where: { join_date: { not: null }, deleted_at: null },
-        select: { 
-            id: true, full_name: true, email: true, phone: true, 
-            employee_id: true, join_date: true, department_id: true, 
-            position_id: true, department: { select: { name: true } } 
+        where: {
+            join_date: { not: null },
+            deleted_at: null,
+            ...(departmentId && { department_id: parseInt(departmentId) })
+        },
+        select: {
+            id: true, full_name: true, email: true, phone: true,
+            employee_id: true, join_date: true, department_id: true,
+            position_id: true, department: { select: { name: true } }
         }
     });
 
     const { calculateCourseStatus } = require('../utils/courseStatus');
     const resultList = [];
     const today = new Date();
+
+    const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+    const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
 
     for (const user of users) {
         const userCourses = [];
@@ -383,7 +469,7 @@ const getMandatoryOverdueReport = async (type = 'overdue') => {
 
         for (const course of mandatoryCourses) {
             const isEnrolled = !!enrollmentMap[course.id];
-            if (!isUserInCourseScope(user, course, isEnrolled)) continue;
+            if (!isUserInCourseScope(user, course, isEnrolled, departmentMap)) continue;
 
             const statusInfo = calculateCourseStatus(course, user, 0, enrollmentMap[course.id]);
 
@@ -409,16 +495,16 @@ const getMandatoryOverdueReport = async (type = 'overdue') => {
             const isOnTime = isCompleted || (!statusInfo.isOverdue);
 
             if (type === 'overdue' && isOverdue) {
-                userCourses.push({ 
-                    courseId: course.id, 
-                    courseTitle: course.title, 
+                userCourses.push({
+                    courseId: course.id,
+                    courseTitle: course.title,
                     daysOverdue: Math.abs(statusInfo.remainingDays),
-                    progress 
+                    progress
                 });
             } else if (type === 'ontime' && isOnTime) {
-                userCourses.push({ 
-                    courseId: course.id, 
-                    courseTitle: course.title, 
+                userCourses.push({
+                    courseId: course.id,
+                    courseTitle: course.title,
                     isCompleted,
                     progress,
                     remainingDays: statusInfo.remainingDays

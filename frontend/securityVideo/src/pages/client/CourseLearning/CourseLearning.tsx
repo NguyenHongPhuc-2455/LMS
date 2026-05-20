@@ -49,6 +49,7 @@ export default function CourseLearning() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { hash } = location;
     const searchParams = new URLSearchParams(location.search);
     const initialLessonId = searchParams.get('lessonId');
 
@@ -109,7 +110,7 @@ export default function CourseLearning() {
     useEffect(() => {
         if (id) {
             fetchDetail();
-            if (!location.hash) {
+            if (!hash) {
                 window.scrollTo(0, 0);
             }
         }
@@ -126,7 +127,7 @@ export default function CourseLearning() {
     }, [initialLessonId, course]);
 
     useEffect(() => {
-        if (!location.hash) {
+        if (!hash) {
             window.scrollTo({ top: 0, behavior: 'auto' });
         }
         // Đồng bộ URL với bài học hiện tại để tránh việc fetchDetail làm nhảy bài
@@ -136,22 +137,31 @@ export default function CourseLearning() {
     }, [activeLesson?.id]);
 
     useEffect(() => {
-        if (location.hash && location.hash.startsWith('#comment-')) {
+        const timeoutIds: any[] = [];
+
+        if (hash && hash.startsWith('#comment-')) {
             const tryScroll = (attempts = 0) => {
-                const el = document.getElementById(location.hash.slice(1));
+                const el = document.getElementById(hash.slice(1));
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     el.classList.add(styles.highlightComment);
-                    setTimeout(() => {
+                    const tId1 = setTimeout(() => {
                         el.classList.remove(styles.highlightComment);
                     }, 2500);
+                    timeoutIds.push(tId1);
                 } else if (attempts < 15) {
-                    setTimeout(() => tryScroll(attempts + 1), 300);
+                    const tId2 = setTimeout(() => tryScroll(attempts + 1), 300);
+                    timeoutIds.push(tId2);
                 }
             };
-            setTimeout(() => tryScroll(), 500);
+            const tId3 = setTimeout(() => tryScroll(), 500);
+            timeoutIds.push(tId3);
         }
-    }, [location.hash, activeLesson?.id]);
+
+        return () => {
+            timeoutIds.forEach(id => clearTimeout(id));
+        };
+    }, [hash, activeLesson?.id]);
 
     // Heartbeat tracking for learning time
     useEffect(() => {

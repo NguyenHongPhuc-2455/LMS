@@ -78,7 +78,10 @@ exports.authorize = (roles) => {
             return res.status(403).json({ error: 'Bạn không có quyền truy cập' });
         }
 
-        const hasRole = roles.some(role => req.user.roles.includes(role));
+        const userRoles = req.user.roles.map(r => r.toLowerCase());
+        const allowedRoles = roles.map(r => r.toLowerCase());
+        
+        const hasRole = allowedRoles.some(role => userRoles.includes(role));
         if (hasRole) {
             next();
         } else {

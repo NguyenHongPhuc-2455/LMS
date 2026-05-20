@@ -10,9 +10,10 @@ Hệ thống sử dụng 2 Layout chính trong `src/components/Layout/`:
 1. **`MainLayout`**: Dành cho giao diện nhân sự (Client).
    - Bao gồm: `AppHeader`, `AppFooter`.
    - Sidebar tự động ẩn/hiện tùy theo trang.
-2. **`AdminLayout`**: Dành cho quản trị viên.
+2. **`AdminLayout`**: Dành cho quản trị viên (Admin) và Quản lý phòng ban (Line Manager).
    - Bao gồm: `AdminSidebar`, `AdminHeader`.
    - Sử dụng thiết kế Dashboard chuẩn (DashStack style).
+   - **Thích ứng động theo Vai trò (Role-Based Menu)**: `AdminSidebar` tự động kiểm tra vai trò người dùng đăng nhập. Nếu là `manager` (và không phải `admin`), menu sẽ tự động rút gọn để chỉ hiển thị các chức năng thuộc phòng ban của họ (như Tổng quan phòng ban, Quản lý tiến độ học tập, Danh sách nhân viên phòng ban, Duyệt yêu cầu, Báo cáo Onboarding và Báo cáo nhân sự không học tập).
 
 ---
 
@@ -47,6 +48,7 @@ Dự án sử dụng nhiều loại Player tùy thuộc vào nguồn video:
 - Sử dụng `axios` instance được cấu hình sẵn trong `src/services/api.ts`.
 - Tự động đính kèm `accessToken` vào mọi request từ localStorage.
 - Tự động xử lý lỗi 401 để yêu cầu đăng nhập lại.
+- **`managerService`** (tại `src/services/manager.service.ts`): Cung cấp các hàm gọi API cho phân hệ Line Manager bao gồm lấy danh sách nhân viên phòng ban, lấy tiến độ học tập chi tiết của từng nhân viên, xuất báo cáo nhân viên lười học (inactive) và gửi nhắc nhở học tập realtime.
 
 ---
 

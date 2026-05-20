@@ -5,13 +5,15 @@ export const statsService = {
         const response = await api.get('/stats/dashboard');
         return response.data;
     },
-    getCourseProgress: async (courseId: number) => {
-        const response = await api.get(`/stats/course-progress/${courseId}`);
+    getCourseProgress: async (courseId: number, departmentId?: number) => {
+        const response = await api.get(`/stats/course-progress/${courseId}`, {
+            params: departmentId ? { departmentId } : {}
+        });
         return response.data;
     },
-    searchProgress: async (query: string, courseId?: number) => {
+    searchProgress: async (query: string, courseId?: number, departmentId?: number) => {
         const response = await api.get(`/stats/progress-search`, {
-            params: { q: query, courseId }
+            params: { q: query, courseId, ...(departmentId ? { departmentId } : {}) }
         });
         return response.data;
     },

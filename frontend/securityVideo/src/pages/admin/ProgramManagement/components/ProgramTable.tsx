@@ -145,6 +145,52 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
             )
         },
         {
+            title: 'Loại lộ trình',
+            dataIndex: 'is_mandatory',
+            width: 130,
+            filters: [
+                { text: 'BẮT BUỘC', value: true },
+                { text: 'TỰ NGUYỆN', value: false },
+            ],
+            onFilter: (value: any, p: Program) => p.is_mandatory === value,
+            render: (_: any, p: Program) => (
+                <div style={{ whiteSpace: 'nowrap' }}>
+                    {p.is_mandatory ? (
+                        <Tag color="red" style={{ fontWeight: 600, margin: 0 }}>BẮT BUỘC</Tag>
+                    ) : (
+                        <Tag color="blue" style={{ fontWeight: 600, margin: 0 }}>TỰ NGUYỆN</Tag>
+                    )}
+                </div>
+            )
+        },
+        {
+            title: 'Phạm vi',
+            dataIndex: 'apply_scope',
+            width: 180,
+            filters: [
+                { text: 'Toàn bộ nhân viên', value: 'ALL_EMPLOYEE' },
+                { text: 'Theo phòng ban', value: 'BY_DEPARTMENT' },
+                { text: 'Theo vị trí', value: 'BY_POSITION' },
+                { text: 'Nhân viên cụ thể', value: 'SPECIFIC_USER' },
+                { text: 'Nhân viên mới', value: 'NEW_EMPLOYEE' },
+                { text: 'NV mới - Phòng ban', value: 'NEW_EMPLOYEE_BY_DEPARTMENT' },
+                { text: 'NV mới - Vị trí', value: 'NEW_EMPLOYEE_BY_POSITION' },
+            ],
+            onFilter: (value: any, p: Program) => p.apply_scope === value,
+            render: (scope: string) => {
+                const scopeLabels: Record<string, string> = {
+                    ALL_EMPLOYEE: 'Toàn bộ nhân viên',
+                    BY_DEPARTMENT: 'Theo phòng ban',
+                    BY_POSITION: 'Theo vị trí',
+                    SPECIFIC_USER: 'Nhân viên cụ thể',
+                    NEW_EMPLOYEE: 'Chỉ nhân viên mới',
+                    NEW_EMPLOYEE_BY_DEPARTMENT: 'NV mới - Phòng ban',
+                    NEW_EMPLOYEE_BY_POSITION: 'NV mới - Vị trí',
+                };
+                return <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>{scopeLabels[scope || 'ALL_EMPLOYEE'] || 'Toàn bộ nhân viên'}</span>;
+            }
+        },
+        {
             title: 'Khóa học',
             key: 'courses',
             width: 100,
@@ -218,7 +264,7 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
                     return originalElement;
                 }
             } as any}
-            scroll={{ x: 1000, y: 600 }}
+            scroll={{ x: 1400, y: 600 }}
             bordered
         />
     );

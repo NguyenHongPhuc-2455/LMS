@@ -35,7 +35,7 @@ router.get(/^\/stream\/([^/]+)\/(.+)$/, (req, res, next) => {
     next();
 }, videoController.streamProxy);
 
-router.get('/secure-stream/:token', authMiddleware.verifyToken, videoController.secureStream);
+router.get('/secure-stream/:token', videoController.secureStream);
 router.get('/refresh-stream/:lessonId', authMiddleware.verifyToken, videoController.refreshStreamToken);
 
 // Quản lý Video/Bài học (Chỉ Instructor/Admin)

@@ -5,11 +5,12 @@ const ApiError = require('../utils/ApiError');
 
 exports.getPrograms = catchAsync(async (req, res) => {
     const { search, status, instructorId } = req.query;
-    const isAdmin = req.user?.roles?.includes('admin');
+    const isAdmin = req.user?.roles?.includes('admin') || req.user?.roles?.includes('instructor');
     const programs = await programService.getAllPrograms({
         search,
         status: isAdmin ? status : 'PUBLISHED',
-        instructorId
+        instructorId,
+        user: req.user
     });
     res.json(programs);
 });
@@ -21,8 +22,14 @@ exports.getProgramDetail = catchAsync(async (req, res) => {
 });
 
 exports.createProgram = catchAsync(async (req, res) => {
-    const { title, description, level, thumbnail, is_private, status } = req.body;
+    const { title, description, level, thumbnail, is_private, status,
+            is_mandatory, apply_scope, mandatory_targets, mandatory_deadline_days,
+            mandatory_start_date, mandatory_end_date, allow_early_access } = req.body;
+            
     if (!title) throw new ApiError(400, 'Tiêu đề chương trình là bắt buộc');
+    
+    const isMandatoryVal = is_mandatory === true || is_mandatory === 'true';
+    
     const program = await programService.createProgram({
         title,
         description,
@@ -30,7 +37,15 @@ exports.createProgram = catchAsync(async (req, res) => {
         thumbnail,
         status: status || 'DRAFT',
         is_private: is_private === true || is_private === 'true',
-        instructor_id: req.user.id
+        instructor_id: req.user.id,
+        is_mandatory: isMandatoryVal,
+        ...(isMandatoryVal && { mandatory_at: new Date() }),
+        apply_scope: apply_scope || 'ALL_EMPLOYEE',
+        mandatory_targets: mandatory_targets || null,
+        mandatory_deadline_days: mandatory_deadline_days ? parseInt(mandatory_deadline_days) : 60,
+        mandatory_start_date: mandatory_start_date ? new Date(mandatory_start_date) : null,
+        mandatory_end_date: mandatory_end_date ? new Date(mandatory_end_date) : null,
+        allow_early_access: allow_early_access !== undefined ? (allow_early_access === true || allow_early_access === 'true') : true
     });
     res.status(201).json(program);
 });
@@ -40,19 +55,60 @@ exports.updateProgram = catchAsync(async (req, res) => {
     const existing = await programService.getProgramById(id);
     if (!existing) throw new ApiError(404, 'Không tìm thấy chương trình học');
 
-    const isAdmin = req.user?.roles?.includes('admin');
+    const isAdmin = req.user?.roles?.includes('admin') || req.user?.roles?.includes('instructor');
     if (!isAdmin && existing.instructor_id !== req.user.id) {
         throw new ApiError(403, 'Bạn không có quyền chỉnh sửa chương trình này');
     }
 
-    const { title, description, level, thumbnail, status, is_private } = req.body;
+    const { title, description, level, thumbnail, status, is_private,
+            is_mandatory, apply_scope, mandatory_targets, mandatory_deadline_days,
+            mandatory_start_date, mandatory_end_date, allow_early_access } = req.body;
+
+    const isMandatoryVal = is_mandatory !== undefined ? (is_mandatory === true || is_mandatory === 'true') : undefined;
+
+    // Ràng buộc thời hạn hoàn thành: Lộ trình >= Khóa học thành viên
+    const targetMandDeadlineDays = mandatory_deadline_days !== undefined
+        ? (mandatory_deadline_days ? parseInt(mandatory_deadline_days) : null)
+        : undefined;
+
+    if ((isMandatoryVal === true) || (isMandatoryVal !== false && existing.is_mandatory && targetMandDeadlineDays !== undefined)) {
+        const finalMandatory = isMandatoryVal !== undefined ? isMandatoryVal : existing.is_mandatory;
+        const finalDeadlineDays = targetMandDeadlineDays !== undefined ? targetMandDeadlineDays : existing.mandatory_deadline_days;
+
+        if (finalMandatory && finalDeadlineDays !== null) {
+            const programCourses = await prisma.programCourse.findMany({
+                where: { program_id: parseInt(id) },
+                include: { course: { select: { id: true, title: true, is_mandatory: true, mandatory_deadline_days: true } } }
+            });
+
+            for (const pc of programCourses) {
+                if (pc.course.is_mandatory && pc.course.mandatory_deadline_days !== null) {
+                    if (pc.course.mandatory_deadline_days > finalDeadlineDays) {
+                        throw new ApiError(
+                            400,
+                            `Hạn hoàn thành của Lộ trình học (${finalDeadlineDays} ngày) không được ngắn hơn hạn hoàn thành của các khóa học thành viên (Khóa học "${pc.course.title}" yêu cầu ${pc.course.mandatory_deadline_days} ngày).`
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     const updated = await programService.updateProgram(id, {
         title,
         description,
         level,
         thumbnail,
         status,
-        ...(is_private !== undefined && { is_private: is_private === true || is_private === 'true' })
+        ...(is_private !== undefined && { is_private: is_private === true || is_private === 'true' }),
+        ...(is_mandatory !== undefined && { is_mandatory: isMandatoryVal }),
+        ...(is_mandatory !== undefined && isMandatoryVal && { mandatory_at: new Date() }),
+        ...(apply_scope !== undefined && { apply_scope }),
+        ...(mandatory_targets !== undefined && { mandatory_targets }),
+        ...(mandatory_deadline_days !== undefined && { mandatory_deadline_days: mandatory_deadline_days ? parseInt(mandatory_deadline_days) : null }),
+        ...(mandatory_start_date !== undefined && { mandatory_start_date: mandatory_start_date ? new Date(mandatory_start_date) : null }),
+        ...(mandatory_end_date !== undefined && { mandatory_end_date: mandatory_end_date ? new Date(mandatory_end_date) : null }),
+        ...(allow_early_access !== undefined && { allow_early_access: allow_early_access === true || allow_early_access === 'true' })
     });
     res.json(updated);
 });

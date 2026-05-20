@@ -35,7 +35,8 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   │   ├── programRequest.controller.js # Duyệt yêu cầu lộ trình
 │   │   │   ├── stats.controller.js    # Thống kê & Tiến độ
 │   │   │   ├── comment.controller.js  # CRUD bình luận
-│   │   │   └── notification.controller.js # Quản lý thông báo
+│   │   │   ├── notification.controller.js # Quản lý thông báo
+│   │   │   └── manager.controller.js  # API phân hệ Line Manager (New)
 │   │   ├── services/              # (Core) Logic nghiệp vụ chính
 │   │   │   ├── auth.service.js        # Logic xác thực & JWT
 │   │   │   ├── user.service.js        # Logic người dùng & phân quyền
@@ -53,9 +54,10 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   │   ├── course-request.routes.js # /api/course-requests/*
 │   │   │   ├── stats.routes.js        # /api/stats/*
 │   │   │   ├── comment.routes.js      # /api/comments/*
-│   │   │   └── notification.routes.js # /api/notifications/*
+│   │   │   ├── notification.routes.js # /api/notifications/*
+│   │   │   └── manager.routes.js      # /api/manager/* (New)
 │   │   ├── middlewares/           # Auth, Upload, validate, rateLimiter, Error Handler
-│   │   ├── utils/                 # ApiError, catchAsync, socket.js, streamToken.js (New)
+│   │   ├── utils/                 # ApiError, catchAsync, socket.js, streamToken.js, scope.js (New)
 │   │   └── app.js                 # Cấu hình Express (Cài đặt Proxy Stream)
 │   ├── scripts/                   # Các script quản lý database, seed dữ liệu
 │   └── server.js                  # Entry point (Port 5000, Socket.io)
@@ -67,8 +69,8 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 │   │   ├── constants/             # Hệ thống hằng số (Routes, Configs)
 │   │   │   └── routes.ts          # Quản lý tập trung toàn bộ URL trong app
 │   │   ├── hooks/                 # Custom React Hooks
-│   │   ├── pages/                 # Admin modules (Course, Lesson, Category, Request, Progress, User)
-│   │   ├── services/              # API Client (Shared axios services)
+│   │   ├── pages/                 # Admin modules + Manager (ManagerEmployees, ManagerInactiveReport) (New)
+│   │   ├── services/              # API Client + manager.service.ts (New)
 │   │   ├── App.tsx                # SPA Routing
 │   │   └── main.tsx               # Entry point
 │   ├── tsconfig.app.json          # Cấu hình Absolute Imports (@/* -> ./src/*)
@@ -109,7 +111,18 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 - Frontend lắng nghe event `newNotification` qua Socket.io và hiện toast.
 - Khi click thông báo, navigate tới bài học đúng và scroll tới bình luận cụ thể (highlight vàng 2.5s).
 
-### 5. Mô hình Error Handling (Professional)
+### 5. Luồng Quản lý Phòng ban (Line Manager Subsystem)
+- **Phân quyền và bảo mật**: Manager chỉ được thao tác với nhân viên thuộc phòng ban (`department_id`) của mình. Logic này được chặn chặt chẽ ở tầng Controller.
+- **Thống kê & Giám sát**: Manager theo dõi tiến độ các khóa học của cấp dưới, tìm kiếm lọc theo chức danh/họ tên.
+- **Báo cáo Inactive**: Liệt kê các nhân sự chậm tiến độ (tổng thời lượng học bằng 0 hoặc 0 bài học hoàn thành trong N ngày qua).
+- **Đôn đốc realtime**: Manager gửi tin nhắn nhắc nhở trực tiếp -> DB lưu notification -> Socket.io đẩy Toast tức thì đến trình duyệt của học viên.
+
+### 6. Luồng Phân Phối Lộ Trình & Ràng Buộc Thời Hạn (Intelligent Scoping)
+- **Đa dạng phạm vi áp dụng (Scoping)**: Áp dụng Lộ trình học/Khóa học bắt buộc cho Toàn bộ nhân viên, Phòng ban, Vị trí, Nhân viên cụ thể hoặc Chỉ dành cho Nhân viên mới (dưới 90 ngày kể từ ngày vào làm `join_date`).
+- **Xác thực tự động**: `isUserInScope` trong `backend/src/utils/scope.js` kiểm tra quyền truy cập của user khi truy cập hoặc đăng ký khóa học/lộ trình.
+- **Ràng buộc thời hạn hoàn thành (Deadline Guard)**: Backend chặn không cho phép cấu hình thời hạn hoàn thành Lộ trình học ngắn hơn thời hạn hoàn thành của bất kỳ khóa học con nào thuộc lộ trình đó.
+
+### 7. Mô hình Error Handling (Professional)
 - Mọi lỗi được đóng gói qua `ApiError`.
 - `catchAsync` tự động bắt lỗi từ block Async/Await.
 - `error.middleware.js` chuyển đổi mọi lỗi thành JSON chuẩn cho Frontend.

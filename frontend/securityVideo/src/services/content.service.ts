@@ -44,6 +44,7 @@ export const contentService = {
     },
     completeLesson: async (id: number) => {
         const response = await api.post(`/videos/complete/${id}`);
+        window.dispatchEvent(new CustomEvent('course-progress-updated'));
         return response.data;
     },
     uploadAttachment: async (lessonId: number, formData: FormData) => {

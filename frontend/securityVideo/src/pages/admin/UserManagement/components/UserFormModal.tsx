@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, Row, Col, DatePicker, Space, Divider, Typography, Tag, Avatar } from 'antd';
+import { Modal, Form, Input, Select, Button, Row, Col, DatePicker, Space, Divider, Typography, Tag, Avatar, TreeSelect } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined, UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, TeamOutlined, IdcardOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -226,17 +226,47 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, p
                         {renderField("Mã nhân sự", "employee_id", <IdcardOutlined />, initialValues?.employee_id,
                             <Input placeholder="NV001" />
                         )}
-                        
                         {renderField("Phòng ban", "department_id", <TeamOutlined />, initialValues?.department || (departments.find(d => d.id === initialValues?.department_id)?.name),
-                            <Select
+                            <TreeSelect
                                 showSearch
-                                optionFilterProp="label"
+                                style={{ width: '100%' }}
+                                dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
                                 placeholder="Chọn phòng ban"
-                                options={departments?.map(d => ({ value: d.id, label: d.name })) || []}
+                                allowClear
+                                treeDefaultExpandAll
+                                treeData={(() => {
+                                    const map = new Map();
+                                    departments.forEach(item => {
+                                        map.set(item.id, { value: item.id, title: item.name, parent_id: item.parent_id, children: [] });
+                                    });
+                                    const tree: any[] = [];
+                                    departments.forEach(item => {
+                                        const node = map.get(item.id);
+                                        if (item.parent_id) {
+                                            const parent = map.get(item.parent_id);
+                                            if (parent) {
+                                                parent.children.push(node);
+                                            } else {
+                                                tree.push(node);
+                                            }
+                                        } else {
+                                            tree.push(node);
+                                        }
+                                    });
+                                    const cleanTree = (nodes: any[]) => {
+                                        nodes.forEach(node => {
+                                            if (node.children.length === 0) {
+                                                delete node.children;
+                                            } else {
+                                                cleanTree(node.children);
+                                            }
+                                        });
+                                    };
+                                    cleanTree(tree);
+                                    return tree;
+                                })()}
                             />
-                        )}
-
-                        {renderField("Vị trí", "position_id", <IdcardOutlined />, initialValues?.position || (positions.find(p => p.id === initialValues?.position_id)?.name),
+                        )}                        {renderField("Vị trí", "position_id", <IdcardOutlined />, initialValues?.position || (positions.find(p => p.id === initialValues?.position_id)?.name),
                             <Select
                                 showSearch
                                 optionFilterProp="label"

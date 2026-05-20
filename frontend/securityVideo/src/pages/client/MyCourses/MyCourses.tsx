@@ -102,7 +102,7 @@ export default function MyCourses() {
                                     <Space size={12} className={styles.statsSpace}>
                                         <span><BookOutlined /> {course.completedLessons}/{course.totalLessons} bài</span>
                                     </Space>
-                                    <Text type="secondary" className={styles.dateText}>
+                                    <Text type="secondary" className={styles.dateText} suppressHydrationWarning>
                                         <ClockCircleOutlined /> {new Date(course.enrolledAt).toLocaleDateString('vi-VN')}
                                     </Text>
                                 </div>

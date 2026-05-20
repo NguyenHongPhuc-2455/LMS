@@ -9,6 +9,20 @@ const { NEW_EMPLOYEE_THRESHOLD_DAYS } = require('../constants/system');
  * @returns {Object} { status, remainingDays, isOverdue, canAccess, reason, deadlineDate }
  */
 exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = null) => {
+    const isCompleted = progressPercent === 100;
+
+    // Nếu không phải khóa học bắt buộc, không tính toán deadline/quá hạn
+    if (!course || !course.is_mandatory) {
+        return { 
+            status: isCompleted ? 'COMPLETED' : 'NORMAL', 
+            remainingDays: null, 
+            isOverdue: false, 
+            canAccess: true, 
+            reason: null,
+            deadlineDate: null 
+        };
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -51,7 +65,6 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         deadlineDate.setHours(23, 59, 59, 999);
     }
 
-    const isCompleted = progressPercent === 100;
     let status = 'NORMAL';
     let remainingDays = 0;
     let isOverdue = false;
@@ -104,5 +117,38 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         reason,
         deadlineDate
     };
+};
+
+/**
+ * Tính toán trạng thái thời hạn và quyền truy cập của một lộ trình học bắt buộc
+ * @param {Object} program Lộ trình (cần có is_mandatory, mandatory_start_date, mandatory_end_date, allow_early_access)
+ * @returns {Object} { canAccess, reason }
+ */
+exports.calculateProgramStatus = (program) => {
+    if (!program || !program.is_mandatory) {
+        return { canAccess: true, reason: null };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (program.mandatory_start_date) {
+        const startDate = new Date(program.mandatory_start_date);
+        startDate.setHours(0, 0, 0, 0);
+
+        if (today < startDate) {
+            if (program.allow_early_access !== true) {
+                const day = startDate.getDate();
+                const month = startDate.getMonth() + 1;
+                const year = startDate.getFullYear();
+                return {
+                    canAccess: false,
+                    reason: `Lộ trình sẽ mở vào ngày ${day}/${month}/${year}`
+                };
+            }
+        }
+    }
+
+    return { canAccess: true, reason: null };
 };
 

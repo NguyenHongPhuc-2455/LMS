@@ -43,6 +43,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
 
     // Xử lý tự động bung comment khi có hash (từ thông báo)
     useEffect(() => {
+        let timer1: any = null;
+        let timer2: any = null;
+
         const hash = window.location.hash;
         if (hash.startsWith('#comment-') && comments.length > 0) {
             const targetId = parseInt(hash.replace('#comment-', ''));
@@ -63,14 +66,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                     if (parentIds.length > 0) {
                         setExpandedComments(prev => [...new Set([...prev, ...parentIds])]);
                     }
-                    setTimeout(() => {
+                    timer1 = setTimeout(() => {
                         const el = document.getElementById(`comment-${targetId}`);
                         if (el) {
                             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             const originalBg = el.style.background;
                             el.style.transition = 'background 0.5s';
                             el.style.background = '#fef9c3'; 
-                            setTimeout(() => {
+                            timer2 = setTimeout(() => {
                                 el.style.background = originalBg;
                                 if (window.location.hash === hash) {
                                     window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -81,6 +84,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ lessonId, currentUser }
                 }
             }
         }
+
+        return () => {
+            if (timer1) clearTimeout(timer1);
+            if (timer2) clearTimeout(timer2);
+        };
     }, [comments]);
 
     const handleSubmit = async (parentId?: number, text?: string) => {

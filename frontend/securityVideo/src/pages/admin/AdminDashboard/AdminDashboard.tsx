@@ -40,10 +40,16 @@ export default function AdminDashboard() {
 
     const chartData = stats?.enrollmentTrends || data_placeholder;
 
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const userRoles = user?.roles || [];
+    const roleNames = userRoles.map((r: any) => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+
     return (
         <div>
             <Title level={2} className={styles.adminDashboardTitle}>
-                Tổng quan
+                {isManagerOnly ? 'Tổng quan phòng ban' : 'Tổng quan'}
             </Title>
 
             <StatSummary stats={stats} />

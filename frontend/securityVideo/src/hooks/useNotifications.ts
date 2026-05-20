@@ -60,6 +60,21 @@ export const useNotifications = (userId: number | undefined) => {
             socket.on('newNotification', (newNotif: Notification) => {
                 setNotifications(prev => [newNotif, ...prev]);
                 setUnreadCount(prev => prev + 1);
+                
+                // Hiển thị Pop-up thông báo bằng Ant Design
+                import('antd').then(({ notification }) => {
+                    notification.info({
+                        message: newNotif.title,
+                        description: newNotif.message,
+                        placement: 'bottomRight',
+                        duration: 5,
+                        style: {
+                            borderRadius: '12px',
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(10px)'
+                        }
+                    });
+                });
             });
 
             return () => {

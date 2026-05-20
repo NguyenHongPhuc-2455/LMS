@@ -28,6 +28,16 @@ export default function UserManagement() {
     const { message, modal } = App.useApp();
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // Lấy thông tin user từ localStorage để kiểm tra role
+    const userStr = localStorage.getItem('user');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const userRoles = currentUser?.roles || [];
+    const roleNames = userRoles.map((r: any) => {
+        const name = typeof r === 'string' ? r : r.name;
+        return name?.toLowerCase();
+    });
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+
     // Pagination & Search State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -44,21 +54,10 @@ export default function UserManagement() {
 
     const [actionLoading, setActionLoading] = useState(false);
 
-    // Khi URL thay đổi (ví dụ bấm từ sidebar), cập nhật lại state local
-    useEffect(() => {
-        const id = searchParams.get('departmentId');
-        setDepartmentId(id ? parseInt(id) : undefined);
-        setPage(1); // Reset trang khi đổi phòng ban
-    }, [searchParams]);
-
-    // Debounce Logic cho ô tìm kiếm
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedSearch(search);
-            setPage(1);
-        }, 500);
-        return () => clearTimeout(handler);
-    }, [search]);
+    // Cascading states cho lọc bộ phận 3 cấp
+    const [selectedLevel1, setSelectedLevel1] = useState<number | undefined>();
+    const [selectedLevel2, setSelectedLevel2] = useState<number | undefined>();
+    const [selectedLevel3, setSelectedLevel3] = useState<number | undefined>();
 
     // React Query
     const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -91,6 +90,66 @@ export default function UserManagement() {
         queryFn: positionService.getAll,
         staleTime: 5 * 60 * 1000,
     });
+
+    // Khi URL thay đổi (ví dụ bấm từ sidebar), cập nhật lại state local
+    useEffect(() => {
+        const id = searchParams.get('departmentId');
+        // Nếu là Manager, ép buộc về phòng ban của mình, bỏ qua URL khác
+        if (isManagerOnly && currentUser?.department_id) {
+            const managerDeptId = currentUser.department_id;
+            if (!id || parseInt(id) !== managerDeptId) {
+                searchParams.set('departmentId', managerDeptId.toString());
+                setSearchParams(searchParams, { replace: true });
+            }
+            setDepartmentId(managerDeptId);
+        } else {
+            setDepartmentId(id ? parseInt(id) : undefined);
+        }
+        setPage(1);
+    }, [searchParams]);
+
+    // Đồng bộ ngược từ departmentId (ví dụ URL đổi hoặc reset) sang 3 cấp dropdown
+    useEffect(() => {
+        if (departmentId && departmentsData && departmentsData.length > 0) {
+            const currentDept = departmentsData.find((d: any) => d.id === departmentId);
+            if (currentDept) {
+                if (!currentDept.parent_id) {
+                    setSelectedLevel1(currentDept.id);
+                    setSelectedLevel2(undefined);
+                    setSelectedLevel3(undefined);
+                } else {
+                    const parentDept = departmentsData.find((d: any) => d.id === currentDept.parent_id);
+                    if (parentDept) {
+                        if (!parentDept.parent_id) {
+                            setSelectedLevel1(parentDept.id);
+                            setSelectedLevel2(currentDept.id);
+                            setSelectedLevel3(undefined);
+                        } else {
+                            const grandParentDept = departmentsData.find((d: any) => d.id === parentDept.parent_id);
+                            if (grandParentDept) {
+                                setSelectedLevel1(grandParentDept.id);
+                                setSelectedLevel2(parentDept.id);
+                                setSelectedLevel3(currentDept.id);
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (!departmentId) {
+            setSelectedLevel1(undefined);
+            setSelectedLevel2(undefined);
+            setSelectedLevel3(undefined);
+        }
+    }, [departmentId, departmentsData]);
+
+    // Debounce Logic cho ô tìm kiếm
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [search]);
 
     const users = usersData?.users || [];
     const total = usersData?.total || 0;
@@ -208,6 +267,24 @@ export default function UserManagement() {
         });
     };
 
+    const handleLevel1Change = (val: number | undefined) => {
+        setSelectedLevel1(val);
+        setSelectedLevel2(undefined);
+        setSelectedLevel3(undefined);
+        handleDepartmentChange(val);
+    };
+
+    const handleLevel2Change = (val: number | undefined) => {
+        setSelectedLevel2(val);
+        setSelectedLevel3(undefined);
+        handleDepartmentChange(val || selectedLevel1);
+    };
+
+    const handleLevel3Change = (val: number | undefined) => {
+        setSelectedLevel3(val);
+        handleDepartmentChange(val || selectedLevel2);
+    };
+
     return (
         <div className={styles.userManagementContainer} >
             <div className={styles.userManagementHeader}>
@@ -228,14 +305,43 @@ export default function UserManagement() {
                             className={styles.searchBar}
                             allowClear
                         />
-                        <Select
-                            placeholder="Lọc theo phòng ban"
-                            style={{ width: 180 }}
-                            allowClear
-                            value={departmentId}
-                            onChange={handleDepartmentChange}
-                            options={departments.map((d: any) => ({ value: d.id, label: d.name }))}
-                        />
+                        {/* Manager không được đổi phòng ban - ẩn dropdown, chỉ hiển thị label tên phòng ban */}
+                        {isManagerOnly ? (
+                            <span style={{ padding: '0 8px', color: '#666', fontStyle: 'italic', fontSize: 13 }}>
+                                Phòng ban: <strong style={{ color: '#C72127' }}>
+                                    {departments.find((d: any) => d.id === departmentId)?.name || '...'}
+                                </strong>
+                            </span>
+                        ) : (
+                            <Space size={8} style={{ display: 'flex', alignItems: 'center' }}>
+                                <Select
+                                    placeholder="Chọn Khối"
+                                    style={{ width: 140 }}
+                                    allowClear
+                                    value={selectedLevel1}
+                                    onChange={handleLevel1Change}
+                                    options={departments.filter((d: any) => !d.parent_id).map((d: any) => ({ value: d.id, label: d.name }))}
+                                />
+                                <Select
+                                    placeholder="Chọn Phòng ban"
+                                    style={{ width: 150 }}
+                                    allowClear
+                                    disabled={!selectedLevel1}
+                                    value={selectedLevel2}
+                                    onChange={handleLevel2Change}
+                                    options={departments.filter((d: any) => d.parent_id === selectedLevel1).map((d: any) => ({ value: d.id, label: d.name }))}
+                                />
+                                <Select
+                                    placeholder="Chọn Tổ/Nhóm"
+                                    style={{ width: 140 }}
+                                    allowClear
+                                    disabled={!selectedLevel2}
+                                    value={selectedLevel3}
+                                    onChange={handleLevel3Change}
+                                    options={departments.filter((d: any) => d.parent_id === selectedLevel2).map((d: any) => ({ value: d.id, label: d.name }))}
+                                />
+                            </Space>
+                        )}
                         <Select
                             placeholder="Lọc theo vị trí"
                             style={{ width: 180 }}

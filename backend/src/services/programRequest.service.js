@@ -58,15 +58,19 @@ const requestAccess = async (userId, programId, reason) => {
 
 /**
  * Lấy danh sách yêu cầu đang chờ (Admin/Manager)
+ * @param {number|null} departmentId - Nếu có thì chỉ lấy yêu cầu của user thuộc phòng ban đó
  */
-const getPendingRequests = async () => {
+const getPendingRequests = async (departmentId = null) => {
     return await prisma.programRequest.findMany({
         where: { 
             status: 'PENDING',
-            program: { deleted_at: null }
+            program: { deleted_at: null },
+            ...(departmentId && {
+                user: { department_id: parseInt(departmentId) }
+            })
         },
         include: {
-            user: { select: { id: true, full_name: true, email: true, username: true } },
+            user: { select: { id: true, full_name: true, email: true, username: true, department_id: true } },
             program: { select: { id: true, title: true } }
         },
         orderBy: { created_at: 'asc' }
@@ -75,17 +79,26 @@ const getPendingRequests = async () => {
 
 /**
  * Phê duyệt yêu cầu lộ trình
+ * @param {number|null} managerDeptId - Nếu có, kiểm tra user phải thuộc phòng ban của Manager
  */
-const approveRequest = async (id) => {
+const approveRequest = async (id, managerDeptId = null) => {
     const requestId = parseInt(id);
     const request = await prisma.programRequest.findUnique({
         where: { id: requestId },
-        include: { program: { include: { courses: true } } }
+        include: {
+            program: { include: { courses: true } },
+            user: { select: { id: true, department_id: true } }
+        }
     });
 
     if (!request) throw new ApiError(404, 'Không tìm thấy yêu cầu');
     if (request.status !== 'PENDING') {
         throw new ApiError(400, 'Yêu cầu này đã được xử lý trước đó');
+    }
+
+    // Guard Clause: Chặn Manager duyệt yêu cầu của user phòng ban khác
+    if (managerDeptId && request.user?.department_id !== parseInt(managerDeptId)) {
+        throw new ApiError(403, 'Bạn không có quyền phê duyệt yêu cầu của nhân sự phòng ban khác');
     }
 
     return await prisma.$transaction(async (tx) => {
@@ -130,17 +143,26 @@ const approveRequest = async (id) => {
 
 /**
  * Từ chối yêu cầu lộ trình
+ * @param {number|null} managerDeptId - Nếu có, kiểm tra user phải thuộc phòng ban của Manager
  */
-const rejectRequest = async (id) => {
+const rejectRequest = async (id, managerDeptId = null) => {
     const requestId = parseInt(id);
     const request = await prisma.programRequest.findUnique({
         where: { id: requestId },
-        include: { program: true }
+        include: {
+            program: true,
+            user: { select: { id: true, department_id: true } }
+        }
     });
 
     if (!request) throw new ApiError(404, 'Không tìm thấy yêu cầu');
     if (request.status !== 'PENDING') {
         throw new ApiError(400, 'Yêu cầu này đã được xử lý trước đó');
+    }
+
+    // Guard Clause
+    if (managerDeptId && request.user?.department_id !== parseInt(managerDeptId)) {
+        throw new ApiError(403, 'Bạn không có quyền từ chối yêu cầu của nhân sự phòng ban khác');
     }
 
     const updatedRequest = await prisma.programRequest.update({

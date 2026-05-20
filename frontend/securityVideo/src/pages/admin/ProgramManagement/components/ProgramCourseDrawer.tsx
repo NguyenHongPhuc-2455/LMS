@@ -85,6 +85,7 @@ export default function ProgramCourseDrawer({
                         renderItem={c => (
                             <List.Item actions={[
                                 <Button
+                                    key={`add-${c.id}`}
                                     type="primary"
                                     size="small"
                                     loading={addingCourseId === c.id}

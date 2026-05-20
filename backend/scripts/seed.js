@@ -10,13 +10,15 @@ async function main() {
     const rolesData = [
         { name: 'admin', description: 'Quản trị viên hệ thống' },
         { name: 'instructor', description: 'Giảng viên' },
-        { name: 'student', description: 'Học viên' }
+        { name: 'student', description: 'Học viên' },
+        { name: 'manager', description: 'Quản lý phòng ban' }
     ];
 
+    const seededRoles = {};
     for (const role of rolesData) {
-        await prisma.role.upsert({
+        seededRoles[role.name] = await prisma.role.upsert({
             where: { name: role.name },
-            update: {},
+            update: { description: role.description },
             create: role
         });
     }
@@ -33,35 +35,138 @@ async function main() {
     }
     console.log('✅ Khởi tạo Categories xong.');
 
-    // 3. Tạo tài khoản Admin mặc định
-    const adminRole = await prisma.role.findUnique({ where: { name: 'admin' } });
+    // 3. Tạo các Phòng ban (Departments)
+    const departmentsData = [
+        { name: 'Công nghệ thông tin', description: 'Phòng ban kỹ thuật và CNTT' },
+        { name: 'Nhân sự', description: 'Phòng ban tuyển dụng và đào tạo' },
+        { name: 'Kinh doanh', description: 'Phòng ban kinh doanh và bán hàng' }
+    ];
+
+    const seededDepts = {};
+    for (const dept of departmentsData) {
+        seededDepts[dept.name] = await prisma.department.upsert({
+            where: { name: dept.name },
+            update: { description: dept.description },
+            create: dept
+        });
+    }
+    console.log('✅ Khởi tạo Departments xong.');
+
+    // 4. Tạo các Chức vụ (Positions)
+    const positionsData = [
+        { name: 'Trưởng phòng', description: 'Quản lý trực tiếp phòng ban' },
+        { name: 'Phó phòng', description: 'Phó quản lý phòng ban' },
+        { name: 'Nhân viên', description: 'Nhân sự chính thức' },
+        { name: 'Thực tập sinh', description: 'Học việc và thực tập' }
+    ];
+
+    const seededPositions = {};
+    for (const pos of positionsData) {
+        seededPositions[pos.name] = await prisma.position.upsert({
+            where: { name: pos.name },
+            update: { description: pos.description },
+            create: pos
+        });
+    }
+    console.log('✅ Khởi tạo Positions xong.');
+
+    // 5. Tạo các tài khoản mặc định để kiểm thử
+
+    // 5.1. Tài khoản Admin tối cao
     const adminUser = await prisma.user.upsert({
         where: { username: 'admin' },
         update: {},
         create: {
             username: 'admin',
             email: 'admin@system.com',
-            password_hash: hashPassword('123456'),
+            password_hash: hashPassword('Admin@123'),
             full_name: 'Hệ thống Quản trị',
+            join_date: new Date()
         }
     });
-
-    // Gán quyền Admin cho user admin (M-N)
     await prisma.userRole.upsert({
-        where: {
-            user_id_role_id: {
-                user_id: adminUser.id,
-                role_id: adminRole.id
-            }
-        },
+        where: { user_id_role_id: { user_id: adminUser.id, role_id: seededRoles['admin'].id } },
         update: {},
-        create: {
-            user_id: adminUser.id,
-            role_id: adminRole.id
-        }
+        create: { user_id: adminUser.id, role_id: seededRoles['admin'].id }
     });
 
-    console.log('✅ Khởi tạo tài khoản Admin tối cao thành công! (admin/123456)');
+    // 5.2. Tài khoản Quản lý IT (manager1)
+    const managerUser = await prisma.user.upsert({
+        where: { username: 'manager1' },
+        update: {
+            department_id: seededDepts['Công nghệ thông tin'].id,
+            position_id: seededPositions['Trưởng phòng'].id
+        },
+        create: {
+            username: 'manager1',
+            email: 'manager1@system.com',
+            password_hash: hashPassword('Man@123'),
+            full_name: 'Quản lý IT',
+            employee_id: 'MGR001',
+            department_id: seededDepts['Công nghệ thông tin'].id,
+            position_id: seededPositions['Trưởng phòng'].id,
+            join_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Vào làm 30 ngày trước
+        }
+    });
+    await prisma.userRole.upsert({
+        where: { user_id_role_id: { user_id: managerUser.id, role_id: seededRoles['manager'].id } },
+        update: {},
+        create: { user_id: managerUser.id, role_id: seededRoles['manager'].id }
+    });
+
+    // 5.3. Tài khoản Học viên kiểm thử 1 (trihuynh)
+    const triHuynhUser = await prisma.user.upsert({
+        where: { username: 'trihuynh' },
+        update: {
+            department_id: seededDepts['Công nghệ thông tin'].id,
+            position_id: seededPositions['Thực tập sinh'].id
+        },
+        create: {
+            username: 'trihuynh',
+            email: 'trihuynh@system.com',
+            password_hash: hashPassword('Tri@12345'),
+            full_name: 'Huỳnh Minh Trí',
+            employee_id: 'RN016',
+            department_id: seededDepts['Công nghệ thông tin'].id,
+            position_id: seededPositions['Thực tập sinh'].id,
+            join_date: new Date() // Mới vào hôm nay
+        }
+    });
+    await prisma.userRole.upsert({
+        where: { user_id_role_id: { user_id: triHuynhUser.id, role_id: seededRoles['student'].id } },
+        update: {},
+        create: { user_id: triHuynhUser.id, role_id: seededRoles['student'].id }
+    });
+
+    // 5.4. Tài khoản Học viên kiểm thử 2 (student1)
+    const student1User = await prisma.user.upsert({
+        where: { username: 'student1' },
+        update: {
+            department_id: seededDepts['Công nghệ thông tin'].id,
+            position_id: seededPositions['Nhân viên'].id
+        },
+        create: {
+            username: 'student1',
+            email: 'student1@system.com',
+            password_hash: hashPassword('Stud@123'),
+            full_name: 'Nguyễn Văn A',
+            employee_id: 'RN017',
+            department_id: seededDepts['Công nghệ thông tin'].id,
+            position_id: seededPositions['Nhân viên'].id,
+            join_date: new Date()
+        }
+    });
+    await prisma.userRole.upsert({
+        where: { user_id_role_id: { user_id: student1User.id, role_id: seededRoles['student'].id } },
+        update: {},
+        create: { user_id: student1User.id, role_id: seededRoles['student'].id }
+    });
+
+    console.log('✅ Khởi tạo danh sách tài khoản mặc định thành công:');
+    console.log('   - Admin: admin / Admin@123');
+    console.log('   - Manager IT: manager1 / Man@123');
+    console.log('   - Student 1: trihuynh / Tri@12345');
+    console.log('   - Student 2: student1 / Stud@123');
     console.log('--- SEED HOÀN TẤT ---');
 }
 

@@ -94,7 +94,7 @@ export default function CourseTable({
                     className={styles.courseInfoSpace}
                     onClick={() => onNavigateToSections(c.id)}
                 >
-                    <img src={c.thumbnail || 'https://placehold.jp/150x150.png'} className={styles.courseThumbnail} />
+                    <img src={c.thumbnail || 'https://placehold.jp/150x150.png'} alt={c.title} className={styles.courseThumbnail} />
                     <div>
                         <Text strong className={styles.courseTitleText}>{c.title}</Text>
                         <Text type="secondary" className={styles.courseLevelText}>{c.level}</Text>

@@ -22,8 +22,9 @@ const socketUtils = require('./src/utils/socket');
 const prisma = require('./src/configs/prisma');
 const { initNotificationListener } = require('./src/listeners/notification.listener');
 
-// Khởi tạo listeners
+// Khởi tạo listeners và queues
 initNotificationListener();
+require('./src/queues/notification.queue');
 
 // Fix PostgreSQL sequences automatically on startup
 async function fixPostgresSequences() {

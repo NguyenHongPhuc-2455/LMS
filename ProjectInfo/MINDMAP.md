@@ -35,6 +35,12 @@ mindmap
         Progress Monitoring["Theo dõi tiến độ nhân sự"]
         User Management["Quản lý người dùng & Phân quyền"]
         Mandatory Onboarding["Báo cáo & Giám sát Hội nhập"]
+      Quản Lý Phòng Ban["Quản Lý Phòng Ban (Line Manager)"]
+        Xem Nhân Viên["Xem nhân viên thuộc phòng ban"]
+        Chi Tiết Tiến Độ["Xem tiến độ học tập chi tiết"]
+        Báo Cáo Inactive["Báo cáo nhân sự không học tập (Inactive)"]
+        Nhắc Nhở Realtime["Gửi nhắc nhở học tập (Socket.io Toast)"]
+        Bảo Mật Phòng Ban["Security Scoping (Lọc department_id)"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
         Enrollment["Đăng ký học"]
         Lesson Completion Tracking["Precise Tracking (95%)"]
@@ -78,11 +84,22 @@ Dành riêng cho Admin để vận hành hệ thống:
 - **Theo dõi tiến độ**: Admin có thể xem chi tiết phần trăm hoàn thành của từng nhân sự trong mỗi khóa học.
 - **Thông báo Realtime**: Push qua Socket.io khi có người phản hồi bình luận hoặc có yêu cầu mới cần duyệt.
 - Click thông báo để nhảy thẳng tới vị trí cần xử lý (bình luận hoặc trang duyệt).
+### 5. Khối Quản Lý Phòng Ban (Line Manager Subsystem)
+Dành riêng cho Quản lý phòng ban (Line Manager) để theo dõi và đôn đốc học tập:
+- **Bảo mật dữ liệu (Security Scoping)**: Lọc nghiêm ngặt dữ liệu nhân viên theo `department_id` của manager ở cả tầng Controller & Service, ngăn rò rỉ dữ liệu chéo.
+- **Xem nhân sự & Tiến độ chi tiết**: Hiển thị danh sách nhân sự trực thuộc phòng ban, tiến độ hoàn thành các khóa học bắt buộc và tự chọn.
+- **Báo cáo Inactive**: Xác định nhân sự không tham gia học tập trong vòng N ngày gần nhất (thời lượng học = 0 hoặc bài học hoàn thành = 0).
+- **Gửi nhắc nhở trực tiếp**: Cho phép gửi thông điệp nhắc nhở học tập thời gian thực tới tài khoản của nhân viên qua Socket.io Toast và lưu vào Notification DB.
 
-### 5. Khối SPA (Single Page Application)
+### 6. Khối Lộ Trình Bắt Buộc & Phân Phối (Intelligent Scoping)
+Cơ chế kiểm soát việc bắt buộc học tập đối với từng nhóm đối tượng:
+- **Phân phối linh hoạt (Intelligent Scoping)**: Áp dụng lộ trình cho Toàn bộ nhân viên, Theo phòng ban, Theo vị trí, Nhân viên cụ thể hoặc Chỉ dành cho nhân viên mới (tính từ ngày vào làm `join_date` dưới 90 ngày).
+- **Ràng buộc thời hạn hoàn thành (Deadline Consistency Guard)**: Backend tự động so khớp thời hạn. Ngăn chặn việc cấu hình thời hạn hoàn thành của Lộ trình học ngắn hơn thời hạn hoàn thành của bất kỳ khóa học con nào thuộc lộ trình đó, tránh xung đột logic.
+
+### 7. Khối SPA (Single Page Application)
 Giao diện React hiện đại:
 - Không load lại trang (Smooth transitions).
-- Layout tập trung (`MainLayout`).
+- Layout tập trung (`MainLayout` & `AdminLayout` với sidebar thích ứng động cho manager).
 - Ant Design v6 UI mượt mà.
 
 ---
@@ -96,6 +113,8 @@ Giao diện React hiện đại:
 - [x] Hệ thống Duyệt yêu cầu & Theo dõi Tiến độ Admin
 - [x] Đồng bộ hóa giao diện Dashboard (Standardized UI)
 - [x] Hệ thống Khóa học bắt buộc & Báo cáo hội nhập (Mandatory Onboarding)
+- [x] Phân hệ Quản lý Phòng ban cho Line Manager (Line Manager Subsystem)
+- [x] Bộ lọc thông minh Scoping và cơ chế Ràng buộc thời hạn (Intelligent Scoping & Deadline Guards)
 - [ ] Tích hợp Livestream dạy học trực tuyến.
 - [ ] App Mobile (React Native) sử dụng chung Backend API.
 - [ ] Hệ thống AI gợi ý khóa học dựa trên hành vi học tập.

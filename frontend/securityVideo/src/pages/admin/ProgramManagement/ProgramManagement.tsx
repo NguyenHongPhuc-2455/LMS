@@ -8,6 +8,9 @@ import { SearchOutlined } from '@ant-design/icons';
 import { programService } from '../../../services/program.service';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
+import { departmentService } from '../../../services/department.service';
+import { positionService } from '../../../services/position.service';
+import { userService } from '../../../services/user.service';
 
 import styles from './ProgramManagement.module.scss';
 
@@ -31,6 +34,9 @@ export default function ProgramManagement() {
     const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
     const [addingCourseId, setAddingCourseId] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [positions, setPositions] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
 
     const fetchPrograms = async () => {
         setLoading(true);
@@ -51,9 +57,23 @@ export default function ProgramManagement() {
         } catch { /* ignore */ }
     };
 
+    const fetchMetadata = async () => {
+        try {
+            const [deptData, posData, userResp] = await Promise.all([
+                departmentService.getAll(),
+                positionService.getAll(),
+                userService.getAll({ limit: 1000, page: 1 })
+            ]);
+            setDepartments(deptData);
+            setPositions(posData);
+            setUsers(userResp.users || []);
+        } catch { /* ignore */ }
+    };
+
     useEffect(() => {
         fetchPrograms();
         fetchAllCourses();
+        fetchMetadata();
     }, []);
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
@@ -99,6 +119,20 @@ export default function ProgramManagement() {
 
     const handleAddCourse = async (courseId: number) => {
         if (!selectedProgram) return;
+
+        // Client-side validation: kiểm tra deadline trước khi gọi API
+        const course = allCourses.find(c => c.id === courseId);
+        if (
+            selectedProgram.is_mandatory &&
+            selectedProgram.mandatory_deadline_days != null &&
+            course?.is_mandatory &&
+            course?.mandatory_deadline_days != null &&
+            course.mandatory_deadline_days > selectedProgram.mandatory_deadline_days
+        ) {
+            message.warning('Khóa học có deadline dài hơn lộ trình');
+            return;
+        }
+
         setAddingCourseId(courseId);
         try {
             await programService.addCourse(selectedProgram.id, courseId);
@@ -106,8 +140,9 @@ export default function ProgramManagement() {
             const data = await programService.getAll();
             setPrograms(data);
             setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
-        } catch {
-            message.error('Lỗi khi thêm khóa học');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi thêm khóa học';
+            message.error(errorMsg);
         } finally {
             setAddingCourseId(null);
         }
@@ -121,8 +156,9 @@ export default function ProgramManagement() {
             const data = await programService.getAll();
             setPrograms(data);
             setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
-        } catch {
-            message.error('Lỗi khi xóa khóa học');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi xóa khóa học';
+            message.error(errorMsg);
         }
     };
 
@@ -150,8 +186,9 @@ export default function ProgramManagement() {
             setPrograms(data);
             const fresh = data.find((p: Program) => p.id === selectedProgram.id);
             setSelectedProgram(fresh || null);
-        } catch {
-            message.error('Lỗi khi sắp xếp');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi sắp xếp';
+            message.error(errorMsg);
         }
     };
 
@@ -197,6 +234,9 @@ export default function ProgramManagement() {
                 onSuccess={handleSave}
                 editingId={editingProgram?.id}
                 initialValues={editingProgram}
+                departments={departments}
+                positions={positions}
+                users={users}
                 loading={submitting}
             />
 

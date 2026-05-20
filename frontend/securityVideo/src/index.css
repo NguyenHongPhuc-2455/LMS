@@ -118,21 +118,11 @@ body {
   display: block !important;
 }
 
-/* Global Zebra Striping for Tables */
-.ant-table-tbody>tr:nth-child(even)>td {
-  background-color: #f2f2f2 !important;
-}
-
 /* Fixed Columns Style */
 .ant-table-cell-fix-left,
 .ant-table-cell-fix-right {
   background-color: #fff !important;
   z-index: 5 !important;
-}
-
-.ant-table-tbody>tr:nth-child(even)>.ant-table-cell-fix-left,
-.ant-table-tbody>tr:nth-child(even)>.ant-table-cell-fix-right {
-  background-color: #f2f2f2 !important;
 }
 
 /* Pagination numbers style */

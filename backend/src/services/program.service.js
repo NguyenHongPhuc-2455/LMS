@@ -1,4 +1,6 @@
 const prisma = require('../configs/prisma');
+const { isUserInScope } = require('../utils/scope');
+
 
 const include = {
     instructor: { select: { id: true, username: true, full_name: true, avatar: true } },
@@ -21,8 +23,8 @@ const include = {
     _count: { select: { enrollments: true, courses: true } }
 };
 
-const getAllPrograms = async ({ search = '', status, instructorId } = {}) => {
-    const programs = await prisma.learningProgram.findMany({
+const getAllPrograms = async ({ search = '', status, instructorId, user = null } = {}) => {
+    let programs = await prisma.learningProgram.findMany({
         where: {
             deleted_at: null,
             ...(status ? { status } : {}),
@@ -32,6 +34,33 @@ const getAllPrograms = async ({ search = '', status, instructorId } = {}) => {
         include,
         orderBy: { created_at: 'desc' }
     });
+
+    // Lọc các Lộ trình hiển thị theo Phạm vi áp dụng (Nếu không phải admin/instructor)
+    if (user) {
+        const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+        if (!isAdmin) {
+            const userData = await prisma.user.findUnique({ 
+                where: { id: user.id }, 
+                select: { id: true, department_id: true, position_id: true, join_date: true } 
+            });
+            
+            if (userData) {
+                const enrolledPrograms = await prisma.programEnrollment.findMany({
+                    where: { user_id: user.id },
+                    select: { program_id: true }
+                });
+                const enrolledProgramIds = new Set(enrolledPrograms.map(ep => ep.program_id));
+
+                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+
+                programs = programs.filter(program => {
+                    const isEnrolled = enrolledProgramIds.has(program.id);
+                    return isUserInScope(userData, program, isEnrolled, departmentMap);
+                });
+            }
+        }
+    }
 
     return programs.map(p => ({
         ...p,
@@ -103,6 +132,30 @@ const softDeleteProgram = async (id) => {
 };
 
 const addCourse = async (programId, courseId, order) => {
+    const program = await prisma.learningProgram.findUnique({
+        where: { id: parseInt(programId) },
+        select: { is_mandatory: true, mandatory_deadline_days: true }
+    });
+    if (!program) throw new ApiError(404, 'Không tìm thấy lộ trình học');
+
+    const course = await prisma.course.findUnique({
+        where: { id: parseInt(courseId) },
+        select: { title: true, is_mandatory: true, mandatory_deadline_days: true }
+    });
+    if (!course) throw new ApiError(404, 'Không tìm thấy khóa học');
+
+    // Kiểm tra ràng buộc thời hạn hoàn thành giữa lộ trình và khóa học con
+    if (program.is_mandatory && program.mandatory_deadline_days !== null) {
+        if (course.is_mandatory && course.mandatory_deadline_days !== null) {
+            if (course.mandatory_deadline_days > program.mandatory_deadline_days) {
+                throw new ApiError(
+                    400,
+                    'Khóa học có deadline dài hơn lộ trình'
+                );
+            }
+        }
+    }
+
     const count = await prisma.programCourse.count({ where: { program_id: parseInt(programId) } });
     const programCourse = await prisma.programCourse.create({
         data: {
@@ -145,6 +198,13 @@ const ApiError = require('../utils/ApiError');
 const enrollProgram = async (userId, programId) => {
     const program = await getProgramById(programId);
     if (!program) return null;
+
+    // Kiểm tra quyền truy cập sớm (Early Access)
+    const { calculateProgramStatus } = require('../utils/courseStatus');
+    const statusInfo = calculateProgramStatus(program);
+    if (!statusInfo.canAccess) {
+        throw new ApiError(400, statusInfo.reason || 'Lộ trình học chưa đến ngày mở.');
+    }
 
     // 1. Ghi danh vào lộ trình
     await prisma.programEnrollment.upsert({
@@ -192,6 +252,24 @@ const getEnrichedProgramDetail = async (id, user) => {
         ]);
         isEnrolled = !!enrollment;
         requestStatus = request?.status || null;
+
+        // Kiểm tra phạm vi hiển thị (Visibility Scope)
+        const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+        const isOwner = program.instructor_id === userId;
+        if (!isAdmin && !isOwner) {
+            const userData = await prisma.user.findUnique({ 
+                where: { id: userId }, 
+                select: { id: true, department_id: true, position_id: true, join_date: true } 
+            });
+            if (userData) {
+                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
+                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+                const inScope = isUserInScope(userData, program, isEnrolled, departmentMap);
+                if (!inScope) {
+                    throw new ApiError(403, 'Bạn không thuộc đối tượng được phân phối lộ trình học này.');
+                }
+            }
+        }
     }
 
     if (isEnrolled && userId) {
@@ -226,7 +304,7 @@ const getEnrichedProgramDetail = async (id, user) => {
             const lessonIds = courseLessonMap[cid] || [];
             const total = lessonIds.length;
             const completed = lessonIds.filter(id => completedIds.has(id)).length;
-            const isFinished = total > 0 && completed === total;
+            const isFinished = total === 0 || completed === total;
             const isLocked = (isAdmin || isInstructor) ? false : !previousCourseFinished;
 
             previousCourseFinished = isFinished;
@@ -240,8 +318,34 @@ const getEnrichedProgramDetail = async (id, user) => {
         });
     }
 
+    const { calculateProgramStatus } = require('../utils/courseStatus');
+    const statusInfo = calculateProgramStatus(program);
+
+    const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+    const isOwner = program.instructor_id === userId;
+
+    let canAccess = statusInfo.canAccess;
+    let accessReason = statusInfo.reason;
+
+    if (isAdmin || isOwner) {
+        canAccess = true;
+        accessReason = null;
+    }
+
+    // Nếu không có quyền truy cập sớm, chặn isEnrolled để không cho vào học
+    if (!canAccess && isEnrolled) {
+        isEnrolled = false;
+    }
+
     const currentCourse = isEnrolled ? program.courses.find(pc => !pc.isFinished)?.course : null;
-    return { ...program, isEnrolled, requestStatus, currentCourseId: currentCourse?.id || null };
+    return { 
+        ...program, 
+        isEnrolled, 
+        requestStatus, 
+        currentCourseId: currentCourse?.id || null,
+        canAccess,
+        accessReason
+    };
 };
 
 /**

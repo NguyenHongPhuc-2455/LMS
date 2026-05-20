@@ -21,6 +21,7 @@ const courseRequestRoutes = require('./routes/courseRequest.routes');
 const departmentRoutes = require('./routes/department.routes');
 const positionRoutes = require('./routes/position.routes');
 const roleRoutes = require('./routes/role.routes');
+const managerRoutes = require('./routes/manager.routes');
 
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
@@ -113,6 +114,7 @@ app.use('/api/hero-banners', heroBannerRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/manager', managerRoutes);
 
 
 // Centralized Error Handling

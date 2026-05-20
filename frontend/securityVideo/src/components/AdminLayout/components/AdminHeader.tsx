@@ -73,6 +73,7 @@ export default function AdminHeader({ user }: { user: any }) {
                         }}
                         actions={[
                             <Button
+                                key={`delete-${item.id}`}
                                 type="text"
                                 size="small"
                                 icon={<DeleteOutlined />}

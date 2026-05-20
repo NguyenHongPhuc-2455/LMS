@@ -5,6 +5,21 @@ const ApiError = require('../utils/ApiError');
 const { generateStreamToken } = require('../utils/streamToken');
 const { createVideoToken } = require('../utils/crypto');
 const { lessonSelect } = require('../services/video.service');
+const { notificationQueue } = require('../queues/notification.queue');
+
+const getManagerDepartmentId = async (req) => {
+    const userRoles = req.user?.roles || [];
+    const roleNames = userRoles.map((r) => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+    
+    if (!isManagerOnly) return { isManagerOnly: false, departmentId: null };
+
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { department_id: true }
+    });
+    return { isManagerOnly: true, departmentId: user?.department_id || null };
+};
 
 exports.getCourses = catchAsync(async (req, res) => {
     const { search, categoryId, includeInactive } = req.query;
@@ -42,6 +57,15 @@ exports.createCourse = catchAsync(async (req, res) => {
         learning_outcomes,
         requirements
     });
+
+    if (isMandatoryVal) {
+        // Đẩy job tính toán và gửi thông báo vào Redis Queue thay vì xử lý đồng bộ
+        notificationQueue.add('notify_course', {
+            type: 'NOTIFY_MANDATORY_COURSE',
+            payload: { courseId: course.id }
+        }, { removeOnComplete: true, removeOnFail: false });
+    }
+
     res.status(201).json(course);
 });
 
@@ -86,6 +110,15 @@ exports.updateCourse = catchAsync(async (req, res) => {
             updated_at: new Date()
         }
     });
+
+    // Chỉ gửi thông báo nếu khóa học từ không bắt buộc chuyển sang bắt buộc
+    if (isMandatoryVal && !existingCourse.is_mandatory) {
+        notificationQueue.add('notify_course', {
+            type: 'NOTIFY_MANDATORY_COURSE',
+            payload: { courseId: course.id }
+        }, { removeOnComplete: true, removeOnFail: false });
+    }
+
     res.json(course);
 });
 
@@ -122,7 +155,8 @@ exports.restoreCourse = catchAsync(async (req, res) => {
  */
 exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
     const { type = 'overdue' } = req.query; // 'overdue' hoặc 'ontime'
-    const resultList = await courseService.getMandatoryOverdueReport(type);
+    const { departmentId } = await getManagerDepartmentId(req);
+    const resultList = await courseService.getMandatoryOverdueReport(type, departmentId);
     res.json(resultList);
 });
 

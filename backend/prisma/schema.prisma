@@ -21,11 +21,15 @@ model Role {
 }
 
 model Department {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(100)
-  description String?  @db.Text
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(100)
+  description String?      @db.Text
+  parent_id   Int?
+  parent      Department?  @relation("SubDepartments", fields: [parent_id], references: [id], onDelete: Restrict)
+  children    Department[] @relation("SubDepartments")
   users       User[]
 
+  @@unique([name, parent_id])
   @@map("departments")
 }
 
@@ -338,6 +342,16 @@ model LearningProgram {
   level         String?       @db.VarChar(50)
   status        ProgramStatus @default(DRAFT)
   is_private    Boolean       @default(false)
+  
+  is_mandatory            Boolean          @default(false)
+  mandatory_at            DateTime?
+  apply_scope             ApplyScope       @default(ALL_EMPLOYEE)
+  mandatory_targets       Json?
+  mandatory_deadline_days Int?             @default(60)
+  mandatory_start_date    DateTime?
+  mandatory_end_date      DateTime?
+  allow_early_access      Boolean          @default(true)
+
   created_at    DateTime      @default(now())
   updated_at    DateTime      @updatedAt
   deleted_at    DateTime?

@@ -15,7 +15,11 @@ const getUsers = async (query) => {
 
     const where = {
         ...(query.include_inactive !== 'true' && { deleted_at: null }),
-        ...(query.department_id && { department_id: parseInt(query.department_id) }),
+        ...(query.department_id && {
+            department_id: {
+                in: await require('../utils/departmentHierarchy').getSubDepartmentIds(query.department_id)
+            }
+        }),
         ...(query.position_id && { position_id: parseInt(query.position_id) }),
         OR: [
             { username: { contains: search, mode: 'insensitive' } },

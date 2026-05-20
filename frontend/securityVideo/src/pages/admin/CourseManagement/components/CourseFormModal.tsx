@@ -72,13 +72,18 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
     }, [open, editingId, initialValues, form]);
 
     const handleFinish = async (values: any) => {
-        const { deadline_type, mandatory_date_range, ...rest } = values;
+        const { deadline_type: _dt, mandatory_date_range, ...rest } = values;
+        
+        // Ưu tiên dùng state `deadlineType` vì form field `deadline_type` chỉ
+        // được mount khi switch `is_mandatory` đang BẬT. Nếu field chưa mount,
+        // giá trị từ form sẽ là undefined và deadline sẽ bị xóa sai.
+        const effectiveDeadlineType = deadlineType;
         
         const finalValues = {
             ...rest,
-            mandatory_deadline_days: deadline_type === 'days' ? rest.mandatory_deadline_days : null,
-            mandatory_start_date: deadline_type === 'range' && mandatory_date_range ? mandatory_date_range[0].toISOString() : null,
-            mandatory_end_date: deadline_type === 'range' && mandatory_date_range ? mandatory_date_range[1].toISOString() : null
+            mandatory_deadline_days: effectiveDeadlineType === 'days' ? (rest.mandatory_deadline_days ?? null) : null,
+            mandatory_start_date: effectiveDeadlineType === 'range' && mandatory_date_range ? mandatory_date_range[0].toISOString() : null,
+            mandatory_end_date: effectiveDeadlineType === 'range' && mandatory_date_range ? mandatory_date_range[1].toISOString() : null
         };
         
         await onSuccess(finalValues, thumbFile);

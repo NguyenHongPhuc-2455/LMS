@@ -100,7 +100,15 @@ export default function CourseDetail() {
                     block
                     disabled
                     className={styles.actionBtnStyled}
-                    style={{ backgroundColor: '#f5f5f5', color: '#8c8c8c' }}
+                    style={{ 
+                        backgroundColor: '#f5f5f5', 
+                        color: '#8c8c8c',
+                        height: 'auto',
+                        whiteSpace: 'normal',
+                        padding: '12px 16px',
+                        lineHeight: '1.4',
+                        textAlign: 'center'
+                    }}
                 >
                     {course.accessReason || 'KHÓA HỌC CHƯA MỞ'}
                 </Button>
@@ -197,7 +205,7 @@ export default function CourseDetail() {
                 <CourseFloatingCard
                     course={course}
                     totalLessons={totalLessons}
-                    renderActionButton={renderActionButton}
+                    actionButton={renderActionButton()}
                 />
                 <Col lg={16} md={24}>
                     <Title level={1} className={styles.courseTitleMain}>{course.title}</Title>

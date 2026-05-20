@@ -88,8 +88,8 @@ Hệ thống sử dụng RESTful API với định dạng dữ liệu trả về
 | GET | `/` | Danh sách các lộ trình học tập | ✅ |
 | GET | `/my-programs` | Lộ trình đang tham gia | ✅ |
 | GET | `/:id` | Chi tiết lộ trình & các khóa học bên trong | ✅ |
-| POST | `/` | Tạo lộ trình mới (body: `title`, `description`, `thumbnail`, `level`, `status`, `is_private`) | ✅ |
-| PUT | `/:id` | Cập nhật lộ trình (body: `title`, `description`, `thumbnail`, `level`, `status`, `is_private`) | ✅ |
+| POST | `/` | Tạo lộ trình mới (body: `title`, `description`, `thumbnail`, `level`, `status`, `is_private`, `is_mandatory`, `apply_scope`, `mandatory_targets`, `mandatory_deadline_days`, `mandatory_start_date`, `mandatory_end_date`, `allow_early_access`) | ✅ |
+| PUT | `/:id` | Cập nhật lộ trình (body: Tương tự POST. Backend tự động so khớp và chặn nếu thời hạn Lộ trình học ngắn hơn thời hạn hoàn thành của bất kỳ khóa học con nào thuộc lộ trình) | ✅ |
 | DELETE | `/:id` | Xóa lộ trình (Admin) | ✅ (Admin) |
 | POST | `/:id/courses` | Thêm khóa học vào lộ trình | ✅ (Admin) |
 | DELETE | `/:id/courses/:courseId` | Xóa khóa học khỏi lộ trình | ✅ (Admin) |
@@ -185,6 +185,21 @@ Hệ thống hỗ trợ gửi yêu cầu truy cập cho cả Khóa học và L�
 | DELETE | `/all` | Xóa tất cả thông báo | ✅ |
 
 > **Realtime**: Thông báo mới được phát qua Socket.io event `newNotification`. Mỗi thông báo COMMENT_REPLY có trường `link` chứa URL điều hướng tới bình luận cụ thể.
+
+---
+ 
+## 💼 13. Manager Subsystem (`/manager`)
+
+Các API này yêu cầu xác thực và chỉ cho phép người dùng có quyền quản lý phòng ban (`manager`) hoặc quản trị viên (`admin`) truy cập.
+
+| Method | Endpoint | Description | Auth? |
+| :--- | :--- | :--- | :--- |
+| GET | `/employees` | Lấy danh sách nhân viên thuộc phòng ban mình (Hỗ trợ phân trang, tìm kiếm `?search=`, lọc vị trí `?positionId=`) | ✅ (Manager/Admin) |
+| GET | `/employees/:id/progress` | Chi tiết danh sách khóa học và tiến độ học tập của nhân viên cụ thể | ✅ (Manager/Admin) |
+| GET | `/reports/inactive` | Báo cáo nhân viên không học tập trong N ngày qua (Mặc định `?days=7`) | ✅ (Manager/Admin) |
+| POST | `/reminders` | Gửi thông báo nhắc nhở học tập thời gian thực cho nhân viên | ✅ (Manager/Admin) |
+
+*Lưu ý: Đối với manager, toàn bộ dữ liệu trả về đều được giới hạn nghiêm ngặt chỉ trong phòng ban mà tài khoản đó quản lý.*
 
 ---
 
