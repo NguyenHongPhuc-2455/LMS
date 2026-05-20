@@ -41,6 +41,8 @@ interface Program {
     isEnrolled: boolean;
     requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
     currentCourseId?: number | null;
+    canAccess?: boolean;
+    accessReason?: string | null;
 }
 
 export default function ProgramDetail() {

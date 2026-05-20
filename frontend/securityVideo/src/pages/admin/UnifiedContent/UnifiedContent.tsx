@@ -295,16 +295,37 @@ const UnifiedContent: React.FC = () => {
                         const totalDuration = (Number(values.duration_min || 0) * 60) + Number(values.duration_sec || 0);
                         const formData = new FormData();
                         formData.append('title', values.title);
-                        formData.append('section_id', sectionId!);
+                        formData.append('section_id', String(values.section_id || sectionId));
                         formData.append('content', values.content || '');
-                        formData.append('order', values.order || '0');
+                        formData.append('order', String(values.order || '0'));
                         formData.append('duration', String(totalDuration));
-                        
-                        if (args[0]) formData.append('video', args[0]); // selectedFile
-                        if (args[1]) formData.append('attachment', args[1]); // attachmentFile
-                        if (values.video_url) formData.append('video_url', values.video_url);
+                        formData.append('anti_seek', String(values.anti_seek !== undefined ? values.anti_seek : true));
 
-                        await contentService.createLesson(formData);
+                        if (values.attachment_url) {
+                            formData.append('attachment_url', values.attachment_url);
+                        }
+
+                        // Determine video source type
+                        const videoSourceType = values.video_url ? 'LINK' : 'UPLOAD';
+                        if (videoSourceType === 'UPLOAD') {
+                            if (args[0]) {
+                                formData.append('video', args[0]); // selectedFile
+                            } else if (values.hls_video_url) {
+                                formData.append('hls_video_url', values.hls_video_url);
+                            }
+                        } else {
+                            formData.append('video_url', values.video_url);
+                        }
+
+                        const data = await contentService.createLesson(formData);
+                        
+                        // Upload attachment file if selected
+                        const newLessonId = data.data?.lessonId;
+                        if (newLessonId && args[1]) { // attachmentFile
+                            const attachData = new FormData();
+                            attachData.append('attachment', args[1]);
+                            await contentService.uploadAttachment(newLessonId, attachData);
+                        }
                     }
                 }
             }

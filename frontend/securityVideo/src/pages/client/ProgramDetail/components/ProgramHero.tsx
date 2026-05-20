@@ -58,7 +58,14 @@ export default function ProgramHero({
 
                     <div className={styles.heroActionSection}>
                         <div className={styles.actionGlowEffect} />
-                        {program.isEnrolled ? (
+                        {program.canAccess === false ? (
+                            <Button
+                                disabled
+                                className={styles.premiumActionBtn}
+                            >
+                                {program.accessReason || 'LỘ TRÌNH CHƯA MỞ'}
+                            </Button>
+                        ) : program.isEnrolled ? (
                             <Button
                                 type="primary"
                                 icon={<CheckCircleOutlined />}

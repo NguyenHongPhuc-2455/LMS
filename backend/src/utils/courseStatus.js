@@ -119,3 +119,36 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
     };
 };
 
+/**
+ * Tính toán trạng thái thời hạn và quyền truy cập của một lộ trình học bắt buộc
+ * @param {Object} program Lộ trình (cần có is_mandatory, mandatory_start_date, mandatory_end_date, allow_early_access)
+ * @returns {Object} { canAccess, reason }
+ */
+exports.calculateProgramStatus = (program) => {
+    if (!program || !program.is_mandatory) {
+        return { canAccess: true, reason: null };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (program.mandatory_start_date) {
+        const startDate = new Date(program.mandatory_start_date);
+        startDate.setHours(0, 0, 0, 0);
+
+        if (today < startDate) {
+            if (program.allow_early_access !== true) {
+                const day = startDate.getDate();
+                const month = startDate.getMonth() + 1;
+                const year = startDate.getFullYear();
+                return {
+                    canAccess: false,
+                    reason: `Lộ trình sẽ mở vào ngày ${day}/${month}/${year}`
+                };
+            }
+        }
+    }
+
+    return { canAccess: true, reason: null };
+};
+

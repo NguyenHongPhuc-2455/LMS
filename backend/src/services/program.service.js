@@ -196,6 +196,13 @@ const enrollProgram = async (userId, programId) => {
     const program = await getProgramById(programId);
     if (!program) return null;
 
+    // Kiểm tra quyền truy cập sớm (Early Access)
+    const { calculateProgramStatus } = require('../utils/courseStatus');
+    const statusInfo = calculateProgramStatus(program);
+    if (!statusInfo.canAccess) {
+        throw new ApiError(400, statusInfo.reason || 'Lộ trình học chưa đến ngày mở.');
+    }
+
     // 1. Ghi danh vào lộ trình
     await prisma.programEnrollment.upsert({
         where: { user_id_program_id: { user_id: userId, program_id: parseInt(programId) } },
@@ -306,8 +313,34 @@ const getEnrichedProgramDetail = async (id, user) => {
         });
     }
 
+    const { calculateProgramStatus } = require('../utils/courseStatus');
+    const statusInfo = calculateProgramStatus(program);
+
+    const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+    const isOwner = program.instructor_id === userId;
+
+    let canAccess = statusInfo.canAccess;
+    let accessReason = statusInfo.reason;
+
+    if (isAdmin || isOwner) {
+        canAccess = true;
+        accessReason = null;
+    }
+
+    // Nếu không có quyền truy cập sớm, chặn isEnrolled để không cho vào học
+    if (!canAccess && isEnrolled) {
+        isEnrolled = false;
+    }
+
     const currentCourse = isEnrolled ? program.courses.find(pc => !pc.isFinished)?.course : null;
-    return { ...program, isEnrolled, requestStatus, currentCourseId: currentCourse?.id || null };
+    return { 
+        ...program, 
+        isEnrolled, 
+        requestStatus, 
+        currentCourseId: currentCourse?.id || null,
+        canAccess,
+        accessReason
+    };
 };
 
 /**

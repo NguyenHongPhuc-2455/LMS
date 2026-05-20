@@ -27,4 +27,9 @@ export interface Program {
     instructor?: { full_name: string };
     courses: ProgramCourse[];
     _count?: { enrollments: number; courses: number };
+    isEnrolled?: boolean;
+    requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    currentCourseId?: number | null;
+    canAccess?: boolean;
+    accessReason?: string | null;
 }
