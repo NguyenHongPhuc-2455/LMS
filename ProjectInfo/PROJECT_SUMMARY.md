@@ -90,12 +90,17 @@ Dưới đây là tóm tắt nhanh nội dung của từng file để bạn dễ
 *   **Quản lý nhân sự phòng ban (`/admin/manager/employees`)**:
     *   Hiển thị thông tin tổng quan, chức danh, tiến độ học tập các khóa học được phân phối của từng nhân viên cấp dưới trực thuộc.
     *   Tích hợp tính năng **Gửi nhắc nhở học tập trực tiếp**: Manager có thể gửi tin nhắc nhở tùy chỉnh trực tiếp đến nhân viên. Hệ thống tự động lưu vào DB và phát tín hiệu Realtime qua **Socket.io** (`user_{employee_id}`) để hiển thị Toast thông báo ngay lập tức trên màn hình của nhân viên.
+    *   **Tái cấu trúc Bộ lọc & Tìm kiếm gọn gàng**: Thu gọn các dropdowns (Khối, Phòng ban, Tổ/Nhóm, Chức vụ) và ô tìm kiếm thành **1 hàng ngang duy nhất** tương tự giao diện Admin. Tích hợp tính năng **Debounced Search (500ms)** tự động tải lại dữ liệu khi nhập từ khóa mà không cần bấm nút "Tìm kiếm" thủ công.
+    *   **Sửa lỗi API & Mở rộng Hiển thị**: Khắc phục lỗi Crash API do truy vấn liên kết `Lesson` -> `Section` -> `Course`. Mở rộng bộ lọc vai trò nhân sự trong câu truy vấn để hiển thị đầy đủ cả vai trò `student` và `Employee` / `employee` trực thuộc phân cấp phòng ban của Manager.
 *   **Báo cáo nhân sự không học tập (`/admin/manager/inactive-report`)**:
     *   Bộ lọc động xác định các nhân sự "Inactive" trong vòng N ngày gần nhất (không có bất kỳ bài học nào hoàn thành, hoặc tổng thời lượng học tập `learning_sessions` bằng 0).
     *   Hỗ trợ gửi cảnh báo/nhắc nhở nhanh hàng loạt cho nhóm nhân sự chậm tiến độ này.
 *   **Giao diện Sidebar thích ứng**:
     *   Menu bên trái tự động rút gọn chỉ hiển thị các tính năng được phân quyền cho Manager.
     *   Mục "Quản lý nhân sự" chỉ hiển thị duy nhất phòng ban mà manager quản lý, thay vì hiển thị tất cả các phòng ban như tài khoản Admin.
+*   **Chiến lược đồng bộ Workit & Xác thực tạm thời**:
+    *   Sử dụng **Mã nhân viên (Employee ID)** làm cả `username` và `password` mặc định ban đầu khi đồng bộ dữ liệu từ API Workit.
+    *   Mật khẩu mặc định được băm SHA256 tương ứng mã nhân viên để đảm bảo đăng nhập tạm thời nhanh chóng và ổn định trước khi chuyển đổi sang hệ thống RitaID chính thức. Quy trình đồng bộ đảm bảo không ghi đè mật khẩu của tài khoản đã tồn tại.
 
 ### 🎯 E. Lộ Trình Bắt Buộc & Cơ Chế Phân Phối Scoping
 *   **Phân phối Lộ trình học thông minh (Intelligent Scoping)**:
