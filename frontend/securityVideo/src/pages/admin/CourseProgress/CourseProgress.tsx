@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Select, Typography, Space, Progress, Avatar, Card, Button, Tooltip, Input } from 'antd';
-import { UserOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { UserOutlined, ReloadOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { courseService } from '@/services/course.service';
 import { statsService } from '@/services/stats.service';
 import { categoryService, type Category } from '@/services/category.service';
@@ -8,6 +8,17 @@ import styles from './CourseProgress.module.scss';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// Lấy thông tin user từ localStorage
+const userStr = localStorage.getItem('user');
+const currentUser = userStr ? JSON.parse(userStr) : null;
+const userRoles = currentUser?.roles || [];
+const roleNames = userRoles.map((r: any) => {
+    const name = typeof r === 'string' ? r : r.name;
+    return name?.toLowerCase();
+});
+const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+const managerDepartmentId: number | undefined = isManagerOnly ? currentUser?.department_id : undefined;
 
 interface Course {
     id: number;
@@ -82,7 +93,8 @@ export default function CourseProgress() {
         setIsGlobalSearch(false);
         setLoadingStudents(true);
         try {
-            const data = await statsService.getCourseProgress(courseId);
+            // Truyền departmentId nếu là Manager để lọc chỉ nhân sự phòng ban mình
+            const data = await statsService.getCourseProgress(courseId, managerDepartmentId);
             setStudents(data);
         } catch (error) {
             console.error('Failed to fetch student progress:', error);

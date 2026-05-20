@@ -1,10 +1,26 @@
+const prisma = require('../configs/prisma');
 const userService = require('../services/user.service');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
-
 exports.getUsers = catchAsync(async (req, res) => {
-    const result = await userService.getUsers(req.query);
+    const query = { ...req.query };
+    const userRoles = req.user?.roles || [];
+    const roleNames = userRoles.map(r => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+
+    if (isManagerOnly) {
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { department_id: true }
+        });
+
+        if (!user || !user.department_id) {
+            throw new ApiError(400, 'Tài khoản Quản lý chưa được gán vào phòng ban nào');
+        }
+        query.department_id = user.department_id;
+    }
+    const result = await userService.getUsers(query);
     res.json(result);
 });
 

@@ -38,6 +38,8 @@ const DepartmentManagement = lazy(() => import('./pages/admin/DepartmentManageme
 const OnboardingReport = lazy(() => import('./pages/admin/OnboardingReport/OnboardingReport'));
 const PositionManagement = lazy(() => import('./pages/admin/PositionManagement/PositionManagement'));
 const RoleManagement = lazy(() => import('./pages/admin/RoleManagement/RoleManagement'));
+const ManagerEmployees = lazy(() => import('./pages/admin/ManagerEmployees/ManagerEmployees'));
+const ManagerInactiveReport = lazy(() => import('./pages/admin/ManagerInactiveReport/ManagerInactiveReport'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -111,6 +113,8 @@ function App() {
                 <Route path="positions" element={<PositionManagement />} />
                 <Route path="roles" element={<RoleManagement />} />
                 <Route path="onboarding-report" element={<OnboardingReport />} />
+                <Route path="manager/employees" element={<ManagerEmployees />} />
+                <Route path="manager/inactive-report" element={<ManagerInactiveReport />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

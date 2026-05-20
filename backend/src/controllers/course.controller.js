@@ -6,6 +6,20 @@ const { generateStreamToken } = require('../utils/streamToken');
 const { createVideoToken } = require('../utils/crypto');
 const { lessonSelect } = require('../services/video.service');
 
+const getManagerDepartmentId = async (req) => {
+    const userRoles = req.user?.roles || [];
+    const roleNames = userRoles.map((r) => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+    
+    if (!isManagerOnly) return { isManagerOnly: false, departmentId: null };
+
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { department_id: true }
+    });
+    return { isManagerOnly: true, departmentId: user?.department_id || null };
+};
+
 exports.getCourses = catchAsync(async (req, res) => {
     const { search, categoryId, includeInactive } = req.query;
     const courses = await courseService.getAllCourses(search, categoryId, includeInactive, req.user);
@@ -122,7 +136,8 @@ exports.restoreCourse = catchAsync(async (req, res) => {
  */
 exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
     const { type = 'overdue' } = req.query; // 'overdue' hoặc 'ontime'
-    const resultList = await courseService.getMandatoryOverdueReport(type);
+    const { departmentId } = await getManagerDepartmentId(req);
+    const resultList = await courseService.getMandatoryOverdueReport(type, departmentId);
     res.json(resultList);
 });
 

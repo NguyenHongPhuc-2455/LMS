@@ -18,7 +18,7 @@ export default function CourseOutcomes({ learning_outcomes }: CourseOutcomesProp
             <Title level={4}>Bạn sẽ học được gì?</Title>
             <Row gutter={[16, 12]}>
                 {outcomes.map((item, index) => (
-                    <Col span={12} key={index} className={styles.outcomeItem}>
+                    <Col span={12} key={item} className={styles.outcomeItem}>
                         <Space align="start">
                             <CheckOutlined className={styles.outcomeIcon} />
                             <Text className={styles.outcomeText}>{item.replace(/^- /, '')}</Text>

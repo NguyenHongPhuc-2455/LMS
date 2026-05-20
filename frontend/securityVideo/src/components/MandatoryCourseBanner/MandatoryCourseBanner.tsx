@@ -35,28 +35,44 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
     });
     const navigate = useNavigate();
 
-    useEffect(() => {
+    const fetchMandatoryCourses = (isInitial = false) => {
         const shouldShowModal = sessionStorage.getItem('show_mandatory_modal') === 'true';
 
-        // Tải danh sách khóa học bắt buộc
-        courseService.getMandatoryCourses()
+        return courseService.getMandatoryCourses()
             .then(data => {
-                // Lưu toàn bộ để phân loại vào Tabs (bao gồm cả COMPLETED)
                 setCourses(data);
 
-                // Lọc các khóa học CÒN HẠN (không tính quá hạn/hoàn thành) để hiển thị trong Modal thông báo
-                const validCoursesForModal = data.filter((c: MandatoryCourse) => c.status !== 'COMPLETED' && c.status !== 'OVERDUE');
-
-                // Chỉ hiện Modal nếu vừa đăng nhập và có ít nhất 1 khóa học CÒN HẠN
-                if (shouldShowModal && validCoursesForModal.length > 0) {
-                    setLoginNotifyModal({ open: true, courses: validCoursesForModal });
-                }
+                setLoginNotifyModal(prev => {
+                    if (isInitial) {
+                        const validCoursesForModal = data.filter((c: MandatoryCourse) => c.status !== 'COMPLETED' && c.status !== 'OVERDUE');
+                        return {
+                            open: shouldShowModal && validCoursesForModal.length > 0,
+                            courses: data
+                        };
+                    }
+                    return {
+                        ...prev,
+                        courses: data
+                    };
+                });
             })
-            .catch(console.error)
-            .finally(() => {
-                setLoading(false);
-                sessionStorage.removeItem('show_mandatory_modal');
-            });
+            .catch(console.error);
+    };
+
+    useEffect(() => {
+        fetchMandatoryCourses(true).finally(() => {
+            setLoading(false);
+            sessionStorage.removeItem('show_mandatory_modal');
+        });
+
+        const handleProgressUpdate = () => {
+            fetchMandatoryCourses(false);
+        };
+
+        window.addEventListener('course-progress-updated', handleProgressUpdate);
+        return () => {
+            window.removeEventListener('course-progress-updated', handleProgressUpdate);
+        };
     }, []);
 
     const getStatusConfig = (status: string) => {

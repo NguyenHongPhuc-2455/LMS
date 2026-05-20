@@ -76,8 +76,62 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         }
     }, [userId, fetchCounts, fetchDepartments]);
 
-    // ✅ Xử lý Menu Items động
-    const menuItems = [
+    const userRoles = user?.roles || [];
+    const roleNames = userRoles.map((r: any) => {
+        const name = typeof r === 'string' ? r : r.name;
+        return name?.toLowerCase();
+    });
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+
+    const menuItems = isManagerOnly ? [
+        {
+            key: ROUTES.ADMIN_DASHBOARD,
+            icon: <PieChartOutlined />,
+            label: 'Tổng quan phòng ban',
+        },
+        {
+            key: ROUTES.ADMIN_PROGRESS,
+            icon: <LineChartOutlined />,
+            label: 'Quản lý tiến độ học tập',
+        },
+        {
+            key: 'user-management-parent',
+            icon: <UserOutlined />,
+            label: 'Quản lý nhân sự',
+            children: departments
+                .filter(dept => dept.id === user?.department_id)
+                .map(dept => ({
+                    key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
+                    label: dept.name,
+                }))
+        },
+        {
+            key: ROUTES.ADMIN_REQUESTS,
+            icon: <CheckOutlined />,
+            label: (
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <span>Duyệt yêu cầu</span>
+                    {pendingCount > 0 && (
+                        <Badge
+                            count={pendingCount}
+                            style={{ backgroundColor: '#C72127' }}
+                            size="small"
+                        />
+                    )}
+                </Space>
+            ),
+        },
+        {
+            key: ROUTES.ADMIN_ONBOARDING_REPORT,
+            icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
+            label: 'Báo cáo Onboarding',
+        },
+        {
+            key: ROUTES.MANAGER_INACTIVE_REPORT,
+            icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
+            label: 'Nhân sự không học tập',
+        }
+    ] : [
         {
             key: ROUTES.ADMIN_DASHBOARD,
             icon: <PieChartOutlined />,
@@ -108,14 +162,15 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             icon: <UserOutlined />,
             label: 'Quản lý nhân sự',
             children: [
-                {
-                    key: ROUTES.ADMIN_USERS,
-                    label: 'Tất cả nhân sự',
-                },
-                ...departments.map(dept => ({
-                    key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
-                    label: dept.name,
-                }))
+                // Chỉ Admin thấy "Tất cả nhân sự", Manager bị ẩn
+                ...(!isManagerOnly ? [{ key: ROUTES.ADMIN_USERS, label: 'Tất cả nhân sự' }] : []),
+                // Admin thấy tất cả phòng ban; Manager chỉ thấy đúng phòng ban của mình
+                ...departments
+                    .filter(dept => isManagerOnly ? dept.id === user?.department_id : true)
+                    .map(dept => ({
+                        key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
+                        label: dept.name,
+                    }))
             ]
         },
         {

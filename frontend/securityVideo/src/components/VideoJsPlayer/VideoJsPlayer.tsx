@@ -250,6 +250,12 @@ const VideoJsPlayer = forwardRef<VideoJsPlayerRef, VideoJsPlayerProps>(({ src, l
         return () => {
             stopProgressCheck();
             if (player) {
+                player.off('play');
+                player.off('timeupdate');
+                player.off('seeking');
+                player.off('pause');
+                player.off('ended');
+                player.off('keydown');
                 player.dispose();
             }
             if (videoElement) {

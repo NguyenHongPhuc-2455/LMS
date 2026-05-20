@@ -20,7 +20,13 @@
 3. Nhóm Lộ trình học tập (Learning Programs)
 Nhóm các khóa học lại thành một lộ trình hoàn chỉnh.
 
-- **learning_programs**: Thông tin lộ trình (title, description, instructor_id, status, is_private).
+- **learning_programs**: Thông tin lộ trình (title, description, instructor_id, status, is_private, **is_mandatory**, **mandatory_at**, **apply_scope**, **mandatory_targets**, **mandatory_deadline_days**, **mandatory_start_date**, **mandatory_end_date**, **allow_early_access**).
+    - `is_mandatory`: Đánh dấu lộ trình hội nhập bắt buộc.
+    - `apply_scope`: Phạm vi áp dụng (`ALL_EMPLOYEE`, `BY_DEPARTMENT`, `BY_POSITION`, `SPECIFIC_USER`, `NEW_EMPLOYEE`, `NEW_EMPLOYEE_BY_DEPARTMENT`, `NEW_EMPLOYEE_BY_POSITION`).
+    - `mandatory_targets`: Danh sách target cụ thể (dưới dạng JSON ID).
+    - `mandatory_deadline_days`: Số ngày phải hoàn thành kể từ khi tham gia (mặc định là 60 ngày).
+    - `mandatory_start_date` & `mandatory_end_date`: Khoảng ngày cố định áp dụng lộ trình bắt buộc.
+    - `allow_early_access`: Có cho phép học trước thời gian áp dụng cố định hay không.
 - **program_courses**: Bảng trung gian liên kết `LearningProgram` và `Course` với cột `order` để sắp xếp thứ tự học.
 - **program_enrollments**: Lưu vết nhân sự đã tham gia lộ trình.
 

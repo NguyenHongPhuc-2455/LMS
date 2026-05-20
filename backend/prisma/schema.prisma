@@ -338,6 +338,16 @@ model LearningProgram {
   level         String?       @db.VarChar(50)
   status        ProgramStatus @default(DRAFT)
   is_private    Boolean       @default(false)
+  
+  is_mandatory            Boolean          @default(false)
+  mandatory_at            DateTime?
+  apply_scope             ApplyScope       @default(ALL_EMPLOYEE)
+  mandatory_targets       Json?
+  mandatory_deadline_days Int?             @default(60)
+  mandatory_start_date    DateTime?
+  mandatory_end_date      DateTime?
+  allow_early_access      Boolean          @default(true)
+
   created_at    DateTime      @default(now())
   updated_at    DateTime      @updatedAt
   deleted_at    DateTime?

@@ -29,7 +29,6 @@ const PAGE_SIZE = 5;
 export default function ProgramList() {
     const [programs, setPrograms] = useState<Program[]>([]);
     const [myPrograms, setMyPrograms] = useState<Program[]>([]);
-    const [summaryData, setSummaryData] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [activeFilter, setActiveFilter] = useState('ALL');
@@ -45,10 +44,9 @@ export default function ProgramList() {
         const fetch = async () => {
             try {
                 setLoading(true);
-                const [allData, myData, summary] = await Promise.all([
+                const [allData, myData] = await Promise.all([
                     programService.getAll(searchQuery).catch(() => []),
-                    programService.getMyPrograms().catch(() => []),
-                    statsService.getMyLearningSummary().catch(() => ({ completedCourses: 0 }))
+                    programService.getMyPrograms().catch(() => [])
                 ]);
 
                 const finalPrograms = (Array.isArray(allData) ? allData : []).map(p => {
@@ -58,7 +56,6 @@ export default function ProgramList() {
 
                 setPrograms(finalPrograms);
                 setMyPrograms(Array.isArray(myData) ? myData : []);
-                setSummaryData(summary || {});
             } catch (err) {
                 console.error('Fetch error:', err);
                 message.error('Lỗi khi tải danh sách Lộ trình học');

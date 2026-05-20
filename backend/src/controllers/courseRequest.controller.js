@@ -1,6 +1,21 @@
 const courseRequestService = require('../services/courseRequest.service');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
+const prisma = require('../configs/prisma');
+
+const getManagerDepartmentId = async (req) => {
+    const userRoles = req.user?.roles || [];
+    const roleNames = userRoles.map((r) => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+    
+    if (!isManagerOnly) return { isManagerOnly: false, departmentId: null };
+
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { department_id: true }
+    });
+    return { isManagerOnly: true, departmentId: user?.department_id || null };
+};
 
 /**
  * Gửi yêu cầu tham gia khóa học private
@@ -30,7 +45,8 @@ exports.getMyRequests = catchAsync(async (req, res) => {
  * Láy danh sách yêu cầu đang chờ (Dành cho Admin/Manager)
  */
 exports.getPendingRequests = catchAsync(async (req, res) => {
-    const requests = await courseRequestService.getPendingRequests();
+    const { departmentId } = await getManagerDepartmentId(req);
+    const requests = await courseRequestService.getPendingRequests(departmentId);
     res.json(requests);
 });
 
@@ -39,7 +55,8 @@ exports.getPendingRequests = catchAsync(async (req, res) => {
  */
 exports.approveRequest = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const updatedRequest = await courseRequestService.approveRequest(id);
+    const { departmentId: managerDeptId } = await getManagerDepartmentId(req);
+    const updatedRequest = await courseRequestService.approveRequest(id, managerDeptId);
     res.json({ message: 'Đã phê duyệt và cấp quyền truy cập khóa học', data: updatedRequest });
 });
 
@@ -48,7 +65,8 @@ exports.approveRequest = catchAsync(async (req, res) => {
  */
 exports.rejectRequest = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const updatedRequest = await courseRequestService.rejectRequest(id);
+    const { departmentId: managerDeptId } = await getManagerDepartmentId(req);
+    const updatedRequest = await courseRequestService.rejectRequest(id, managerDeptId);
     res.json({ message: 'Đã từ chối yêu cầu truy cập', data: updatedRequest });
 });
 

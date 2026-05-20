@@ -81,6 +81,7 @@ export default function Navbar() {
                         onClick={() => !item.is_read && markAsRead(item.id)}
                         actions={[
                             <Button
+                                key={`delete-${item.id}`}
                                 type="text"
                                 size="small"
                                 icon={<DeleteOutlined />}

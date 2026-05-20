@@ -1,10 +1,28 @@
 const statsService = require('../services/stats.service');
+const prisma = require('../configs/prisma');
+
+const getManagerDepartmentId = async (req) => {
+    const userRoles = req.user?.roles || [];
+    const roleNames = userRoles.map((r) => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+    
+    if (!isManagerOnly) return { isManagerOnly: false, departmentId: null };
+
+    // Lấy department_id mới nhất từ DB
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { department_id: true }
+    });
+    return { isManagerOnly: true, departmentId: user?.department_id || null };
+};
 
 const getDashboardStats = async (req, res) => {
     try {
-        const stats = await statsService.getDashboardStats();
+        const { departmentId } = await getManagerDepartmentId(req);
+        const stats = await statsService.getDashboardStats(departmentId);
         res.json(stats);
     } catch (error) {
+        console.error('Error in getDashboardStats:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -12,9 +30,12 @@ const getDashboardStats = async (req, res) => {
 const getCourseProgress = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const progress = await statsService.getStudentsProgressByCourse(courseId);
+        const { isManagerOnly, departmentId: managerDeptId } = await getManagerDepartmentId(req);
+        const departmentId = isManagerOnly ? managerDeptId : (req.query.departmentId || null);
+        const progress = await statsService.getStudentsProgressByCourse(courseId, departmentId);
         res.json(progress);
     } catch (error) {
+        console.error('Error in getCourseProgress:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -83,7 +104,9 @@ const getTopLearners = async (req, res) => {
 const searchProgress = async (req, res) => {
     try {
         const { q, courseId } = req.query;
-        const progress = await statsService.searchStudentsProgress(q, courseId);
+        const { isManagerOnly, departmentId: managerDeptId } = await getManagerDepartmentId(req);
+        const departmentId = isManagerOnly ? managerDeptId : null;
+        const progress = await statsService.searchStudentsProgress(q, courseId, departmentId);
         res.json(progress);
     } catch (error) {
         console.error('Error in searchProgress controller:', error);

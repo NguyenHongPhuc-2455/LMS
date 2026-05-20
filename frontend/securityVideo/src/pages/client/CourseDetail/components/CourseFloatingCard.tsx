@@ -7,10 +7,10 @@ const { Text } = Typography;
 interface CourseFloatingCardProps {
     course: any;
     totalLessons: number;
-    renderActionButton: () => React.ReactNode;
+    actionButton: React.ReactNode;
 }
 
-export default function CourseFloatingCard({ course, totalLessons, renderActionButton }: CourseFloatingCardProps) {
+export default function CourseFloatingCard({ course, totalLessons, actionButton }: CourseFloatingCardProps) {
     return (
         <Col lg={8} md={24}>
             <div className={styles.floatingSidebar}>
@@ -29,7 +29,7 @@ export default function CourseFloatingCard({ course, totalLessons, renderActionB
                         </Tag>
                     </div>
 
-                    {renderActionButton()}
+                    {actionButton}
 
                     <ul className={styles.sidebarInfoList}>
                         {[

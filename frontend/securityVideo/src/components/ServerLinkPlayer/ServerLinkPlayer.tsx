@@ -2,6 +2,7 @@ import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 're
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import { contentService } from '../../services/content.service';
+import { videoService } from '../../services/video.service';
 import styles from './ServerLinkPlayer.module.scss';
 
 interface ServerLinkPlayerProps {
@@ -58,17 +59,48 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
         }));
 
         // ─────────────────────────────────────────────
-        // Effect 1: Chuẩn bị đường dẫn video (Xử lý Refresh Token sau này nếu cần)
+        // Effect 1: Chuẩn bị đường dẫn video (Xử lý Proxy/Token bảo mật)
         // ─────────────────────────────────────────────
         useEffect(() => {
             if (!src) return;
 
+            let isMounted = true;
             setLoadError(false);
             const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-            const absoluteSrc = src.startsWith('http') ? src : `${BASE_URL}${src}`;
             
-            setVideoSrc(absoluteSrc);
-        }, [src]);
+            const initVideoSrc = async () => {
+                try {
+                    const isAbsolute = src.startsWith('http');
+                    const isSystemProxy = src.includes('/api/videos/secure-stream/');
+
+                    if (isAbsolute && !isSystemProxy && lessonId) {
+                        // Gọi API backend để làm mới/lấy token proxy video
+                        const proxyUrl = await videoService.refreshVideoToken(lessonId);
+                        if (isMounted) {
+                            setVideoSrc(`${BASE_URL}${proxyUrl}`);
+                        }
+                    } else {
+                        const absoluteSrc = isAbsolute ? src : `${BASE_URL}${src}`;
+                        if (isMounted) {
+                            setVideoSrc(absoluteSrc);
+                        }
+                    }
+                } catch (error) {
+                    console.error('[SERVER PLAYER] Lỗi lấy proxy video token:', error);
+                    // Fallback load trực tiếp nếu có lỗi API
+                    const absoluteSrc = src.startsWith('http') ? src : `${BASE_URL}${src}`;
+                    if (isMounted) {
+                        setVideoSrc(absoluteSrc);
+                    }
+                }
+            };
+
+            initVideoSrc();
+
+            return () => {
+                isMounted = false;
+            };
+        }, [src, lessonId]);
 
         // ─────────────────────────────────────────────
         // Effect 2: Khởi tạo video.js
@@ -90,6 +122,10 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                 responsive: true,
                 fluid: true,
                 playbackRates: [0.5, 1, 1.25, 1.5, 2],
+                sources: [{
+                    src: videoSrc,
+                    type: videoSrc.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4'
+                }],
                 userActions: {
                     doubleClick: true,
                 },
@@ -200,7 +236,16 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
 
             return () => {
                 stopProgressCheck();
-                if (player) player.dispose();
+                if (player) {
+                    player.off('keydown');
+                    player.off('play');
+                    player.off('error');
+                    player.off('timeupdate');
+                    player.off('seeking');
+                    player.off('pause');
+                    player.off('ended');
+                    player.dispose();
+                }
             };
         }, [videoSrc]);
 

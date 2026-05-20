@@ -15,7 +15,12 @@ import styles from './HeroSection.module.scss';
 
 const { Title, Text } = Typography;
 
-const ICONS = [<BookOutlined />, <TrophyOutlined />, <FireOutlined />, <FlagOutlined />];
+const ICONS = [
+    <BookOutlined key="book" />,
+    <TrophyOutlined key="trophy" />,
+    <FireOutlined key="fire" />,
+    <FlagOutlined key="flag" />
+];
 
 export default function HeroSection() {
     const [banners, setBanners] = useState<HeroBanner[]>([]);

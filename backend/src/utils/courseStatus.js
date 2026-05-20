@@ -9,6 +9,20 @@ const { NEW_EMPLOYEE_THRESHOLD_DAYS } = require('../constants/system');
  * @returns {Object} { status, remainingDays, isOverdue, canAccess, reason, deadlineDate }
  */
 exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = null) => {
+    const isCompleted = progressPercent === 100;
+
+    // Nếu không phải khóa học bắt buộc, không tính toán deadline/quá hạn
+    if (!course || !course.is_mandatory) {
+        return { 
+            status: isCompleted ? 'COMPLETED' : 'NORMAL', 
+            remainingDays: null, 
+            isOverdue: false, 
+            canAccess: true, 
+            reason: null,
+            deadlineDate: null 
+        };
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -51,7 +65,6 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         deadlineDate.setHours(23, 59, 59, 999);
     }
 
-    const isCompleted = progressPercent === 100;
     let status = 'NORMAL';
     let remainingDays = 0;
     let isOverdue = false;

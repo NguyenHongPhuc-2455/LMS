@@ -28,6 +28,16 @@ export default function UserManagement() {
     const { message, modal } = App.useApp();
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // Lấy thông tin user từ localStorage để kiểm tra role
+    const userStr = localStorage.getItem('user');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const userRoles = currentUser?.roles || [];
+    const roleNames = userRoles.map((r: any) => {
+        const name = typeof r === 'string' ? r : r.name;
+        return name?.toLowerCase();
+    });
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+
     // Pagination & Search State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -47,8 +57,18 @@ export default function UserManagement() {
     // Khi URL thay đổi (ví dụ bấm từ sidebar), cập nhật lại state local
     useEffect(() => {
         const id = searchParams.get('departmentId');
-        setDepartmentId(id ? parseInt(id) : undefined);
-        setPage(1); // Reset trang khi đổi phòng ban
+        // Nếu là Manager, ép buộc về phòng ban của mình, bỏ qua URL khác
+        if (isManagerOnly && currentUser?.department_id) {
+            const managerDeptId = currentUser.department_id;
+            if (!id || parseInt(id) !== managerDeptId) {
+                searchParams.set('departmentId', managerDeptId.toString());
+                setSearchParams(searchParams, { replace: true });
+            }
+            setDepartmentId(managerDeptId);
+        } else {
+            setDepartmentId(id ? parseInt(id) : undefined);
+        }
+        setPage(1);
     }, [searchParams]);
 
     // Debounce Logic cho ô tìm kiếm
@@ -228,14 +248,23 @@ export default function UserManagement() {
                             className={styles.searchBar}
                             allowClear
                         />
-                        <Select
-                            placeholder="Lọc theo phòng ban"
-                            style={{ width: 180 }}
-                            allowClear
-                            value={departmentId}
-                            onChange={handleDepartmentChange}
-                            options={departments.map((d: any) => ({ value: d.id, label: d.name }))}
-                        />
+                        {/* Manager không được đổi phòng ban - ẩn dropdown, chỉ hiển thị label tên phòng ban */}
+                        {isManagerOnly ? (
+                            <span style={{ padding: '0 8px', color: '#666', fontStyle: 'italic', fontSize: 13 }}>
+                                Phòng ban: <strong style={{ color: '#C72127' }}>
+                                    {departments.find((d: any) => d.id === departmentId)?.name || '...'}
+                                </strong>
+                            </span>
+                        ) : (
+                            <Select
+                                placeholder="Lọc theo phòng ban"
+                                style={{ width: 180 }}
+                                allowClear
+                                value={departmentId}
+                                onChange={handleDepartmentChange}
+                                options={departments.map((d: any) => ({ value: d.id, label: d.name }))}
+                            />
+                        )}
                         <Select
                             placeholder="Lọc theo vị trí"
                             style={{ width: 180 }}

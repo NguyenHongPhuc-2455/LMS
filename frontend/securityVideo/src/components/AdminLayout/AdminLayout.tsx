@@ -53,6 +53,8 @@ const AdminLayoutInner: React.FC = () => {
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
 
+    const memoizedContent = useMemo(() => <Outlet />, []);
+
     const userRoles = user?.roles || [];
     const isAdmin = userRoles.some((r: any) => {
         const roleName = typeof r === 'string' ? r : r.name;
@@ -61,8 +63,6 @@ const AdminLayoutInner: React.FC = () => {
 
     if (!token) return <Navigate to="/login" replace />;
     if (!isAdmin) return <Navigate to="/course" replace />;
-
-    const memoizedContent = useMemo(() => <Outlet />, []);
 
     return (
         <Layout className={styles.adminLayoutContainer}>

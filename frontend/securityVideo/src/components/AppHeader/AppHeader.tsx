@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { userService } from '../../services/user.service';
 import { Layout, Input, Avatar, Dropdown, Space, Typography, Badge, Popover, List, Button, Empty } from 'antd';
 import { SearchOutlined, UserOutlined, SettingOutlined, LogoutOutlined, BellOutlined, BookOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, MessageOutlined, DownOutlined } from '@ant-design/icons';
@@ -18,6 +18,8 @@ const { Text, Paragraph } = Typography;
 
 const AppHeader: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const isAdminRoute = location.pathname.startsWith('/admin');
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
 
@@ -140,12 +142,15 @@ const AppHeader: React.FC = () => {
                     let icon = <BellOutlined />;
                     let iconClass = styles.iconGeneral;
 
-                    if (item.type === 'COURSE_APPROVAL') {
-                        icon = <CheckCircleOutlined />;
+                    if (item.type === 'COURSE_APPROVAL' || item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE') {
+                        icon = (item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE') ? <BookOutlined /> : <CheckCircleOutlined />;
                         iconClass = styles.iconSuccess;
-                    } else if (item.type === 'COURSE_REJECTION') {
+                    } else if (item.type === 'COURSE_REJECTION' || item.type === 'COURSE_OVERDUE') {
                         icon = <CloseCircleOutlined />;
                         iconClass = styles.iconError;
+                    } else if (item.type === 'COURSE_EXPIRING') {
+                        icon = <BellOutlined />;
+                        iconClass = styles.iconGeneral;
                     }
 
                     return (
@@ -157,6 +162,7 @@ const AppHeader: React.FC = () => {
                             }}
                             actions={[
                                 <Button
+                                    key={`delete-${item.id}`}
                                     type="text"
                                     size="small"
                                     icon={<DeleteOutlined />}
@@ -225,15 +231,17 @@ const AppHeader: React.FC = () => {
 
             {/* Right: User */}
             <Space size={24}>
-                <div className={styles.searchInputWrapper}>
-                    <Input
-                        placeholder="Tìm kiếm khóa học, bài viết, video, ..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        prefix={<SearchOutlined />}
-                        className={styles.appSearchInput}
-                    />
-                </div>
+                {!isAdminRoute && (
+                    <div className={styles.searchInputWrapper}>
+                        <Input
+                            placeholder="Tìm kiếm khóa học, bài viết, video, ..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            prefix={<SearchOutlined />}
+                            className={styles.appSearchInput}
+                        />
+                    </div>
+                )}
                 <Popover
                     content={notificationContent}
                     trigger="click"

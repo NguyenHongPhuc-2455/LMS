@@ -33,8 +33,83 @@ const calculateTrend = (current, previous) => {
 /**
  * Lấy số liệu tổng quan (Sinh viên, Khóa học, Đăng ký, Yêu cầu chờ)
  */
-const getOverviewStats = async () => {
+/**
+ * Lấy số liệu tổng quan (Sinh viên, Khóa học, Đăng ký, Yêu cầu chờ)
+ */
+const getOverviewStats = async (departmentId = null) => {
     const yesterday = moment().subtract(1, 'day').endOf('day').toDate();
+
+    if (departmentId) {
+        const deptId = parseInt(departmentId);
+
+        // 1. Tổng nhân sự thuộc phòng ban
+        const totalStudents = await prisma.user.count({ 
+            where: { department_id: deptId, deleted_at: null } 
+        });
+        const yesterdayStudents = await prisma.user.count({ 
+            where: { department_id: deptId, created_at: { lte: yesterday }, deleted_at: null } 
+        });
+
+        // 2. Tổng khóa học đang học (các khóa học có ít nhất 1 học viên phòng ban này đăng ký)
+        const enrolledCoursesCount = await prisma.enrollment.groupBy({
+            by: ['course_id'],
+            where: {
+                user: { department_id: deptId },
+                course: { deleted_at: null }
+            }
+        });
+        const totalCourses = enrolledCoursesCount.length;
+
+        const yesterdayEnrolledCoursesCount = await prisma.enrollment.groupBy({
+            by: ['course_id'],
+            where: {
+                user: { department_id: deptId },
+                course: { deleted_at: null },
+                enrolled_at: { lte: yesterday }
+            }
+        });
+        const yesterdayCourses = yesterdayEnrolledCoursesCount.length;
+
+        // 3. Tổng lượt tham gia phòng ban
+        const totalEnrollments = await prisma.enrollment.count({
+            where: {
+                user: { department_id: deptId },
+                course: { deleted_at: null }
+            }
+        });
+        const yesterdayEnrollments = await prisma.enrollment.count({
+            where: {
+                enrolled_at: { lte: yesterday },
+                user: { department_id: deptId },
+                course: { deleted_at: null }
+            }
+        });
+
+        // 4. Các yêu cầu đang chờ xử lý của nhân viên thuộc phòng ban
+        const [
+            coursePending, programPending,
+            yesterdayCourseRequests, yesterdayProgramRequests,
+            currentCourseRequests, currentProgramRequests
+        ] = await Promise.all([
+            prisma.courseRequest.count({ where: { user: { department_id: deptId }, status: 'PENDING' } }),
+            prisma.programRequest.count({ where: { user: { department_id: deptId }, status: 'PENDING' } }),
+            prisma.courseRequest.count({ where: { user: { department_id: deptId }, created_at: { lte: yesterday } } }),
+            prisma.programRequest.count({ where: { user: { department_id: deptId }, created_at: { lte: yesterday } } }),
+            prisma.courseRequest.count({ where: { user: { department_id: deptId } } }),
+            prisma.programRequest.count({ where: { user: { department_id: deptId } } })
+        ]);
+
+        const pendingRequests = coursePending + programPending;
+        const currentTotalRequests = currentCourseRequests + currentProgramRequests;
+        const yesterdayTotalRequests = yesterdayCourseRequests + yesterdayProgramRequests;
+
+        return {
+            totalStudents: { value: totalStudents, ...calculateTrend(totalStudents, yesterdayStudents) },
+            totalCourses: { value: totalCourses, ...calculateTrend(totalCourses, yesterdayCourses) },
+            totalEnrollments: { value: totalEnrollments, ...calculateTrend(totalEnrollments, yesterdayEnrollments) },
+            pendingRequests: { value: pendingRequests, ...calculateTrend(currentTotalRequests, yesterdayTotalRequests) }
+        };
+    }
 
     const [
         totalStudents, totalCourses, totalEnrollments,
@@ -75,7 +150,7 @@ const getOverviewStats = async () => {
 /**
  * Lấy xu hướng đăng ký trong 7 ngày gần nhất
  */
-const getEnrollmentTrends = async () => {
+const getEnrollmentTrends = async (departmentId = null) => {
     const last7Days = Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
@@ -91,7 +166,10 @@ const getEnrollmentTrends = async () => {
             const count = await prisma.enrollment.count({
                 where: { 
                     enrolled_at: { gte: date, lt: nextDate },
-                    course: { deleted_at: null }
+                    course: { deleted_at: null },
+                    ...(departmentId && {
+                        user: { department_id: parseInt(departmentId) }
+                    })
                 }
             });
 
@@ -106,9 +184,14 @@ const getEnrollmentTrends = async () => {
 /**
  * Lấy danh sách 5 khóa học có nhiều học viên nhất
  */
-const getTopCoursesByEnrollment = async () => {
+const getTopCoursesByEnrollment = async (departmentId = null) => {
     const topCoursesData = await prisma.enrollment.groupBy({
-        where: { course: { deleted_at: null } },
+        where: { 
+            course: { deleted_at: null },
+            ...(departmentId && {
+                user: { department_id: parseInt(departmentId) }
+            })
+        },
         by: ['course_id'],
         _count: { course_id: true },
         orderBy: { _count: { course_id: 'desc' } },
@@ -132,12 +215,12 @@ const getTopCoursesByEnrollment = async () => {
     return topCourses;
 };
 
-const getDashboardStats = async () => {
+const getDashboardStats = async (departmentId = null) => {
     try {
         const [overview, enrollmentTrends, topCourses] = await Promise.all([
-            getOverviewStats(),
-            getEnrollmentTrends(),
-            getTopCoursesByEnrollment()
+            getOverviewStats(departmentId),
+            getEnrollmentTrends(departmentId),
+            getTopCoursesByEnrollment(departmentId)
         ]);
 
         return { overview, enrollmentTrends, topCourses };
@@ -148,7 +231,7 @@ const getDashboardStats = async () => {
 };
 
 
-const getStudentsProgressByCourse = async (courseId) => {
+const getStudentsProgressByCourse = async (courseId, departmentId = null) => {
     try {
         const id = parseInt(courseId);
 
@@ -165,9 +248,14 @@ const getStudentsProgressByCourse = async (courseId) => {
         const lessonIds = lessons.map(l => l.id);
         const totalLessons = lessonIds.length;
 
-        // 2. Get students enrolled in this course
+        // 2. Get students enrolled in this course (optionally filtered by department)
         const enrollments = await prisma.enrollment.findMany({
-            where: { course_id: id },
+            where: {
+                course_id: id,
+                ...(departmentId && {
+                    user: { department_id: parseInt(departmentId) }
+                })
+            },
             include: {
                 user: {
                     select: {
@@ -511,14 +599,26 @@ const getTopLearners = async () => {
     }
 };
 
-const searchStudentsProgress = async (searchTerm, courseId = null) => {
+const searchStudentsProgress = async (searchTerm, courseId = null, departmentId = null) => {
     try {
         const whereClause = {
             course: {
                 deleted_at: null
             },
             ...(courseId && { course_id: parseInt(courseId) }),
-            ...(searchTerm && {
+            ...(departmentId && {
+                user: {
+                    department_id: parseInt(departmentId),
+                    ...(searchTerm && {
+                        OR: [
+                            { full_name: { contains: searchTerm, mode: 'insensitive' } },
+                            { email: { contains: searchTerm, mode: 'insensitive' } },
+                            { username: { contains: searchTerm, mode: 'insensitive' } }
+                        ]
+                    })
+                }
+            }),
+            ...(!departmentId && searchTerm && {
                 user: {
                     OR: [
                         { full_name: { contains: searchTerm, mode: 'insensitive' } },
