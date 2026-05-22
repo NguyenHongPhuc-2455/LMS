@@ -145,10 +145,10 @@ export default function CourseRequestManagement() {
 
     return (
         <div className={styles.courseRequestsContainer}>
-            <div style={{ marginBottom: 20 }}>
+            {/* <div style={{ marginBottom: 20 }}>
                 <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Duyệt yêu cầu truy cập</Title>
                 <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của nhân sự</Typography.Text>
-            </div>
+            </div> */}
 
             <Card className="glass-card" style={{ borderRadius: '16px' }}>
                 <div style={{ marginBottom: 16 }}>

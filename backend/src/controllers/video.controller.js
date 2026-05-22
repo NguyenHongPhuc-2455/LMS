@@ -229,6 +229,9 @@ exports.streamProxy = catchAsync(async (req, res) => {
         response.Body.pipe(res);
     } catch (err) {
         console.error('[STREAM FATAL ERROR]', err);
+        if (err.name === 'NoSuchKey' || err.code === 'NoSuchKey') {
+            return res.status(404).json({ error: 'Video file not found in storage.' });
+        }
         return res.status(500).json({ error: err.message });
     }
 });

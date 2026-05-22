@@ -41,8 +41,8 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
 
     const fetchCounts = React.useCallback(async () => {
         try {
-            const data = await statsService.getDashboardStats();
-            setPendingCount(data.overview.pendingRequests || 0);
+            const data = await statsService.getPendingRequestsCount();
+            setPendingCount(data.pendingCount ?? 0);
         } catch (error) {
             console.error('Failed to fetch stats:', error);
         }
@@ -152,20 +152,20 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             label: 'Quản lý tiến độ học tập',
         },
         {
-            key: 'user-management-parent',
+            key: ROUTES.ADMIN_USERS,
             icon: <UserOutlined />,
             label: 'Quản lý nhân sự',
-            children: [
-                // Chỉ Admin thấy "Tất cả nhân sự", Manager bị ẩn
-                ...(!isManagerOnly ? [{ key: ROUTES.ADMIN_USERS, label: 'Tất cả nhân sự' }] : []),
-                // Admin thấy tất cả phòng ban; Manager chỉ thấy đúng phòng ban của mình
-                ...departments
-                    .filter(dept => isManagerOnly ? dept.id === user?.department_id : true)
-                    .map(dept => ({
-                        key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
-                        label: dept.name,
-                    }))
-            ]
+            // children: [
+            //     // Chỉ Admin thấy "Tất cả nhân sự", Manager bị ẩn
+            //     ...(!isManagerOnly ? [{ key: ROUTES.ADMIN_USERS, label: 'Tất cả nhân sự' }] : []),
+            //     // Admin thấy tất cả phòng ban; Manager chỉ thấy đúng phòng ban của mình
+            //     ...departments
+            //         .filter(dept => isManagerOnly ? dept.id === user?.department_id : true)
+            //         .map(dept => ({
+            //             key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
+            //             label: dept.name,
+            //         }))
+            // ]
         },
         {
             key: ROUTES.ADMIN_DEPARTMENTS,

@@ -24,6 +24,8 @@ export interface User {
     created_at: string;
     updated_at: string;
     enrolled_courses?: { id: number; title: string }[];
+    enrolled_programs?: { id: number; title: string }[];
     enrollments_count?: number;
+    programs_count?: number;
     deleted_at?: string;
 }

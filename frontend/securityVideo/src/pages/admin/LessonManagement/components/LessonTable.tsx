@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table, Space, Badge, Button, Popconfirm } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { PlayCircle, Edit, Trash2 } from 'lucide-react';
@@ -88,7 +89,10 @@ export default function LessonTable({ lessons, loading, onEdit, onDelete }: Less
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }

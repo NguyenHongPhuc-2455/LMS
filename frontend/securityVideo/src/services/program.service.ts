@@ -17,6 +17,10 @@ export const programService = {
         const response = await api.get('/programs/my-programs');
         return response.data;
     },
+    getMandatoryPrograms: async () => {
+        const response = await api.get('/programs/mandatory');
+        return response.data;
+    },
     create: async (data: any) => {
         const response = await api.post('/programs', data);
         return response.data;

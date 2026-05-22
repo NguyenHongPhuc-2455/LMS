@@ -36,7 +36,6 @@ export default function ProgramManagement() {
     const [submitting, setSubmitting] = useState(false);
     const [departments, setDepartments] = useState<any[]>([]);
     const [positions, setPositions] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
 
     const fetchPrograms = async () => {
         setLoading(true);
@@ -59,14 +58,12 @@ export default function ProgramManagement() {
 
     const fetchMetadata = async () => {
         try {
-            const [deptData, posData, userResp] = await Promise.all([
+            const [deptData, posData] = await Promise.all([
                 departmentService.getAll(),
-                positionService.getAll(),
-                userService.getAll({ limit: 1000, page: 1 })
+                positionService.getAll()
             ]);
             setDepartments(deptData);
             setPositions(posData);
-            setUsers(userResp.users || []);
         } catch { /* ignore */ }
     };
 
@@ -236,7 +233,6 @@ export default function ProgramManagement() {
                 initialValues={editingProgram}
                 departments={departments}
                 positions={positions}
-                users={users}
                 loading={submitting}
             />
 

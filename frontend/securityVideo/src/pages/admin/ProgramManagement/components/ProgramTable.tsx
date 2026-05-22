@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table, Space, Select, Tag, Button, Popconfirm, Badge, Typography, message, Input } from 'antd';
 import { Edit, Trash2 } from 'lucide-react';
 import { SearchOutlined } from '@ant-design/icons';
@@ -259,7 +260,10 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }

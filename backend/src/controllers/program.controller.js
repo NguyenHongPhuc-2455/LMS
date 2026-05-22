@@ -161,3 +161,9 @@ exports.getMyPrograms = catchAsync(async (req, res) => {
     res.json(programsWithProgress);
 });
 
+exports.getMyMandatoryPrograms = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    const result = await programService.getMandatoryProgramsForUser(userId);
+    res.json(result);
+});
+

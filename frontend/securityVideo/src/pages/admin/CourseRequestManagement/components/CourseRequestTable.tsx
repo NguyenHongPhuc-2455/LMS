@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table, Space, Button } from 'antd';
 import { UserOutlined, BookOutlined, ApartmentOutlined } from '@ant-design/icons';
 import styles from '../CourseRequests.module.scss';
@@ -113,7 +114,10 @@ export default function RequestTable({
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }

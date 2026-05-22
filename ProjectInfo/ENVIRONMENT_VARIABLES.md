@@ -11,7 +11,8 @@ Tài liệu này liệt kê các biến môi trường cần thiết để chạ
 | `PORT` | Cổng chạy server | `5000` |
 | `DATABASE_URL` | Chuỗi kết nối PostgreSQL (Prisma) | `postgresql://user:pass@localhost:5432/db?schema=public` |
 | `JWT_SECRET` | Khóa bí mật để ký JWT Token | `secret_quan_doi_cuc_ky_bao_mat` |
-| `FRONTEND_URL` | URL của Frontend (dùng cho CORS) | `http://localhost:5173` |
+| `FRONTEND_URL` | URL chính của Frontend (dùng cho CORS) | `http://localhost:5174` |
+| `CORS_ORIGINS` | Danh sách origin bổ sung, phân tách bằng dấu phẩy | `http://localhost:5174,http://localhost:5175` |
 
 ### ☁️ Cloudinary (Dùng cho upload ảnh/avatar)
 | Biến | Ví dụ |

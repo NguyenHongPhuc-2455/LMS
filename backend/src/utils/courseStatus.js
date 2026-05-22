@@ -83,16 +83,21 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         };
     }
 
-    remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
-    
-    if (remainingDays < 0) {
+    if (today > deadlineDate) {
         isOverdue = true;
         status = 'OVERDUE';
+        remainingDays = Math.floor((deadlineDate - today) / (1000 * 60 * 60 * 24));
+    } else {
+        remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+        if (Object.is(remainingDays, -0)) {
+            remainingDays = 0;
+        }
     }
 
     if (isCompleted) {
         status = 'COMPLETED';
-    } else if (remainingDays >= 0 && remainingDays <= 7) {
+        isOverdue = false;
+    } else if (!isOverdue && remainingDays >= 0 && remainingDays <= 7) {
         status = 'WARNING'; // Sắp hết hạn
     } else if (remainingDays > 7 && !isOverdue) {
         status = 'NORMAL';

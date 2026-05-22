@@ -7,6 +7,7 @@ const programValidation = require('../validations/program.validation');
 
 router.get('/', auth.verifyToken, c.getPrograms);
 router.get('/my-programs', auth.verifyToken, c.getMyPrograms);
+router.get('/mandatory', auth.verifyToken, c.getMyMandatoryPrograms);
 router.get('/:id', auth.verifyToken, validate(programValidation.getById), c.getProgramDetail);
 
 // Chỉ Instructor hoặc Admin mới có quyền tạo/sửa

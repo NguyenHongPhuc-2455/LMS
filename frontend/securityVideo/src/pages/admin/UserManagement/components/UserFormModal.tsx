@@ -88,6 +88,7 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, p
             }
             open={open}
             onCancel={onCancel}
+            destroyOnClose
             footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '10px 0' }}>
                     <Button onClick={onCancel} style={{ borderRadius: 8, height: 40, minWidth: 100 }}>
@@ -128,7 +129,6 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, p
                     paddingTop: 0
                 }
             }}
-            destroyOnClose
             maskClosable={!isEditing}
         >
             {!isEditing && initialValues && (

@@ -1,4 +1,5 @@
 const { Server } = require('socket.io');
+const { isOriginAllowed } = require('../configs/cors.config');
 
 let io;
 const userSockets = new Map(); // Lưu trữ mapping giữa userId và Set các socketId (hỗ trợ mở nhiều tab)
@@ -7,19 +8,15 @@ const userSockets = new Map(); // Lưu trữ mapping giữa userId và Set các 
  * Khởi tạo Socket.io
  */
 exports.init = (server) => {
-    const allowedOrigins = [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5175',
-        'http://localhost'
-    ];
-    if (process.env.FRONTEND_URL) {
-        allowedOrigins.push(process.env.FRONTEND_URL);
-    }
-
     io = new Server(server, {
         cors: {
-            origin: allowedOrigins,
+            origin: (origin, callback) => {
+                if (isOriginAllowed(origin)) {
+                    callback(null, true);
+                } else {
+                    callback(new Error('Not allowed by CORS'));
+                }
+            },
             methods: ['GET', 'POST'],
             credentials: true
         }
@@ -95,10 +92,12 @@ exports.emitToAdmins = async (event, data) => {
         });
 
         admins.forEach(admin => {
-            const socketId = userSockets.get(admin.id.toString());
-            if (socketId) {
-                io.to(socketId).emit(event, data);
-                console.log(`Đã gửi event '${event}' tới Admin ${admin.id}`);
+            const sockets = userSockets.get(admin.id.toString());
+            if (sockets && sockets.size > 0) {
+                sockets.forEach(socketId => {
+                    io.to(socketId).emit(event, data);
+                });
+                console.log(`Đã gửi event '${event}' tới Admin ${admin.id} (gửi qua ${sockets.size} tab)`);
             }
         });
     } catch (error) {

@@ -1,10 +1,11 @@
-import { Modal, Form, Row, Col, Input, Select, Space, Upload, Button, Switch, InputNumber, Typography, DatePicker } from 'antd';
+import { Modal, Form, Row, Col, Input, Select, Space, Upload, Button, Switch, InputNumber, Typography, DatePicker, TreeSelect } from 'antd';
 import { UploadCloud } from 'lucide-react';
 import { UserAddOutlined } from '@ant-design/icons';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import styles from '../ProgramManagement.module.scss';
 import { UserSelectionModal } from '../../CourseManagement/components/UserSelectionModal';
+import { userService } from '../../../../services/user.service';
 
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -17,7 +18,7 @@ interface ProgramFormModalProps {
     initialValues?: any;
     departments: any[];
     positions: any[];
-    users: any[];
+    users?: any[];
     loading?: boolean;
 }
 
@@ -28,10 +29,64 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
     const [isMandatory, setIsMandatory] = useState(false);
     const [applyScope, setApplyScope] = useState<string>('ALL_EMPLOYEE');
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [selectedL1, setSelectedL1] = useState<number | null>(null);
+    const [selectedL2, setSelectedL2] = useState<number | null>(null);
+    const [selectedL3, setSelectedL3] = useState<number | null>(null);
+
     const [deadlineType, setDeadlineType] = useState<'days' | 'range'>('days');
+
+    const [usersList, setUsersList] = useState<any[]>([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+
+    const departmentTreeData = useMemo(() => {
+        if (!departments || departments.length === 0) return [];
+        const map = new Map();
+        departments.forEach(item => {
+            map.set(item.id, { value: item.id, title: item.name, parent_id: item.parent_id, children: [] });
+        });
+        const tree: any[] = [];
+        departments.forEach(item => {
+            const node = map.get(item.id);
+            if (item.parent_id) {
+                const parent = map.get(item.parent_id);
+                if (parent) {
+                    parent.children.push(node);
+                } else {
+                    tree.push(node);
+                }
+            } else {
+                tree.push(node);
+            }
+        });
+        const cleanTree = (nodes: any[]) => {
+            nodes.forEach(node => {
+                if (node.children.length === 0) {
+                    delete node.children;
+                } else {
+                    cleanTree(node.children);
+                }
+            });
+        };
+        cleanTree(tree);
+        return tree;
+    }, [departments]);
 
     const selectedUserIds = Form.useWatch('mandatory_targets', form);
     const watchDeadlineType = Form.useWatch('deadline_type', form);
+
+    useEffect(() => {
+        if (open && applyScope === 'SPECIFIC_USER' && usersList.length === 0) {
+            setUsersLoading(true);
+            userService.getAll({ limit: 1000, page: 1 })
+                .then(res => {
+                    setUsersList(res.users || []);
+                })
+                .catch(() => { })
+                .finally(() => {
+                    setUsersLoading(false);
+                });
+        }
+    }, [open, applyScope, usersList.length]);
 
     useEffect(() => {
         if (watchDeadlineType) {
@@ -45,43 +100,82 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                 setIsMandatory(!!initialValues.is_mandatory);
                 setApplyScope(initialValues.apply_scope || 'ALL_EMPLOYEE');
                 setThumbUrl(initialValues.thumbnail || '');
-                
+
                 const dtype = (initialValues.mandatory_start_date && initialValues.mandatory_end_date) ? 'range' : 'days';
                 setDeadlineType(dtype);
 
                 form.setFieldsValue({
                     ...initialValues,
                     deadline_type: dtype,
-                    mandatory_date_range: (initialValues.mandatory_start_date && initialValues.mandatory_end_date) 
-                        ? [dayjs(initialValues.mandatory_start_date), dayjs(initialValues.mandatory_end_date)] 
+                    mandatory_date_range: (initialValues.mandatory_start_date && initialValues.mandatory_end_date)
+                        ? [dayjs(initialValues.mandatory_start_date), dayjs(initialValues.mandatory_end_date)]
                         : null,
                     allow_early_access: initialValues.allow_early_access !== undefined ? initialValues.allow_early_access : true
                 });
+
+                // Extract department hierarchy
+                let targets = initialValues.mandatory_targets;
+                if (targets && typeof targets === 'string') {
+                    try {
+                        targets = JSON.parse(targets);
+                    } catch (e) {}
+                }
+                const deptId = Array.isArray(targets) && targets.length > 0 ? Number(targets[0]) : null;
+                if (deptId && departments && departments.length > 0) {
+                    const dept = departments.find(d => d.id === deptId);
+                    if (dept) {
+                        if (!dept.parent_id) {
+                            setSelectedL1(dept.id);
+                            setSelectedL2(null);
+                            setSelectedL3(null);
+                        } else {
+                            const parent = departments.find(d => d.id === dept.parent_id);
+                            if (parent) {
+                                if (!parent.parent_id) {
+                                    setSelectedL1(parent.id);
+                                    setSelectedL2(dept.id);
+                                    setSelectedL3(null);
+                                } else {
+                                    setSelectedL1(parent.parent_id);
+                                    setSelectedL2(parent.id);
+                                    setSelectedL3(dept.id);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    setSelectedL1(null);
+                    setSelectedL2(null);
+                    setSelectedL3(null);
+                }
             } else {
                 form.resetFields();
                 setThumbUrl('');
                 setIsMandatory(false);
                 setApplyScope('ALL_EMPLOYEE');
+                setSelectedL1(null);
+                setSelectedL2(null);
+                setSelectedL3(null);
             }
             setThumbFile(null);
         }
-    }, [open, editingId, initialValues, form]);
+    }, [open, editingId, initialValues, form, departments]);
 
     const handleFinish = async (values: any) => {
         const { deadline_type: _dt, mandatory_date_range, ...rest } = values;
-        
+
         // Ưu tiên dùng state `deadlineType` vì form field `deadline_type` chỉ
         // được mount khi switch `is_mandatory` đang BẬT. Nếu field chưa mount,
         // giá trị từ form sẽ là undefined và deadline sẽ bị xóa sai.
         const effectiveDeadlineType = deadlineType;
-        
+
         const finalValues = {
             ...rest,
             mandatory_deadline_days: effectiveDeadlineType === 'days' ? (rest.mandatory_deadline_days ?? null) : null,
             mandatory_start_date: effectiveDeadlineType === 'range' && mandatory_date_range ? mandatory_date_range[0].toISOString() : null,
             mandatory_end_date: effectiveDeadlineType === 'range' && mandatory_date_range ? mandatory_date_range[1].toISOString() : null
         };
-        
+
         await onSuccess(finalValues, thumbFile);
     };
 
@@ -100,7 +194,7 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                     </Button>
                 </div>
             }
-            width={1100}
+            width={1250}
             style={{ top: editingId ? 20 : 60 }}
         >
             <Form form={form} layout="vertical" onFinish={handleFinish} key={editingId || 'new'} style={{ marginTop: 20 }}>
@@ -111,7 +205,7 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                             <Title level={5} style={{ marginBottom: 20, fontSize: '14px', color: '#B8121A', textTransform: 'uppercase', fontWeight: 700 }}>
                                 1. Thông tin cơ bản
                             </Title>
-                            
+
                             <Form.Item name="title" label="Tiêu đề Lộ trình" rules={[{ required: true, message: 'Nhập tiêu đề' }]} style={{ marginBottom: 20 }}>
                                 <Input placeholder="Nhập tiêu đề lộ trình..." />
                             </Form.Item>
@@ -158,7 +252,13 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                             </Title>
 
                             <Form.Item name="apply_scope" label="Phạm vi áp dụng" initialValue="ALL_EMPLOYEE" style={{ marginBottom: 20 }}>
-                                <Select onChange={val => setApplyScope(val)}>
+                                <Select onChange={val => {
+                                    setApplyScope(val);
+                                    form.setFieldsValue({ mandatory_targets: null });
+                                    setSelectedL1(null);
+                                    setSelectedL2(null);
+                                    setSelectedL3(null);
+                                }}>
                                     <Option value="ALL_EMPLOYEE">Toàn bộ nhân viên</Option>
                                     <Option value="BY_DEPARTMENT">Theo phòng ban</Option>
                                     <Option value="BY_POSITION">Theo vị trí</Option>
@@ -170,11 +270,58 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                             </Form.Item>
 
                             {['BY_DEPARTMENT', 'NEW_EMPLOYEE_BY_DEPARTMENT'].includes(applyScope) && (
-                                <Form.Item name="mandatory_targets" label="Chọn phòng ban" rules={[{ required: true, message: 'Vui lòng chọn ít nhất một phòng ban' }]} style={{ marginBottom: 20 }}>
-                                    <Select mode="multiple" placeholder="Chọn..." maxTagCount="responsive">
-                                        {departments?.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
-                                    </Select>
-                                </Form.Item>
+                                <>
+                                    <Form.Item label="Chọn Khối" required style={{ marginBottom: 12 }}>
+                                        <Select
+                                            placeholder="Chọn Khối"
+                                            value={selectedL1}
+                                            onChange={(val) => {
+                                                setSelectedL1(val);
+                                                setSelectedL2(null);
+                                                setSelectedL3(null);
+                                                form.setFieldsValue({ mandatory_targets: val ? [val] : null });
+                                            }}
+                                            options={[
+                                                { value: null as any, label: 'Tất cả' },
+                                                ...departments.filter((d: any) => !d.parent_id).map((d: any) => ({ value: d.id, label: d.name }))
+                                            ]}
+                                        />
+                                    </Form.Item>
+                                    <Form.Item label="Chọn Phòng ban" style={{ marginBottom: 12 }}>
+                                        <Select
+                                            placeholder="Chọn Phòng ban"
+                                            disabled={!selectedL1}
+                                            value={selectedL2}
+                                            onChange={(val) => {
+                                                setSelectedL2(val);
+                                                setSelectedL3(null);
+                                                form.setFieldsValue({ mandatory_targets: val ? [val] : (selectedL1 ? [selectedL1] : null) });
+                                            }}
+                                            options={[
+                                                { value: null as any, label: 'Tất cả' },
+                                                ...departments.filter((d: any) => d.parent_id === selectedL1).map((d: any) => ({ value: d.id, label: d.name }))
+                                            ]}
+                                        />
+                                    </Form.Item>
+                                    <Form.Item label="Chọn Tổ/Nhóm" style={{ marginBottom: 20 }}>
+                                        <Select
+                                            placeholder="Chọn Tổ/Nhóm"
+                                            disabled={!selectedL2}
+                                            value={selectedL3}
+                                            onChange={(val) => {
+                                                setSelectedL3(val);
+                                                form.setFieldsValue({ mandatory_targets: val ? [val] : (selectedL2 ? [selectedL2] : (selectedL1 ? [selectedL1] : null)) });
+                                            }}
+                                            options={[
+                                                { value: null as any, label: 'Tất cả' },
+                                                ...departments.filter((d: any) => d.parent_id === selectedL2).map((d: any) => ({ value: d.id, label: d.name }))
+                                            ]}
+                                        />
+                                    </Form.Item>
+                                    <Form.Item name="mandatory_targets" noStyle rules={[{ required: true, message: 'Vui lòng chọn ít nhất một phòng ban' }]}>
+                                        <input type="hidden" />
+                                    </Form.Item>
+                                </>
                             )}
 
                             {['BY_POSITION', 'NEW_EMPLOYEE_BY_POSITION'].includes(applyScope) && (
@@ -199,9 +346,9 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
                                         Lộ trình bắt buộc
                                     </Title>
                                     <Form.Item name="is_mandatory" valuePropName="checked" noStyle>
-                                        <Switch 
-                                            checkedChildren="BẬT" 
-                                            unCheckedChildren="TẮT" 
+                                        <Switch
+                                            checkedChildren="BẬT"
+                                            unCheckedChildren="TẮT"
                                             onChange={val => setIsMandatory(val)}
                                         />
                                     </Form.Item>
@@ -285,7 +432,8 @@ export default function ProgramFormModal({ open, onCancel, onSuccess, editingId,
             <UserSelectionModal
                 open={isUserModalOpen}
                 onCancel={() => setIsUserModalOpen(false)}
-                users={users}
+                users={users || usersList}
+                loading={usersLoading}
                 initialSelectedIds={form.getFieldValue('mandatory_targets') || []}
                 onOk={(selectedIds) => {
                     form.setFieldsValue({ mandatory_targets: selectedIds });

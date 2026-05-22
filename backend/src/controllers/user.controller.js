@@ -29,6 +29,12 @@ exports.getRoles = catchAsync(async (req, res) => {
     res.json(roles);
 });
 
+exports.getLearningAccess = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const access = await userService.getLearningAccess(id);
+    res.json(access);
+});
+
 exports.updateUser = catchAsync(async (req, res) => {
     const { id } = req.params;
     await userService.updateUser(id, req.body);
@@ -79,6 +85,12 @@ exports.revokeCourseAccess = catchAsync(async (req, res) => {
     const { userId, courseId } = req.body;
     await userService.revokeCourseAccess(userId, courseId);
     res.json({ message: 'Đã thu hồi quyền truy cập khóa học thành công' });
+});
+
+exports.revokeProgramAccess = catchAsync(async (req, res) => {
+    const { userId, programId } = req.body;
+    await userService.revokeProgramAccess(userId, programId);
+    res.json({ message: 'Đã thu hồi quyền truy cập lộ trình học thành công' });
 });
 
 exports.restoreUser = catchAsync(async (req, res) => {

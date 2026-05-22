@@ -2,7 +2,8 @@ const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
 const { lessonSelect } = require('./video.service');
 
-const { generateStreamToken } = require('../utils/streamToken');
+const { _checkCourseAccess, _getCompletedLessonIds, _enrichSections, _calculateCourseProgress } = require('./course/courseDetail.helpers');
+const { getMandatoryOverdueReport } = require('./course/mandatoryReport.service');
 
 const { isUserInScope } = require('../utils/scope');
 
@@ -10,7 +11,7 @@ const isUserInCourseScope = (userData, course, isEnrolled = false, departmentMap
     return isUserInScope(userData, course, isEnrolled, departmentMap);
 };
 
-const getAllCourses = async (search = '', categoryId = null, includeInactive = false, user = null) => {
+const getAllCourses = async (search = '', categoryId = null, includeInactive = false, user = null, page = null, limit = null) => {
     let courses = await prisma.course.findMany({
         where: {
             ...(includeInactive !== true && includeInactive !== 'true' && { deleted_at: null }),
@@ -70,6 +71,16 @@ const getAllCourses = async (search = '', categoryId = null, includeInactive = f
                 });
             }
         }
+    }
+
+    if (page !== null && limit !== null) {
+        const total = courses.length;
+        const skip = (page - 1) * limit;
+        const paginatedCourses = courses.slice(skip, skip + limit);
+        return {
+            courses: paginatedCourses,
+            total
+        };
     }
 
     return courses;
@@ -245,81 +256,6 @@ const getEnrichedCourseDetail = async (courseId, user, ip) => {
 
 // --- Private Helper Functions ---
 
-const _checkCourseAccess = async (userId, courseId, instructorId, roles = []) => {
-    if (!userId) return { hasAccess: false, requestStatus: null };
-
-    const isAdmin = roles.includes('admin');
-    const isOwner = instructorId === userId;
-
-    if (isAdmin || isOwner) return { hasAccess: true, requestStatus: null };
-
-    const [enrollment, programEnrollment, reqAccess] = await Promise.all([
-        prisma.enrollment.findUnique({ where: { user_id_course_id: { user_id: userId, course_id: courseId } } }),
-        prisma.programEnrollment.findFirst({
-            where: { user_id: userId, program: { courses: { some: { course_id: courseId } } } }
-        }),
-        prisma.courseRequest.findFirst({
-            where: { user_id: userId, course_id: courseId },
-            orderBy: { created_at: 'desc' }
-        })
-    ]);
-
-    return {
-        hasAccess: !!(enrollment || programEnrollment),
-        requestStatus: reqAccess?.status || null,
-        enrolledAt: enrollment?.enrolled_at || null
-    };
-};
-
-const _getCompletedLessonIds = async (userId, course) => {
-    if (!userId) return [];
-    const allLessonIds = course.sections.flatMap(s => s.lessons.map(l => l.id));
-    const completions = await prisma.lessonCompleted.findMany({
-        where: { user_id: userId, lesson_id: { in: allLessonIds } },
-        select: { lesson_id: true }
-    });
-    return completions.map(c => c.lesson_id);
-};
-
-const _enrichSections = (sections, userId, ip, hasAccess, completedLessonIds, isOverdue = false) => {
-    return sections.map(s => ({
-        ...s,
-        lessons: s.lessons.map(l => {
-            let securedVideoUrl = l.video_url;
-            const canView = hasAccess || l.is_free;
-
-            if (canView && securedVideoUrl && !isOverdue) {
-                if (securedVideoUrl.startsWith('/public/hls/') || securedVideoUrl.startsWith('hls/')) {
-                    const token = generateStreamToken(userId, l.id, ip);
-                    const fileName = securedVideoUrl.split('/').pop();
-                    const finalFileName = (fileName && fileName.includes('.m3u8')) ? fileName : 'master.m3u8';
-                    securedVideoUrl = `/api/videos/stream/${token}/${finalFileName}`;
-                }
-            }
-
-            return {
-                ...l,
-                isCompleted: completedLessonIds.includes(l.id),
-                video_url: (canView && !isOverdue) ? securedVideoUrl : null,
-                ...((!canView || isOverdue) && { content: isOverdue ? 'Khóa học này đã bị khóa do quá hạn.' : 'Nội dung này đã bị khóa.' })
-            };
-        })
-    }));
-};
-
-const _calculateCourseProgress = (course, completedLessonIds, userId, hasAccess) => {
-    if (!userId || !hasAccess) return { nextLessonId: null, isCourseFinished: false };
-
-    const allLessons = course.sections.flatMap(s => s.lessons);
-    if (allLessons.length === 0) return { nextLessonId: null, isCourseFinished: false };
-
-    const nextLesson = allLessons.find(l => !completedLessonIds.includes(l.id));
-
-    return {
-        nextLessonId: nextLesson ? nextLesson.id : allLessons[0].id,
-        isCourseFinished: completedLessonIds.length === allLessons.length
-    };
-};
 
 const restoreCourse = async (courseId) => {
     const id = parseInt(courseId);
@@ -422,112 +358,6 @@ const deleteSection = async (id) => {
     });
 };
 
-const getMandatoryOverdueReport = async (type = 'overdue', departmentId = null) => {
-    // 1. Lấy tất cả khóa học bắt buộc
-    const mandatoryCourses = await prisma.course.findMany({
-        where: { is_mandatory: true, deleted_at: null },
-        select: {
-            id: true, title: true, mandatory_deadline_days: true,
-            mandatory_start_date: true, mandatory_end_date: true,
-            allow_early_access: true, apply_scope: true, mandatory_targets: true
-        }
-    });
-
-    if (mandatoryCourses.length === 0) return [];
-
-    // 2. Lấy tất cả user có join_date (lọc theo phòng ban nếu là Manager)
-    const users = await prisma.user.findMany({
-        where: {
-            join_date: { not: null },
-            deleted_at: null,
-            ...(departmentId && { department_id: parseInt(departmentId) })
-        },
-        select: {
-            id: true, full_name: true, email: true, phone: true,
-            employee_id: true, join_date: true, department_id: true,
-            position_id: true, department: { select: { name: true } }
-        }
-    });
-
-    const { calculateCourseStatus } = require('../utils/courseStatus');
-    const resultList = [];
-    const today = new Date();
-
-    const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
-    const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
-
-    for (const user of users) {
-        const userCourses = [];
-
-
-        const enrollments = await prisma.enrollment.findMany({
-            where: { user_id: user.id, course_id: { in: mandatoryCourses.map(c => c.id) } },
-            select: { course_id: true, enrolled_at: true }
-        });
-        const enrollmentMap = {};
-        enrollments.forEach(e => { enrollmentMap[e.course_id] = e.enrolled_at; });
-
-        for (const course of mandatoryCourses) {
-            const isEnrolled = !!enrollmentMap[course.id];
-            if (!isUserInCourseScope(user, course, isEnrolled, departmentMap)) continue;
-
-            const statusInfo = calculateCourseStatus(course, user, 0, enrollmentMap[course.id]);
-
-            // Kiểm tra tiến độ thực tế
-            const lessons = await prisma.lesson.findMany({
-                where: { section: { course_id: course.id } },
-                select: { id: true }
-            });
-            const lessonIds = lessons.map(l => l.id);
-
-            let isCompleted = false;
-            let progress = 0;
-            if (lessonIds.length > 0) {
-                const completedCount = await prisma.lessonCompleted.count({
-                    where: { user_id: user.id, lesson_id: { in: lessonIds } }
-                });
-                isCompleted = completedCount === lessonIds.length;
-                progress = Math.round((completedCount / lessonIds.length) * 100);
-            }
-
-            // Phân loại
-            const isOverdue = !isCompleted && statusInfo.isOverdue;
-            const isOnTime = isCompleted || (!statusInfo.isOverdue);
-
-            if (type === 'overdue' && isOverdue) {
-                userCourses.push({
-                    courseId: course.id,
-                    courseTitle: course.title,
-                    daysOverdue: Math.abs(statusInfo.remainingDays),
-                    progress
-                });
-            } else if (type === 'ontime' && isOnTime) {
-                userCourses.push({
-                    courseId: course.id,
-                    courseTitle: course.title,
-                    isCompleted,
-                    progress,
-                    remainingDays: statusInfo.remainingDays
-                });
-            }
-        }
-
-        if (userCourses.length > 0) {
-            resultList.push({
-                userId: user.id,
-                fullName: user.full_name,
-                email: user.email,
-                phone: user.phone,
-                employeeId: user.employee_id,
-                department: user.department?.name,
-                joinDate: user.join_date,
-                courses: userCourses
-            });
-        }
-    }
-
-    return resultList;
-};
 
 module.exports = {
     getAllCourses,

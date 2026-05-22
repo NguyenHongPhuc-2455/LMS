@@ -143,6 +143,14 @@ exports.checkAndCreateCourseNotifications = async (userId) => {
         // 2. Kiểm tra các khóa học bắt buộc sắp hết hạn hoặc quá hạn
         const mandatoryCourses = await enrollmentService.getMandatoryCoursesForUser(userId);
 
+        let student = null;
+        if (mandatoryCourses.length > 0) {
+            student = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, full_name: true, username: true, department_id: true }
+            });
+        }
+
         for (const course of mandatoryCourses) {
             // Nếu đã hoàn thành thì bỏ qua
             if (course.progressPercent === 100 || course.status === 'COMPLETED') continue;
@@ -193,6 +201,48 @@ exports.checkAndCreateCourseNotifications = async (userId) => {
                             link: `/courses/${course.id}`
                         }
                     });
+
+                    // Gửi báo cáo cho Admin và Manager phòng ban
+                    if (student) {
+                        const studentName = student.full_name || student.username;
+
+                        // Lấy danh sách admin
+                        const admins = await prisma.user.findMany({
+                            where: {
+                                user_roles: { some: { role: { name: 'admin' } } }
+                            },
+                            select: { id: true }
+                        });
+
+                        // Lấy danh sách manager cùng phòng ban
+                        let managers = [];
+                        if (student.department_id) {
+                            managers = await prisma.user.findMany({
+                                where: {
+                                    department_id: student.department_id,
+                                    user_roles: { some: { role: { name: 'manager' } } }
+                                },
+                                select: { id: true }
+                            });
+                        }
+
+                        // Tập hợp tất cả admin và manager để gửi thông báo (loại trùng lặp và loại trừ chính học viên)
+                        const recipientIds = new Set([
+                            ...admins.map(a => a.id),
+                            ...managers.map(m => m.id)
+                        ]);
+                        recipientIds.delete(userId);
+
+                        for (const recipientId of recipientIds) {
+                            await exports.createNotification({
+                                userId: recipientId,
+                                title: 'Báo cáo: Nhân sự quá hạn khóa học bắt buộc',
+                                message: `Nhân sự ${studentName} đã quá hạn hoàn thành khóa học bắt buộc "${course.title}".`,
+                                type: 'COURSE_OVERDUE_REPORT',
+                                link: `/admin/course-management`
+                            });
+                        }
+                    }
                 }
             } else if (course.remainingDays >= 0 && course.remainingDays <= 7) {
                 // Sắp hết hạn (còn dưới 7 ngày)
@@ -217,6 +267,163 @@ exports.checkAndCreateCourseNotifications = async (userId) => {
                             message: `Khóa học bắt buộc "${course.title}" của bạn sắp hết hạn. Chỉ còn ${course.remainingDays} ngày để hoàn thành!`,
                             type: 'COURSE_EXPIRING',
                             link: `/courses/${course.id}`
+                        }
+                    });
+                }
+            }
+        }
+
+        // 3. Kiểm tra các ghi danh lộ trình mới trong vòng 3 ngày qua để tạo thông báo ghi danh lộ trình
+        const newProgramEnrollments = await prisma.programEnrollment.findMany({
+            where: {
+                user_id: userId,
+                enrolled_at: { gte: moment().subtract(3, 'days').toDate() },
+                program: { deleted_at: null }
+            },
+            include: { program: true }
+        });
+
+        for (const enrollment of newProgramEnrollments) {
+            const hasNotification = await prisma.notification.findFirst({
+                where: {
+                    user_id: userId,
+                    type: 'PROGRAM_ENROLLED',
+                    message: { contains: enrollment.program.title }
+                }
+            });
+
+            if (!hasNotification) {
+                await prisma.notification.create({
+                    data: {
+                        user_id: userId,
+                        title: 'Đăng ký lộ trình mới',
+                        message: `Bạn đã được ghi danh vào lộ trình học "${enrollment.program.title}". Hãy bắt đầu học ngay nhé!`,
+                        type: 'PROGRAM_ENROLLED',
+                        link: `/programs/${enrollment.program.id}`
+                    }
+                });
+            }
+        }
+
+        // 4. Kiểm tra các lộ trình bắt buộc sắp hết hạn hoặc quá hạn
+        const programService = require('./program.service');
+        const mandatoryPrograms = await programService.getMandatoryProgramsForUser(userId);
+
+        for (const program of mandatoryPrograms) {
+            // Nếu đã hoàn thành thì bỏ qua
+            if (program.progressPercent === 100 || program.status === 'COMPLETED') continue;
+
+            // Kiểm tra xem đã thông báo có lộ trình bắt buộc mới này chưa
+            const hasAssignmentNotification = await prisma.notification.findFirst({
+                where: {
+                    user_id: userId,
+                    type: 'NEW_MANDATORY_PROGRAM',
+                    message: { contains: program.title }
+                }
+            });
+
+            if (!hasAssignmentNotification) {
+                await prisma.notification.create({
+                    data: {
+                        user_id: userId,
+                        title: 'Lộ trình bắt buộc MỚI',
+                        message: `Bạn được chỉ định một lộ trình học bắt buộc mới: "${program.title}". Hạn hoàn thành trong ${program.mandatory_deadline_days} ngày.`,
+                        type: 'NEW_MANDATORY_PROGRAM',
+                        link: `/programs/${program.id}`
+                    }
+                });
+            }
+
+            if (program.isOverdue || program.status === 'OVERDUE') {
+                // Quá hạn
+                const lastNotification = await prisma.notification.findFirst({
+                    where: {
+                        user_id: userId,
+                        type: 'PROGRAM_OVERDUE',
+                        message: { contains: program.title }
+                    },
+                    orderBy: { created_at: 'desc' }
+                });
+
+                // Chỉ thông báo lại nếu chưa thông báo bao giờ, hoặc thông báo trước đó đã cách 3 ngày
+                const shouldNotify = !lastNotification || 
+                    moment().diff(moment(lastNotification.created_at), 'days') >= 3;
+
+                if (shouldNotify) {
+                    await prisma.notification.create({
+                        data: {
+                            user_id: userId,
+                            title: 'Lộ trình bắt buộc ĐÃ QUÁ HẠN',
+                            message: `Lộ trình học bắt buộc "${program.title}" của bạn đã quá hạn hoàn thành. Vui lòng học tập ngay!`,
+                            type: 'PROGRAM_OVERDUE',
+                            link: `/programs/${program.id}`
+                        }
+                    });
+
+                    // Gửi báo cáo cho Admin và Manager phòng ban
+                    if (student) {
+                        const studentName = student.full_name || student.username;
+
+                        // Lấy danh sách admin
+                        const admins = await prisma.user.findMany({
+                            where: {
+                                user_roles: { some: { role: { name: 'admin' } } }
+                            },
+                            select: { id: true }
+                        });
+
+                        // Lấy danh sách manager cùng phòng ban
+                        let managers = [];
+                        if (student.department_id) {
+                            managers = await prisma.user.findMany({
+                                where: {
+                                    department_id: student.department_id,
+                                    user_roles: { some: { role: { name: 'manager' } } }
+                                },
+                                select: { id: true }
+                            });
+                        }
+
+                        const recipientIds = new Set([
+                            ...admins.map(a => a.id),
+                            ...managers.map(m => m.id)
+                        ]);
+                        recipientIds.delete(userId);
+
+                        for (const recipientId of recipientIds) {
+                            await exports.createNotification({
+                                userId: recipientId,
+                                title: 'Báo cáo: Nhân sự quá hạn lộ trình bắt buộc',
+                                message: `Nhân sự ${studentName} đã quá hạn hoàn thành lộ trình học bắt buộc "${program.title}".`,
+                                type: 'PROGRAM_OVERDUE_REPORT',
+                                link: `/admin/programs`
+                            });
+                        }
+                    }
+                }
+            } else if (program.remainingDays >= 0 && program.remainingDays <= 7) {
+                // Sắp hết hạn (còn dưới 7 ngày)
+                const lastNotification = await prisma.notification.findFirst({
+                    where: {
+                        user_id: userId,
+                        type: 'PROGRAM_EXPIRING',
+                        message: { contains: program.title }
+                    },
+                    orderBy: { created_at: 'desc' }
+                });
+
+                // Chỉ thông báo lại nếu chưa thông báo bao giờ, hoặc thông báo trước đó đã cách 3 ngày
+                const shouldNotify = !lastNotification || 
+                    moment().diff(moment(lastNotification.created_at), 'days') >= 3;
+
+                if (shouldNotify) {
+                    await prisma.notification.create({
+                        data: {
+                            user_id: userId,
+                            title: 'Lộ trình bắt buộc SẮP HẾT HẠN',
+                            message: `Lộ trình học bắt buộc "${program.title}" của bạn sắp hết hạn. Chỉ còn ${program.remainingDays} ngày để hoàn thành!`,
+                            type: 'PROGRAM_EXPIRING',
+                            link: `/programs/${program.id}`
                         }
                     });
                 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
@@ -34,38 +34,65 @@ export default function CourseManagement() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [positions, setPositions] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [includeInactive, setIncludeInactive] = useState<boolean>(false);
     const [submitting, setSubmitting] = useState(false);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const navigate = useNavigate();
 
-    const fetchData = async () => {
+    // Pagination states
+    const [page, setPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(10);
+    const [totalCourses, setTotalCourses] = useState<number>(0);
+
+    const fetchCourses = useCallback(async () => {
         setLoading(true);
         try {
-            const [courseData, catData, deptData, posData, userResp] = await Promise.all([
-                courseService.getAll(undefined, undefined, includeInactive),
-                categoryService.getAllCategories(),
-                departmentService.getAll(),
-                positionService.getAll(),
-                userService.getAll({ limit: 1000, page: 1 })
-            ]);
-            setCourses(courseData);
-            setCategories(catData);
-            setDepartments(deptData);
-            setPositions(posData);
-            setUsers(userResp.users || []);
+            const response = await courseService.getAll(
+                undefined,
+                selectedCategoryId !== null ? selectedCategoryId : undefined,
+                includeInactive,
+                page,
+                pageSize
+            );
+            if (response && typeof response === 'object' && 'courses' in response) {
+                setCourses(response.courses);
+                setTotalCourses(response.total);
+            } else {
+                setCourses(response);
+                setTotalCourses(response.length);
+            }
         } catch (e) {
-            message.error('Lỗi khi tải dữ liệu');
+            message.error('Lỗi khi tải danh sách khóa học');
         } finally {
             setLoading(false);
         }
+    }, [selectedCategoryId, includeInactive, page, pageSize]);
+
+    const fetchStaticData = async () => {
+        try {
+            const [catData, deptData, posData] = await Promise.all([
+                categoryService.getAllCategories(),
+                departmentService.getAll(),
+                positionService.getAll()
+            ]);
+            setCategories(catData);
+            setDepartments(deptData);
+            setPositions(posData);
+        } catch (e) {
+            message.error('Lỗi khi tải thông tin cấu hình');
+        }
     };
 
+    // Load static data once on mount
     useEffect(() => {
-        fetchData();
-    }, [includeInactive]);
+        fetchStaticData();
+    }, []);
+
+    // Load courses when page, pageSize, selectedCategoryId, or includeInactive changes
+    useEffect(() => {
+        fetchCourses();
+    }, [page, pageSize, selectedCategoryId, includeInactive]);
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         setSubmitting(true);
@@ -91,7 +118,7 @@ export default function CourseManagement() {
 
             setIsModalOpen(false);
             setEditingCourse(null);
-            fetchData();
+            fetchCourses();
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi lưu khóa học';
             message.error(errorMsg);
@@ -101,35 +128,35 @@ export default function CourseManagement() {
         }
     };
 
-    const handleStatusChange = async (id: number, isPrivate: boolean) => {
+    const handleStatusChange = useCallback(async (id: number, isPrivate: boolean) => {
         try {
             await courseService.update(id, { is_private: isPrivate });
             message.success('Đã cập nhật trạng thái khóa học');
-            fetchData();
+            fetchCourses();
         } catch (e) {
             message.error('Lỗi khi cập nhật trạng thái');
         }
-    };
+    }, [fetchCourses]);
     
-    const handleToggleActive = async (id: number, isActive: boolean) => {
+    const handleToggleActive = useCallback(async (id: number, isActive: boolean) => {
         try {
             await courseService.toggleActive(id, isActive);
             message.success(isActive ? 'Đã khôi phục khóa học thành công' : 'Đã tạm ẩn khóa học thành công');
-            fetchData();
+            fetchCourses();
         } catch (e) {
             message.error('Lỗi khi thay đổi trạng thái');
         }
-    };
+    }, [fetchCourses]);
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = useCallback(async (id: number) => {
         try {
             await courseService.delete(id);
             message.success('Đã xóa khóa học');
-            fetchData();
+            fetchCourses();
         } catch (e) { message.error('Lỗi khi xóa khóa học'); }
-    };
+    }, [fetchCourses]);
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = useCallback(async () => {
         if (selectedRowKeys.length === 0) return;
         
         setLoading(true);
@@ -138,29 +165,23 @@ export default function CourseManagement() {
             await courseService.batchDelete(ids);
             message.success(`Đã xóa thành công ${selectedRowKeys.length} khóa học`);
             setSelectedRowKeys([]);
-            fetchData();
+            fetchCourses();
         } catch (error) {
             message.error('Lỗi khi xóa hàng loạt');
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedRowKeys, fetchCourses]);
 
-    const handleCategoryChange = async (courseId: number, categoryId: number | null) => {
+    const handleCategoryChange = useCallback(async (courseId: number, categoryId: number | null) => {
         try {
             await courseService.update(courseId, { category_id: categoryId });
             message.success('Đã cập nhật danh mục khóa học');
-            fetchData();
+            fetchCourses();
         } catch (e) {
             message.error('Lỗi khi cập nhật danh mục');
         }
-    };
-
-    const filteredCourses = courses.filter(c => {
-        const matchesCategory = selectedCategoryId === null ||
-            (selectedCategoryId === -1 ? !c.category_id : c.category_id === selectedCategoryId);
-        return matchesCategory;
-    });
+    }, [fetchCourses]);
 
     return (
         <div className={styles.managementContainer}>
@@ -180,7 +201,10 @@ export default function CourseManagement() {
                             allowClear
                             style={{ width: 180 }}
                             value={selectedCategoryId}
-                            onChange={setSelectedCategoryId}
+                            onChange={(val) => {
+                                setSelectedCategoryId(val);
+                                setPage(1); // Reset page về 1 khi đổi bộ lọc danh mục
+                            }}
                         >
                             <Select.Option value={-1}>Trống (Không danh mục)</Select.Option>
                             {categories.map(cat => (
@@ -193,7 +217,10 @@ export default function CourseManagement() {
                             placeholder="Trạng thái"
                             style={{ width: 140 }}
                             value={includeInactive}
-                            onChange={setIncludeInactive}
+                            onChange={(val) => {
+                                setIncludeInactive(val);
+                                setPage(1); // Reset page về 1 khi đổi trạng thái hiển thị
+                            }}
                             options={[
                                 { value: false, label: 'Đang mở' },
                                 { value: true, label: 'Tất cả (gồm đã đóng)' }
@@ -202,7 +229,7 @@ export default function CourseManagement() {
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
-                                onClick={fetchData}
+                                onClick={fetchCourses}
                                 loading={loading}
                             />
                         </Tooltip>
@@ -236,7 +263,14 @@ export default function CourseManagement() {
                     </Space>
                 </div>
                 <CourseTable
-                    courses={filteredCourses}
+                    courses={courses}
+                    total={totalCourses}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageChange={(p, ps) => {
+                        setPage(p);
+                        setPageSize(ps);
+                    }}
                     categories={categories}
                     loading={loading}
                     selectedRowKeys={selectedRowKeys}
@@ -259,7 +293,6 @@ export default function CourseManagement() {
                 categories={categories}
                 departments={departments}
                 positions={positions}
-                users={users}
                 loading={submitting}
             />
         </div>

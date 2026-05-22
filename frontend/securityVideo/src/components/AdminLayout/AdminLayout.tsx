@@ -36,9 +36,7 @@ AdminSidebarWrapper.displayName = 'AdminSidebarWrapper';
 const AdminContentContainer = memo(({ children }: { children: React.ReactNode }) => {
     return (
         <Content className={styles.adminContent}>
-            <div className="animate-fade-in">
-                {children}
-            </div>
+            {children}
         </Content>
     );
 });

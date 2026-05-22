@@ -49,12 +49,20 @@ export const userService = {
         const response = await api.post('/users/revoke-course', { userId, courseId });
         return response.data;
     },
+    revokeProgram: async (userId: number, programId: number): Promise<{ message: string }> => {
+        const response = await api.post('/users/revoke-program', { userId, programId });
+        return response.data;
+    },
     toggleStatus: async (id: number, isActive: boolean): Promise<{ message: string }> => {
         const response = await api.patch(`/users/${id}/toggle-status`, { isActive });
         return response.data;
     },
     updateUser: async (id: number, data: Partial<User>): Promise<{ message: string }> => {
         const response = await api.put(`/users/${id}`, data);
+        return response.data;
+    },
+    getLearningAccess: async (id: number): Promise<{ enrolled_courses: any[]; enrolled_programs: any[] }> => {
+        const response = await api.get(`/users/${id}/learning-access`);
         return response.data;
     }
 };

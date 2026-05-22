@@ -153,12 +153,12 @@ const PositionManagement: React.FC = () => {
 
     return (
         <div className={styles.userManagementContainer}>
-            <div className={styles.userManagementHeader}>
+            {/* <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý vị trí chức vụ</Title>
                     <Text type="secondary">Quản lý danh mục các vị trí công việc và chức vụ trong hệ thống</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -198,7 +198,9 @@ const PositionManagement: React.FC = () => {
                         pageSize: 10,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a>{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }

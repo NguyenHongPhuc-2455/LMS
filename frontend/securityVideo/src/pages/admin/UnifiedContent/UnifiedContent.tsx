@@ -49,7 +49,6 @@ const UnifiedContent: React.FC = () => {
     const [categories, setCategories] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [positions, setPositions] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [includeInactive, setIncludeInactive] = useState<boolean>(false);
     
@@ -74,13 +73,11 @@ const UnifiedContent: React.FC = () => {
         Promise.all([
             categoryService.getAllCategories(),
             departmentService.getAll(),
-            positionService.getAll(),
-            userService.getAll({ limit: 1000, page: 1 })
-        ]).then(([cats, depts, pos, userResp]) => {
+            positionService.getAll()
+        ]).then(([cats, depts, pos]) => {
             setCategories(cats);
             setDepartments(depts);
             setPositions(pos);
-            setUsers(userResp.users || []);
         }).catch(() => message.error('Lỗi tải dữ liệu metadata'));
     }, []);
 
@@ -126,11 +123,10 @@ const UnifiedContent: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
-    // ✅ Navigation Handlers - Dùng navigate() thay vì setSearchParams()
-    const handleCourseClick = (course: any) => {
+    const handleCourseClick = useCallback((course: any) => {
         setCurrentCourse(course);
         navigate(`${ROUTES.ADMIN_COURSES}/${course.id}/sections`);
-    };
+    }, [navigate]);
 
     const handleSectionClick = (section: any) => {
         setCurrentSection(section);
@@ -158,7 +154,7 @@ const UnifiedContent: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleEdit = async (record: any) => {
+    const handleEdit = useCallback(async (record: any) => {
         if (viewMode === 'LESSON' && record.type === 'QUIZ') {
             try {
                 message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
@@ -187,9 +183,9 @@ const UnifiedContent: React.FC = () => {
             if (viewMode === 'LESSON') setLessonType(record.type);
         }
         setIsModalOpen(true);
-    };
+    }, [viewMode, message]);
 
-    const handleDelete = async (record: any) => {
+    const handleDelete = useCallback(async (record: any) => {
         const id = typeof record === 'object' ? record.id : record;
         try {
             if (viewMode === 'COURSE') await courseService.delete(id);
@@ -201,7 +197,7 @@ const UnifiedContent: React.FC = () => {
         } catch (e) {
             message.error('Lỗi khi xóa');
         }
-    };
+    }, [viewMode, message, fetchData]);
 
     const handleBulkDelete = async () => {
         if (selectedRowKeys.length === 0) return;
@@ -222,7 +218,7 @@ const UnifiedContent: React.FC = () => {
         }
     };
 
-    const handleCourseStatusChange = async (id: number, isPrivate: boolean) => {
+    const handleCourseStatusChange = useCallback(async (id: number, isPrivate: boolean) => {
         try {
             await courseService.update(id, { is_private: isPrivate });
             message.success('Đã cập nhật trạng thái');
@@ -230,9 +226,9 @@ const UnifiedContent: React.FC = () => {
         } catch (e) {
             message.error('Lỗi khi cập nhật trạng thái');
         }
-    };
+    }, [message, fetchData]);
 
-    const handleCourseToggleActive = async (id: number, isActive: boolean) => {
+    const handleCourseToggleActive = useCallback(async (id: number, isActive: boolean) => {
         try {
             await courseService.toggleActive(id, isActive);
             message.success(isActive ? 'Đã khôi phục khóa học' : 'Đã tạm ẩn khóa học');
@@ -240,9 +236,9 @@ const UnifiedContent: React.FC = () => {
         } catch (e) {
             message.error('Lỗi khi thay đổi trạng thái');
         }
-    };
+    }, [message, fetchData]);
 
-    const handleCourseCategoryChange = async (id: number, catId: number | null) => {
+    const handleCourseCategoryChange = useCallback(async (id: number, catId: number | null) => {
         try {
             await courseService.update(id, { category_id: catId === -1 ? null : catId });
             message.success('Đã cập nhật danh mục');
@@ -250,7 +246,7 @@ const UnifiedContent: React.FC = () => {
         } catch (e) {
             message.error('Lỗi khi cập nhật danh mục');
         }
-    };
+    }, [message, fetchData]);
 
     const handleModalSuccess = async (values: any, ...args: any[]) => {
         setSubmitting(true);
@@ -488,6 +484,7 @@ const UnifiedContent: React.FC = () => {
                                 onStatusChange={handleCourseStatusChange}
                                 onCategoryChange={handleCourseCategoryChange}
                                 onToggleActive={handleCourseToggleActive}
+                                
                             />
                         )}
                         {viewMode === 'SECTION' && (
@@ -522,7 +519,6 @@ const UnifiedContent: React.FC = () => {
                     categories={categories}
                     departments={departments}
                     positions={positions}
-                    users={users}
                     loading={submitting}
                 />
             )}

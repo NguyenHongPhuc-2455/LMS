@@ -27,6 +27,17 @@ const getDashboardStats = async (req, res) => {
     }
 };
 
+const getPendingRequestsCount = async (req, res) => {
+    try {
+        const { departmentId } = await getManagerDepartmentId(req);
+        const count = await statsService.getPendingRequestsCount(departmentId);
+        res.json({ pendingCount: count });
+    } catch (error) {
+        console.error('Error in getPendingRequestsCount:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 const getCourseProgress = async (req, res) => {
     try {
         const { courseId } = req.params;
@@ -114,13 +125,38 @@ const searchProgress = async (req, res) => {
     }
 };
 
+const getLearningReportData = async (req, res) => {
+    try {
+        const { groupBy, period, startDate, endDate, courseId } = req.query;
+        const { isManagerOnly, departmentId: managerDeptId } = await getManagerDepartmentId(req);
+        
+        const departmentId = isManagerOnly ? managerDeptId : (req.query.departmentId || null);
+
+        const report = await statsService.getLearningReportData({
+            groupBy,
+            period,
+            startDate,
+            endDate,
+            departmentId,
+            courseId: courseId ? parseInt(courseId) : null
+        });
+        
+        res.json(report);
+    } catch (error) {
+        console.error('Error in getLearningReportData controller:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
+    getPendingRequestsCount,
     getCourseProgress,
     searchProgress,
     trackLearningTime,
     getMyLearningStats,
     getMyLearningSummary,
     getGlobalLearningTrends,
-    getTopLearners
+    getTopLearners,
+    getLearningReportData
 };

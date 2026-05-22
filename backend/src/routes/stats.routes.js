@@ -5,9 +5,11 @@ const authMiddleware = require('../middlewares/auth.middleware');
 
 // Thống kê cho admin và quản lý (Staff)
 router.get('/dashboard', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, statsController.getDashboardStats);
+router.get('/pending-requests-count', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, statsController.getPendingRequestsCount);
 router.get('/course-progress/:courseId', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, statsController.getCourseProgress);
 router.get('/progress-search', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, statsController.searchProgress);
 router.get('/global-learning-trends', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, statsController.getGlobalLearningTrends);
+router.get('/learning-report', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, statsController.getLearningReportData);
 
 // APIs cho học viên
 router.post('/track', authMiddleware.verifyToken, statsController.trackLearningTime);

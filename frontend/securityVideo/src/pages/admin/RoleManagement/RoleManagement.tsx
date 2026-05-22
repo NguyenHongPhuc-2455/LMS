@@ -176,12 +176,12 @@ const RoleManagement: React.FC = () => {
 
     return (
         <div className={styles.userManagementContainer}>
-            <div className={styles.userManagementHeader}>
+            {/* <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý vai trò (Roles)</Title>
                     <Text type="secondary">Định nghĩa các nhóm quyền và vai trò trong hệ thống eLearning</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>

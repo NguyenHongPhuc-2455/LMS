@@ -1,6 +1,8 @@
 const prisma = require('../configs/prisma');
 
 const moment = require('moment');
+const { getLearningReportData } = require('./stats/learningReport.service');
+const { getStudentsProgressByCourse, searchStudentsProgress } = require('./stats/progress.service');
 
 /**
  * Lấy chuỗi ngày YYYY-MM-DD từ đối tượng Date.
@@ -230,102 +232,75 @@ const getDashboardStats = async (departmentId = null) => {
     }
 };
 
-
-const getStudentsProgressByCourse = async (courseId, departmentId = null) => {
+const getPendingRequestsCount = async (departmentId = null) => {
     try {
-        const id = parseInt(courseId);
+        if (departmentId) {
+            const deptId = parseInt(departmentId);
+            const [coursePending, programPending] = await Promise.all([
+                prisma.courseRequest.count({ where: { user: { department_id: deptId }, status: 'PENDING' } }),
+                prisma.programRequest.count({ where: { user: { department_id: deptId }, status: 'PENDING' } })
+            ]);
+            return coursePending + programPending;
+        }
 
-        // 1. Get all lessons in this course to calculate total
-        const lessons = await prisma.lesson.findMany({
-            where: {
-                section: {
-                    course_id: id
-                }
-            },
-            select: { id: true }
-        });
-
-        const lessonIds = lessons.map(l => l.id);
-        const totalLessons = lessonIds.length;
-
-        // 2. Get students enrolled in this course (optionally filtered by department)
-        const enrollments = await prisma.enrollment.findMany({
-            where: {
-                course_id: id,
-                ...(departmentId && {
-                    user: { department_id: parseInt(departmentId) }
-                })
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        full_name: true,
-                        email: true,
-                        username: true,
-                        avatar: true
-                    }
-                }
-            }
-        });
-
-        const userIds = enrollments.map(e => e.user_id);
-
-        // 3. Tối ưu: Lấy số lượng bài học đã hoàn thành của tất cả học viên trong 1 câu truy vấn
-        const completionCounts = await prisma.lessonCompleted.groupBy({
-            by: ['user_id'],
-            where: {
-                user_id: { in: userIds },
-                lesson_id: { in: lessonIds }
-            },
-            _count: {
-                lesson_id: true
-            }
-        });
-
-        const completionMap = {};
-        completionCounts.forEach(c => {
-            completionMap[c.user_id] = c._count.lesson_id;
-        });
-
-        // 4. Tổng hợp dữ liệu
-        const progressData = enrollments.map((e) => {
-            const completedCount = completionMap[e.user_id] || 0;
-            const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
-
-            return {
-                id: e.user.id,
-                fullName: e.user.full_name || e.user.username,
-                email: e.user.email,
-                avatar: e.user.avatar,
-                completedLessons: completedCount,
-                totalLessons: totalLessons,
-                progressPercent: progressPercent,
-                enrolledAt: e.enrolled_at
-            };
-        });
-
-
-        return progressData;
+        const [coursePending, programPending] = await Promise.all([
+            prisma.courseRequest.count({ where: { status: 'PENDING' } }),
+            prisma.programRequest.count({ where: { status: 'PENDING' } })
+        ]);
+        return coursePending + programPending;
     } catch (error) {
-        console.error('Error in getStudentsProgressByCourse:', error);
+        console.error('Error in getPendingRequestsCount service:', error);
         throw error;
     }
 };
 
-const emitPendingRequestsCountToAdmins = async () => {
+
+
+const emitPendingRequestsCountToAdmins = async (departmentId = null) => {
     try {
         const socketUtils = require('../utils/socket');
-        const coursePending = await prisma.courseRequest.count({
+        
+        // 1. Gửi cho Admins (số lượng toàn hệ thống)
+        const coursePendingGlobal = await prisma.courseRequest.count({
             where: { status: 'PENDING' }
         });
-
-        const programPending = await prisma.programRequest.count({
+        const programPendingGlobal = await prisma.programRequest.count({
             where: { status: 'PENDING' }
         });
+        const totalGlobal = coursePendingGlobal + programPendingGlobal;
+        await socketUtils.emitToAdmins('updatePendingRequestCount', { count: totalGlobal });
 
-        const total = coursePending + programPending;
-        await socketUtils.emitToAdmins('updatePendingRequestCount', { count: total });
+        // 2. Gửi cho các Managers thuộc phòng ban liên quan (nếu có departmentId)
+        if (departmentId) {
+            const deptId = parseInt(departmentId);
+            const coursePendingDept = await prisma.courseRequest.count({
+                where: { user: { department_id: deptId }, status: 'PENDING' }
+            });
+            const programPendingDept = await prisma.programRequest.count({
+                where: { user: { department_id: deptId }, status: 'PENDING' }
+            });
+            const totalDept = coursePendingDept + programPendingDept;
+
+            // Tìm các managers của phòng ban này
+            const managers = await prisma.user.findMany({
+                where: {
+                    department_id: deptId,
+                    user_roles: {
+                        some: {
+                            role: {
+                                name: 'manager'
+                            }
+                        }
+                    }
+                },
+                select: { id: true }
+            });
+
+            // Phát sự kiện tới từng manager đang online
+            managers.forEach(manager => {
+                socketUtils.emitToUser(manager.id, 'updatePendingRequestCount', { count: totalDept });
+            });
+        }
     } catch (error) {
         console.error('Error emitting pending requests count:', error);
     }
@@ -599,117 +574,10 @@ const getTopLearners = async () => {
     }
 };
 
-const searchStudentsProgress = async (searchTerm, courseId = null, departmentId = null) => {
-    try {
-        const whereClause = {
-            course: {
-                deleted_at: null
-            },
-            ...(courseId && { course_id: parseInt(courseId) }),
-            ...(departmentId && {
-                user: {
-                    department_id: parseInt(departmentId),
-                    ...(searchTerm && {
-                        OR: [
-                            { full_name: { contains: searchTerm, mode: 'insensitive' } },
-                            { email: { contains: searchTerm, mode: 'insensitive' } },
-                            { username: { contains: searchTerm, mode: 'insensitive' } }
-                        ]
-                    })
-                }
-            }),
-            ...(!departmentId && searchTerm && {
-                user: {
-                    OR: [
-                        { full_name: { contains: searchTerm, mode: 'insensitive' } },
-                        { email: { contains: searchTerm, mode: 'insensitive' } },
-                        { username: { contains: searchTerm, mode: 'insensitive' } }
-                    ]
-                }
-            })
-        };
-
-        const enrollments = await prisma.enrollment.findMany({
-            where: whereClause,
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        full_name: true,
-                        email: true,
-                        username: true,
-                        avatar: true
-                    }
-                },
-                course: {
-                    select: {
-                        id: true,
-                        title: true,
-                        category_id: true,
-                        category: { select: { name: true } },
-                        sections: {
-                            select: {
-                                lessons: { select: { id: true } }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // Lấy tất cả userIds và lessonIds cần kiểm tra để tối ưu hóa
-        const userIds = enrollments.map(e => e.user_id);
-        const allLessonIdsInvolved = [...new Set(enrollments.flatMap(e => e.course.sections.flatMap(s => s.lessons.map(l => l.id))))];
-
-        // Lấy dữ liệu hoàn thành bài học trong 1 câu truy vấn
-        const completionCounts = await prisma.lessonCompleted.groupBy({
-            by: ['user_id', 'lesson_id'],
-            where: {
-                user_id: { in: userIds },
-                lesson_id: { in: allLessonIdsInvolved }
-            }
-        });
-
-        // Xây dựng map để truy xuất nhanh: completionMap[userId][lessonId] = true
-        const completionMap = {};
-        completionCounts.forEach(c => {
-            if (!completionMap[c.user_id]) completionMap[c.user_id] = new Set();
-            completionMap[c.user_id].add(c.lesson_id);
-        });
-
-        const progressData = enrollments.map((e) => {
-            const lessonIds = e.course.sections.flatMap(s => s.lessons.map(l => l.id));
-            const totalLessons = lessonIds.length;
-
-            const completedCount = lessonIds.filter(id => completionMap[e.user_id]?.has(id)).length;
-            const progressPercent = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
-
-            return {
-                id: e.user.id,
-                fullName: e.user.full_name || e.user.username,
-                email: e.user.email,
-                avatar: e.user.avatar,
-                completedLessons: completedCount,
-                totalLessons: totalLessons,
-                progressPercent: progressPercent,
-                enrolledAt: e.enrolled_at,
-                courseId: e.course.id,
-                courseTitle: e.course.title,
-                categoryId: e.course.category_id,
-                categoryName: e.course.category?.name
-            };
-        });
-
-
-        return progressData;
-    } catch (error) {
-        console.error('Error in searchStudentsProgress:', error);
-        throw error;
-    }
-};
 
 module.exports = {
     getDashboardStats,
+    getPendingRequestsCount,
     getStudentsProgressByCourse,
     searchStudentsProgress,
     emitPendingRequestsCountToAdmins,
@@ -717,5 +585,6 @@ module.exports = {
     getUserLearningStats,
     getUserLearningSummary,
     getGlobalLearningTrends,
-    getTopLearners
+    getTopLearners,
+    getLearningReportData
 };

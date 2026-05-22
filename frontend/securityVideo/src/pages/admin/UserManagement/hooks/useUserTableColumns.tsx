@@ -33,13 +33,13 @@ export function useUserTableColumns({
     const [searchedColumn, setSearchedColumn] = useState('');
     const searchInput = useRef<InputRef>(null);
 
-    const handleSearch = (selectedKeys: string[], confirm: (param?: FilterConfirmProps) => void, dataIndex: DataIndex) => {
+    const handleSearch = React.useCallback((selectedKeys: string[], confirm: (param?: FilterConfirmProps) => void, dataIndex: DataIndex) => {
         confirm();
         setSearchText(selectedKeys[0]);
         setSearchedColumn(dataIndex);
-    };
+    }, []);
 
-    const getColumnSearchProps = (dataIndex: DataIndex, placeholder?: string): TableColumnType<UserData> => ({
+    const getColumnSearchProps = React.useCallback((dataIndex: DataIndex, placeholder?: string): TableColumnType<UserData> => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
             <div className={styles.filterDropdownContainer} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
@@ -78,7 +78,7 @@ export function useUserTableColumns({
             }
             return text;
         },
-    });
+    }), [searchText, searchedColumn, handleSearch]);
 
     const columns: TableColumnsType<UserData> = useMemo(() => [
         {
@@ -192,20 +192,24 @@ export function useUserTableColumns({
         {
             title: 'Khóa học',
             key: 'enrolled_courses',
-            render: (_, record) => (
-                <Button
-                    type="link"
-                    size="small"
-                    style={{ whiteSpace: 'nowrap' }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedUserId(record.id);
-                        setCourseModalVisible(true);
-                    }}
-                >
-                    {record.enrolled_courses?.length || 0} khóa
-                </Button>
-            )
+            render: (_, record) => {
+                const cCount = record.enrollments_count || 0;
+                const pCount = record.programs_count || 0;
+                return (
+                    <Button
+                        type="link"
+                        size="small"
+                        style={{ whiteSpace: 'nowrap' }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedUserId(record.id);
+                            setCourseModalVisible(true);
+                        }}
+                    >
+                        {cCount} khóa {pCount > 0 ? `/ ${pCount} lộ trình` : ''}
+                    </Button>
+                );
+            }
         },
         {
             title: 'Ngày tạo',

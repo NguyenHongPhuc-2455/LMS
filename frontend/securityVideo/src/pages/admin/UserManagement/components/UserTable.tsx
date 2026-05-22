@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Table, Space, Typography, Badge, Avatar, Input, Popconfirm, Button, Modal } from 'antd';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Table, Space, Typography, Badge, Avatar, Input, Popconfirm, Button, Modal, Tabs, message, Spin } from 'antd';
 import { UsergroupAddOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons';
 import styles from '../UserManagement.module.scss';
 import type { User as UserData, Role as RoleData } from '../../../../types/user';
+import { userService } from '../../../../services/user.service';
 
 
 // Sub-components & Hooks
@@ -20,6 +21,7 @@ interface UserTableProps {
     selectedRowKeys: React.Key[];
     onSelectChange: (keys: React.Key[]) => void;
     onRevokeAccess: (userId: number, courseId: number) => void;
+    onRevokeProgramAccess: (userId: number, programId: number) => void;
     onRowClick: (record: UserData) => void;
     onRefresh: () => void;
     pagination?: any;
@@ -35,6 +37,7 @@ export const UserTable = React.memo(({
     selectedRowKeys,
     onSelectChange,
     onRevokeAccess,
+    onRevokeProgramAccess,
     onRowClick,
     onRefresh,
     pagination
@@ -42,6 +45,10 @@ export const UserTable = React.memo(({
     const [courseModalVisible, setCourseModalVisible] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
     const [courseSearchText, setCourseSearchText] = useState('');
+
+    const [modalLoading, setModalLoading] = useState(false);
+    const [enrolledCourses, setEnrolledCourses] = useState<{ id: number; title: string }[]>([]);
+    const [enrolledPrograms, setEnrolledPrograms] = useState<{ id: number; title: string }[]>([]);
 
     const { columns } = useUserTableColumns({
         roles,
@@ -60,9 +67,33 @@ export const UserTable = React.memo(({
 
     const selectedUser = users.find(u => u.id === selectedUserId);
 
-    const filteredUserCourses = selectedUser?.enrolled_courses.filter(c =>
+    useEffect(() => {
+        if (selectedUserId && courseModalVisible) {
+            setModalLoading(true);
+            userService.getLearningAccess(selectedUserId)
+                .then(res => {
+                    setEnrolledCourses(res.enrolled_courses || []);
+                    setEnrolledPrograms(res.enrolled_programs || []);
+                })
+                .catch(() => {
+                    message.error('Lỗi khi tải danh sách quyền học tập');
+                })
+                .finally(() => {
+                    setModalLoading(false);
+                });
+        } else {
+            setEnrolledCourses([]);
+            setEnrolledPrograms([]);
+        }
+    }, [selectedUserId, courseModalVisible, selectedUser?.enrollments_count, selectedUser?.programs_count]);
+
+    const filteredUserCourses = enrolledCourses.filter(c =>
         c.title.toLowerCase().includes(courseSearchText.toLowerCase())
-    ) || [];
+    );
+
+    const filteredUserPrograms = enrolledPrograms.filter((p: any) =>
+        p.title.toLowerCase().includes(courseSearchText.toLowerCase())
+    );
 
     return (
         <>
@@ -91,7 +122,7 @@ export const UserTable = React.memo(({
                     },
                     style: { cursor: 'pointer' }
                 })}
-                scroll={{ x: 1800, y: 600 }}
+                scroll={{ x: 1500, y: 600 }}
                 bordered
             />
 
@@ -99,7 +130,7 @@ export const UserTable = React.memo(({
                 title={
                     <Space>
                         <UsergroupAddOutlined />
-                        <span>Quản lý khóa học: <Text strong>{selectedUser?.full_name || selectedUser?.username}</Text></span>
+                        <span>Quản lý học tập: <Text strong>{selectedUser?.full_name || selectedUser?.username}</Text></span>
                     </Space>
                 }
                 open={courseModalVisible}
@@ -112,49 +143,102 @@ export const UserTable = React.memo(({
                 footer={null}
                 width={600}
                 className="premium-modal"
+                destroyOnClose
             >
-                <div style={{ marginBottom: 16 }}>
-                    <Input
-                        placeholder="Tìm kiếm khóa học của học viên..."
-                        prefix={<BookOutlined />}
-                        value={courseSearchText}
-                        onChange={e => setCourseSearchText(e.target.value)}
-                        allowClear
+                <Spin spinning={modalLoading}>
+                    <div style={{ marginBottom: 16 }}>
+                        <Input
+                            placeholder="Tìm kiếm khóa học hoặc lộ trình của học viên..."
+                            prefix={<BookOutlined />}
+                            value={courseSearchText}
+                            onChange={e => setCourseSearchText(e.target.value)}
+                            allowClear
+                        />
+                    </div>
+                    <Tabs
+                        defaultActiveKey="courses"
+                        items={[
+                            {
+                                key: 'courses',
+                                label: `Khóa học (${filteredUserCourses.length})`,
+                                children: (
+                                    <div style={{ maxHeight: '350px', overflowY: 'auto', paddingTop: 8 }}>
+                                        {filteredUserCourses.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {filteredUserCourses.map(course => (
+                                                    <div key={course.id} style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        padding: '12px',
+                                                        background: 'rgba(0,0,0,0.02)',
+                                                        borderRadius: '8px',
+                                                        border: '1px solid rgba(0,0,0,0.05)'
+                                                    }}>
+                                                        <Text strong>{course.title}</Text>
+                                                        <Popconfirm
+                                                            title="Thu hồi quyền truy cập"
+                                                            description="Học viên sẽ không còn thấy khóa học này?"
+                                                            onConfirm={() => onRevokeAccess(selectedUserId!, course.id)}
+                                                            okText="Thu hồi"
+                                                            cancelText="Hủy"
+                                                            okButtonProps={{ danger: true }}
+                                                        >
+                                                            <Button danger size="small" icon={<DeleteOutlined />}>Thu hồi</Button>
+                                                        </Popconfirm>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                                <Text type="secondary">Không tìm thấy khóa học nào</Text>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            },
+                            {
+                                key: 'programs',
+                                label: `Lộ trình học (${filteredUserPrograms.length})`,
+                                children: (
+                                    <div style={{ maxHeight: '350px', overflowY: 'auto', paddingTop: 8 }}>
+                                        {filteredUserPrograms.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {filteredUserPrograms.map(program => (
+                                                    <div key={program.id} style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        padding: '12px',
+                                                        background: 'rgba(0,0,0,0.02)',
+                                                        borderRadius: '8px',
+                                                        border: '1px solid rgba(0,0,0,0.05)'
+                                                    }}>
+                                                        <Text strong>{program.title}</Text>
+                                                        <Popconfirm
+                                                            title="Thu hồi quyền truy cập"
+                                                            description="Học viên sẽ không còn thấy lộ trình học này?"
+                                                            onConfirm={() => onRevokeProgramAccess(selectedUserId!, program.id)}
+                                                            okText="Thu hồi"
+                                                            cancelText="Hủy"
+                                                            okButtonProps={{ danger: true }}
+                                                        >
+                                                            <Button danger size="small" icon={<DeleteOutlined />}>Thu hồi</Button>
+                                                        </Popconfirm>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                                <Text type="secondary">Không tìm thấy lộ trình học nào</Text>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+                        ]}
                     />
-                </div>
-                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    {filteredUserCourses.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {filteredUserCourses.map(course => (
-                                <div key={course.id} style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '12px',
-                                    background: 'rgba(0,0,0,0.02)',
-                                    borderRadius: '8px',
-                                    border: '1px solid rgba(0,0,0,0.05)'
-                                }}>
-                                    <Text strong>{course.title}</Text>
-                                    <Popconfirm
-                                        title="Thu hồi quyền truy cập"
-                                        description="Học viên sẽ không còn thấy khóa học này?"
-                                        onConfirm={() => onRevokeAccess(selectedUserId!, course.id)}
-                                        okText="Thu hồi"
-                                        cancelText="Hủy"
-                                        okButtonProps={{ danger: true }}
-                                    >
-                                        <Button danger size="small" icon={<DeleteOutlined />}>Thu hồi</Button>
-                                    </Popconfirm>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <Text type="secondary">Không tìm thấy khóa học nào</Text>
-                        </div>
-                    )}
-                </div>
+                </Spin>
             </Modal>
         </>
     );

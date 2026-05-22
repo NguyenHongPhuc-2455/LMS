@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, InputNumber, Switch, message, Typography, Upload, Card } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, InputNumber, Switch, message, Upload, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import { heroBannerService, type HeroBanner } from '../../../services/heroBanner.service';
 
 import styles from './BannerManagement.module.scss';
-
-const { Title, Text } = Typography;
 
 export default function BannerManagement() {
     const [banners, setBanners] = useState<HeroBanner[]>([]);
@@ -153,12 +151,12 @@ export default function BannerManagement() {
 
     return (
         <div className={styles.bannerManagementContainer}>
-            <div className={styles.bannerManagementHeader}>
+            {/* <div className={styles.bannerManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý Banner Home</Title>
                     <Text type="secondary">Quản lý nội dung, hình ảnh và thứ tự hiển thị của Banner trên trang chủ</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
@@ -168,7 +166,7 @@ export default function BannerManagement() {
                         onClick={handleAdd} 
                         className={styles.addButton}
                     >
-                        Thêm Banner
+                        Thêm
                     </Button>
                 </div>
 

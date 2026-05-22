@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Input, Select, Button, Typography, Card, Space, Avatar, Progress, Tooltip, Drawer, Tabs, Tag, Modal, Input as AntdInput, message } from 'antd';
-import { UserOutlined, SearchOutlined, ReloadOutlined, BellOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, SearchOutlined, ReloadOutlined, BellOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, InfoCircleOutlined, DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
+import dayjs from 'dayjs';
 import { managerService, type Employee, type CourseProgress } from '@/services/manager.service';
 import { positionService } from '@/services/position.service';
 import { departmentService } from '@/services/department.service';
@@ -19,11 +21,11 @@ export default function ManagerEmployees() {
     const [positions, setPositions] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    
+
     // Filters & Pagination
     const [search, setSearch] = useState('');
     const [selectedPosition, setSelectedPosition] = useState<number | undefined>(undefined);
-    
+
     // Cascading states
     const [selectedLevel1, setSelectedLevel1] = useState<number | undefined>();
     const [selectedLevel2, setSelectedLevel2] = useState<number | undefined>();
@@ -107,6 +109,35 @@ export default function ManagerEmployees() {
         setPage(1);
     };
 
+    const handleExportXLSX = async () => {
+        try {
+            // Lấy toàn bộ dữ liệu (không phân trang) để xuất
+            const data = await managerService.getEmployees({
+                page: 1,
+                limit: 9999,
+                search: debouncedSearch,
+                positionId: selectedPosition,
+                departmentId: filterDeptId
+            });
+
+            const exportData = data.employees.map((emp: Employee) => ({
+                'Mã nhân sự': emp.employee_id || '',
+                'Họ và tên': emp.full_name || emp.username,
+                'Email': emp.email || '',
+                'Chức vụ': emp.position || 'Chưa thiết lập',
+                'Ngày tham gia': emp.join_date ? dayjs(emp.join_date).format('DD/MM/YYYY') : 'Chưa cập nhật',
+                'Số khóa học': emp.total_courses || 0
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách nhân sự');
+            XLSX.writeFile(workbook, `nhan_su_phong_ban_${dayjs().format('YYYYMMDD')}.xlsx`);
+        } catch (err) {
+            message.error('Không thể xuất danh sách nhân sự');
+        }
+    };
+
     const handleOpenDetail = async (empId: number) => {
         setSelectedEmployeeId(empId);
         setDrawerOpen(true);
@@ -141,7 +172,7 @@ export default function ManagerEmployees() {
         if (!managerDeptId || departments.length === 0) return;
         const currentDept = departments.find(d => d.id === managerDeptId);
         if (!currentDept) return;
-        
+
         if (!currentDept.parent_id) {
             setSelectedLevel1(currentDept.id);
             setSelectedLevel2(undefined);
@@ -240,20 +271,20 @@ export default function ManagerEmployees() {
             align: 'center' as const,
             render: (emp: Employee) => (
                 <Space>
-                    <Button 
-                        type="primary" 
-                        size="small" 
-                        icon={<InfoCircleOutlined />} 
+                    <Button
+                        type="primary"
+                        size="small"
+                        icon={<InfoCircleOutlined />}
                         onClick={() => handleOpenDetail(emp.id)}
                         className={styles.detailBtn}
                     >
                         Xem tiến độ
                     </Button>
-                    <Button 
-                        type="dashed" 
-                        danger 
-                        size="small" 
-                        icon={<BellOutlined />} 
+                    <Button
+                        type="dashed"
+                        danger
+                        size="small"
+                        icon={<BellOutlined />}
                         onClick={() => {
                             setSelectedEmployeeId(emp.id);
                             setReminderText(`Chào bạn ${emp.full_name || emp.username}, tôi vừa kiểm tra tiến độ học tập và thấy bạn có một số khóa học bắt buộc chưa hoàn thành. Hãy sắp xếp thời gian hoàn thành đúng hạn nhé!`);
@@ -269,12 +300,12 @@ export default function ManagerEmployees() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                 <div>
                     <Title level={4} style={{ margin: 0 }}>Thành viên phòng ban</Title>
                     <Text type="secondary">Theo dõi lộ trình học tập, quản lý tiến độ và đôn đốc học tập nhân sự</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card" style={{ marginBottom: 24 }}>
                 <div className={styles.searchBarWrapper}>
@@ -342,6 +373,14 @@ export default function ManagerEmployees() {
 
                     <div className={styles.headerRight}>
                         <Button icon={<ReloadOutlined />} onClick={handleReset}>Làm mới</Button>
+                        <Button
+                            type="primary"
+                            icon={<DownloadOutlined />}
+                            onClick={handleExportXLSX}
+                            style={{ background: '#B8121A', borderColor: '#B8121A', borderRadius: 8 }}
+                        >
+                            Xuất File
+                        </Button>
                     </div>
                 </div>
 
@@ -357,7 +396,10 @@ export default function ManagerEmployees() {
                         onChange: setPage,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    className: 'page-number',
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }
@@ -471,9 +513,9 @@ export default function ManagerEmployees() {
                                     <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                                         Gửi thông báo nhắc nhở và đôn đốc học tập trực tiếp tới tài khoản Ritavo LMS của học viên này.
                                     </Text>
-                                    <Button 
-                                        type="primary" 
-                                        danger 
+                                    <Button
+                                        type="primary"
+                                        danger
                                         icon={<BellOutlined />}
                                         onClick={() => {
                                             setReminderText(`Chào bạn ${employeeDetail.employee.full_name}, hãy cố gắng hoàn thành các khóa học bắt buộc đúng hạn nhé!`);

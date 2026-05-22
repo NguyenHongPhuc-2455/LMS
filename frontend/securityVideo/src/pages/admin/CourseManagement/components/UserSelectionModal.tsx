@@ -10,6 +10,7 @@ interface UserSelectionModalProps {
     onOk: (selectedIds: number[]) => void;
     users: any[];
     initialSelectedIds: number[];
+    loading?: boolean;
 }
 
 export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
@@ -17,7 +18,8 @@ export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
     onCancel,
     onOk,
     users,
-    initialSelectedIds
+    initialSelectedIds,
+    loading
 }) => {
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [searchText, setSearchText] = useState('');
@@ -101,6 +103,7 @@ export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
                 columns={columns}
                 rowKey="id"
                 size="small"
+                loading={loading}
                 pagination={{ pageSize: 8 }}
                 rowSelection={{
                     selectedRowKeys,

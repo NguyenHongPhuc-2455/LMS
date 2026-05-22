@@ -79,7 +79,6 @@ export const useNotifications = (userId: number | undefined) => {
 
             return () => {
                 socket.off('newNotification');
-                socketService.disconnect();
             };
         }
     }, [userId]);

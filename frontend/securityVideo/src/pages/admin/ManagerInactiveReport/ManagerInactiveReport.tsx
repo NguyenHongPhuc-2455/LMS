@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Typography, Card, Space, Avatar, Tag, Modal, Input as AntdInput, Segmented, message, Statistic, Row, Col } from 'antd';
 import { UserOutlined, BellOutlined, ReloadOutlined, WarningOutlined, HourglassOutlined, BookOutlined } from '@ant-design/icons';
 import { managerService, type InactiveEmployee } from '@/services/manager.service';
@@ -118,12 +118,12 @@ export default function ManagerInactiveReport() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                 <div>
                     <Title level={4} style={{ margin: 0 }}>Nhân sự không học tập</Title>
                     <Text type="secondary">Danh sách nhân sự chưa phát sinh giờ học hoặc bài giảng trong kỳ</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Row gutter={24} style={{ marginBottom: 24 }}>
                 <Col span={8}>
@@ -171,7 +171,10 @@ export default function ManagerInactiveReport() {
                         pageSize: 10,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    className: 'page-number',
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }
@@ -190,6 +193,7 @@ export default function ManagerInactiveReport() {
                 confirmLoading={reminderLoading}
                 okText="Gửi nhắc nhở"
                 cancelText="Hủy bỏ"
+                destroyOnClose
             >
                 <div style={{ padding: '8px 0' }}>
                     <Text strong style={{ display: 'block', marginBottom: 8 }}>Nội dung thông báo (Hiển thị real-time trên tài khoản học viên):</Text>

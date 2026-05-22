@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import {
     Button, Space, Tag,
     Typography, Card, Input, Select,
@@ -6,7 +6,7 @@ import {
 } from 'antd';
 import {
     DeleteOutlined, CloseOutlined,
-    PlusOutlined, SearchOutlined
+    PlusOutlined, SearchOutlined, DownloadOutlined
 } from '@ant-design/icons';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -55,9 +55,9 @@ export default function UserManagement() {
     const [actionLoading, setActionLoading] = useState(false);
 
     // Cascading states cho lọc bộ phận 3 cấp
-    const [selectedLevel1, setSelectedLevel1] = useState<number | undefined>();
-    const [selectedLevel2, setSelectedLevel2] = useState<number | undefined>();
-    const [selectedLevel3, setSelectedLevel3] = useState<number | undefined>();
+    const [selectedLevel1, setSelectedLevel1] = useState<number | null | undefined>();
+    const [selectedLevel2, setSelectedLevel2] = useState<number | null | undefined>();
+    const [selectedLevel3, setSelectedLevel3] = useState<number | null | undefined>();
 
     // React Query
     const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -115,15 +115,15 @@ export default function UserManagement() {
             if (currentDept) {
                 if (!currentDept.parent_id) {
                     setSelectedLevel1(currentDept.id);
-                    setSelectedLevel2(undefined);
-                    setSelectedLevel3(undefined);
+                    setSelectedLevel2(null);
+                    setSelectedLevel3(null);
                 } else {
                     const parentDept = departmentsData.find((d: any) => d.id === currentDept.parent_id);
                     if (parentDept) {
                         if (!parentDept.parent_id) {
                             setSelectedLevel1(parentDept.id);
                             setSelectedLevel2(currentDept.id);
-                            setSelectedLevel3(undefined);
+                            setSelectedLevel3(null);
                         } else {
                             const grandParentDept = departmentsData.find((d: any) => d.id === parentDept.parent_id);
                             if (grandParentDept) {
@@ -136,9 +136,9 @@ export default function UserManagement() {
                 }
             }
         } else if (!departmentId) {
-            setSelectedLevel1(undefined);
-            setSelectedLevel2(undefined);
-            setSelectedLevel3(undefined);
+            setSelectedLevel1(null);
+            setSelectedLevel2(null);
+            setSelectedLevel3(null);
         }
     }, [departmentId, departmentsData]);
 
@@ -171,6 +171,46 @@ export default function UserManagement() {
     const resetStates = () => {
         setSelectedRowKeys([]);
         setIsDeleteMode(false);
+    };
+
+    const exportAllUsers = async () => {
+        try {
+            setActionLoading(true);
+            const XLSX = await import('xlsx');
+            const response = await userService.getAll({
+                page: 1,
+                limit: 9999,
+                search: debouncedSearch,
+                department_id: departmentId,
+                position_id: positionId,
+                include_inactive: includeInactive
+            });
+
+            const dataToExport = response.users.map((u: any) => ({
+                'Mã nhân sự': u.employee_id || '',
+                'Họ và tên': u.full_name,
+                'Username': u.username,
+                'Email': u.email || '',
+                'Số điện thoại': u.phone || '',
+                'Phòng ban': u.department || 'Chưa phân phòng',
+                'Vị trí chức danh': u.position || '',
+                'Ngày nhận việc': u.join_date ? new Date(u.join_date).toLocaleDateString('vi-VN') : '',
+                'Vai trò': u.roles?.map((r: any) => r.title || r.name).join(', ') || '',
+                'Khóa học đăng ký': u.enrollments_count || 0,
+                'Trạng thái': u.deleted_at ? 'Tạm khóa' : 'Đang hoạt động'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách nhân sự');
+
+            XLSX.writeFile(workbook, `danh_sach_nhan_su_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.xlsx`);
+        } catch (e) {
+            console.error('Lỗi xuất excel:', e);
+            message.error('Không thể xuất danh sách nhân sự');
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const handleBatchDelete = async () => {
@@ -236,6 +276,19 @@ export default function UserManagement() {
         }
     }, [queryClient, message]);
 
+    const handleRevokeProgramAccess = useCallback(async (userId: number, programId: number) => {
+        try {
+            setActionLoading(true);
+            await userService.revokeProgram(userId, programId);
+            message.success('Đã thu hồi quyền truy cập lộ trình thành công');
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        } catch (error: any) {
+            message.error(error.response?.data?.error || 'Lỗi khi thu hồi quyền lộ trình');
+        } finally {
+            setActionLoading(false);
+        }
+    }, [queryClient, message]);
+
     const paginationConfig = useMemo(() => ({
         current: page,
         pageSize: pageSize,
@@ -249,7 +302,9 @@ export default function UserManagement() {
         selectProps: { showSearch: false },
         itemRender: (current: number, type: string, originalElement: any) => {
             if (type === 'page') {
-                return <a>{current < 10 ? `0${current}` : current}</a>;
+                return React.cloneElement(originalElement, {
+                    children: current < 10 ? `0${current}` : current
+                });
             }
             return originalElement;
         }
@@ -267,32 +322,35 @@ export default function UserManagement() {
         });
     };
 
-    const handleLevel1Change = (val: number | undefined) => {
+    const handleLevel1Change = (val: number | null | undefined) => {
+        const actualVal = val === null ? undefined : val;
         setSelectedLevel1(val);
-        setSelectedLevel2(undefined);
-        setSelectedLevel3(undefined);
-        handleDepartmentChange(val);
+        setSelectedLevel2(null);
+        setSelectedLevel3(null);
+        handleDepartmentChange(actualVal);
     };
 
-    const handleLevel2Change = (val: number | undefined) => {
+    const handleLevel2Change = (val: number | null | undefined) => {
+        const actualVal = val === null ? undefined : val;
         setSelectedLevel2(val);
-        setSelectedLevel3(undefined);
-        handleDepartmentChange(val || selectedLevel1);
+        setSelectedLevel3(null);
+        handleDepartmentChange(actualVal || selectedLevel1 || undefined);
     };
 
-    const handleLevel3Change = (val: number | undefined) => {
+    const handleLevel3Change = (val: number | null | undefined) => {
+        const actualVal = val === null ? undefined : val;
         setSelectedLevel3(val);
-        handleDepartmentChange(val || selectedLevel2);
+        handleDepartmentChange(actualVal || selectedLevel2 || undefined);
     };
 
     return (
         <div className={styles.userManagementContainer} >
-            <div className={styles.userManagementHeader}>
+            {/* <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý nhân sự</Title>
                     <Text type="secondary">Quản lý thông tin học viên, nhân viên và phân quyền hệ thống</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -320,7 +378,10 @@ export default function UserManagement() {
                                     allowClear
                                     value={selectedLevel1}
                                     onChange={handleLevel1Change}
-                                    options={departments.filter((d: any) => !d.parent_id).map((d: any) => ({ value: d.id, label: d.name }))}
+                                    options={[
+                                        { value: null as any, label: 'Tất cả' },
+                                        ...departments.filter((d: any) => !d.parent_id).map((d: any) => ({ value: d.id, label: d.name }))
+                                    ]}
                                 />
                                 <Select
                                     placeholder="Chọn Phòng ban"
@@ -329,7 +390,10 @@ export default function UserManagement() {
                                     disabled={!selectedLevel1}
                                     value={selectedLevel2}
                                     onChange={handleLevel2Change}
-                                    options={departments.filter((d: any) => d.parent_id === selectedLevel1).map((d: any) => ({ value: d.id, label: d.name }))}
+                                    options={[
+                                        { value: null as any, label: 'Tất cả' },
+                                        ...departments.filter((d: any) => d.parent_id === selectedLevel1).map((d: any) => ({ value: d.id, label: d.name }))
+                                    ]}
                                 />
                                 <Select
                                     placeholder="Chọn Tổ/Nhóm"
@@ -338,7 +402,10 @@ export default function UserManagement() {
                                     disabled={!selectedLevel2}
                                     value={selectedLevel3}
                                     onChange={handleLevel3Change}
-                                    options={departments.filter((d: any) => d.parent_id === selectedLevel2).map((d: any) => ({ value: d.id, label: d.name }))}
+                                    options={[
+                                        { value: null as any, label: 'Tất cả' },
+                                        ...departments.filter((d: any) => d.parent_id === selectedLevel2).map((d: any) => ({ value: d.id, label: d.name }))
+                                    ]}
                                 />
                             </Space>
                         )}
@@ -389,7 +456,7 @@ export default function UserManagement() {
                                         icon={<DeleteOutlined />}
                                         onClick={() => setIsDeleteMode(true)}
                                     >
-                                        Xóa nhiều
+                                        Xóa
                                     </Button>
                                     <Button
                                         type="primary"
@@ -397,7 +464,16 @@ export default function UserManagement() {
                                         onClick={handleOpenCreate}
                                         className={styles.adminAddButton}
                                     >
-                                        Thêm thành viên
+                                        Thêm
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        icon={<DownloadOutlined />}
+                                        onClick={exportAllUsers}
+                                        loading={loading}
+                                        style={{ background: '#B8121A', borderColor: '#B8121A', borderRadius: 8 }}
+                                    >
+                                        Xuất File
                                     </Button>
                                 </Space>
                             )}
@@ -415,6 +491,7 @@ export default function UserManagement() {
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={setSelectedRowKeys}
                     onRevokeAccess={handleRevokeAccess}
+                    onRevokeProgramAccess={handleRevokeProgramAccess}
                     onRowClick={handleOpenEdit}
                     onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
                     pagination={paginationConfig}

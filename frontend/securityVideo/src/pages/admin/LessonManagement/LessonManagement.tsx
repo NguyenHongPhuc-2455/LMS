@@ -259,7 +259,7 @@ export default function LessonManagement() {
     const startEditing = async (lesson: Lesson) => {
         window.alert(`ĐANG MỞ EDIT BÀI: ${lesson.title} (ID: ${lesson.id}) - LOẠI: ${lesson.type}`);
         console.log('--- START EDITING ---', lesson);
-        
+
         // Cài đặt loại bài học trước để modal biết render form nào
         const type = lesson.type === 'QUIZ' ? 'QUIZ' : 'VIDEO';
         setLessonType(type);
@@ -271,11 +271,11 @@ export default function LessonManagement() {
                 const data = await quizService.getByLesson(lesson.id);
                 console.log('Dữ liệu API trả về:', data);
                 const quizData = data.data;
-                
+
                 if (!quizData) {
                     throw new Error('Dữ liệu Quiz trả về bị rỗng (null/undefined)');
                 }
-                
+
                 setEditingQuizId(quizData.id);
 
                 setEditingLesson({

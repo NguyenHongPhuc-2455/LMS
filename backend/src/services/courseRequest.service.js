@@ -57,13 +57,13 @@ const requestAccess = async (userId, courseId, reason) => {
     // 5. Emit sự kiện để thông báo cho Admin
     const student = await prisma.user.findUnique({
         where: { id: userId },
-        select: { full_name: true, username: true }
+        select: { full_name: true, username: true, department_id: true }
     });
 
     events.emit('course.request_new', { request: newRequest, student, course });
 
-    // Cập nhật số lượng cho Admin
-    await statsService.emitPendingRequestsCountToAdmins();
+    // Cập nhật số lượng cho Admin và Manager phòng ban
+    await statsService.emitPendingRequestsCountToAdmins(student.department_id);
 
     return newRequest;
 };
@@ -153,8 +153,8 @@ const approveRequest = async (id, managerDeptId = null) => {
         // 3. Emit sự kiện thông báo
         events.emit('course.request_approved', { request, course: request.course });
 
-        // Cập nhật số lượng cho Admin
-        await statsService.emitPendingRequestsCountToAdmins();
+        // Cập nhật số lượng cho Admin và Manager phòng ban
+        await statsService.emitPendingRequestsCountToAdmins(request.user?.department_id);
 
         return updatedRequest;
     });
@@ -191,8 +191,8 @@ const rejectRequest = async (id, managerDeptId = null) => {
     // Emit sự kiện thông báo
     events.emit('course.request_rejected', { request, course: request.course });
 
-    // Cập nhật số lượng cho Admin
-    await statsService.emitPendingRequestsCountToAdmins();
+    // Cập nhật số lượng cho Admin và Manager phòng ban
+    await statsService.emitPendingRequestsCountToAdmins(request.user?.department_id);
 
     return updatedRequest;
 };

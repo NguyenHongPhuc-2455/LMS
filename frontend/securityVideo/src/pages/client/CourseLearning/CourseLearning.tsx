@@ -204,6 +204,13 @@ export default function CourseLearning() {
     };
 
     const handleVideoError = (error: any) => {
+        const httpStatus = error?.data?.[1];
+        if (httpStatus === 404 || httpStatus === 500) {
+            console.error('❌ Lỗi tải video từ server:', error);
+            message.error({ content: 'Video không được tìm thấy trên hệ thống lưu trữ!', key: 'video-refresh', duration: 4 });
+            return;
+        }
+
         // Tự động làm mới Token bằng cách gọi lại API chi tiết khóa học.
         // Backend sẽ cấp lại URL có Token mới nhất dựa trên IP hiện tại.
         console.log('🔄 Đang làm mới Token video để phục hồi kết nối...');

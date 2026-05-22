@@ -85,6 +85,7 @@ const AppHeader: React.FC = () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
+        socketService.disconnect();
         navigate('/login');
     };
 
@@ -142,13 +143,13 @@ const AppHeader: React.FC = () => {
                     let icon = <BellOutlined />;
                     let iconClass = styles.iconGeneral;
 
-                    if (item.type === 'COURSE_APPROVAL' || item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE') {
-                        icon = (item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE') ? <BookOutlined /> : <CheckCircleOutlined />;
+                    if (item.type === 'COURSE_APPROVAL' || item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE' || item.type === 'PROGRAM_ENROLLED' || item.type === 'NEW_MANDATORY_PROGRAM') {
+                        icon = (item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE' || item.type === 'PROGRAM_ENROLLED' || item.type === 'NEW_MANDATORY_PROGRAM') ? <BookOutlined /> : <CheckCircleOutlined />;
                         iconClass = styles.iconSuccess;
-                    } else if (item.type === 'COURSE_REJECTION' || item.type === 'COURSE_OVERDUE') {
+                    } else if (item.type === 'COURSE_REJECTION' || item.type === 'COURSE_OVERDUE' || item.type === 'PROGRAM_OVERDUE') {
                         icon = <CloseCircleOutlined />;
                         iconClass = styles.iconError;
-                    } else if (item.type === 'COURSE_EXPIRING') {
+                    } else if (item.type === 'COURSE_EXPIRING' || item.type === 'PROGRAM_EXPIRING') {
                         icon = <BellOutlined />;
                         iconClass = styles.iconGeneral;
                     }

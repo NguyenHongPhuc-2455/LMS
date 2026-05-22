@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag, Switch } from 'antd';
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
@@ -11,6 +12,10 @@ import { type Course } from '../../../../types/course';
 
 interface CourseTableProps {
     courses: Course[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number, pageSize: number) => void;
     categories: any[];
     loading: boolean;
     selectedRowKeys: React.Key[];
@@ -23,8 +28,12 @@ interface CourseTableProps {
     onToggleActive: (id: number, isActive: boolean) => void;
 }
 
-export default function CourseTable({
+function CourseTable({
     courses,
+    total,
+    page,
+    pageSize,
+    onPageChange,
     categories,
     loading,
     selectedRowKeys,
@@ -37,7 +46,7 @@ export default function CourseTable({
     onToggleActive
 }: CourseTableProps) {
     console.log('CourseTable Props:', { onToggleActive });
-    const getColumnSearchProps = (dataIndex: string): any => ({
+    const getColumnSearchProps = React.useCallback((dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
@@ -77,9 +86,9 @@ export default function CourseTable({
             record[dataIndex]
                 ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
                 : '',
-    });
+    }), []);
 
-    const columns = [
+    const columns = React.useMemo(() => [
         {
             title: 'Khóa học',
             key: 'info',
@@ -169,17 +178,24 @@ export default function CourseTable({
             render: (_: any, record: Course) => {
                 const isActive = !record.deleted_at;
                 return (
-                    <div style={{ whiteSpace: 'nowrap' }}>
+                    <div style={{ minWidth: '80px', display: 'flex', justifyContent: 'center' }}>
                         <Switch
                             checked={isActive}
-                            onChange={(checked) => onToggleActive(record.id, checked)}
                             size="small"
-                            checkedChildren="ON"
-                            unCheckedChildren="OFF"
+                            onChange={(checked) => onToggleActive(record.id, checked)}
+                            style={{
+                                backgroundColor: isActive ? '#52c41a' : undefined
+                            }}
                         />
                     </div>
                 );
             }
+        },
+        {
+            title: 'Số chương học',
+            key: 'sections',
+            sorter: (a: Course, b: Course) => (a._count?.sections || 0) - (b._count?.sections || 0),
+            render: (record: Course) => <span style={{ whiteSpace: 'nowrap' }}>{record._count?.sections || 0} chương</span>
         },
         {
             title: 'Loại khóa',
@@ -209,15 +225,15 @@ export default function CourseTable({
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
+            sorter: (a: Course, b: Course) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-                <div className={styles.filterPickerWrapper} onKeyDown={(e) => e.stopPropagation()}>
+                <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                     <RangePicker
-                        value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
-                        onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
-                        className={styles.filterRangePicker}
-                        size="small"
+                        value={selectedKeys[0]}
+                        onChange={(dates) => setSelectedKeys(dates ? [dates] : [])}
+                        style={{ marginBottom: 8, display: 'flex' }}
                     />
-                    <Space>
+                    <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <Button
                             type="primary"
                             onClick={() => confirm()}
@@ -244,8 +260,8 @@ export default function CourseTable({
             ),
             onFilter: (value: any, record: Course) => {
                 if (!value || value.length === 0) return true;
-                const start = dayjs(value[0][0]).startOf('day');
-                const end = dayjs(value[0][1]).endOf('day');
+                const start = dayjs(value[0]).startOf('day');
+                const end = dayjs(value[1]).endOf('day');
                 const recordDate = dayjs(record.created_at);
                 return recordDate.isAfter(start) && recordDate.isBefore(end);
             },
@@ -270,7 +286,16 @@ export default function CourseTable({
                 </Space>
             )
         }
-    ];
+    ], [
+        categories,
+        onNavigateToSections,
+        onCategoryChange,
+        onStatusChange,
+        onToggleActive,
+        onEdit,
+        onDelete,
+        getColumnSearchProps
+    ]);
 
     return (
         <Table
@@ -283,13 +308,19 @@ export default function CourseTable({
                 onChange: onSelectionChange,
             }}
             pagination={{
+                total,
+                current: page,
+                pageSize,
+                onChange: onPageChange,
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
-                defaultPageSize: 10,
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }
@@ -299,3 +330,5 @@ export default function CourseTable({
         />
     );
 }
+
+export default React.memo(CourseTable);

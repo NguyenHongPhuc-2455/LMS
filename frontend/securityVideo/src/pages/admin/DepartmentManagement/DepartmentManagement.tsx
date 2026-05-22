@@ -227,12 +227,12 @@ const DepartmentManagement: React.FC = () => {
 
     return (
         <div className={styles.userManagementContainer}>
-            <div className={styles.userManagementHeader}>
+            {/* <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý phòng ban</Title>
                     <Text type="secondary">Quản lý sơ đồ tổ chức 3 cấp (Khối - Phòng ban - Tổ nhóm) và phân bổ nhân sự</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -273,7 +273,9 @@ const DepartmentManagement: React.FC = () => {
                         pageSize: 15,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a>{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }

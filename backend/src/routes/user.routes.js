@@ -16,6 +16,7 @@ router.put('/profile',
 // Tuyến đường dành cho ADMIN và Quản lý
 router.get('/', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, userController.getUsers);
 router.get('/roles', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, userController.getRoles);
+router.get('/:id/learning-access', authMiddleware.verifyToken, authMiddleware.isAdminOrStaffRead, userController.getLearningAccess);
 router.post('/',
     authMiddleware.verifyToken,
     authMiddleware.isAdminOrManager,
@@ -34,5 +35,6 @@ router.delete('/:id', authMiddleware.verifyToken, authMiddleware.isAdminOrManage
 router.post('/:id/restore', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, userController.restoreUser);
 router.patch('/:id/toggle-status', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, userController.toggleUserStatus);
 router.post('/revoke-course', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, userController.revokeCourseAccess);
+router.post('/revoke-program', authMiddleware.verifyToken, authMiddleware.isAdminOrManager, userController.revokeProgramAccess);
 
 module.exports = router;
