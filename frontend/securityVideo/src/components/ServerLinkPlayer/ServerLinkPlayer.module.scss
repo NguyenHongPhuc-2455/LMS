@@ -6,6 +6,11 @@
     overflow: hidden;
     position: relative;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+    // Đảm bảo video dọc hiển thị letterbox (2 cột đen 2 bên) thay vì bị stretch
+    :global(.vjs-tech) {
+        object-fit: contain !important;
+    }
 }
 
 .videoElement {

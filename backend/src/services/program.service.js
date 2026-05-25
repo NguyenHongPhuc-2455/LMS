@@ -4,7 +4,7 @@ const { programInclude, withoutCountInclude, normalizeProgramCourseCount } = req
 const { filterProgramsForUserScope, assertProgramVisibleToUser, getDepartmentMap } = require('./program/programScope.service');
 const { enrichProgramCoursesWithProgress, buildCourseStatsMap } = require('./program/programProgress.service');
 const { isUserInScope } = require('../utils/scope');
-const getAllPrograms = async ({ search = '', status, instructorId, user = null } = {}) => {
+const getAllPrograms = async ({ search = '', status, instructorId, user = null, page = null, limit = null } = {}) => {
     let programs = await prisma.learningProgram.findMany({
         where: {
             deleted_at: null,
@@ -17,7 +17,18 @@ const getAllPrograms = async ({ search = '', status, instructorId, user = null }
     });
     programs = await filterProgramsForUserScope(programs, user);
 
-    return programs.map(normalizeProgramCourseCount);
+    const normalized = programs.map(normalizeProgramCourseCount);
+
+    if (page !== null && limit !== null) {
+        const total = normalized.length;
+        const skip = (page - 1) * limit;
+        return {
+            programs: normalized.slice(skip, skip + limit),
+            total
+        };
+    }
+
+    return normalized;
 };
 
 const getProgramById = async (id) => {
@@ -334,7 +345,7 @@ const getMandatoryProgramsForUser = async (userId) => {
     if (!user) return [];
 
     const roles = (user.user_roles || []).map(ur => ur.role.name.toLowerCase());
-    if (roles.includes('admin') || roles.includes('manager')) {
+    if (roles.includes('admin')) {
         return [];
     }
 

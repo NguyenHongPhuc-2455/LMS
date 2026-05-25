@@ -29,11 +29,11 @@ export default function Home() {
         if (userStr) {
             const user = JSON.parse(userStr);
             const userRoles = user.roles || [];
-            const isAdminOrManager = userRoles.some((r: any) => {
+            const isAdmin = userRoles.some((r: any) => {
                 const roleName = typeof r === 'string' ? r : r.name;
-                return ['admin', 'manager'].includes(roleName?.toLowerCase());
+                return ['admin'].includes(roleName?.toLowerCase());
             });
-            if (isAdminOrManager) {
+            if (isAdmin) {
                 navigate('/admin', { replace: true });
             }
         }

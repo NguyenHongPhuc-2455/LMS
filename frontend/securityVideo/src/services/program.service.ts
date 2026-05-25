@@ -1,8 +1,15 @@
 import api from "./api";
 
 export const programService = {
-    getAll: async (search?: string) => {
-        const response = await api.get(`/programs${search ? `?search=${search}` : ''}`);
+    getAll: async (search?: string, page?: number, limit?: number) => {
+        let url = '/programs';
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await api.get(url);
         return response.data;
     },
     getById: async (id: string | number) => {

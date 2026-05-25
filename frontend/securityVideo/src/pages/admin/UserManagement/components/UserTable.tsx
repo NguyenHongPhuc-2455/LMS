@@ -51,8 +51,6 @@ export const UserTable = React.memo(({
     const [enrolledPrograms, setEnrolledPrograms] = useState<{ id: number; title: string }[]>([]);
 
     const { columns } = useUserTableColumns({
-        roles,
-        departments,
         positions,
         setSelectedUserId,
         setCourseModalVisible,

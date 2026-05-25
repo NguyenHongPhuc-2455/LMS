@@ -1,8 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import { Modal, Table, Input, Space, Typography, Tag, Button } from 'antd';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { Modal, Table, Input, Space, Typography, Tag } from 'antd';
 import { SearchOutlined, UserOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
+
+/** Debounce hook — trả về giá trị sau `delay` ms kể từ lần thay đổi cuối */
+function useDebounce<T>(value: T, delay: number): T {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+        const id = setTimeout(() => setDebounced(value), delay);
+        return () => clearTimeout(id);
+    }, [value, delay]);
+    return debounced;
+}
 
 interface UserSelectionModalProps {
     open: boolean;
@@ -12,6 +22,37 @@ interface UserSelectionModalProps {
     initialSelectedIds: number[];
     loading?: boolean;
 }
+
+// Định nghĩa columns ngoài component để tránh tạo lại mỗi render
+const USER_COLUMNS = [
+    {
+        title: 'Nhân viên',
+        key: 'user',
+        render: (_: any, record: any) => (
+            <Space>
+                <UserOutlined />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <Text strong>{record.full_name}</Text>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                        @{record.username}{record.employee_id ? ` (${record.employee_id})` : ''}
+                    </Text>
+                </div>
+            </Space>
+        )
+    },
+    {
+        title: 'Phòng ban',
+        dataIndex: 'department',
+        key: 'department',
+        render: (text: string) => text || '-'
+    },
+    {
+        title: 'Vị trí',
+        dataIndex: 'position',
+        key: 'position',
+        render: (text: string) => text || '-'
+    }
+];
 
 export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
     open,
@@ -24,52 +65,33 @@ export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [searchText, setSearchText] = useState('');
 
-    // Đồng bộ selectedRowKeys khi mở modal
-    React.useEffect(() => {
-        if (open) {
-            setSelectedRowKeys(initialSelectedIds);
-        }
+    // Debounce 250ms — tránh filter lại mảng lớn mỗi keystroke
+    const debouncedSearch = useDebounce(searchText, 250);
+
+    // Đồng bộ selection khi mở modal
+    useEffect(() => {
+        if (open) setSelectedRowKeys(initialSelectedIds);
     }, [open, initialSelectedIds]);
 
     const filteredUsers = useMemo(() => {
-        return users.filter(u => 
-            u.full_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-            u.username?.toLowerCase().includes(searchText.toLowerCase()) ||
-            u.employee_id?.toLowerCase().includes(searchText.toLowerCase())
+        if (!debouncedSearch) return users;
+        const lower = debouncedSearch.toLowerCase();
+        return users.filter(u =>
+            u.full_name?.toLowerCase().includes(lower) ||
+            u.username?.toLowerCase().includes(lower) ||
+            u.employee_id?.toLowerCase().includes(lower)
         );
-    }, [users, searchText]);
+    }, [users, debouncedSearch]);
 
-    const columns = [
-        {
-            title: 'Nhân viên',
-            key: 'user',
-            render: (_: any, record: any) => (
-                <Space>
-                    <UserOutlined />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <Text strong>{record.full_name}</Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>@{record.username} {record.employee_id ? `(${record.employee_id})` : ''}</Text>
-                    </div>
-                </Space>
-            )
-        },
-        {
-            title: 'Phòng ban',
-            dataIndex: 'department',
-            key: 'department',
-            render: (text: string) => text || '-'
-        },
-        {
-            title: 'Vị trí',
-            dataIndex: 'position',
-            key: 'position',
-            render: (text: string) => text || '-'
-        }
-    ];
+    const rowSelection = useMemo(() => ({
+        selectedRowKeys,
+        onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
+        preserveSelectedRowKeys: true
+    }), [selectedRowKeys]);
 
-    const handleOk = () => {
+    const handleOk = useCallback(() => {
         onOk(selectedRowKeys.map(key => Number(key)));
-    };
+    }, [onOk, selectedRowKeys]);
 
     return (
         <Modal
@@ -92,7 +114,7 @@ export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
                     allowClear
                 />
             </div>
-            
+
             <div style={{ marginBottom: 12 }}>
                 <Text type="secondary">Đang chọn: </Text>
                 <Tag color="blue">{selectedRowKeys.length} nhân viên</Tag>
@@ -100,16 +122,12 @@ export const UserSelectionModal: React.FC<UserSelectionModalProps> = ({
 
             <Table
                 dataSource={filteredUsers}
-                columns={columns}
+                columns={USER_COLUMNS}
                 rowKey="id"
                 size="small"
                 loading={loading}
-                pagination={{ pageSize: 8 }}
-                rowSelection={{
-                    selectedRowKeys,
-                    onChange: (keys) => setSelectedRowKeys(keys),
-                    preserveSelectedRowKeys: true
-                }}
+                pagination={{ pageSize: 8, showSizeChanger: false }}
+                rowSelection={rowSelection}
                 scroll={{ y: 400 }}
             />
         </Modal>

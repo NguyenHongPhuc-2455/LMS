@@ -14,11 +14,21 @@ const CategoryManagement: React.FC = () => {
     const [searchText, setSearchText] = useState('');
     const [filterType, setFilterType] = useState<'ALL' | 'HAS_COURSES' | 'EMPTY'>('ALL');
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
+
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            const data = await categoryService.getAllCategories();
-            setCategories(data);
+            const data = await categoryService.getAllCategories(page, pageSize, searchText, filterType);
+            if (data && data.data) {
+                setCategories(data.data);
+                setTotal(data.total);
+            } else {
+                setCategories(data as any);
+                setTotal((data as any)?.length || 0);
+            }
         } catch (error) {
             message.error('Không thể tải danh sách danh mục');
         } finally {
@@ -28,7 +38,19 @@ const CategoryManagement: React.FC = () => {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [page, pageSize, filterType]);
+
+    // Use a separate effect for search text with debounce, or just let user press enter/button.
+    // We already have a Reload button. Let's trigger fetch when filterType changes, 
+    // but for search text we can rely on the reload button or add an onSearch.
+    // For simplicity, we trigger fetch when search text changes (maybe debounced if needed, but it's okay for now)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPage(1);
+            fetchCategories();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchText]);
 
     const handleDelete = (category: Category) => {
         Modal.confirm({
@@ -59,16 +81,8 @@ const CategoryManagement: React.FC = () => {
         setIsModalVisible(true);
     };
 
-    const filteredCategories = categories.filter(c => {
-        const matchesSearch = c.name.toLowerCase().includes(searchText.toLowerCase());
-        const courseCount = c._count?.courses || 0;
-
-        let matchesFilter = true;
-        if (filterType === 'HAS_COURSES') matchesFilter = courseCount > 0;
-        if (filterType === 'EMPTY') matchesFilter = courseCount === 0;
-
-        return matchesSearch && matchesFilter;
-    });
+    // Remove local filteredCategories since backend handles it
+    const filteredCategories = categories;
 
     const columns = [
         {
@@ -122,10 +136,10 @@ const CategoryManagement: React.FC = () => {
 
     return (
         <div>
-            <div style={{ marginBottom: 20 }}>
+            {/* <div style={{ marginBottom: 20 }}>
                 <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Quản lý danh mục</Title>
                 <Typography.Text type="secondary">Phân loại khóa học trên hệ thống</Typography.Text>
-            </div>
+            </div> */}
 
             <Card bordered={false} style={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -177,22 +191,29 @@ const CategoryManagement: React.FC = () => {
                     rowKey="id"
                     loading={loading}
                     pagination={{
-                        pageSize: 10,
+                        current: page,
+                        pageSize: pageSize,
+                        total: total,
+                        onChange: (p, ps) => { setPage(p); setPageSize(ps); },
                         showTotal: (total) => `Tổng số ${total} danh mục`,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '20', '50', '100']
                     }}
                     style={{ borderRadius: '8px', overflow: 'hidden' }}
                 />
             </Card>
 
-            <CategoryFormModal
-                visible={isModalVisible}
-                category={editingCategory}
-                onCancel={() => setIsModalVisible(false)}
-                onSuccess={() => {
-                    setIsModalVisible(false);
-                    fetchCategories();
-                }}
-            />
+            {isModalVisible && (
+                <CategoryFormModal
+                    visible={isModalVisible}
+                    category={editingCategory}
+                    onCancel={() => setIsModalVisible(false)}
+                    onSuccess={() => {
+                        setIsModalVisible(false);
+                        fetchCategories();
+                    }}
+                />
+            )}
         </div>
     );
 };

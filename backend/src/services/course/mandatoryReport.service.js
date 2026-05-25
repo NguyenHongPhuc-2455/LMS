@@ -58,10 +58,10 @@ const getMandatoryOverdueReport = async (type = 'overdue', departmentId = null, 
 
     const filteredUsers = users.filter(u => {
         const roles = (u.user_roles || []).map(ur => ur.role.name.toLowerCase());
-        return !roles.includes('admin') && !roles.includes('manager');
+        return !roles.includes('admin');
     });
 
-    const { calculateCourseStatus } = require('../utils/courseStatus');
+    const { calculateCourseStatus } = require('../../utils/courseStatus');
     const resultList = [];
     const today = new Date();
 

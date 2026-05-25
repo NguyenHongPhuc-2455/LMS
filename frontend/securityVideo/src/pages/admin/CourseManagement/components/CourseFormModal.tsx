@@ -41,6 +41,9 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
 
     const [usersList, setUsersList] = useState<any[]>([]);
     const [usersLoading, setUsersLoading] = useState(false);
+
+    // Danh sách users hiệu quả: ưu tiên prop từ parent, fallback về state đã fetch
+    const effectiveUsers = (users && users.length > 0) ? users : usersList;
     
     const departmentTreeData = useMemo(() => {
         if (!departments || departments.length === 0) return [];
@@ -78,19 +81,17 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
     const selectedUserIds = Form.useWatch('mandatory_targets', form);
     const watchDeadlineType = Form.useWatch('deadline_type', form);
 
+    // Chỉ fetch users khi scope = SPECIFIC_USER và chưa có dữ liệu từ prop
     useEffect(() => {
-        if (open && applyScope === 'SPECIFIC_USER' && usersList.length === 0) {
+        if (open && applyScope === 'SPECIFIC_USER' && effectiveUsers.length === 0) {
             setUsersLoading(true);
-            userService.getAll({ limit: 1000, page: 1 })
-                .then(res => {
-                    setUsersList(res.users || []);
-                })
+            userService.getAll({ limit: 500, page: 1 })
+                .then(res => setUsersList(res.users || []))
                 .catch(() => {})
-                .finally(() => {
-                    setUsersLoading(false);
-                });
+                .finally(() => setUsersLoading(false));
         }
-    }, [open, applyScope, usersList.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, applyScope]);
 
     useEffect(() => {
         if (watchDeadlineType) {
@@ -451,7 +452,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
             <UserSelectionModal
                 open={isUserModalOpen}
                 onCancel={() => setIsUserModalOpen(false)}
-                users={users || usersList}
+                users={effectiveUsers}
                 loading={usersLoading}
                 initialSelectedIds={form.getFieldValue('mandatory_targets') || []}
                 onOk={(selectedIds) => {

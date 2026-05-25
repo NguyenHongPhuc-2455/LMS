@@ -22,14 +22,32 @@ const getManagerDepartmentId = async (req) => {
 };
 
 exports.getCourses = catchAsync(async (req, res) => {
-    const { search, categoryId, includeInactive, page, limit } = req.query;
+    const {
+        search,
+        categoryId,
+        includeInactive,
+        page,
+        limit,
+        sortField,
+        sortOrder,
+        privateFilter,
+        activeFilter,
+        levelFilter
+    } = req.query;
     const courses = await courseService.getAllCourses(
         search,
         categoryId,
         includeInactive,
         req.user,
         page ? parseInt(page) : null,
-        limit ? parseInt(limit) : null
+        limit ? parseInt(limit) : null,
+        {
+            sortField,
+            sortOrder,
+            privateFilter,
+            activeFilter,
+            levelFilter
+        }
     );
     res.json(courses);
 });

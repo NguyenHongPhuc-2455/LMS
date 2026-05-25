@@ -28,6 +28,10 @@ export default function ProgramManagement() {
     const [programs, setPrograms] = useState<Program[]>([]);
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(false);
+    
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCourseDrawerOpen, setIsCourseDrawerOpen] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
@@ -40,8 +44,14 @@ export default function ProgramManagement() {
     const fetchPrograms = async () => {
         setLoading(true);
         try {
-            const data = await programService.getAll();
-            setPrograms(data);
+            const data = await programService.getAll('', page, pageSize);
+            if (data && data.programs) {
+                setPrograms(data.programs);
+                setTotal(data.total);
+            } else {
+                setPrograms(data as any);
+                setTotal((data as any)?.length || 0);
+            }
         } catch {
             message.error('Lỗi khi tải danh sách Lộ trình học');
         } finally {
@@ -69,9 +79,17 @@ export default function ProgramManagement() {
 
     useEffect(() => {
         fetchPrograms();
+    }, [page, pageSize]);
+
+    useEffect(() => {
         fetchAllCourses();
         fetchMetadata();
     }, []);
+
+    const handlePageChange = (newPage: number, newPageSize: number) => {
+        setPage(newPage);
+        setPageSize(newPageSize);
+    };
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         setSubmitting(true);
@@ -217,6 +235,10 @@ export default function ProgramManagement() {
                 </div>
                 <ProgramTable
                     programs={filtered}
+                    total={total}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
                     loading={loading}
                     onEdit={(p) => { setEditingProgram(p); setIsModalOpen(true); }}
                     onDelete={handleDelete}

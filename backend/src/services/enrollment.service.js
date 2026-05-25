@@ -178,7 +178,7 @@ const getMandatoryCoursesForUser = async (userId) => {
     if (!user) return [];
 
     const roles = (user.user_roles || []).map(ur => ur.role.name.toLowerCase());
-    if (roles.includes('admin') || roles.includes('manager')) {
+    if (roles.includes('admin')) {
         return [];
     }
 

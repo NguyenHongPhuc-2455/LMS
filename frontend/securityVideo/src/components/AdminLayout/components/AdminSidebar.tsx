@@ -14,11 +14,11 @@ import {
     PictureOutlined,
     ClusterOutlined,
     WarningOutlined,
-    IdcardOutlined
+    IdcardOutlined,
+    HomeOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
-import { departmentService } from '../../../services/department.service';
 import { socketService } from '../../../services/socket';
 import { ROUTES } from '../../../constants/routes';
 import styles from '../AdminLayout.module.scss';
@@ -37,7 +37,6 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
     const [searchParams] = useSearchParams();
 
     const [pendingCount, setPendingCount] = React.useState<number>(0);
-    const [departments, setDepartments] = React.useState<any[]>([]);
 
     const fetchCounts = React.useCallback(async () => {
         try {
@@ -48,22 +47,12 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         }
     }, []);
 
-    const fetchDepartments = React.useCallback(async () => {
-        try {
-            const data = await departmentService.getAll();
-            setDepartments(data);
-        } catch (error) {
-            console.error('Failed to fetch departments:', error);
-        }
-    }, []);
-
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const userId = user?.id;
 
     React.useEffect(() => {
         fetchCounts();
-        fetchDepartments();
 
         if (userId) {
             const socket = socketService.connect(userId);
@@ -74,7 +63,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
                 socket.off('updatePendingRequestCount');
             };
         }
-    }, [userId, fetchCounts, fetchDepartments]);
+    }, [userId, fetchCounts]);
 
     const userRoles = user?.roles || [];
     const roleNames = userRoles.map((r: any) => {
@@ -124,6 +113,14 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             key: ROUTES.MANAGER_INACTIVE_REPORT,
             icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
             label: 'Nhân sự không học tập',
+        },
+        {
+            type: 'divider' as const
+        },
+        {
+            key: ROUTES.HOME,
+            icon: <HomeOutlined />,
+            label: 'Quay lại trang học viên',
         }
     ] : [
         {

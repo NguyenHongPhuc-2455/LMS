@@ -1,14 +1,38 @@
 import api from "./api";
 
 export const courseService = {
-    getAll: async (search?: string, categoryId?: number, includeInactive?: boolean, page?: number, limit?: number) => {
+    getAll: async (
+        search?: string,
+        categoryId?: number,
+        includeInactive?: boolean,
+        page?: number,
+        limit?: number,
+        options?: {
+            sortField?: string;
+            sortOrder?: 'ascend' | 'descend' | null;
+            privateFilter?: boolean | null;
+            activeFilter?: boolean | null;
+            levelFilter?: string[] | null;
+        }
+    ) => {
         let url = '/courses';
         const params = new URLSearchParams();
         if (search) params.append('search', search);
-        if (categoryId) params.append('categoryId', categoryId.toString());
+        if (categoryId !== undefined && categoryId !== null) params.append('categoryId', categoryId.toString());
         if (includeInactive) params.append('includeInactive', 'true');
         if (page) params.append('page', page.toString());
         if (limit) params.append('limit', limit.toString());
+        if (options?.sortField) params.append('sortField', options.sortField);
+        if (options?.sortOrder) params.append('sortOrder', options.sortOrder);
+        if (options?.privateFilter !== undefined && options?.privateFilter !== null) {
+            params.append('privateFilter', String(options.privateFilter));
+        }
+        if (options?.activeFilter !== undefined && options?.activeFilter !== null) {
+            params.append('activeFilter', String(options.activeFilter));
+        }
+        if (options?.levelFilter && options.levelFilter.length > 0) {
+            options.levelFilter.forEach((level) => params.append('levelFilter', level));
+        }
         if (params.toString()) url += `?${params.toString()}`;
 
         const response = await api.get(url);

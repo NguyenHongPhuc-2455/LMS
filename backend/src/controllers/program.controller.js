@@ -4,13 +4,15 @@ const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
 exports.getPrograms = catchAsync(async (req, res) => {
-    const { search, status, instructorId } = req.query;
+    const { search, status, instructorId, page, limit } = req.query;
     const isAdmin = req.user?.roles?.includes('admin') || req.user?.roles?.includes('instructor');
     const programs = await programService.getAllPrograms({
         search,
         status: isAdmin ? status : 'PUBLISHED',
         instructorId,
-        user: req.user
+        user: req.user,
+        page: page ? parseInt(page) : null,
+        limit: limit ? parseInt(limit) : null
     });
     res.json(programs);
 });

@@ -159,6 +159,13 @@ model Course {
 
   @@index([status])
   @@index([instructor_id])
+  @@index([deleted_at])          // WHERE deleted_at IS NULL — filter phổ biến nhất
+  @@index([category_id])         // filter theo danh mục
+  @@index([is_private])          // filter riêng tư / công khai
+  @@index([is_mandatory])        // filter khóa bắt buộc
+  @@index([created_at])          // sort theo ngày tạo
+  @@index([updated_at])          // sort theo ngày cập nhật (default sort)
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin) // search ILIKE (partial index — hỗ trợ pg_trgm nếu cần)
   @@map("courses")
 }
 
@@ -194,6 +201,7 @@ model Section {
 
   lessons   Lesson[]
 
+  @@index([course_id])           // JOIN sections theo course
   @@map("sections")
 }
 
@@ -230,6 +238,7 @@ model Lesson {
   comments    Comment[]
   quiz        Quiz?
 
+  @@index([section_id])          // JOIN lessons theo section
   @@map("lessons")
 }
 
@@ -246,6 +255,7 @@ model Enrollment {
   course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
 
   @@id([user_id, course_id])
+  @@index([course_id])           // đếm enrollments, JOIN theo course
   @@map("enrollments")
 }
 
@@ -258,6 +268,7 @@ model LessonCompleted {
   lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
 
   @@id([user_id, lesson_id])
+  @@index([lesson_id])            // query completed lessons theo lesson
   @@map("lesson_completed")
 }
 

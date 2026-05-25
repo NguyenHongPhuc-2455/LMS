@@ -52,6 +52,11 @@ const UnifiedContent: React.FC = () => {
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [includeInactive, setIncludeInactive] = useState<boolean>(false);
     
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
+    
     // Navigation State for Breadcrumbs
     const [currentCourse, setCurrentCourse] = useState<any>(null);
     const [currentSection, setCurrentSection] = useState<any>(null);
@@ -59,6 +64,7 @@ const UnifiedContent: React.FC = () => {
     // Data State
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
     
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,32 +107,51 @@ const UnifiedContent: React.FC = () => {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
+        setData([]);
         try {
             if (sectionId) {
                 const lessonsData = await contentService.getLessonsBySection(Number(sectionId));
                 setData(lessonsData || []);
+                setTotal(lessonsData?.length || 0);
             } else if (courseId) {
                 const courseData = await courseService.getById(Number(courseId));
                 setData(courseData.sections || []);
+                setTotal(courseData.sections?.length || 0);
             } else {
-                const courses = await courseService.getAll('', selectedCategoryId || undefined, includeInactive);
-                setData(courses);
+                const response = await courseService.getAll('', selectedCategoryId || undefined, includeInactive, page, pageSize);
+                if (response && response.courses) {
+                    setData(response.courses);
+                    setTotal(response.total);
+                } else {
+                    setData(response as any);
+                    setTotal((response as any)?.length || 0);
+                }
             }
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu');
         } finally {
             setLoading(false);
         }
-    }, [courseId, sectionId, selectedCategoryId, includeInactive]);
+    }, [courseId, sectionId, selectedCategoryId, includeInactive, page, pageSize]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
+    const handlePageChange = useCallback((newPage: number, newPageSize: number) => {
+        setPage(newPage);
+        setPageSize(newPageSize);
+    }, []);
+
     const handleCourseClick = useCallback((course: any) => {
         setCurrentCourse(course);
         navigate(`${ROUTES.ADMIN_COURSES}/${course.id}/sections`);
     }, [navigate]);
+
+    const handleNavigateToSections = useCallback((id: number) => {
+        const course = data.find(c => c.id === id);
+        if (course) handleCourseClick(course);
+    }, [data, handleCourseClick]);
 
     const handleSectionClick = (section: any) => {
         setCurrentSection(section);
@@ -219,34 +244,44 @@ const UnifiedContent: React.FC = () => {
     };
 
     const handleCourseStatusChange = useCallback(async (id: number, isPrivate: boolean) => {
+        setUpdatingId(id);
         try {
             await courseService.update(id, { is_private: isPrivate });
+            setData(prev => prev.map(c => c.id === id ? { ...c, is_private: isPrivate } : c));
             message.success('Đã cập nhật trạng thái');
-            fetchData();
         } catch (e) {
             message.error('Lỗi khi cập nhật trạng thái');
+        } finally {
+            setUpdatingId(null);
         }
-    }, [message, fetchData]);
+    }, [message]);
 
     const handleCourseToggleActive = useCallback(async (id: number, isActive: boolean) => {
+        setUpdatingId(id);
         try {
             await courseService.toggleActive(id, isActive);
+            setData(prev => prev.map(c => c.id === id ? { ...c, deleted_at: isActive ? null : new Date().toISOString() } : c));
             message.success(isActive ? 'Đã khôi phục khóa học' : 'Đã tạm ẩn khóa học');
-            fetchData();
         } catch (e) {
             message.error('Lỗi khi thay đổi trạng thái');
+        } finally {
+            setUpdatingId(null);
         }
-    }, [message, fetchData]);
+    }, [message]);
 
     const handleCourseCategoryChange = useCallback(async (id: number, catId: number | null) => {
+        setUpdatingId(id);
+        const resolvedCatId = catId === -1 ? null : catId;
         try {
-            await courseService.update(id, { category_id: catId === -1 ? null : catId });
+            await courseService.update(id, { category_id: resolvedCatId });
+            setData(prev => prev.map(c => c.id === id ? { ...c, category_id: resolvedCatId } : c));
             message.success('Đã cập nhật danh mục');
-            fetchData();
         } catch (e) {
             message.error('Lỗi khi cập nhật danh mục');
+        } finally {
+            setUpdatingId(null);
         }
-    }, [message, fetchData]);
+    }, [message]);
 
     const handleModalSuccess = async (values: any, ...args: any[]) => {
         setSubmitting(true);
@@ -346,12 +381,12 @@ const UnifiedContent: React.FC = () => {
 
     return (
         <div className={styles.unifiedContainer}>
-            <div className={styles.managementHeader}>
+            {/* <div className={styles.managementHeader}>
                 <div>
                     <Title level={4} className={styles.headerTitle}>Quản lý Nội dung</Title>
                     <Text type="secondary">Gộp chung quản lý Khóa học, Chương học và Bài giảng</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.tableToolbar}>
@@ -449,12 +484,7 @@ const UnifiedContent: React.FC = () => {
                     </Space>
                 </div>
 
-                {loading ? (
-                    <div style={{ padding: '100px 0', textAlign: 'center' }}>
-                        <ReloadOutlined spin style={{ fontSize: 24, color: '#C72127' }} />
-                        <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
-                    </div>
-                ) : data.length === 0 ? (
+                {(!loading && data.length === 0) ? (
                     <Empty 
                         image={Empty.PRESENTED_IMAGE_SIMPLE} 
                         description={
@@ -474,13 +504,18 @@ const UnifiedContent: React.FC = () => {
                         {viewMode === 'COURSE' && (
                             <CourseTable 
                                 courses={data} 
+                                total={total}
+                                page={page}
+                                pageSize={pageSize}
+                                onPageChange={handlePageChange}
                                 categories={categories}
                                 loading={loading}
+                                updatingId={updatingId}
                                 selectedRowKeys={selectedRowKeys}
                                 onSelectionChange={setSelectedRowKeys}
                                 onEdit={handleEdit} 
                                 onDelete={handleDelete}
-                                onNavigateToSections={(id) => handleCourseClick(data.find(c => c.id === id))}
+                                onNavigateToSections={handleNavigateToSections}
                                 onStatusChange={handleCourseStatusChange}
                                 onCategoryChange={handleCourseCategoryChange}
                                 onToggleActive={handleCourseToggleActive}
@@ -509,7 +544,7 @@ const UnifiedContent: React.FC = () => {
             </Card>
 
             {/* Modals */}
-            {viewMode === 'COURSE' && (
+            {viewMode === 'COURSE' && isModalOpen && (
                 <CourseFormModal
                     open={isModalOpen}
                     onCancel={() => setIsModalOpen(false)}
@@ -522,7 +557,7 @@ const UnifiedContent: React.FC = () => {
                     loading={submitting}
                 />
             )}
-            {viewMode === 'SECTION' && (
+            {viewMode === 'SECTION' && isModalOpen && (
                 <SectionFormModal
                     open={isModalOpen}
                     onCancel={() => setIsModalOpen(false)}
@@ -532,7 +567,7 @@ const UnifiedContent: React.FC = () => {
                     loading={submitting}
                 />
             )}
-            {viewMode === 'LESSON' && (
+            {viewMode === 'LESSON' && isModalOpen && (
                 <LessonFormModal
                     open={isModalOpen}
                     onCancel={() => setIsModalOpen(false)}

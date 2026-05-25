@@ -23,6 +23,33 @@ import { UserTable } from './components/UserTable';
 import { UserFormModal } from './components/UserFormModal';
 
 const { Title, Text } = Typography;
+const EMPTY_ARRAY: any[] = [];
+
+const SearchInput = React.memo(({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+    const [localValue, setLocalValue] = useState(value);
+
+    useEffect(() => {
+        setLocalValue(value);
+    }, [value]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            onChange(localValue);
+        }, 400);
+        return () => clearTimeout(handler);
+    }, [localValue, onChange]);
+
+    return (
+        <Input
+            placeholder="Tìm kiếm tên, email, username..."
+            prefix={<SearchOutlined className={styles.searchIcon} />}
+            onChange={e => setLocalValue(e.target.value)}
+            value={localValue}
+            className={styles.searchBar}
+            allowClear
+        />
+    );
+});
 
 export default function UserManagement() {
     const { message, modal } = App.useApp();
@@ -31,7 +58,7 @@ export default function UserManagement() {
     // Lấy thông tin user từ localStorage để kiểm tra role
     const userStr = localStorage.getItem('user');
     const currentUser = userStr ? JSON.parse(userStr) : null;
-    const userRoles = currentUser?.roles || [];
+    const userRoles = currentUser?.roles || EMPTY_ARRAY;
     const roleNames = userRoles.map((r: any) => {
         const name = typeof r === 'string' ? r : r.name;
         return name?.toLowerCase();
@@ -41,7 +68,6 @@ export default function UserManagement() {
     // Pagination & Search State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
     // Đồng bộ departmentId từ URL
@@ -142,23 +168,20 @@ export default function UserManagement() {
         }
     }, [departmentId, departmentsData]);
 
-    // Debounce Logic cho ô tìm kiếm
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedSearch(search);
-            setPage(1);
-        }, 500);
-        return () => clearTimeout(handler);
-    }, [search]);
 
-    const users = usersData?.users || [];
+    const users = usersData?.users || EMPTY_ARRAY;
     const total = usersData?.total || 0;
-    const roles = rolesData || [];
-    const departments = departmentsData || [];
-    const positions = positionsData || [];
+    const roles = rolesData || EMPTY_ARRAY;
+    const departments = departmentsData || EMPTY_ARRAY;
+    const positions = positionsData || EMPTY_ARRAY;
     const loading = usersLoading || actionLoading;
 
     const queryClient = useQueryClient();
+
+    const handleRefresh = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+    }, [queryClient]);
+
 
     // Selection State
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -355,13 +378,12 @@ export default function UserManagement() {
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
                     <div className={styles.headerLeft}>
-                        <Input
-                            placeholder="Tìm kiếm tên, email, username..."
-                            prefix={<SearchOutlined className={styles.searchIcon} />}
-                            onChange={e => setSearch(e.target.value)}
-                            value={search}
-                            className={styles.searchBar}
-                            allowClear
+                        <SearchInput
+                            value={debouncedSearch}
+                            onChange={(val) => {
+                                setDebouncedSearch(val);
+                                setPage(1);
+                            }}
                         />
                         {/* Manager không được đổi phòng ban - ẩn dropdown, chỉ hiển thị label tên phòng ban */}
                         {isManagerOnly ? (
@@ -493,21 +515,23 @@ export default function UserManagement() {
                     onRevokeAccess={handleRevokeAccess}
                     onRevokeProgramAccess={handleRevokeProgramAccess}
                     onRowClick={handleOpenEdit}
-                    onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+                    onRefresh={handleRefresh}
                     pagination={paginationConfig}
                 />
             </Card>
 
-            <UserFormModal
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                onSuccess={handleModalFinish}
-                roles={roles}
-                departments={departments}
-                positions={positions}
-                loading={loading}
-                initialValues={editingUser}
-            />
+            {isModalOpen && (
+                <UserFormModal
+                    open={isModalOpen}
+                    onCancel={useCallback(() => setIsModalOpen(false), [])}
+                    onSuccess={handleModalFinish}
+                    roles={roles}
+                    departments={departments}
+                    positions={positions}
+                    loading={loading}
+                    initialValues={editingUser}
+                />
+            )}
         </div>
     );
 }

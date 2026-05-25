@@ -121,6 +121,7 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                 controls: true,
                 responsive: true,
                 fluid: true,
+                aspectRatio: '16:9',
                 playbackRates: [0.5, 1, 1.25, 1.5, 2],
                 sources: [{
                     src: videoSrc,

@@ -133,7 +133,7 @@ export default function CourseProgress() {
         }
     };
 
-    const getColumnSearchProps = (dataIndex: string): any => ({
+    const getColumnSearchProps = React.useCallback((dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
@@ -173,9 +173,9 @@ export default function CourseProgress() {
         filterIcon: (filtered: boolean) => (
             <SearchOutlined style={{ color: filtered ? '#fff' : '#fff', fontSize: '18px' }} />
         ),
-    });
+    }), []);
 
-    const columns = [
+    const columns = React.useMemo(() => [
         {
             title: 'nhân sự',
             key: 'student',
@@ -227,7 +227,7 @@ export default function CourseProgress() {
                 </div>
             ),
         }
-    ];
+    ], [isGlobalSearch, getColumnSearchProps]);
 
     return (
         <div className={styles.container}>

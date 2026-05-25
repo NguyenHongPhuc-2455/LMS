@@ -45,7 +45,6 @@ AdminContentContainer.displayName = 'AdminContentContainer';
 
 const AdminLayoutInner: React.FC = () => {
     const [drawerVisible, setDrawerVisible] = useState(false);
-    const { collapsed } = useSidebar(); // Lắng nghe để cập nhật class CSS nếu cần, nhưng không render lại Content
 
     const token = localStorage.getItem('accessToken');
     const userStr = localStorage.getItem('user');

@@ -196,6 +196,24 @@
             }
         }
 
+        .ant-spin-nested-loading {
+            .ant-spin-blur {
+                filter: none !important;
+                opacity: 1 !important;
+                
+                .ant-table-tbody {
+                    opacity: 0.5 !important;
+                    pointer-events: none !important;
+                }
+            }
+
+            .ant-spin {
+                top: 54px !important;
+                height: calc(100% - 54px) !important;
+                background: rgba(255, 255, 255, 0.3) !important;
+            }
+        }
+
         .ant-pagination {
 
             .ant-pagination-item,

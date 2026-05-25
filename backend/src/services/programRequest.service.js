@@ -60,8 +60,8 @@ const requestAccess = async (userId, programId, reason) => {
  * Lấy danh sách yêu cầu đang chờ (Admin/Manager)
  * @param {number|null} departmentId - Nếu có thì chỉ lấy yêu cầu của user thuộc phòng ban đó
  */
-const getPendingRequests = async (departmentId = null) => {
-    return await prisma.programRequest.findMany({
+const getPendingRequests = async (departmentId = null, page = null, limit = null) => {
+    let query = {
         where: { 
             status: 'PENDING',
             program: { deleted_at: null },
@@ -74,7 +74,17 @@ const getPendingRequests = async (departmentId = null) => {
             program: { select: { id: true, title: true } }
         },
         orderBy: { created_at: 'asc' }
-    });
+    };
+
+    if (page !== null && limit !== null) {
+        const total = await prisma.programRequest.count({ where: query.where });
+        query.skip = (page - 1) * limit;
+        query.take = limit;
+        const data = await prisma.programRequest.findMany(query);
+        return { data, total };
+    }
+
+    return await prisma.programRequest.findMany(query);
 };
 
 /**

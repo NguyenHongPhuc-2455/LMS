@@ -4,7 +4,7 @@ const moment = require('moment');
 const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', startDate, endDate, departmentId = null, courseId = null }) => {
     try {
         let start, end;
-        
+
         if (period === 'last_7_days') {
             start = moment().subtract(6, 'days').startOf('day');
             end = moment().endOf('day');
@@ -30,12 +30,12 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
 
         const startJS = start.toDate();
         const endJS = end.toDate();
-        
+
         const deptId = departmentId ? parseInt(departmentId) : null;
         const crseId = courseId ? parseInt(courseId) : null;
 
         // Lấy tất cả ID phòng ban con cháu (bao gồm chính nó) để lọc theo cây
-        const { getSubDepartmentIds } = require('../utils/departmentHierarchy');
+        const { getSubDepartmentIds } = require('../../../utils/departmentHierarchy');
         const deptIds = deptId ? await getSubDepartmentIds(deptId) : null;
 
         // Lấy danh sách ID của các khóa học chưa bị xóa để lọc
@@ -44,7 +44,24 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
             select: { id: true }
         });
         const activeCourseIds = activeCourses.map(c => c.id);
-        
+
+        // Tìm danh sách user có hoàn thành ít nhất 1 bài học trong khoảng thời gian này
+        const recentCompletions = await prisma.lessonCompleted.findMany({
+            where: {
+                completed_at: { gte: startJS, lte: endJS },
+                lesson: {
+                    section: {
+                        course: { deleted_at: null },
+                        ...(crseId && { course_id: crseId })
+                    }
+                },
+                ...(deptIds && { user: { department_id: { in: deptIds } } }),
+                user: { deleted_at: null }
+            },
+            select: { user_id: true }
+        });
+        const activeUserIds = [...new Set(recentCompletions.map(c => c.user_id))];
+
         const [sessions, enrollments, allCompletedLessons] = await Promise.all([
             prisma.learningSession.findMany({
                 where: {
@@ -90,8 +107,9 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
                     }
                 }
             }),
-            prisma.lessonCompleted.findMany({
+            activeUserIds.length > 0 ? prisma.lessonCompleted.findMany({
                 where: {
+                    user_id: { in: activeUserIds },
                     lesson: {
                         section: {
                             course: { deleted_at: null },
@@ -112,7 +130,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
                         }
                     }
                 }
-            })
+            }) : Promise.resolve([])
         ]);
 
         // Get courses and their lesson list
@@ -197,7 +215,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
 
         const chartBuckets = [];
         let current = moment(start);
-        
+
         if (groupBy === 'day') {
             while (current.isSameOrBefore(end, 'day')) {
                 chartBuckets.push({
@@ -242,7 +260,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
         sessions.forEach(s => {
             const sDate = moment(s.date);
             let bucket = null;
-            
+
             if (groupBy === 'day') {
                 const dateStr = sDate.format('YYYY-MM-DD');
                 bucket = chartBuckets.find(b => b.key === dateStr);
@@ -253,7 +271,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
                 const monthStr = sDate.format('YYYY-MM');
                 bucket = chartBuckets.find(b => b.key === monthStr);
             }
-            
+
             if (bucket) {
                 bucket.hours += s.duration / 3600;
             }
@@ -262,7 +280,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
         enrollments.forEach(e => {
             const eDate = moment(e.enrolled_at);
             let bucket = null;
-            
+
             if (groupBy === 'day') {
                 const dateStr = eDate.format('YYYY-MM-DD');
                 bucket = chartBuckets.find(b => b.key === dateStr);
@@ -273,7 +291,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
                 const monthStr = eDate.format('YYYY-MM');
                 bucket = chartBuckets.find(b => b.key === monthStr);
             }
-            
+
             if (bucket) {
                 bucket.enrollments += 1;
             }
@@ -282,7 +300,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
         periodCompletions.forEach(c => {
             const cDate = moment(c.completed_at);
             let bucket = null;
-            
+
             if (groupBy === 'day') {
                 const dateStr = cDate.format('YYYY-MM-DD');
                 bucket = chartBuckets.find(b => b.key === dateStr);
@@ -293,7 +311,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
                 const monthStr = cDate.format('YYYY-MM');
                 bucket = chartBuckets.find(b => b.key === monthStr);
             }
-            
+
             if (bucket) {
                 bucket.completions += 1;
             }

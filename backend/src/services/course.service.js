@@ -11,79 +11,141 @@ const isUserInCourseScope = (userData, course, isEnrolled = false, departmentMap
     return isUserInScope(userData, course, isEnrolled, departmentMap);
 };
 
-const getAllCourses = async (search = '', categoryId = null, includeInactive = false, user = null, page = null, limit = null) => {
-    let courses = await prisma.course.findMany({
-        where: {
-            ...(includeInactive !== true && includeInactive !== 'true' && { deleted_at: null }),
-            ...(search && {
-                title: { contains: search, mode: 'insensitive' }
-            }),
-            ...(categoryId !== undefined && categoryId !== null && categoryId !== '' && {
-                category_id: parseInt(categoryId) === -1 ? null : parseInt(categoryId)
-            })
-        },
-        include: {
-            category: true,
-            instructor: { select: { id: true, username: true, full_name: true, email: true, phone: true } },
-            _count: { select: { sections: true, enrollments: true } }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Chuẩn hoá boolean từ query string hoặc giá trị JS */
+const toBool = (val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return val === true || val === 'true';
+};
+
+/** Xây dựng mệnh đề WHERE dùng chung cho mọi query course */
+const buildCourseWhere = ({ search, categoryId, includeInactive, privateFilter, activeFilter, levelFilter }) => ({
+    ...(toBool(includeInactive) !== true && { deleted_at: null }),
+    ...(search && { title: { contains: search, mode: 'insensitive' } }),
+    ...(categoryId !== undefined && categoryId !== null && categoryId !== '' && {
+        category_id: parseInt(categoryId) === -1 ? null : parseInt(categoryId)
+    }),
+    ...(toBool(privateFilter) !== undefined && { is_private: toBool(privateFilter) }),
+    ...(activeFilter !== undefined && activeFilter !== null && activeFilter !== '' && (
+        toBool(activeFilter) ? { deleted_at: null } : { deleted_at: { not: null } }
+    )),
+    ...(levelFilter && (Array.isArray(levelFilter) ? levelFilter.length > 0 : true) && {
+        level: { in: Array.isArray(levelFilter) ? levelFilter : [levelFilter] }
+    })
+});
+
+/** Xây dựng mảng orderBy từ sortField / sortOrder */
+const buildCourseOrderBy = (sortField, sortOrder) => {
+    const SORT_MAP = {
+        title: 'title',
+        created_at: 'created_at',
+        is_private: 'is_private',
+        sections_count: 'sections',
+        enrollments_count: 'enrollments'
+    };
+    const mapped = SORT_MAP[sortField] || null;
+    const dir = sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : null;
+    const orderBy = [];
+
+    if (mapped === 'sections') {
+        orderBy.push({ sections: { _count: dir || 'desc' } });
+    } else if (mapped === 'enrollments') {
+        orderBy.push({ enrollments: { _count: dir || 'desc' } });
+    } else if (mapped && dir) {
+        orderBy.push({ [mapped]: dir });
+    }
+    orderBy.push({ updated_at: 'desc' });
+    return orderBy;
+};
+
+/** Include chuẩn cho danh sách khóa học */
+const COURSE_LIST_INCLUDE = {
+    category: true,
+    instructor: { select: { id: true, username: true, full_name: true, email: true, phone: true } },
+    _count: { select: { sections: true, enrollments: true } }
+};
+
+// ─── Main service ────────────────────────────────────────────────────────────
+
+const getAllCourses = async (
+    search = '',
+    categoryId = null,
+    includeInactive = false,
+    user = null,
+    page = null,
+    limit = null,
+    options = {}
+) => {
+    const { sortField, sortOrder, privateFilter, activeFilter, levelFilter } = options;
+    const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
+
+    const where = buildCourseWhere({ search, categoryId, includeInactive, privateFilter, activeFilter, levelFilter });
+    const orderBy = buildCourseOrderBy(sortField, sortOrder);
+
+    // ── Admin: server-side pagination thật, không cần lọc scope ──────────────
+    if (isAdmin) {
+        if (page !== null && limit !== null) {
+            const [courses, total] = await Promise.all([
+                prisma.course.findMany({
+                    where,
+                    include: COURSE_LIST_INCLUDE,
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    orderBy
+                }),
+                prisma.course.count({ where })
+            ]);
+            return { courses, total };
         }
+        // Không paginate — trả toàn bộ (dùng cho export, v.v.)
+        return prisma.course.findMany({ where, include: COURSE_LIST_INCLUDE, orderBy });
+    }
+
+    // ── Non-admin: cần lọc theo scope trước, sau đó paginate ─────────────────
+    // Lấy dữ liệu user + enrollment song song để tránh waterfall
+    const [userData, directEnrollments, programEnrollments, depts] = await Promise.all([
+        user ? prisma.user.findUnique({
+            where: { id: user.id },
+            select: { id: true, department_id: true, position_id: true, join_date: true }
+        }) : Promise.resolve(null),
+        user ? prisma.enrollment.findMany({
+            where: { user_id: user.id },
+            select: { course_id: true }
+        }) : Promise.resolve([]),
+        user ? prisma.programEnrollment.findMany({
+            where: { user_id: user.id },
+            include: { program: { include: { courses: { select: { course_id: true } } } } }
+        }) : Promise.resolve([]),
+        prisma.department.findMany({ select: { id: true, parent_id: true } })
+    ]);
+
+    const enrolledCourseIds = new Set([
+        ...directEnrollments.map(e => e.course_id),
+        ...programEnrollments.flatMap(pe => pe.program.courses.map(pc => pc.course_id))
+    ]);
+    const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
+
+    // Fetch toàn bộ để lọc scope (không thể đẩy scope filter xuống DB vì logic phức tạp)
+    const allCourses = await prisma.course.findMany({
+        where,
+        include: COURSE_LIST_INCLUDE,
+        orderBy
     });
 
-    // Lọc các khóa học hiển thị theo Phạm vi áp dụng (Nếu không phải admin)
-    if (user) {
-        const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
-        if (!isAdmin) {
-            const userData = await prisma.user.findUnique({
-                where: { id: user.id },
-                select: { id: true, department_id: true, position_id: true, join_date: true }
-            });
-
-            if (userData) {
-                // Lấy tất cả course_id mà user đã ghi danh (trực tiếp hoặc qua lộ trình học)
-                const [directEnrollments, programEnrollments] = await Promise.all([
-                    prisma.enrollment.findMany({
-                        where: { user_id: user.id },
-                        select: { course_id: true }
-                    }),
-                    prisma.programEnrollment.findMany({
-                        where: { user_id: user.id },
-                        include: {
-                            program: {
-                                include: {
-                                    courses: { select: { course_id: true } }
-                                }
-                            }
-                        }
-                    })
-                ]);
-
-                const enrolledCourseIds = new Set([
-                    ...directEnrollments.map(e => e.course_id),
-                    ...programEnrollments.flatMap(pe => pe.program.courses.map(pc => pc.course_id))
-                ]);
-
-                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
-                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
-
-                courses = courses.filter(course => {
-                    const isEnrolled = enrolledCourseIds.has(course.id);
-                    return isUserInCourseScope(userData, course, isEnrolled, departmentMap);
-                });
-            }
-        }
-    }
+    const filtered = userData
+        ? allCourses.filter(course =>
+            isUserInCourseScope(userData, course, enrolledCourseIds.has(course.id), departmentMap)
+          )
+        : allCourses;
 
     if (page !== null && limit !== null) {
-        const total = courses.length;
-        const skip = (page - 1) * limit;
-        const paginatedCourses = courses.slice(skip, skip + limit);
         return {
-            courses: paginatedCourses,
-            total
+            courses: filtered.slice((page - 1) * limit, page * limit),
+            total: filtered.length
         };
     }
-
-    return courses;
+    return filtered;
 };
 
 const getCourseById = async (courseId) => {
@@ -281,54 +343,47 @@ const toggleActiveStatus = async (courseId, active) => {
 const softDeleteCourse = async (courseId) => {
     const id = parseInt(courseId);
 
-    // 1. Tìm toàn bộ bài học thuộc khóa học này để dọn dẹp tài nguyên (Video trên R2)
+    // 1. Lấy toàn bộ lesson IDs để dọn tài nguyên R2
     const lessons = await prisma.lesson.findMany({
         where: { section: { course_id: id } },
         select: { id: true }
     });
 
-    // Xóa file vật lý trên Cloudflare R2
+    // Xóa file vật lý song song — không để lỗi 1 file chặn toàn bộ
     const videoService = require('./video.service');
-    for (const lesson of lessons) {
-        try {
-            await videoService.deleteVideoFiles(lesson.id);
-        } catch (error) {
-            console.error(`Lỗi khi xóa video bài học ${lesson.id}:`, error);
-        }
-    }
+    await Promise.allSettled(
+        lessons.map(lesson => videoService.deleteVideoFiles(lesson.id))
+    );
 
-    // 2. Thực hiện xóa cứng trong transaction
+    // 2. Xóa cứng trong transaction (cascade xóa Section → Lesson → Quiz → Comment)
     return await prisma.$transaction(async (tx) => {
-        // Xóa các liên kết trước
         await tx.programCourse.deleteMany({ where: { course_id: id } });
         await tx.enrollment.deleteMany({ where: { course_id: id } });
         await tx.courseRequest.deleteMany({ where: { course_id: id } });
         await tx.wishlist.deleteMany({ where: { course_id: id } });
         await tx.review.deleteMany({ where: { course_id: id } });
-
-        // Xóa các chương học (sẽ cascade xóa Lesson, Quiz, Comment...)
         await tx.section.deleteMany({ where: { course_id: id } });
-
-        // Cuối cùng là xóa vĩnh viễn khóa học
-        return await tx.course.delete({
-            where: { id }
-        });
+        return tx.course.delete({ where: { id } });
     });
 };
+
+/**
+ * Xóa nhiều khóa học song song — mỗi khóa học vẫn có transaction riêng
+ * để lỗi 1 ID không ảnh hưởng các ID còn lại.
+ */
 const batchDeleteCourses = async (ids) => {
-    const results = [];
-    let successCount = 0;
-    for (const id of ids) {
-        try {
-            await softDeleteCourse(id);
-            results.push({ id, status: 'success' });
-            successCount++;
-        } catch (error) {
-            console.error(`Lỗi khi xóa khóa học ${id}:`, error);
-            results.push({ id, status: 'error', message: error.message });
-        }
-    }
-    return { successCount, results };
+    const settled = await Promise.allSettled(ids.map(id => softDeleteCourse(id)));
+
+    const results = settled.map((result, i) => ({
+        id: ids[i],
+        status: result.status === 'fulfilled' ? 'success' : 'error',
+        ...(result.status === 'rejected' && { message: result.reason?.message })
+    }));
+
+    return {
+        successCount: results.filter(r => r.status === 'success').length,
+        results
+    };
 };
 const createCourse = async (data) => {
     return await prisma.course.create({ data });
@@ -341,21 +396,18 @@ const deleteSection = async (id) => {
     const sectionId = parseInt(id);
     const section = await prisma.section.findUnique({
         where: { id: sectionId },
-        include: { lessons: true }
+        include: { lessons: { select: { id: true } } }
     });
 
     if (!section) throw new ApiError(404, 'Không tìm thấy chương học');
 
-    // 1. Xóa file vật lý trên Cloudflare R2 cho toàn bộ bài học trong chương
+    // Xóa file R2 song song
     const videoService = require('./video.service');
-    for (const lesson of section.lessons) {
-        await videoService.deleteVideoFiles(lesson.id);
-    }
+    await Promise.allSettled(
+        section.lessons.map(lesson => videoService.deleteVideoFiles(lesson.id))
+    );
 
-    // 2. Xóa bản ghi trong DB (Cascade sẽ tự động xóa bản ghi Lesson, Quiz, Comment...)
-    return await prisma.section.delete({
-        where: { id: sectionId }
-    });
+    return prisma.section.delete({ where: { id: sectionId } });
 };
 
 

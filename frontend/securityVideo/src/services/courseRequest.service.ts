@@ -9,8 +9,12 @@ export const courseRequestService = {
         const response = await api.get('/course-requests/my-requests');
         return response.data;
     },
-    getAllPending: async () => {
-        const response = await api.get('/course-requests/pending');
+    getAllPending: async (page?: number, limit?: number) => {
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        const query = params.toString() ? `?${params.toString()}` : '';
+        const response = await api.get(`/course-requests/pending${query}`);
         return response.data;
     },
     approve: async (requestId: number) => {

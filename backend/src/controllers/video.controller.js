@@ -331,8 +331,25 @@ exports.getVideoKey = catchAsync(async (req, res) => {
  */
 exports.refreshStreamToken = catchAsync(async (req, res) => {
     const { lessonId } = req.params;
-    const lesson = await prisma.lesson.findUnique({ where: { id: parseInt(lessonId) } });
+    const userId = req.user.id;
+    const roles = req.user.roles || [];
+
+    const lesson = await prisma.lesson.findUnique({
+        where: { id: parseInt(lessonId) },
+        include: { section: { select: { course_id: true } } }
+    });
+
     if (!lesson) throw new ApiError(404, 'Không tìm thấy bài học');
+
+    // Kiểm tra quyền truy cập
+    const isSpecialUser = roles.includes('admin') || roles.includes('instructor');
+    if (!lesson.is_free && !isSpecialUser) {
+        const courseId = lesson.section.course_id;
+        const enrollment = await prisma.enrollment.findUnique({
+            where: { user_id_course_id: { user_id: userId, course_id: courseId } }
+        });
+        if (!enrollment) throw new ApiError(403, 'Bạn không có quyền truy cập video này');
+    }
 
     const newToken = createVideoToken(lesson.video_url, req.ip, 60 * 60 * 1000); // 1 giờ
     res.json({ videoUrl: `/api/videos/secure-stream/${encodeURIComponent(newToken)}` });
@@ -352,6 +369,26 @@ exports.reprobeVideo = catchAsync(async (req, res) => {
 
 exports.getManifest = catchAsync(async (req, res) => {
     const { id } = req.params;
+    const userId = req.user.id;
+    const roles = req.user.roles || [];
+
+    const lesson = await prisma.lesson.findUnique({
+        where: { id: parseInt(id) },
+        include: { section: { select: { course_id: true } } }
+    });
+
+    if (!lesson) throw new ApiError(404, 'Không tìm thấy bài học');
+
+    // Kiểm tra quyền truy cập
+    const isSpecialUser = roles.includes('admin') || roles.includes('instructor');
+    if (!lesson.is_free && !isSpecialUser) {
+        const courseId = lesson.section.course_id;
+        const enrollment = await prisma.enrollment.findUnique({
+            where: { user_id_course_id: { user_id: userId, course_id: courseId } }
+        });
+        if (!enrollment) throw new ApiError(403, 'Bạn không có quyền truy cập video này');
+    }
+
     await videoService.ensureHLS(id);
     const manifestPath = path.join(__dirname, `../../public/hls/${id}/master.m3u8`);
     if (!fs.existsSync(manifestPath)) return res.status(202).json({ status: 'processing' });
