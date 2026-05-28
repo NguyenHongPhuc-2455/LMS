@@ -5,8 +5,6 @@ import { uploadService } from '../../../services/upload.service';
 import { categoryService, type Category } from '../../../services/category.service';
 import { departmentService } from '../../../services/department.service';
 import { positionService } from '../../../services/position.service';
-import { userService } from '../../../services/user.service';
-
 import {
     Plus, Trash2
 } from 'lucide-react';

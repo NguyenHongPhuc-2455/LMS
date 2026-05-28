@@ -1,16 +1,14 @@
 import { useEffect, useState, startTransition } from 'react';
 import {
-    Card, Button, Input, Typography,
+    Card, Button,
     message
 } from 'antd';
 import { Plus } from 'lucide-react';
-import { SearchOutlined } from '@ant-design/icons';
 import { programService } from '../../../services/program.service';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
 import { departmentService } from '../../../services/department.service';
 import { positionService } from '../../../services/position.service';
-import { userService } from '../../../services/user.service';
 
 import styles from './ProgramManagement.module.scss';
 
@@ -154,9 +152,10 @@ export default function ProgramManagement() {
         try {
             await programService.addCourse(selectedProgram.id, courseId);
             message.success('Đã thêm khóa học vào chương trình');
-            const data = await programService.getAll();
-            setPrograms(data);
-            setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
+            const data = await programService.getAll('', page, pageSize);
+            const programList = data.programs ?? data;
+            setPrograms(programList);
+            setSelectedProgram(programList.find((p: Program) => p.id === selectedProgram.id) || null);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi thêm khóa học';
             message.error(errorMsg);
@@ -170,9 +169,10 @@ export default function ProgramManagement() {
         try {
             await programService.removeCourse(selectedProgram.id, courseId);
             message.success('Đã xóa khóa học khỏi chương trình');
-            const data = await programService.getAll();
-            setPrograms(data);
-            setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
+            const data = await programService.getAll('', page, pageSize);
+            const programList = data.programs ?? data;
+            setPrograms(programList);
+            setSelectedProgram(programList.find((p: Program) => p.id === selectedProgram.id) || null);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi xóa khóa học';
             message.error(errorMsg);
@@ -199,9 +199,10 @@ export default function ProgramManagement() {
         try {
             await programService.reorderCourses(selectedProgram.id, payload);
             message.success('Đã cập nhật thứ tự');
-            const data = await programService.getAll();
-            setPrograms(data);
-            const fresh = data.find((p: Program) => p.id === selectedProgram.id);
+            const data = await programService.getAll('', page, pageSize);
+            const programList = data.programs ?? data;
+            setPrograms(programList);
+            const fresh = programList.find((p: Program) => p.id === selectedProgram.id);
             setSelectedProgram(fresh || null);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi sắp xếp';

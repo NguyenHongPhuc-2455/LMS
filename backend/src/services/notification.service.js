@@ -143,13 +143,10 @@ exports.checkAndCreateCourseNotifications = async (userId) => {
         // 2. Kiểm tra các khóa học bắt buộc sắp hết hạn hoặc quá hạn
         const mandatoryCourses = await enrollmentService.getMandatoryCoursesForUser(userId);
 
-        let student = null;
-        if (mandatoryCourses.length > 0) {
-            student = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { id: true, full_name: true, username: true, department_id: true }
-            });
-        }
+        let student = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, full_name: true, username: true, department_id: true }
+        });
 
         for (const course of mandatoryCourses) {
             // Nếu đã hoàn thành thì bỏ qua

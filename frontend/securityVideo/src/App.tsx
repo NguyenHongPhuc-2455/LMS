@@ -138,7 +138,7 @@ function App() {
               </Route>
 
               {/* Fallback */}
-              <Route path="*" element={<Navigate to="/admin" replace />} />
+              <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
             </Routes>
           </Suspense>
         </Router>
