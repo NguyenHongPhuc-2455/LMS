@@ -9,9 +9,14 @@ Tài liệu này liệt kê các biến môi trường cần thiết để chạ
 | Biến | Ý nghĩa | Ví dụ |
 | :--- | :--- | :--- |
 | `PORT` | Cổng chạy server | `5000` |
-| `DATABASE_URL` | Chuỗi kết nối PostgreSQL (Prisma) | `postgresql://user:pass@localhost:5432/db?schema=public` |
+| `DATABASE_URL` | Chuỗi kết nối PostgreSQL (Prisma) + Connection Pool | `postgresql://user:pass@localhost:5432/db?schema=public&connection_limit=50&pool_timeout=20` |
 | `JWT_SECRET` | Khóa bí mật để ký JWT Token | `secret_quan_doi_cuc_ky_bao_mat` |
-| `FRONTEND_URL` | URL của Frontend (dùng cho CORS) | `http://localhost:5173` |
+| `FRONTEND_URL` | URL chính của Frontend (dùng cho CORS) | `http://localhost:5174` |
+| `CORS_ORIGINS` | Danh sách origin bổ sung, phân tách bằng dấu phẩy | `http://localhost:5174,http://localhost:5175` |
+| `REDIS_HOST` | ★ Địa chỉ Redis Server (BullMQ Queue & Dashboard Cache) | `127.0.0.1` (mặc định khi chạy local) |
+| `REDIS_PORT` | ★ Cổng Redis | `6379` (mặc định) |
+
+> **💡 Ghi chú về Redis**: Redis là **tùy chọn** khi phát triển. Nếu Redis không chạy, hệ thống tự động chuyển sang luồng xử lý Video In-Memory (Fallback) và bỏ qua Dashboard Cache. Hệ thống sẽ không crash.
 
 ### ☁️ Cloudinary (Dùng cho upload ảnh/avatar)
 | Biến | Ví dụ |
@@ -45,3 +50,4 @@ Lưu ý: Mọi biến môi trường trong Vite phải bắt đầu bằng tiề
 1. **Không bao giờ** commit file `.env` lên Git.
 2. Sử dụng file `.env.example` để làm mẫu cho các thành viên khác trong team.
 3. Khi triển khai lên Production (như Railway/Vercel), hãy thiết lập các biến này trong phần Settings/Environment Variables của nền tảng đó.
+4. **`connection_limit=50&pool_timeout=20`** trong `DATABASE_URL` giúp Prisma quản lý tối đa 50 kết nối DB đồng thời - quan trọng để hỗ trợ 100+ user.

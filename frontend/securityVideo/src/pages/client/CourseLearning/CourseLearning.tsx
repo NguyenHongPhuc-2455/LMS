@@ -163,31 +163,32 @@ export default function CourseLearning() {
         };
     }, [hash, activeLesson?.id]);
 
-    // Heartbeat tracking for learning time
+    // Heartbeat tracking for learning time (Optimized for performance)
     useEffect(() => {
         if (!activeLesson || !id) return;
 
         // Gửi xung khởi động (1 giây) ngay khi bắt đầu vào bài học 
-        // để đảm bảo streak được kích hoạt ngay lập tức mà không cần chờ 30s
+        // để đảm bảo streak được kích hoạt ngay lập tức
         statsService.trackLearningTime({
             courseId: parseInt(id),
             lessonId: activeLesson.id,
             duration: 1
         }).catch(err => console.error('Failed to send initial learning pulse:', err));
 
-        const TRACK_INTERVAL = 30000; // 30 seconds
+        const TRACK_INTERVAL = 60000; // Tối ưu: 60 giây (Thay vì 30s) để giảm tải 50% cho Database
         const timer = setInterval(() => {
-            // Chỉ bắt đầu track nếu bài học không phải là một video đang bị tạm dừng (optional optimization)
-            // Ở đây ta cứ track nếu user đang ở trong trang này.
+            // Chỉ bắt đầu track nếu video đang phát, ngừng gửi API nếu user tạm dừng video
+            if (activeLesson.type === 'VIDEO' && !isVideoPlaying) return;
+
             statsService.trackLearningTime({
                 courseId: parseInt(id),
                 lessonId: activeLesson.id,
-                duration: 30
+                duration: 60 // Ghi nhận 60 giây
             }).catch(err => console.error('Failed to track learning time:', err));
         }, TRACK_INTERVAL);
 
         return () => clearInterval(timer);
-    }, [activeLesson?.id, id]);
+    }, [activeLesson?.id, id, isVideoPlaying]);
 
     const handleNextLesson = () => {
         if (!course || !activeLesson) return;
@@ -204,6 +205,13 @@ export default function CourseLearning() {
     };
 
     const handleVideoError = (error: any) => {
+        const httpStatus = error?.data?.[1];
+        if (httpStatus === 404 || httpStatus === 500) {
+            console.error('❌ Lỗi tải video từ server:', error);
+            message.error({ content: 'Video không được tìm thấy trên hệ thống lưu trữ!', key: 'video-refresh', duration: 4 });
+            return;
+        }
+
         // Tự động làm mới Token bằng cách gọi lại API chi tiết khóa học.
         // Backend sẽ cấp lại URL có Token mới nhất dựa trên IP hiện tại.
         console.log('🔄 Đang làm mới Token video để phục hồi kết nối...');
@@ -213,7 +221,59 @@ export default function CourseLearning() {
         });
     };
 
-    if (loading) return <div className={styles.learningLoading}><Skeleton active /></div>;
+    if (loading) {
+        return (
+            <div className={styles.learningContainer}>
+                <Row gutter={0}>
+                    <Col lg={showSidebar ? 16 : 24} md={24} className={styles.mainColumn}>
+                        {/* Header Actions Skeleton */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <Skeleton.Button active size="small" style={{ width: 120 }} />
+                            <Skeleton.Button active size="small" style={{ width: 150 }} />
+                        </div>
+                        {/* Video Player 16:9 Aspect Ratio Fixed Size Placeholder */}
+                        <div 
+                            style={{ 
+                                width: '100%', 
+                                aspectRatio: '16/9', 
+                                background: '#f1f5f9', 
+                                borderRadius: '5px', 
+                                overflow: 'hidden',
+                                marginBottom: 24,
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: '1px solid #e2e8f0',
+                                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.05)'
+                            }}
+                        >
+                            <Skeleton.Node active style={{ width: '100%', height: '100%', borderRadius: '5px' }}>
+                                <span style={{ opacity: 0.1 }}>RITAVÕ PLAYER</span>
+                            </Skeleton.Node>
+                        </div>
+                        {/* Title and Content Skeletons */}
+                        <div style={{ padding: '0 8px' }}>
+                            <Skeleton active paragraph={{ rows: 3 }} />
+                        </div>
+                    </Col>
+
+                    {showSidebar && (
+                        <Col lg={8} md={24} className={styles.sidebarColumn}>
+                            {/* Sidebar Header Skeleton */}
+                            <div style={{ padding: 24, borderBottom: '1px solid #e2e8f0' }}>
+                                <Skeleton active paragraph={{ rows: 1 }} />
+                            </div>
+                            {/* Sidebar Scroll Area Skeleton */}
+                            <div style={{ padding: 24 }}>
+                                <Skeleton active paragraph={{ rows: 8 }} />
+                            </div>
+                        </Col>
+                    )}
+                </Row>
+            </div>
+        );
+    }
     if (!course) return <div>Không tìm thấy dữ liệu</div>;
 
     return (

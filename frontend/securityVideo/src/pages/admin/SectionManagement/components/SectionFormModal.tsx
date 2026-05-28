@@ -41,10 +41,10 @@ export default function SectionFormModal({
             onCancel={onCancel}
             footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                    <Button onClick={onCancel} className="modal-action-btn">
                         Hủy
                     </Button>
-                    <Button type="primary" onClick={() => form.submit()} loading={loading} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                    <Button type="primary" onClick={() => form.submit()} loading={loading} className="btn-brand-primary modal-action-btn">
                         {editingId ? "Cập nhật" : "Thêm mới"}
                     </Button>
                 </div>

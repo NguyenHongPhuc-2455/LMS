@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { isOriginAllowed } = require('./configs/cors.config');
 
 const authRoutes = require('./routes/auth.routes');
 const videoRoutes = require('./routes/video.routes');
@@ -22,6 +23,7 @@ const departmentRoutes = require('./routes/department.routes');
 const positionRoutes = require('./routes/position.routes');
 const roleRoutes = require('./routes/role.routes');
 const managerRoutes = require('./routes/manager.routes');
+const systemRoutes = require('./routes/system.routes');
 
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
@@ -29,22 +31,10 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-const allowedOrigins = [
-    // 'https://frostbite-payphone-rerun.ngrok-free.dev',
-    'http://26.51.87.121:5174',
-    'http://172.16.4.113:5174',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-    'http://localhost:3000',
-    process.env.FRONTEND_URL // Thêm domain production vào .env
-];
-
 app.use(cors({
     origin: function (origin, callback) {
         // Cho phép không có origin (mobile/curl) hoặc nằm trong whitelist hoặc là subdomain railway
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.railway.app')) {
+        if (isOriginAllowed(origin)) {
             callback(null, true);
         } else {
             console.log('CORS Blocked:', origin);
@@ -53,7 +43,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'ngrok-skip-browser-warning'],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
@@ -77,7 +67,7 @@ app.use(globalLimiter);
 app.use('/public', express.static(path.join(__dirname, '../public'), {
     setHeaders: (res, path, stat) => {
         const origin = res.req.headers.origin;
-        if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app') || origin === process.env.FRONTEND_URL)) {
+        if (origin && isOriginAllowed(origin)) {
             res.setHeader('Access-Control-Allow-Origin', origin);
         }
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST, PUT, DELETE, PATCH');
@@ -115,6 +105,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/manager', managerRoutes);
+app.use('/api/system', systemRoutes);
 
 
 // Centralized Error Handling

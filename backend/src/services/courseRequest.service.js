@@ -2,6 +2,7 @@ const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
 const events = require('../utils/events');
 const statsService = require('./stats.service');
+const redisClient = require('../utils/redisClient');
 
 /**
  * Gửi yêu cầu tham gia khóa học private
@@ -57,13 +58,13 @@ const requestAccess = async (userId, courseId, reason) => {
     // 5. Emit sự kiện để thông báo cho Admin
     const student = await prisma.user.findUnique({
         where: { id: userId },
-        select: { full_name: true, username: true }
+        select: { full_name: true, username: true, department_id: true }
     });
 
     events.emit('course.request_new', { request: newRequest, student, course });
 
-    // Cập nhật số lượng cho Admin
-    await statsService.emitPendingRequestsCountToAdmins();
+    // Cập nhật số lượng cho Admin và Manager phòng ban
+    await statsService.emitPendingRequestsCountToAdmins(student.department_id);
 
     return newRequest;
 };
@@ -88,8 +89,8 @@ const getMyRequests = async (userId) => {
  * Lấy danh sách yêu cầu đang chờ (Admin/Manager)
  * @param {number|null} departmentId - Nếu có thì chỉ lấy yêu cầu của user thuộc phòng ban đó (Manager), nếu null lấy tất cả (Admin)
  */
-const getPendingRequests = async (departmentId = null) => {
-    return await prisma.courseRequest.findMany({
+const getPendingRequests = async (departmentId = null, page = null, limit = null) => {
+    let query = {
         where: {
             status: 'PENDING',
             course: { deleted_at: null },
@@ -102,7 +103,17 @@ const getPendingRequests = async (departmentId = null) => {
             course: { select: { id: true, title: true } }
         },
         orderBy: { created_at: 'asc' }
-    });
+    };
+
+    if (page !== null && limit !== null) {
+        const total = await prisma.courseRequest.count({ where: query.where });
+        query.skip = (page - 1) * limit;
+        query.take = limit;
+        const data = await prisma.courseRequest.findMany(query);
+        return { data, total };
+    }
+
+    return await prisma.courseRequest.findMany(query);
 };
 
 /**
@@ -153,8 +164,11 @@ const approveRequest = async (id, managerDeptId = null) => {
         // 3. Emit sự kiện thông báo
         events.emit('course.request_approved', { request, course: request.course });
 
-        // Cập nhật số lượng cho Admin
-        await statsService.emitPendingRequestsCountToAdmins();
+        // Cập nhật số lượng cho Admin và Manager phòng ban
+        await statsService.emitPendingRequestsCountToAdmins(request.user?.department_id);
+
+        // Xóa cache dashboard
+        await redisClient.clearDashboardCache();
 
         return updatedRequest;
     });
@@ -191,8 +205,11 @@ const rejectRequest = async (id, managerDeptId = null) => {
     // Emit sự kiện thông báo
     events.emit('course.request_rejected', { request, course: request.course });
 
-    // Cập nhật số lượng cho Admin
-    await statsService.emitPendingRequestsCountToAdmins();
+    // Cập nhật số lượng cho Admin và Manager phòng ban
+    await statsService.emitPendingRequestsCountToAdmins(request.user?.department_id);
+
+    // Xóa cache dashboard
+    await redisClient.clearDashboardCache();
 
     return updatedRequest;
 };

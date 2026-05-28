@@ -1,16 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import {
-    Card, Button, Input, Typography,
+    Card, Button,
     message
 } from 'antd';
 import { Plus } from 'lucide-react';
-import { SearchOutlined } from '@ant-design/icons';
 import { programService } from '../../../services/program.service';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
 import { departmentService } from '../../../services/department.service';
 import { positionService } from '../../../services/position.service';
-import { userService } from '../../../services/user.service';
 
 import styles from './ProgramManagement.module.scss';
 
@@ -19,8 +17,8 @@ import ProgramTable from './components/ProgramTable';
 import ProgramFormModal from './components/ProgramFormModal';
 import ProgramCourseDrawer from './components/ProgramCourseDrawer';
 
-const { Title, Text } = Typography;
-
+// const { Title, Text } = Typography;
+// 
 import { type Course } from '../../../types/course';
 import { type Program } from '../../../types/program';
 
@@ -28,6 +26,10 @@ export default function ProgramManagement() {
     const [programs, setPrograms] = useState<Program[]>([]);
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(false);
+    
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCourseDrawerOpen, setIsCourseDrawerOpen] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
@@ -36,13 +38,18 @@ export default function ProgramManagement() {
     const [submitting, setSubmitting] = useState(false);
     const [departments, setDepartments] = useState<any[]>([]);
     const [positions, setPositions] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
 
     const fetchPrograms = async () => {
         setLoading(true);
         try {
-            const data = await programService.getAll();
-            setPrograms(data);
+            const data = await programService.getAll('', page, pageSize);
+            if (data && data.programs) {
+                setPrograms(data.programs);
+                setTotal(data.total);
+            } else {
+                setPrograms(data as any);
+                setTotal((data as any)?.length || 0);
+            }
         } catch {
             message.error('Lỗi khi tải danh sách Lộ trình học');
         } finally {
@@ -59,22 +66,30 @@ export default function ProgramManagement() {
 
     const fetchMetadata = async () => {
         try {
-            const [deptData, posData, userResp] = await Promise.all([
+            const [deptData, posData] = await Promise.all([
                 departmentService.getAll(),
-                positionService.getAll(),
-                userService.getAll({ limit: 1000, page: 1 })
+                positionService.getAll()
             ]);
             setDepartments(deptData);
             setPositions(posData);
-            setUsers(userResp.users || []);
         } catch { /* ignore */ }
     };
 
     useEffect(() => {
         fetchPrograms();
+    }, [page, pageSize]);
+
+    useEffect(() => {
         fetchAllCourses();
         fetchMetadata();
     }, []);
+
+    const handlePageChange = (newPage: number, newPageSize: number) => {
+        startTransition(() => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+        });
+    };
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
         setSubmitting(true);
@@ -137,9 +152,10 @@ export default function ProgramManagement() {
         try {
             await programService.addCourse(selectedProgram.id, courseId);
             message.success('Đã thêm khóa học vào chương trình');
-            const data = await programService.getAll();
-            setPrograms(data);
-            setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
+            const data = await programService.getAll('', page, pageSize);
+            const programList = data.programs ?? data;
+            setPrograms(programList);
+            setSelectedProgram(programList.find((p: Program) => p.id === selectedProgram.id) || null);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi thêm khóa học';
             message.error(errorMsg);
@@ -153,9 +169,10 @@ export default function ProgramManagement() {
         try {
             await programService.removeCourse(selectedProgram.id, courseId);
             message.success('Đã xóa khóa học khỏi chương trình');
-            const data = await programService.getAll();
-            setPrograms(data);
-            setSelectedProgram(data.find((p: Program) => p.id === selectedProgram.id) || null);
+            const data = await programService.getAll('', page, pageSize);
+            const programList = data.programs ?? data;
+            setPrograms(programList);
+            setSelectedProgram(programList.find((p: Program) => p.id === selectedProgram.id) || null);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi xóa khóa học';
             message.error(errorMsg);
@@ -182,9 +199,10 @@ export default function ProgramManagement() {
         try {
             await programService.reorderCourses(selectedProgram.id, payload);
             message.success('Đã cập nhật thứ tự');
-            const data = await programService.getAll();
-            setPrograms(data);
-            const fresh = data.find((p: Program) => p.id === selectedProgram.id);
+            const data = await programService.getAll('', page, pageSize);
+            const programList = data.programs ?? data;
+            setPrograms(programList);
+            const fresh = programList.find((p: Program) => p.id === selectedProgram.id);
             setSelectedProgram(fresh || null);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Lỗi khi sắp xếp';
@@ -199,12 +217,12 @@ export default function ProgramManagement() {
 
     return (
         <div className={styles.programManagementContainer}>
-            <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.title}>Quản lý Lộ trình học</Title>
                     <Text type="secondary">Gom nhiều khóa học thành lộ trình đào tạo</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -215,12 +233,16 @@ export default function ProgramManagement() {
                         onClick={() => { setEditingProgram(null); setIsModalOpen(true); }}
                         className={styles.adminAddButton}
                     >
-                        Chương trình mới
+                        Thêm
                     </Button>
                 </div>
                 <ProgramTable
                     programs={filtered}
-                    loading={loading}
+                    total={total}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    loading={loading && programs.length === 0}
                     onEdit={(p) => { setEditingProgram(p); setIsModalOpen(true); }}
                     onDelete={handleDelete}
                     onOpenCourseDrawer={(p) => { setSelectedProgram(p); setIsCourseDrawerOpen(true); }}
@@ -236,7 +258,6 @@ export default function ProgramManagement() {
                 initialValues={editingProgram}
                 departments={departments}
                 positions={positions}
-                users={users}
                 loading={submitting}
             />
 

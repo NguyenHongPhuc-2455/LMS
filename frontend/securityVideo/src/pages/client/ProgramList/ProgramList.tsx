@@ -135,7 +135,7 @@ export default function ProgramList() {
                         className={`${styles.filterPill} ${activeFilter === 'ALL' ? styles.active : ''}`}
                         onClick={() => setActiveFilter('ALL')}
                     >
-                        Tất cả lộ trình
+                        Tất cả
                     </button>
                     <div className={styles.separator} />
                     <button

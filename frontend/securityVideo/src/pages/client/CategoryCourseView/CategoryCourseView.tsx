@@ -59,14 +59,14 @@ export default function CategoryCourseView() {
 
     return (
         <div className={styles.courseListContainer} style={{ padding: '24px' }}>
-            <div style={{ marginBottom: '32px', background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ marginBottom: '32px', background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', padding: '24px', borderRadius: '5px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                     <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/home')} style={{ color: '#64748b', padding: 0 }}>
-                        Quay lại Trang chủ
-                    </Button>
+                        Quay lại
+                     </Button>
                 </div>
                 <Space size={16} align="center">
-                    <div style={{ width: '48px', height: '48px', background: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', background: '#fff', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <FolderOpenOutlined style={{ fontSize: '24px', color: 'C72127' }} />
                     </div>
                     <div>

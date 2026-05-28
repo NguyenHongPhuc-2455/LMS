@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, App, Space, Card, Typography, Tag, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, IdcardOutlined, SearchOutlined, LockOutlined } from '@ant-design/icons';
 import api from '../../../services/api';
-import styles from '../UserManagement/UserManagement.module.scss';
+import styles from '../../../styles/admin-shared.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -176,12 +176,12 @@ const RoleManagement: React.FC = () => {
 
     return (
         <div className={styles.userManagementContainer}>
-            <div className={styles.userManagementHeader}>
+            {/* <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý vai trò (Roles)</Title>
                     <Text type="secondary">Định nghĩa các nhóm quyền và vai trò trong hệ thống eLearning</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -203,10 +203,10 @@ const RoleManagement: React.FC = () => {
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={handleAdd}
-                                className="btn-primary"
-                                style={{ height: 40, borderRadius: 8 }}
+                                className={styles.adminAddButton}
+
                             >
-                                Thêm vai trò
+                                Thêm
                             </Button>
                         </Space>
                     )}
@@ -231,7 +231,7 @@ const RoleManagement: React.FC = () => {
                     <Button
                         key="cancel"
                         onClick={() => setIsModalOpen(false)}
-                        style={{ minWidth: 100, height: 40, borderRadius: 8 }}
+                        className="modal-action-btn"
                     >
                         Hủy bỏ
                     </Button>,
@@ -239,7 +239,7 @@ const RoleManagement: React.FC = () => {
                         key="submit"
                         type="primary"
                         onClick={handleModalOk}
-                        style={{ minWidth: 100, height: 40, borderRadius: 8, background: '#B8121A' }}
+                        style={{ minWidth: 100, height: 32, borderRadius: 5, background: '#B8121A' }}
                     >
                         {editingRole ? 'Cập nhật' : 'Thêm mới'}
                     </Button>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, message, Space, Card, Typography, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import api from '../../../services/api';
-import styles from '../UserManagement/UserManagement.module.scss'; // Reusing styles for consistency
+import styles from '../../../styles/admin-shared.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -227,12 +227,12 @@ const DepartmentManagement: React.FC = () => {
 
     return (
         <div className={styles.userManagementContainer}>
-            <div className={styles.userManagementHeader}>
+            {/* <div className={styles.userManagementHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.headerTitle}>Quản lý phòng ban</Title>
                     <Text type="secondary">Quản lý sơ đồ tổ chức 3 cấp (Khối - Phòng ban - Tổ nhóm) và phân bổ nhân sự</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -258,7 +258,7 @@ const DepartmentManagement: React.FC = () => {
                             onClick={handleAdd}
                             className={styles.adminAddButton}
                         >
-                            Thêm phòng ban
+                            Thêm
                         </Button>
                     </Space>
                 </div>
@@ -273,7 +273,9 @@ const DepartmentManagement: React.FC = () => {
                         pageSize: 15,
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a>{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }
@@ -292,7 +294,7 @@ const DepartmentManagement: React.FC = () => {
                         <Button
                             key="cancel"
                             onClick={() => setIsModalOpen(false)}
-                            style={{ minWidth: 100, height: 40, borderRadius: '8px' }}
+                            className="modal-action-btn"
                         >
                             Hủy bỏ
                         </Button>
@@ -300,7 +302,7 @@ const DepartmentManagement: React.FC = () => {
                             key="submit"
                             type="primary"
                             onClick={handleModalOk}
-                            style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}
+                            className="btn-brand-primary modal-action-btn"
                         >
                             {editingDept ? 'Cập nhật' : 'Thêm mới'}
                         </Button>

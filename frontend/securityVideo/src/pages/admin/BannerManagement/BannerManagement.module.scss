@@ -20,7 +20,7 @@
 .addButton {
     background-color: #12B76A !important;
     border-color: #12B76A !important;
-    border-radius: 8px !important;
+    border-radius: 5px !important;
     color: white !important;
     height: 36px !important;
     padding: 0 16px !important;
@@ -58,6 +58,6 @@
     width: 120px;
     height: 60px;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 5px;
     border: 1px solid $border-color;
 }

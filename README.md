@@ -74,13 +74,14 @@ CLOUDINARY_API_SECRET=your_api_secret
 VNP_TMN_CODE=your_tmn_code
 VNP_HASH_SECRET=your_hash_secret
 VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-VNPAY_RETURN_URL=http://localhost:3000/api/payment/vnpay/callback
+VNPAY_RETURN_URL=http://localhost:5000/api/payment/vnpay/callback
 VNPAY_API_URL=https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
 
 # ===================================
 # FRONTEND URL (Cho CORS Production)
 # ===================================
-FRONTEND_URL=http://localhost:5175
+FRONTEND_URL=http://localhost:5174
+CORS_ORIGINS=http://localhost:5174,http://localhost:5175
 ```
 
 > **⚠️ Lưu ý**: File `.env` đã được thêm vào `.gitignore`. **Tuyệt đối không commit file `.env`** chứa thông tin bí mật lên Git.
@@ -153,7 +154,7 @@ cd backend
 npm run dev
 ```
 
-Backend sẽ chạy tại: `http://localhost:3000`
+Backend sẽ chạy tại: `http://localhost:5000`
 
 ### 4.2. Khởi chạy Frontend (Mở terminal mới)
 
@@ -162,7 +163,7 @@ cd frontend/securityVideo
 npm run dev
 ```
 
-Frontend sẽ chạy tại: `http://localhost:5175` (hoặc port tiếp theo nếu đã bị chiếm)
+Frontend sẽ chạy tại: `http://localhost:5174` (hoặc port tiếp theo nếu đã bị chiếm)
 
 ---
 
@@ -175,7 +176,7 @@ Mở trình duyệt và truy cập các URL sau để kiểm tra:
 | `http://localhost:5175` | Giao diện người dùng (Client) |
 | `http://localhost:5175/admin` | Bảng điều khiển Admin |
 | `http://localhost:5175/login` | Trang đăng nhập |
-| `http://localhost:3000/api/courses` | Kiểm tra API hoạt động |
+| `http://localhost:5000/api/courses` | Kiểm tra API hoạt động |
 
 ---
 
@@ -198,16 +199,16 @@ npx prisma migrate dev
 **Cách xử lý**: Thêm port Frontend vào mảng `allowedOrigins` trong file `backend/src/app.js`.
 
 ### ❌ Lỗi `UNCAUGHT EXCEPTION: CloudinaryStorage is not a constructor`
-**Nguyên nhân**: Xung đột phiên bản giữa `multer@2.x` (mới) và `multer-storage-cloudinary@4.0.0` (chỉ tương thích với `multer@1.x`). Khi chạy `npm install` lần đầu, npm tự động kéo `multer` phiên bản mới nhất theo range `^2.1.1` trong `package.json`, làm vỡ API của `multer-storage-cloudinary`.
+**Nguyên nhân**: Xung đột phiên bản giữa `multer@2.x` (mới) và `multer-storage-cloudinary@4.0.0` (chỉ tương thích với `multer@1.x`).
 
-**Cách xử lý**: Cài đúng phiên bản `multer` LTS tương thích:
+**Cách xử lý**: Dự án đã ghim sẵn `multer@1.4.5-lts.1` trong `package.json`. Nếu lockfile bị lệch, cài lại đúng phiên bản:
 ```bash
 cd backend
 npm install multer@1.4.5-lts.1
 npm run dev
 ```
 
-> ⚠️ **Lưu ý cho team**: Đây là lỗi cần sửa cố định ở `package.json` bằng cách ghim chính xác phiên bản `"multer": "1.4.5-lts.1"` thay vì dùng `^2.1.1` để tránh các thành viên mới gặp phải.
+> ⚠️ **Lưu ý cho team**: Không đổi lại `"multer": "^2.x"` khi vẫn dùng `multer-storage-cloudinary@4.0.0`.
 
 ### ❌ Lỗi FFmpeg không tìm thấy
 **Nguyên nhân**: FFmpeg chưa được cài đặt hoặc chưa thêm vào PATH của hệ thống.

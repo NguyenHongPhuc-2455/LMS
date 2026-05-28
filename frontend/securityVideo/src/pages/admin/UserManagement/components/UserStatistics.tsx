@@ -1,3 +1,4 @@
+import React from 'react';
 import { Row, Col, Card, Statistic, Typography, Skeleton } from 'antd';
 import { TeamOutlined, IdcardOutlined, CrownOutlined, BookOutlined } from '@ant-design/icons';
 import styles from '../UserManagement.module.scss';
@@ -11,7 +12,7 @@ interface UserStatisticsProps {
     loading: boolean;
 }
 
-export default function UserStatistics({ users, loading }: UserStatisticsProps) {
+function UserStatistics({ users, loading }: UserStatisticsProps) {
     const statsData = [
         {
             title: 'nhân sự',
@@ -43,7 +44,7 @@ export default function UserStatistics({ users, loading }: UserStatisticsProps) 
         <Row gutter={[16, 16]} className={styles.statsRow}>
             {statsData.map((stat, i) => (
                 <Col key={i} xs={24} sm={12} md={6}>
-                    <Card className="glass-card stats-card">
+                    <Card className="glass-card stats-card" style={{ minHeight: 98 }}>
                         {loading && users.length === 0 ? (
                             <Skeleton active avatar title={false} paragraph={{ rows: 1 }} />
                         ) : (
@@ -60,3 +61,5 @@ export default function UserStatistics({ users, loading }: UserStatisticsProps) 
         </Row>
     );
 }
+
+export default React.memo(UserStatistics);

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, startTransition } from 'react';
 import { Table, Input, Select, Button, Typography, Card, Space, Avatar, Progress, Tooltip, Drawer, Tabs, Tag, Modal, Input as AntdInput, message } from 'antd';
-import { UserOutlined, SearchOutlined, ReloadOutlined, BellOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, SearchOutlined, ReloadOutlined, BellOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, InfoCircleOutlined, DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
+import dayjs from 'dayjs';
 import { managerService, type Employee, type CourseProgress } from '@/services/manager.service';
 import { positionService } from '@/services/position.service';
 import { departmentService } from '@/services/department.service';
@@ -19,11 +21,11 @@ export default function ManagerEmployees() {
     const [positions, setPositions] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    
+
     // Filters & Pagination
     const [search, setSearch] = useState('');
     const [selectedPosition, setSelectedPosition] = useState<number | undefined>(undefined);
-    
+
     // Cascading states
     const [selectedLevel1, setSelectedLevel1] = useState<number | undefined>();
     const [selectedLevel2, setSelectedLevel2] = useState<number | undefined>();
@@ -100,11 +102,79 @@ export default function ManagerEmployees() {
         }
     };
 
+    const initDeptLevels = React.useCallback(() => {
+        if (!managerDeptId || departments.length === 0) return;
+        const currentDept = departments.find(d => d.id === managerDeptId);
+        if (!currentDept) return;
+
+        if (!currentDept.parent_id) {
+            setSelectedLevel1(currentDept.id);
+            setSelectedLevel2(undefined);
+            setSelectedLevel3(undefined);
+        } else {
+            const parentDept = departments.find(d => d.id === currentDept.parent_id);
+            if (parentDept) {
+                if (!parentDept.parent_id) {
+                    setSelectedLevel1(parentDept.id);
+                    setSelectedLevel2(currentDept.id);
+                    setSelectedLevel3(undefined);
+                } else {
+                    const grandParentDept = departments.find(d => d.id === parentDept.parent_id);
+                    if (grandParentDept) {
+                        setSelectedLevel1(grandParentDept.id);
+                        setSelectedLevel2(parentDept.id);
+                        setSelectedLevel3(currentDept.id);
+                    }
+                }
+            }
+        }
+    }, [managerDeptId, departments]);
+
     const handleReset = () => {
+        const isAlreadyDefault = 
+            search === '' && 
+            selectedPosition === undefined && 
+            filterDeptId === managerDeptId && 
+            page === 1;
+
         setSearch('');
         setSelectedPosition(undefined);
         setFilterDeptId(managerDeptId);
         setPage(1);
+        initDeptLevels();
+
+        if (isAlreadyDefault) {
+            fetchEmployees();
+        }
+    };
+
+    const handleExportXLSX = async () => {
+        try {
+            // Lấy toàn bộ dữ liệu (không phân trang) để xuất
+            const data = await managerService.getEmployees({
+                page: 1,
+                limit: 9999,
+                search: debouncedSearch,
+                positionId: selectedPosition,
+                departmentId: filterDeptId
+            });
+
+            const exportData = data.employees.map((emp: Employee) => ({
+                'Mã nhân sự': emp.employee_id || '',
+                'Họ và tên': emp.full_name || emp.username,
+                'Email': emp.email || '',
+                'Chức vụ': emp.position || 'Chưa thiết lập',
+                'Ngày tham gia': emp.join_date ? dayjs(emp.join_date).format('DD/MM/YYYY') : 'Chưa cập nhật',
+                'Số khóa học': emp.total_courses || 0
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách nhân sự');
+            XLSX.writeFile(workbook, `nhan_su_phong_ban_${dayjs().format('YYYYMMDD')}.xlsx`);
+        } catch (err) {
+            message.error('Không thể xuất danh sách nhân sự');
+        }
     };
 
     const handleOpenDetail = async (empId: number) => {
@@ -138,32 +208,8 @@ export default function ManagerEmployees() {
 
     // Lấy thông tin cây phòng ban của manager
     useEffect(() => {
-        if (!managerDeptId || departments.length === 0) return;
-        const currentDept = departments.find(d => d.id === managerDeptId);
-        if (!currentDept) return;
-        
-        if (!currentDept.parent_id) {
-            setSelectedLevel1(currentDept.id);
-            setSelectedLevel2(undefined);
-            setSelectedLevel3(undefined);
-        } else {
-            const parentDept = departments.find(d => d.id === currentDept.parent_id);
-            if (parentDept) {
-                if (!parentDept.parent_id) {
-                    setSelectedLevel1(parentDept.id);
-                    setSelectedLevel2(currentDept.id);
-                    setSelectedLevel3(undefined);
-                } else {
-                    const grandParentDept = departments.find(d => d.id === parentDept.parent_id);
-                    if (grandParentDept) {
-                        setSelectedLevel1(grandParentDept.id);
-                        setSelectedLevel2(parentDept.id);
-                        setSelectedLevel3(currentDept.id);
-                    }
-                }
-            }
-        }
-    }, [managerDeptId, departments]);
+        initDeptLevels();
+    }, [initDeptLevels]);
 
     const handleLevel1Change = (val: number | undefined) => {
         // Manager Cấp 1 có thể đổi con
@@ -195,25 +241,25 @@ export default function ManagerEmployees() {
     const level2Options = departments.filter(d => selectedLevel1 ? d.parent_id === selectedLevel1 : false);
     const level3Options = departments.filter(d => selectedLevel2 ? d.parent_id === selectedLevel2 : false);
 
-    const columns = [
+    const columns = useMemo(() => [
         {
             title: 'Học viên',
             key: 'employee',
             render: (emp: Employee) => (
-                <Space>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Avatar src={emp.avatar} icon={<UserOutlined />} style={{ border: '2px solid rgba(199, 33, 39, 0.1)' }} />
                     <div>
-                        <Text strong style={{ display: 'block', fontSize: '14px' }}>{emp.full_name || emp.username}</Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>ID: {emp.employee_id || 'Chưa cập nhật'}</Text>
+                        <span style={{ display: 'block', fontSize: '14px', fontWeight: 600 }}>{emp.full_name || emp.username}</span>
+                        <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)' }}>ID: {emp.employee_id || 'Chưa cập nhật'}</span>
                     </div>
-                </Space>
+                </div>
             )
         },
         {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            render: (email: string) => <Text copyable style={{ fontSize: '13px' }}>{email}</Text>
+            render: (email: string) => <span style={{ fontSize: '13px' }}>{email}</span>
         },
         {
             title: 'Chức vụ',
@@ -239,21 +285,21 @@ export default function ManagerEmployees() {
             key: 'actions',
             align: 'center' as const,
             render: (emp: Employee) => (
-                <Space>
-                    <Button 
-                        type="primary" 
-                        size="small" 
-                        icon={<InfoCircleOutlined />} 
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <Button
+                        type="primary"
+                        size="small"
+                        icon={<InfoCircleOutlined />}
                         onClick={() => handleOpenDetail(emp.id)}
                         className={styles.detailBtn}
                     >
                         Xem tiến độ
                     </Button>
-                    <Button 
-                        type="dashed" 
-                        danger 
-                        size="small" 
-                        icon={<BellOutlined />} 
+                    <Button
+                        type="dashed"
+                        danger
+                        size="small"
+                        icon={<BellOutlined />}
                         onClick={() => {
                             setSelectedEmployeeId(emp.id);
                             setReminderText(`Chào bạn ${emp.full_name || emp.username}, tôi vừa kiểm tra tiến độ học tập và thấy bạn có một số khóa học bắt buộc chưa hoàn thành. Hãy sắp xếp thời gian hoàn thành đúng hạn nhé!`);
@@ -262,24 +308,24 @@ export default function ManagerEmployees() {
                     >
                         Nhắc nhở
                     </Button>
-                </Space>
+                </div>
             )
         }
-    ];
+    ], []);
 
     return (
         <div className={styles.container}>
-            <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                 <div>
                     <Title level={4} style={{ margin: 0 }}>Thành viên phòng ban</Title>
                     <Text type="secondary">Theo dõi lộ trình học tập, quản lý tiến độ và đôn đốc học tập nhân sự</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card" style={{ marginBottom: 24 }}>
                 <div className={styles.searchBarWrapper}>
                     <div className={styles.headerLeft}>
-                        <Input
+                        <Input style={{ display: 'flex', alignItems: 'center' }}
                             placeholder="Tìm kiếm tên, mã nhân viên, email..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
@@ -341,7 +387,15 @@ export default function ManagerEmployees() {
                     </div>
 
                     <div className={styles.headerRight}>
-                        <Button icon={<ReloadOutlined />} onClick={handleReset}>Làm mới</Button>
+                        <Button icon={<ReloadOutlined />} onClick={handleReset}></Button>
+                        <Button
+                            type="primary"
+                            icon={<DownloadOutlined />}
+                            onClick={handleExportXLSX}
+                            className="btn-brand-primary"
+                        >
+                            Xuất File
+                        </Button>
                     </div>
                 </div>
 
@@ -349,19 +403,37 @@ export default function ManagerEmployees() {
                     columns={columns}
                     dataSource={employees}
                     rowKey="id"
-                    loading={loading}
+                    loading={loading && employees.length === 0}
                     pagination={{
                         current: page,
                         pageSize: 10,
                         total,
-                        onChange: setPage,
+                        onChange: (p: number) => startTransition(() => setPage(p)),
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    className: 'page-number',
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }
                     } as any}
+                    onRow={(record) => ({
+                        onClick: (event) => {
+                            const target = event.target as HTMLElement;
+                            if (
+                                target.closest('button') ||
+                                target.closest('.ant-btn') ||
+                                target.closest('a') ||
+                                target.closest('.ant-modal')
+                            ) {
+                                return;
+                            }
+                            handleOpenDetail(record.id);
+                        },
+                        style: { cursor: 'pointer' }
+                    })}
                     bordered
                     className={styles.employeeTable}
                     locale={{ emptyText: 'Phòng ban của bạn chưa có nhân sự hoặc không trùng bộ lọc' }}
@@ -471,9 +543,9 @@ export default function ManagerEmployees() {
                                     <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                                         Gửi thông báo nhắc nhở và đôn đốc học tập trực tiếp tới tài khoản Ritavo LMS của học viên này.
                                     </Text>
-                                    <Button 
-                                        type="primary" 
-                                        danger 
+                                    <Button
+                                        type="primary"
+                                        danger
                                         icon={<BellOutlined />}
                                         onClick={() => {
                                             setReminderText(`Chào bạn ${employeeDetail.employee.full_name}, hãy cố gắng hoàn thành các khóa học bắt buộc đúng hạn nhé!`);

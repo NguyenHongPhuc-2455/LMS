@@ -1,26 +1,45 @@
-# Base image
-FROM node:20.11.1-alpine3.19
+# Stage 1: Build & Compile Native Modules
+FROM node:20.11.1-alpine3.19 AS builder
 
-# Install ffmpeg and build dependencies for Prisma/Node-gyp if needed
-RUN apk add --no-cache ffmpeg python3 make g++
+# Cài đặt các công cụ build để biên dịch native modules C/C++ (như bcrypt)
+RUN apk add --no-cache python3 make g++
 
-# Create app directory
 WORKDIR /usr/src/app
 
-# Copy package files
 COPY package*.json ./
+COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm install
+# Cài đặt sạch các dependencies
+RUN npm ci
 
-# Copy source code
+# Copy toàn bộ mã nguồn
 COPY . .
 
-# Generate Prisma client
+# Khởi tạo Prisma Client
 RUN npx prisma generate
 
-# Expose port
+# Dọn dẹp devDependencies để giảm tối đa dung lượng node_modules cho Production
+RUN npm prune --production
+
+# Stage 2: Runner Image (Thực thi)
+FROM node:20.11.1-alpine3.19
+
+# Chỉ cài đặt ffmpeg, loại bỏ python, make, g++ để tối ưu dung lượng
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /usr/src/app
+
+# Tạo thư mục uploads tạm thời nếu cần
+RUN mkdir -p uploads
+
+# Copy kết quả đã build từ Stage 1
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/src ./src
+COPY --from=builder /usr/src/app/server.js ./server.js
+COPY --from=builder /usr/src/app/worker.js ./worker.js
+
 EXPOSE 5000
 
-# Start command
 CMD ["npm", "start"]

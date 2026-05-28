@@ -5,6 +5,10 @@ export const statsService = {
         const response = await api.get('/stats/dashboard');
         return response.data;
     },
+    getPendingRequestsCount: async () => {
+        const response = await api.get('/stats/pending-requests-count');
+        return response.data;
+    },
     getCourseProgress: async (courseId: number, departmentId?: number) => {
         const response = await api.get(`/stats/course-progress/${courseId}`, {
             params: departmentId ? { departmentId } : {}
@@ -35,6 +39,17 @@ export const statsService = {
     },
     getTopLearners: async () => {
         const response = await api.get('/stats/top-learners');
+        return response.data;
+    },
+    getLearningReport: async (params: {
+        groupBy: 'day' | 'week' | 'month';
+        period: string;
+        startDate?: string;
+        endDate?: string;
+        departmentId?: number;
+        courseId?: number;
+    }) => {
+        const response = await api.get('/stats/learning-report', { params });
         return response.data;
     }
 };

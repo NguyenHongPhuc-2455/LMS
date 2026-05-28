@@ -15,6 +15,14 @@ services:
     restart: unless-stopped
     networks:
       - security-network
+  redis:
+    image: redis:alpine
+    container_name: security_video_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - security-network
 
   backend:
     build:

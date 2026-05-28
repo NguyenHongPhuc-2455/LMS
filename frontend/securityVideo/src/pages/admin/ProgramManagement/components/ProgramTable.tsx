@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table, Space, Select, Tag, Button, Popconfirm, Badge, Typography, message, Input } from 'antd';
 import { Edit, Trash2 } from 'lucide-react';
 import { SearchOutlined } from '@ant-design/icons';
@@ -12,6 +13,10 @@ import { type Program } from '../../../../types/program';
 
 interface ProgramTableProps {
     programs: Program[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number, pageSize: number) => void;
     loading: boolean;
     onEdit: (p: Program) => void;
     onDelete: (id: number) => void;
@@ -19,7 +24,7 @@ interface ProgramTableProps {
     onRefresh: () => void;
 }
 
-export default function ProgramTable({ programs, loading, onEdit, onDelete, onOpenCourseDrawer, onRefresh }: ProgramTableProps) {
+export default function ProgramTable({ programs, total, page, pageSize, onPageChange, loading, onEdit, onDelete, onOpenCourseDrawer, onRefresh }: ProgramTableProps) {
     const getColumnSearchProps = (dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
@@ -253,13 +258,19 @@ export default function ProgramTable({ programs, loading, onEdit, onDelete, onOp
                 style: { cursor: 'pointer' }
             })}
             pagination={{
+                total,
+                current: page,
+                pageSize,
+                onChange: onPageChange,
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
-                defaultPageSize: 10,
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }

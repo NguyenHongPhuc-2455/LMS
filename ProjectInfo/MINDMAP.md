@@ -11,8 +11,19 @@ mindmap
         JWT Authentication (Access & Refresh Token rotation)
         RBAC["RBAC (Admin, Instructor, Student)"]
         HLS Encryption["HLS Encryption (AES-128)"]
-        Rate Limiting["Rate Limiting (Global & Auth)"]
+        Rate Limiting["Rate Limiting (userId-based, 5000 req/15m)"]
         Secure Video Keys in DB
+      Hiệu Năng["Hiệu Năng (Performance)"]
+        BullMQ Queue["BullMQ Queue (Video Transcoding nền)"]
+        Redis Cache["Redis Cache (Dashboard Stats 5 phút TTL)"]
+        Fallback In-Memory["In-Memory Fallback (khi Redis offline)"]
+        Heartbeat Tối Ưu["Heartbeat 60s + dừng khi video paused"]
+        Connection Pool["DB Connection Pool (50 connections)"]
+      Docker Infrastructure["Docker Infrastructure"]
+        Multi-stage Build["Multi-stage Dockerfile (node:alpine)"]
+        Docker Compose["Docker Compose (đầy đủ: DB + Redis + BE + FE)"]
+        Optimized Images["redis:alpine, nginx:alpine"]
+        dockerignore["dockerignore (loại node_modules)"]
       Cấu Trúc Frontend["Cấu Trúc Frontend (Modular Architecture)"]
         Folder-based Components["1 Folder = 1 Component + Style"]
         Barrel Exports["index.ts tập trung"]
@@ -22,7 +33,7 @@ mindmap
         Routes Management["Hệ thống ROUTES hằng số"]
         ScrollToTop Navigation
       Hệ Thống Video["Hệ Thống Video (Video Engine)"]
-        Local FFmpeg Transcoding
+        BullMQ Async Transcoding["BullMQ Queue + Worker Process"]
         H.264 Optimization["H.264 Optimization (CRF 26)"]
         HLS Streaming[".m3u8, .ts"]
       Quản Lý Nội Dung["Quản Lý Nội Dung (Content)"]
@@ -42,7 +53,7 @@ mindmap
         Nhắc Nhở Realtime["Gửi nhắc nhở học tập (Socket.io Toast)"]
         Bảo Mật Phòng Ban["Security Scoping (Lọc department_id)"]
       Học Tập["Học Tập & Tiến Độ (Learning)"]
-        Enrollment["Đăng ký học"]
+        Enrollment["Dăng ký học"]
         Lesson Completion Tracking["Precise Tracking (95%)"]
         Multi-Source Video["HLS, YouTube, Direct MP4"]
         Bình luận Facebook-style (2 cấp)
@@ -115,6 +126,8 @@ Giao diện React hiện đại:
 - [x] Hệ thống Khóa học bắt buộc & Báo cáo hội nhập (Mandatory Onboarding)
 - [x] Phân hệ Quản lý Phòng ban cho Line Manager (Line Manager Subsystem)
 - [x] Bộ lọc thông minh Scoping và cơ chế Ràng buộc thời hạn (Intelligent Scoping & Deadline Guards)
+- [x] **Tối ưu hiệu năng cho 100 người dùng đồng thời** (BullMQ Queue, Redis Cache, Smart Rate Limiter, DB Pool)
+- [x] **Hạ tầng Docker đầy đủ** (Multi-stage Dockerfile, docker-compose.yml với 4 dịch vụ)
 - [ ] Tích hợp Livestream dạy học trực tuyến.
 - [ ] App Mobile (React Native) sử dụng chung Backend API.
 - [ ] Hệ thống AI gợi ý khóa học dựa trên hành vi học tập.

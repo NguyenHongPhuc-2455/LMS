@@ -100,8 +100,8 @@ export default function CourseDetail() {
                     block
                     disabled
                     className={styles.actionBtnStyled}
-                    style={{ 
-                        backgroundColor: '#f5f5f5', 
+                    style={{
+                        backgroundColor: '#f5f5f5',
                         color: '#8c8c8c',
                         height: 'auto',
                         whiteSpace: 'normal',
@@ -136,7 +136,7 @@ export default function CourseDetail() {
                         }
                     }}
                 >
-                    {isOverdue ? "ĐÃ KHÓA (QUÁ HẠN)" : (isContinuing ? "TIẾP TỤC HỌC" : "XEM LẠI KHÓA HỌC")}
+                    {isOverdue ? "ĐÃ KHÓA (QUÁ HẠN)" : (isContinuing ? "TIẾP TỤC" : "XEM LẠI")}
                 </Button>
             );
         }

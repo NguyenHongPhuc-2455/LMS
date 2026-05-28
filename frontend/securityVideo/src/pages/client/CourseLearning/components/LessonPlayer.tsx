@@ -1,6 +1,7 @@
 import { Typography, Skeleton } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import { VideoPlayer, VideoJsPlayer, QuizPlayer, ServerLinkPlayer } from '../../../../components';
+import { getBackendUrl } from '../../../../services/api';
 import styles from '../CourseLearning.module.scss';
 
 const { Title, Text } = Typography;
@@ -46,7 +47,7 @@ export default function LessonPlayer({
 
         if (activeLesson.video_url.includes('.m3u8')) {
             const isAbsolute = activeLesson.video_url.startsWith('http');
-            const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const BASE_URL = getBackendUrl();
             const finalSrc = isAbsolute ? activeLesson.video_url : `${BASE_URL}${activeLesson.video_url}`;
             return (
                 <VideoPlayer

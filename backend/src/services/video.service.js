@@ -170,10 +170,21 @@ const getVideos = async () => {
     });
 };
 
+const keyCache = new Map();
+
 /**
- * Lấy Key giải mã từ database
+ * Lấy Key giải mã từ database (có cache in-memory)
  */
 const getVideoKey = async (lessonId) => {
+    const idStr = String(lessonId);
+    if (keyCache.has(idStr)) {
+        const entry = keyCache.get(idStr);
+        if (entry.expires > Date.now()) {
+            return entry.key;
+        }
+        keyCache.delete(idStr);
+    }
+
     const lesson = await prisma.lesson.findUnique({
         where: { id: parseInt(lessonId) },
         select: { hls_key: true }
@@ -182,6 +193,12 @@ const getVideoKey = async (lessonId) => {
         const ApiError = require('../utils/ApiError');
         throw new ApiError(404, 'Encryption key not found');
     }
+    
+    keyCache.set(idStr, {
+        key: lesson.hls_key,
+        expires: Date.now() + 60 * 60 * 1000 // Cache 1 giờ
+    });
+    
     return lesson.hls_key;
 };
 

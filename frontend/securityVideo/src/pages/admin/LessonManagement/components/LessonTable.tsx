@@ -1,4 +1,5 @@
-import { Table, Space, Badge, Button, Popconfirm } from 'antd';
+import React from 'react';
+import { Table, Space, Badge, Button, Popconfirm, Skeleton } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { PlayCircle, Edit, Trash2 } from 'lucide-react';
 import styles from '../LessonManagement.module.scss';
@@ -19,7 +20,7 @@ interface LessonTableProps {
     onDelete: (lesson: Lesson) => void;
 }
 
-export default function LessonTable({ lessons, loading, onEdit, onDelete }: LessonTableProps) {
+function LessonTable({ lessons, loading, onEdit, onDelete }: LessonTableProps) {
     const columns = [
         {
             title: 'ID',
@@ -75,27 +76,53 @@ export default function LessonTable({ lessons, loading, onEdit, onDelete }: Less
         }
     ];
 
+    const isFirstLoad = loading && (!lessons || lessons.length === 0);
+
+    const displayData = React.useMemo(() => {
+        if (isFirstLoad) {
+            return Array.from({ length: 5 }).map((_, index) => ({ id: `dummy-${index}`, isDummy: true } as any));
+        }
+        return lessons;
+    }, [lessons, isFirstLoad]);
+
+    const skeletonColumns = React.useMemo(() => {
+        if (!isFirstLoad) return columns;
+        return columns.map(col => ({
+            ...col,
+            render: (value: any, record: any, index: number) => {
+                if (record.isDummy) {
+                    return <Skeleton.Button active size="small" style={{ width: '80%', height: 16 }} />;
+                }
+                return col.render ? (col.render as any)(value, record, index) : value;
+            }
+        }));
+    }, [columns, isFirstLoad]);
+
     return (
         <Table
-            dataSource={lessons}
-            loading={loading}
+            dataSource={displayData}
+            loading={isFirstLoad ? false : loading}
             rowKey="id"
-            columns={columns}
-            pagination={{
+            columns={skeletonColumns}
+            pagination={isFirstLoad ? false : {
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
                 defaultPageSize: 10,
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }
             } as any}
             scroll={{ y: 500 }}
-            virtual
             bordered
         />
     );
 }
+
+export default React.memo(LessonTable);

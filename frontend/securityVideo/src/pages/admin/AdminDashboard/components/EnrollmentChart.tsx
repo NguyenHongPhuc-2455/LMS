@@ -16,6 +16,7 @@ export default function EnrollmentChart({ data, loading }: EnrollmentChartProps)
             className={styles.statCard}
             bodyStyle={{ padding: '24px' }}
             loading={loading}
+            style={{ minHeight: 440 }}
         >
             <div className={styles.chartCardHeader}>
                 <Title level={4} className={styles.chartCardTitle}>Xu hướng ghi danh (7 ngày qua)</Title>
@@ -44,7 +45,7 @@ export default function EnrollmentChart({ data, loading }: EnrollmentChartProps)
                             tick={{ fill: '#94A3B8', fontSize: 12 }}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+                            contentStyle={{ borderRadius: '5px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
                             itemStyle={{ color: '#4880FF', fontWeight: 600 }}
                         />
                         <Area

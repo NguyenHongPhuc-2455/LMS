@@ -15,9 +15,7 @@
     border-right: 1px solid #E0E0E0;
     background: #FFFFFF;
     overflow-y: auto;
-    height: calc(100vh - 66px);
-    position: sticky;
-    top: 66px;
+    height: 100%;
     z-index: 100;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: width;
@@ -52,7 +50,9 @@
 }
 
 .sidebarWrapper {
-    position: relative;
+    position: sticky;
+    top: 66px;
+    height: calc(100vh - 66px);
     display: flex;
     z-index: 101;
 
@@ -62,8 +62,8 @@
 }
 
 .collapseToggle {
-    position: fixed;
-    top: 82px;
+    position: absolute;
+    top: 16px;
     left: 235px;
     z-index: 110;
     width: 28px;
@@ -98,6 +98,13 @@
 .adminMenu {
     border-right: 0;
     padding: 10px;
+
+    :global {
+        .ant-menu-item,
+        .ant-menu-submenu-title {
+            border-radius: 5px !important;
+        }
+    }
 }
 
 .adminMainLayout {
@@ -112,7 +119,7 @@
 .adminAddButton {
     background-color: #12B76A !important;
     border-color: #12B76A !important;
-    border-radius: 8px !important;
+    border-radius: 5px !important;
     color: white !important;
     height: 32px !important;
     padding: 0 16px !important;
@@ -176,7 +183,7 @@
 
         .ant-table {
             border: 1px solid #E0E0E0 !important;
-            border-radius: 8px !important;
+            border-radius: 5px !important;
             overflow: hidden;
 
             .ant-table-thead>tr>th {
@@ -196,6 +203,24 @@
             }
         }
 
+        .ant-spin-nested-loading {
+            .ant-spin-blur {
+                filter: none !important;
+                opacity: 1 !important;
+                
+                .ant-table-tbody {
+                    opacity: 0.5 !important;
+                    pointer-events: none !important;
+                }
+            }
+
+            .ant-spin {
+                top: 54px !important;
+                height: calc(100% - 54px) !important;
+                background: rgba(255, 255, 255, 0.3) !important;
+            }
+        }
+
         .ant-pagination {
 
             .ant-pagination-item,
@@ -203,7 +228,7 @@
             .ant-pagination-next,
             .ant-pagination-jump-prev,
             .ant-pagination-jump-next {
-                border-radius: 8px !important;
+                border-radius: 5px !important;
                 border: 1px solid #e2e8f0 !important;
                 background: #f8fafc !important;
                 min-width: 38px !important;
@@ -243,6 +268,181 @@
             .ant-pagination-disabled {
                 opacity: 0.5;
                 cursor: not-allowed;
+            }
+        }
+
+        // Table responsiveness
+        .ant-table-wrapper {
+            max-width: 100%;
+            overflow: hidden;
+
+            .ant-table-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                
+                @media (max-width: 992px) {
+                    table {
+                        min-width: 900px !important;
+                    }
+                }
+
+                &::-webkit-scrollbar {
+                    height: 6px;
+                }
+                &::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                &::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 3px;
+                }
+                &::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
+                }
+            }
+        }
+
+        // Global Responsive layout filters & action toolbars
+        [class*="header" i],
+        [class*="actions" i],
+        [class*="wrapper" i]:not(.ant-table-wrapper):not([class*="table" i]):not([class*="userInfo" i]):not([class*="avatar" i]) {
+            @media (max-width: 992px) {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 16px !important;
+                margin-bottom: 20px !important;
+
+                [class*="headerLeft"],
+                [class*="headerRight"],
+                [class*="headerInfo"] {
+                    width: 100% !important;
+                    flex-direction: column !important;
+                    align-items: stretch !important;
+                    gap: 12px !important;
+                }
+
+                // Space components
+                .ant-space {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    width: 100% !important;
+                    gap: 8px !important;
+
+                    .ant-space-item {
+                        flex: 1 1 auto;
+                        min-width: 120px;
+                        
+                        .ant-btn, .ant-select, .ant-input-number, .ant-picker, .ant-segmented {
+                            width: 100% !important;
+                            display: flex !important;
+                            justify-content: center !important;
+                            align-items: center !important;
+                            disabled: block !important;
+                        }
+                    }
+                }
+
+                // Search inputs and select boxes
+                [class*="searchBar"],
+                [class*="searchInput"],
+                .ant-select,
+                .ant-input-search {
+                    width: 100% !important;
+                    max-width: none !important;
+                }
+
+                // Quick stats/info label alignment
+                span[style*="margin-left"] {
+                    margin-left: 0 !important;
+                    margin-top: 4px;
+                    display: inline-block;
+                }
+            }
+        }
+
+        // Card responsiveness
+        .ant-card {
+            @media (max-width: 768px) {
+                border-radius: 5px !important;
+                
+                .ant-card-body {
+                    padding: 16px 12px !important;
+                }
+
+                .ant-card-head {
+                    flex-direction: column !important;
+                    align-items: flex-start !important;
+                    height: auto !important;
+                    padding: 12px 12px 8px !important;
+                    gap: 12px !important;
+
+                    .ant-card-head-title {
+                        padding: 0 !important;
+                        white-space: normal !important;
+                        font-size: 15px !important;
+                    }
+
+                    .ant-card-extra {
+                        padding: 0 !important;
+                        width: 100% !important;
+                        float: none !important;
+
+                        .ant-space {
+                            width: 100% !important;
+                            flex-wrap: wrap !important;
+                            gap: 8px !important;
+
+                            .ant-space-item {
+                                flex: 1 1 auto;
+                                min-width: 120px;
+                                
+                                .ant-btn, .ant-input, .ant-select {
+                                    width: 100% !important;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tabs responsive wrapping (especially OnboardingReport with extra actions)
+        .ant-tabs {
+            .ant-tabs-nav {
+                @media (max-width: 992px) {
+                    flex-direction: column !important;
+                    align-items: stretch !important;
+
+                    .ant-tabs-nav-wrap {
+                        width: 100% !important;
+                    }
+
+                    .ant-tabs-extra-content {
+                        margin-top: 12px !important;
+                        margin-left: 0 !important;
+                        display: flex;
+                        justify-content: flex-start;
+                        width: 100% !important;
+
+                        .ant-space {
+                            width: 100% !important;
+                            flex-wrap: wrap !important;
+                            gap: 8px !important;
+
+                            .ant-space-item {
+                                flex: 1 1 auto;
+                                min-width: 120px;
+                                
+                                .ant-btn, .ant-select, .ant-input-number, .ant-picker, .ant-segmented {
+                                    width: 100% !important;
+                                    display: flex !important;
+                                    justify-content: center !important;
+                                    align-items: center !important;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -310,7 +510,7 @@
     height: 48px;
     border-radius: 50%;
     z-index: 1002;
-    background: C72127;
+    background: #C72127;
     border: none;
     color: white;
     box-shadow: 0 4px 12px rgba(199, 33, 39, 0.4);

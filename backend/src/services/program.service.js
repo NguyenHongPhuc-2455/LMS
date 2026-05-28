@@ -1,29 +1,10 @@
 const prisma = require('../configs/prisma');
+const ApiError = require('../utils/ApiError');
+const { programInclude, withoutCountInclude, normalizeProgramCourseCount } = require('./program/program.include');
+const { filterProgramsForUserScope, assertProgramVisibleToUser, getDepartmentMap } = require('./program/programScope.service');
+const { enrichProgramCoursesWithProgress, buildCourseStatsMap } = require('./program/programProgress.service');
 const { isUserInScope } = require('../utils/scope');
-
-
-const include = {
-    instructor: { select: { id: true, username: true, full_name: true, avatar: true } },
-    courses: {
-        where: {
-            course: { deleted_at: null }
-        },
-        orderBy: { order: 'asc' },
-        include: {
-            course: {
-                select: {
-                    id: true, title: true, thumbnail: true, level: true, description: true,
-                    instructor: { select: { id: true, full_name: true } },
-                    _count: { select: { sections: true, enrollments: true } }
-                }
-            }
-        }
-    },
-
-    _count: { select: { enrollments: true, courses: true } }
-};
-
-const getAllPrograms = async ({ search = '', status, instructorId, user = null } = {}) => {
+const getAllPrograms = async ({ search = '', status, instructorId, user = null, page = null, limit = null } = {}) => {
     let programs = await prisma.learningProgram.findMany({
         where: {
             deleted_at: null,
@@ -31,66 +12,38 @@ const getAllPrograms = async ({ search = '', status, instructorId, user = null }
             ...(instructorId ? { instructor_id: parseInt(instructorId) } : {}),
             ...(search ? { title: { contains: search, mode: 'insensitive' } } : {})
         },
-        include,
+        include: programInclude,
         orderBy: { created_at: 'desc' }
     });
+    programs = await filterProgramsForUserScope(programs, user);
 
-    // Lọc các Lộ trình hiển thị theo Phạm vi áp dụng (Nếu không phải admin/instructor)
-    if (user) {
-        const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
-        if (!isAdmin) {
-            const userData = await prisma.user.findUnique({ 
-                where: { id: user.id }, 
-                select: { id: true, department_id: true, position_id: true, join_date: true } 
-            });
-            
-            if (userData) {
-                const enrolledPrograms = await prisma.programEnrollment.findMany({
-                    where: { user_id: user.id },
-                    select: { program_id: true }
-                });
-                const enrolledProgramIds = new Set(enrolledPrograms.map(ep => ep.program_id));
+    const normalized = programs.map(normalizeProgramCourseCount);
 
-                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
-                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
-
-                programs = programs.filter(program => {
-                    const isEnrolled = enrolledProgramIds.has(program.id);
-                    return isUserInScope(userData, program, isEnrolled, departmentMap);
-                });
-            }
-        }
+    if (page !== null && limit !== null) {
+        const total = normalized.length;
+        const skip = (page - 1) * limit;
+        return {
+            programs: normalized.slice(skip, skip + limit),
+            total
+        };
     }
 
-    return programs.map(p => ({
-        ...p,
-        _count: {
-            ...p._count,
-            courses: p.courses.length
-        }
-    }));
+    return normalized;
 };
 
 const getProgramById = async (id) => {
     const program = await prisma.learningProgram.findUnique({
         where: { id: parseInt(id), deleted_at: null },
-        include
+        include: programInclude
     });
     if (!program) return null;
-    return {
-        ...program,
-        _count: {
-            ...program._count,
-            courses: program.courses.length
-        }
-    };
+    return normalizeProgramCourseCount(program);
 };
 
 const createProgram = async (data) => {
-    const { _count, ...createInclude } = include;
     const program = await prisma.learningProgram.create({
         data,
-        include: createInclude
+        include: withoutCountInclude()
     });
     return {
         ...program,
@@ -102,11 +55,10 @@ const createProgram = async (data) => {
 };
 
 const updateProgram = async (id, data) => {
-    const { _count, ...updateInclude } = include;
     const program = await prisma.learningProgram.update({
         where: { id: parseInt(id) },
         data: { ...data, updated_at: new Date() },
-        include: updateInclude
+        include: withoutCountInclude()
     });
 
     // Fetch counts separately or use current ones
@@ -193,8 +145,6 @@ const removeCourse = async (programId, courseId) => {
     });
 };
 
-const ApiError = require('../utils/ApiError');
-
 const enrollProgram = async (userId, programId) => {
     const program = await getProgramById(programId);
     if (!program) return null;
@@ -253,69 +203,11 @@ const getEnrichedProgramDetail = async (id, user) => {
         isEnrolled = !!enrollment;
         requestStatus = request?.status || null;
 
-        // Kiểm tra phạm vi hiển thị (Visibility Scope)
-        const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('instructor');
-        const isOwner = program.instructor_id === userId;
-        if (!isAdmin && !isOwner) {
-            const userData = await prisma.user.findUnique({ 
-                where: { id: userId }, 
-                select: { id: true, department_id: true, position_id: true, join_date: true } 
-            });
-            if (userData) {
-                const depts = await prisma.department.findMany({ select: { id: true, parent_id: true } });
-                const departmentMap = new Map(depts.map(d => [d.id, d.parent_id]));
-                const inScope = isUserInScope(userData, program, isEnrolled, departmentMap);
-                if (!inScope) {
-                    throw new ApiError(403, 'Bạn không thuộc đối tượng được phân phối lộ trình học này.');
-                }
-            }
-        }
+        await assertProgramVisibleToUser({ program, user, isEnrolled, ApiError });
     }
 
     if (isEnrolled && userId) {
-        const sortedCourses = program.courses.sort((a, b) => a.order - b.order);
-        const courseIds = sortedCourses.map(pc => pc.course.id);
-
-        // Tối ưu N+1: Lấy tất cả bài học và trạng thái hoàn thành trong 2 queries
-        const allLessons = await prisma.lesson.findMany({
-            where: { section: { course_id: { in: courseIds } } },
-            select: { id: true, section: { select: { course_id: true } } }
-        });
-
-        const allCompleted = await prisma.lessonCompleted.findMany({
-            where: { user_id: userId, lesson_id: { in: allLessons.map(l => l.id) } },
-            select: { lesson_id: true }
-        });
-
-        const completedIds = new Set(allCompleted.map(c => c.lesson_id));
-        const courseLessonMap = {};
-        allLessons.forEach(l => {
-            const cid = l.section.course_id;
-            if (!courseLessonMap[cid]) courseLessonMap[cid] = [];
-            courseLessonMap[cid].push(l.id);
-        });
-
-        let previousCourseFinished = true;
-        const isAdmin = user?.roles?.includes('admin');
-        const isInstructor = program.instructor_id === userId;
-
-        program.courses = sortedCourses.map(pc => {
-            const cid = pc.course.id;
-            const lessonIds = courseLessonMap[cid] || [];
-            const total = lessonIds.length;
-            const completed = lessonIds.filter(id => completedIds.has(id)).length;
-            const isFinished = total === 0 || completed === total;
-            const isLocked = (isAdmin || isInstructor) ? false : !previousCourseFinished;
-
-            previousCourseFinished = isFinished;
-
-            return {
-                ...pc,
-                isLocked,
-                isFinished,
-                progressPercent: total === 0 ? 0 : Math.round((completed / total) * 100)
-            };
-        });
+        Object.assign(program, await enrichProgramCoursesWithProgress({ program, user }));
     }
 
     const { calculateProgramStatus } = require('../utils/courseStatus');
@@ -377,14 +269,7 @@ const getEnrichedMyPrograms = async (userId) => {
     ]);
 
     const completedIds = new Set(allCompleted.map(c => c.lesson_id));
-    const courseStatsMap = {}; // courseId -> { total, completed }
-
-    allLessons.forEach(l => {
-        const cid = l.section.course_id;
-        if (!courseStatsMap[cid]) courseStatsMap[cid] = { total: 0, completed: 0 };
-        courseStatsMap[cid].total++;
-        if (completedIds.has(l.id)) courseStatsMap[cid].completed++;
-    });
+    const courseStatsMap = buildCourseStatsMap(allLessons, completedIds);
 
     return programs.map(p => {
         let totalProg = 0;
@@ -443,6 +328,110 @@ const reorderCourses = async (programId, courses) => {
     return await prisma.$transaction(updates);
 };
 
+const getMandatoryProgramsForUser = async (userId) => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            join_date: true,
+            department_id: true,
+            position_id: true,
+            user_roles: {
+                include: { role: true }
+            }
+        }
+    });
+
+    if (!user) return [];
+
+    const roles = (user.user_roles || []).map(ur => ur.role.name.toLowerCase());
+    if (roles.includes('admin')) {
+        return [];
+    }
+
+    if (!user.join_date) return [];
+
+    let mandatoryPrograms = await prisma.learningProgram.findMany({
+        where: { is_mandatory: true, deleted_at: null },
+        include: {
+            instructor: { select: { full_name: true } },
+            courses: {
+                where: { course: { deleted_at: null } },
+                include: {
+                    course: {
+                        select: {
+                            id: true,
+                            sections: {
+                                include: {
+                                    lessons: { select: { id: true } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const enrolledPrograms = await prisma.programEnrollment.findMany({
+        where: { user_id: userId },
+        select: { program_id: true, enrolled_at: true }
+    });
+    const enrolledProgramMap = {};
+    enrolledPrograms.forEach(ep => { enrolledProgramMap[ep.program_id] = ep.enrolled_at; });
+
+    const departmentMap = await getDepartmentMap();
+
+    mandatoryPrograms = mandatoryPrograms.filter(program => {
+        const isEnrolled = !!enrolledProgramMap[program.id];
+        return isUserInScope(user, program, isEnrolled, departmentMap);
+    });
+
+    const completedLessons = await prisma.lessonCompleted.findMany({
+        where: { user_id: userId },
+        select: { lesson_id: true }
+    });
+    const completedLessonSet = new Set(completedLessons.map(c => c.lesson_id));
+
+    const { calculateCourseStatus } = require('../utils/courseStatus');
+
+    return mandatoryPrograms.map(program => {
+        let totalLessons = 0;
+        let completedLessonsCount = 0;
+
+        program.courses.forEach(pc => {
+            if (pc.course && pc.course.sections) {
+                const lessons = pc.course.sections.flatMap(s => s.lessons || []);
+                totalLessons += lessons.length;
+                completedLessonsCount += lessons.filter(l => completedLessonSet.has(l.id)).length;
+            }
+        });
+
+        const progressPercent = totalLessons === 0 ? 0 : Math.round((completedLessonsCount / totalLessons) * 100);
+        
+        const statusInfo = calculateCourseStatus(program, user, progressPercent, enrolledProgramMap[program.id]);
+
+        return {
+            id: program.id,
+            title: program.title,
+            thumbnail: program.thumbnail,
+            level: program.level,
+            is_mandatory: true,
+            mandatory_deadline_days: program.mandatory_deadline_days,
+            deadlineDate: statusInfo.deadlineDate,
+            remainingDays: statusInfo.remainingDays,
+            progressPercent,
+            completedLessons: completedLessonsCount,
+            totalLessons,
+            status: statusInfo.status,
+            isOverdue: statusInfo.isOverdue,
+            canAccess: statusInfo.canAccess,
+            reason: statusInfo.reason,
+            instructor: program.instructor
+        };
+    }).filter(p => p.canAccess !== false);
+};
+
 module.exports = {
     getAllPrograms,
     getProgramById,
@@ -455,7 +444,9 @@ module.exports = {
     removeCourse,
     reorderCourses,
     enrollProgram,
-    getMyPrograms
+    getMyPrograms,
+    getMandatoryProgramsForUser
 };
+
 
 

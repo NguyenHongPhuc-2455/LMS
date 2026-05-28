@@ -10,8 +10,14 @@ export interface Category {
 }
 
 export const categoryService = {
-    getAllCategories: async (): Promise<Category[]> => {
-        const response = await api.get('/categories');
+    getAllCategories: async (page?: number, limit?: number, search?: string, filter?: string): Promise<any> => {
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (search) params.append('search', search);
+        if (filter && filter !== 'ALL') params.append('filter', filter);
+        const query = params.toString() ? `?${params.toString()}` : '';
+        const response = await api.get(`/categories${query}`);
         return response.data;
     },
 

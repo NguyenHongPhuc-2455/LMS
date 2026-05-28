@@ -1,5 +1,6 @@
 import { Typography, Button } from 'antd';
 import { FileTextOutlined, DownloadOutlined } from '@ant-design/icons';
+import { getBackendUrl } from '../../../../services/api';
 import styles from '../CourseLearning.module.scss';
 
 const { Text } = Typography;
@@ -28,7 +29,7 @@ export default function LessonAttachment({ url, name }: LessonAttachmentProps) {
             <Button
                 type="primary"
                 icon={<DownloadOutlined />}
-                href={url.startsWith('http') ? url : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${url}`}
+                href={url.startsWith('http') ? url : `${getBackendUrl()}${url}`}
                 target="_blank"
                 className={styles.downloadBtn}
             >

@@ -1,4 +1,5 @@
-import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag, Switch } from 'antd';
+import React from 'react';
+import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag, Switch, Skeleton } from 'antd';
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -11,8 +12,20 @@ import { type Course } from '../../../../types/course';
 
 interface CourseTableProps {
     courses: Course[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number, pageSize: number) => void;
+    onTableChange?: (page: number, pageSize: number, payload: {
+        sortField?: string;
+        sortOrder?: 'ascend' | 'descend' | null;
+        privateFilter?: boolean | null;
+        activeFilter?: boolean | null;
+        levelFilter?: string[] | null;
+    }) => void;
     categories: any[];
     loading: boolean;
+    updatingId?: number | null;
     selectedRowKeys: React.Key[];
     onSelectionChange: (keys: React.Key[]) => void;
     onEdit: (course: Course) => void;
@@ -23,10 +36,16 @@ interface CourseTableProps {
     onToggleActive: (id: number, isActive: boolean) => void;
 }
 
-export default function CourseTable({
+function CourseTable({
     courses,
+    total,
+    page,
+    pageSize,
+    onPageChange,
+    onTableChange,
     categories,
     loading,
+    updatingId,
     selectedRowKeys,
     onSelectionChange,
     onEdit,
@@ -36,8 +55,8 @@ export default function CourseTable({
     onCategoryChange,
     onToggleActive
 }: CourseTableProps) {
-    console.log('CourseTable Props:', { onToggleActive });
-    const getColumnSearchProps = (dataIndex: string): any => ({
+
+    const getColumnSearchProps = React.useCallback((dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
@@ -77,17 +96,22 @@ export default function CourseTable({
             record[dataIndex]
                 ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
                 : '',
-    });
+    }), []);
 
-    const columns = [
+    const categoryOptions = React.useMemo(() => categories.map((cat) => ({
+        value: cat.id,
+        label: cat.name
+    })), [categories]);
+
+    const columns = React.useMemo(() => [
         {
             title: 'Khóa học',
             key: 'info',
             dataIndex: 'title',
+            sorter: true,
             width: 350,
             fixed: 'left' as const,
             ...getColumnSearchProps('title'),
-            sorter: (a: Course, b: Course) => a.title.localeCompare(b.title),
             render: (_: any, c: Course) => (
                 <Space
                     size={12}
@@ -101,20 +125,21 @@ export default function CourseTable({
                     </div>
                 </Space>
             ),
+            // Server-side filter — onFilter bị bỏ, AntD sẽ gửi giá trị qua onChange
             filters: [
                 { text: 'Cơ bản', value: 'Cơ bản' },
                 { text: 'Trung cấp', value: 'Trung cấp' },
                 { text: 'Nâng cao', value: 'Nâng cao' },
             ],
-            onFilter: (value: any, record: Course) => record.level === value,
         },
         {
             title: 'Danh mục',
             key: 'category',
-            filters: categories.map(cat => ({ text: cat.name, value: cat.id })),
-            onFilter: (value: any, record: Course) => record.category_id === value,
-            render: (c: Course) => (
-                <div style={{ minWidth: '110px' }}>
+            width: 220,
+            // Server-side filter — không dùng onFilter
+            filters: categoryOptions.map(cat => ({ text: cat.label, value: cat.value })),
+            render: (_: any, c: Course) => (
+                <div style={{ minWidth: '190px' }}>
                     <Select
                         value={c.category_id}
                         onChange={(val) => onCategoryChange(c.id, val)}
@@ -122,12 +147,11 @@ export default function CourseTable({
                         style={{ width: '100%' }}
                         size="small"
                         allowClear
+                        loading={updatingId === c.id}
+                        disabled={updatingId === c.id}
                         popupMatchSelectWidth={false}
                         className={styles.statusSelect}
-                        options={categories.map(cat => ({
-                            value: cat.id,
-                            label: cat.name
-                        }))}
+                        options={categoryOptions}
                     />
                 </div>
             ),
@@ -135,19 +159,23 @@ export default function CourseTable({
         {
             title: 'Trạng thái',
             dataIndex: 'is_private',
+            sorter: true,
+            width: 160,
+            // Server-side filter
             filters: [
                 { text: 'RIÊNG TƯ', value: true },
                 { text: 'CÔNG KHAI', value: false },
             ],
-            onFilter: (value: any, record: Course) => record.is_private === value,
             render: (isPrivate: boolean, record: Course) => (
-                <div style={{ minWidth: '110px' }}>
+                <div style={{ minWidth: '130px' }}>
                     <Select
                         value={isPrivate}
                         onChange={(val) => onStatusChange(record.id, val)}
                         className={styles.statusSelect}
                         size="small"
                         showSearch={false}
+                        loading={updatingId === record.id}
+                        disabled={updatingId === record.id}
                         popupMatchSelectWidth={false}
                         popupClassName={styles.statusPopup}
                         options={[
@@ -161,34 +189,44 @@ export default function CourseTable({
         {
             title: 'Hiển thị',
             key: 'active',
+            width: 100,
+            // Server-side filter
             filters: [
                 { text: 'Đang mở', value: true },
                 { text: 'Đã đóng', value: false },
             ],
-            onFilter: (value: any, record: Course) => (!record.deleted_at) === value,
             render: (_: any, record: Course) => {
                 const isActive = !record.deleted_at;
                 return (
-                    <div style={{ whiteSpace: 'nowrap' }}>
+                    <div style={{ minWidth: '80px', display: 'flex', justifyContent: 'center' }}>
                         <Switch
                             checked={isActive}
-                            onChange={(checked) => onToggleActive(record.id, checked)}
                             size="small"
-                            checkedChildren="ON"
-                            unCheckedChildren="OFF"
+                            loading={updatingId === record.id}
+                            disabled={updatingId === record.id}
+                            onChange={(checked) => onToggleActive(record.id, checked)}
+                            style={{ backgroundColor: isActive ? '#52c41a' : undefined }}
                         />
                     </div>
                 );
             }
         },
         {
+            title: 'Số chương học',
+            key: 'sections',
+            sorter: true,
+            width: 140,
+            render: (_: any, record: Course) => <span style={{ whiteSpace: 'nowrap' }}>{record._count?.sections || 0} chương</span>
+        },
+        {
             title: 'Loại khóa',
             dataIndex: 'is_mandatory',
+            width: 130,
+            // Server-side filter
             filters: [
                 { text: 'BẮT BUỘC', value: true },
                 { text: 'TỰ CHỌN', value: false },
             ],
-            onFilter: (value: any, record: Course) => record.is_mandatory === value,
             render: (isMandatory: boolean) => (
                 <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
                     {isMandatory ? 'BẮT BUỘC' : 'TỰ CHỌN'}
@@ -198,8 +236,9 @@ export default function CourseTable({
         {
             title: 'nhân sự',
             key: 'students',
-            sorter: (a: Course, b: Course) => (a._count?.enrollments || 0) - (b._count?.enrollments || 0),
-            render: (c: Course) => (
+            sorter: true,
+            width: 110,
+            render: (_: any, c: Course) => (
                 <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
                     {c._count?.enrollments || 0}
                 </span>
@@ -209,15 +248,15 @@ export default function CourseTable({
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
+            sorter: true,
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-                <div className={styles.filterPickerWrapper} onKeyDown={(e) => e.stopPropagation()}>
+                <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                     <RangePicker
-                        value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
-                        onChange={(dates) => setSelectedKeys(dates ? [[dates[0]?.toISOString(), dates[1]?.toISOString()]] : [])}
-                        className={styles.filterRangePicker}
-                        size="small"
+                        value={selectedKeys[0]}
+                        onChange={(dates) => setSelectedKeys(dates ? [dates] : [])}
+                        style={{ marginBottom: 8, display: 'flex' }}
                     />
-                    <Space>
+                    <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <Button
                             type="primary"
                             onClick={() => confirm()}
@@ -242,10 +281,12 @@ export default function CourseTable({
             filterIcon: (filtered: boolean) => (
                 <CalendarOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
             ),
+            // Date filter vẫn client-side vì chỉ filter trên trang hiện tại (10 rows)
+            // và không có server-side date range filter endpoint
             onFilter: (value: any, record: Course) => {
                 if (!value || value.length === 0) return true;
-                const start = dayjs(value[0][0]).startOf('day');
-                const end = dayjs(value[0][1]).endOf('day');
+                const start = dayjs(value[0]).startOf('day');
+                const end = dayjs(value[1]).endOf('day');
                 const recordDate = dayjs(record.created_at);
                 return recordDate.isAfter(start) && recordDate.isBefore(end);
             },
@@ -261,7 +302,7 @@ export default function CourseTable({
             key: 'actions',
             width: 120,
             fixed: 'right' as const,
-            render: (record: Course) => (
+            render: (_: any, record: Course) => (
                 <Space>
                     <Button type="text" icon={<Edit size={16} />} onClick={() => onEdit(record)} />
                     <Popconfirm title="Xóa toàn bộ khóa học?" onConfirm={() => onDelete(record.id)}>
@@ -270,32 +311,114 @@ export default function CourseTable({
                 </Space>
             )
         }
-    ];
+    ], [
+        categoryOptions,
+        onNavigateToSections,
+        onCategoryChange,
+        onStatusChange,
+        onToggleActive,
+        onEdit,
+        onDelete,
+        getColumnSearchProps,
+        updatingId
+    ]);
+
+    const paginationConfig = React.useMemo(() => ({
+        total,
+        current: page,
+        pageSize,
+        onChange: onPageChange,
+        pageSizeOptions: ['10', '20', '50', '100'],
+        showSizeChanger: true,
+        selectProps: { showSearch: false },
+        itemRender: (currentPage: number, type: string, originalElement: any) => {
+            if (type === 'page') {
+                return React.cloneElement(originalElement, {
+                    className: 'page-number',
+                    children: currentPage < 10 ? `0${currentPage}` : currentPage
+                });
+            }
+            return originalElement;
+        }
+    }), [total, page, pageSize, onPageChange]);
+
+    const rowSelection = React.useMemo(() => ({
+        selectedRowKeys,
+        onChange: onSelectionChange,
+    }), [selectedRowKeys, onSelectionChange]);
+
+    const handleTableChange = React.useCallback((pagination: any, filters: any, sorter: any) => {
+        const currentPage = pagination?.current || 1;
+        const currentPageSize = pagination?.pageSize || 10;
+        onPageChange?.(currentPage, currentPageSize);
+
+        if (!onTableChange) return;
+
+        const normalizedSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+        const sortFieldMap: Record<string, string> = {
+            title: 'title',
+            is_private: 'is_private',
+            created_at: 'created_at',
+            sections: 'sections_count',
+            students: 'enrollments_count'
+        };
+        const mappedSortField = normalizedSorter?.columnKey ? sortFieldMap[normalizedSorter.columnKey] : undefined;
+        const mappedSortOrder = (normalizedSorter?.order || null) as 'ascend' | 'descend' | null;
+
+        onTableChange(currentPage, currentPageSize, {
+            sortField: mappedSortField,
+            sortOrder: mappedSortOrder,
+            privateFilter: Array.isArray(filters?.is_private) && filters.is_private.length > 0 ? filters.is_private[0] : null,
+            activeFilter: Array.isArray(filters?.active) && filters.active.length > 0 ? filters.active[0] : null,
+            levelFilter: Array.isArray(filters?.info) && filters.info.length > 0 ? filters.info : null
+        });
+    }, [onPageChange, onTableChange]);
+
+    const isFirstLoad = loading && (!courses || courses.length === 0);
+
+    const displayData = React.useMemo(() => {
+        if (isFirstLoad) {
+            return Array.from({ length: 5 }).map((_, index) => ({ id: `dummy-${index}`, isDummy: true } as any));
+        }
+        return courses;
+    }, [courses, isFirstLoad]);
+
+    const skeletonColumns = React.useMemo(() => {
+        if (!isFirstLoad) return columns;
+        return columns.map(col => ({
+            ...col,
+            render: (value: any, record: any, index: number) => {
+                if (record.isDummy) {
+                    return <Skeleton.Button active size="small" style={{ width: '80%', height: 16 }} />;
+                }
+                return col.render ? (col.render as any)(value, record, index) : value;
+            }
+        }));
+    }, [columns, isFirstLoad]);
+
+    const resolvedRowSelection = React.useMemo(() => {
+        if (isFirstLoad) return undefined;
+        return rowSelection;
+    }, [rowSelection, isFirstLoad]);
 
     return (
         <Table
-            dataSource={courses}
-            columns={columns}
+            dataSource={displayData}
+            columns={skeletonColumns}
             rowKey="id"
-            loading={loading}
-            rowSelection={{
-                selectedRowKeys,
-                onChange: onSelectionChange,
-            }}
-            pagination={{
-                pageSizeOptions: ['10', '20', '50', '100'],
-                showSizeChanger: true,
-                defaultPageSize: 10,
-                selectProps: { showSearch: false },
-                itemRender: (current: number, type: string, originalElement: any) => {
-                    if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
-                    }
-                    return originalElement;
-                }
-            } as any}
+            loading={isFirstLoad ? false : loading}
+            rowSelection={resolvedRowSelection}
+            pagination={isFirstLoad ? false : (paginationConfig as any)}
             scroll={{ x: 1600, y: 600 }}
             bordered
+            onChange={isFirstLoad ? undefined : handleTableChange}
+            onRow={(record) => ({
+                onClick: (event) => {
+                    if (record.isDummy) return;
+                }
+            })}
         />
     );
 }
+
+export default React.memo(CourseTable);

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, startTransition } from 'react';
 import { 
     Card, Typography, Button, Space, Breadcrumb, 
     App, Select, Tooltip, Empty, 
-    Popconfirm
+    Popconfirm, Skeleton
 } from 'antd';
 import { 
     ArrowLeftOutlined, 
@@ -49,9 +49,13 @@ const UnifiedContent: React.FC = () => {
     const [categories, setCategories] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [positions, setPositions] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [includeInactive, setIncludeInactive] = useState<boolean>(false);
+    
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
     
     // Navigation State for Breadcrumbs
     const [currentCourse, setCurrentCourse] = useState<any>(null);
@@ -60,6 +64,7 @@ const UnifiedContent: React.FC = () => {
     // Data State
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
     
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,13 +79,11 @@ const UnifiedContent: React.FC = () => {
         Promise.all([
             categoryService.getAllCategories(),
             departmentService.getAll(),
-            positionService.getAll(),
-            userService.getAll({ limit: 1000, page: 1 })
-        ]).then(([cats, depts, pos, userResp]) => {
+            positionService.getAll()
+        ]).then(([cats, depts, pos]) => {
             setCategories(cats);
             setDepartments(depts);
             setPositions(pos);
-            setUsers(userResp.users || []);
         }).catch(() => message.error('Lỗi tải dữ liệu metadata'));
     }, []);
 
@@ -102,63 +105,93 @@ const UnifiedContent: React.FC = () => {
         }
     }, [courseId, sectionId]);
 
+    const lastViewParams = React.useRef({ courseId, sectionId });
+
     const fetchData = useCallback(async () => {
         setLoading(true);
+        // Chỉ reset dữ liệu khi chuyển đổi giữa các chế độ xem (Ví dụ: từ Khóa học sang Chương học)
+        if (lastViewParams.current.courseId !== courseId || lastViewParams.current.sectionId !== sectionId) {
+            setData([]);
+            lastViewParams.current = { courseId, sectionId };
+        }
         try {
             if (sectionId) {
                 const lessonsData = await contentService.getLessonsBySection(Number(sectionId));
                 setData(lessonsData || []);
+                setTotal(lessonsData?.length || 0);
             } else if (courseId) {
                 const courseData = await courseService.getById(Number(courseId));
                 setData(courseData.sections || []);
+                setTotal(courseData.sections?.length || 0);
             } else {
-                const courses = await courseService.getAll('', selectedCategoryId || undefined, includeInactive);
-                setData(courses);
+                const response = await courseService.getAll('', selectedCategoryId || undefined, includeInactive, page, pageSize);
+                if (response && response.courses) {
+                    setData(response.courses);
+                    setTotal(response.total);
+                } else {
+                    setData(response as any);
+                    setTotal((response as any)?.length || 0);
+                }
             }
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu');
         } finally {
             setLoading(false);
         }
-    }, [courseId, sectionId, selectedCategoryId, includeInactive]);
+    }, [courseId, sectionId, selectedCategoryId, includeInactive, page, pageSize]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
-    // ✅ Navigation Handlers - Dùng navigate() thay vì setSearchParams()
-    const handleCourseClick = (course: any) => {
+    const handlePageChange = useCallback((newPage: number, newPageSize: number) => {
+        startTransition(() => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+        });
+    }, []);
+
+    const handleCourseClick = useCallback((course: any) => {
         setCurrentCourse(course);
         navigate(`${ROUTES.ADMIN_COURSES}/${course.id}/sections`);
-    };
+    }, [navigate]);
 
-    const handleSectionClick = (section: any) => {
+    const handleNavigateToSections = useCallback((id: number) => {
+        const course = data.find(c => c.id === id);
+        if (course) handleCourseClick(course);
+    }, [data, handleCourseClick]);
+
+    const handleSectionClick = useCallback((section: any) => {
         setCurrentSection(section);
         navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections/${section.id}/lessons`);
-    };
+    }, [navigate, courseId]);
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         if (viewMode === 'LESSON') {
             navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections`);
         } else if (viewMode === 'SECTION') {
+            setPage(1);
             navigate(ROUTES.ADMIN_COURSES);
         }
-    };
+    }, [viewMode, navigate, courseId]);
 
-    const handleBreadcrumbClick = (mode: ViewMode) => {
-        if (mode === 'COURSE') navigate(ROUTES.ADMIN_COURSES);
+    const handleBreadcrumbClick = useCallback((mode: ViewMode) => {
+        if (mode === 'COURSE') {
+            setPage(1);
+            navigate(ROUTES.ADMIN_COURSES);
+        }
         if (mode === 'SECTION') navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections`);
-    };
+    }, [navigate, courseId]);
 
     // Modal Handlers
-    const handleAdd = () => {
+    const handleAdd = useCallback(() => {
         setEditingData(null);
         setEditingQuizId(null);
         setLessonType('VIDEO');
         setIsModalOpen(true);
-    };
+    }, []);
 
-    const handleEdit = async (record: any) => {
+    const handleEdit = useCallback(async (record: any) => {
         if (viewMode === 'LESSON' && record.type === 'QUIZ') {
             try {
                 message.loading({ content: 'Đang tải dữ liệu bài thi...', key: 'quiz-loading' });
@@ -187,9 +220,9 @@ const UnifiedContent: React.FC = () => {
             if (viewMode === 'LESSON') setLessonType(record.type);
         }
         setIsModalOpen(true);
-    };
+    }, [viewMode, message]);
 
-    const handleDelete = async (record: any) => {
+    const handleDelete = useCallback(async (record: any) => {
         const id = typeof record === 'object' ? record.id : record;
         try {
             if (viewMode === 'COURSE') await courseService.delete(id);
@@ -201,7 +234,7 @@ const UnifiedContent: React.FC = () => {
         } catch (e) {
             message.error('Lỗi khi xóa');
         }
-    };
+    }, [viewMode, message, fetchData]);
 
     const handleBulkDelete = async () => {
         if (selectedRowKeys.length === 0) return;
@@ -222,37 +255,47 @@ const UnifiedContent: React.FC = () => {
         }
     };
 
-    const handleCourseStatusChange = async (id: number, isPrivate: boolean) => {
+    const handleCourseStatusChange = useCallback(async (id: number, isPrivate: boolean) => {
+        setUpdatingId(id);
         try {
             await courseService.update(id, { is_private: isPrivate });
+            setData(prev => prev.map(c => c.id === id ? { ...c, is_private: isPrivate } : c));
             message.success('Đã cập nhật trạng thái');
-            fetchData();
         } catch (e) {
             message.error('Lỗi khi cập nhật trạng thái');
+        } finally {
+            setUpdatingId(null);
         }
-    };
+    }, [message]);
 
-    const handleCourseToggleActive = async (id: number, isActive: boolean) => {
+    const handleCourseToggleActive = useCallback(async (id: number, isActive: boolean) => {
+        setUpdatingId(id);
         try {
             await courseService.toggleActive(id, isActive);
+            setData(prev => prev.map(c => c.id === id ? { ...c, deleted_at: isActive ? null : new Date().toISOString() } : c));
             message.success(isActive ? 'Đã khôi phục khóa học' : 'Đã tạm ẩn khóa học');
-            fetchData();
         } catch (e) {
             message.error('Lỗi khi thay đổi trạng thái');
+        } finally {
+            setUpdatingId(null);
         }
-    };
+    }, [message]);
 
-    const handleCourseCategoryChange = async (id: number, catId: number | null) => {
+    const handleCourseCategoryChange = useCallback(async (id: number, catId: number | null) => {
+        setUpdatingId(id);
+        const resolvedCatId = catId === -1 ? null : catId;
         try {
-            await courseService.update(id, { category_id: catId === -1 ? null : catId });
+            await courseService.update(id, { category_id: resolvedCatId });
+            setData(prev => prev.map(c => c.id === id ? { ...c, category_id: resolvedCatId } : c));
             message.success('Đã cập nhật danh mục');
-            fetchData();
         } catch (e) {
             message.error('Lỗi khi cập nhật danh mục');
+        } finally {
+            setUpdatingId(null);
         }
-    };
+    }, [message]);
 
-    const handleModalSuccess = async (values: any, ...args: any[]) => {
+    const handleModalSuccess = useCallback(async (values: any, ...args: any[]) => {
         setSubmitting(true);
         try {
             if (viewMode === 'COURSE') {
@@ -339,23 +382,67 @@ const UnifiedContent: React.FC = () => {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [viewMode, editingData, editingQuizId, lessonType, courseId, sectionId, message, fetchData]);
 
     // Render Helpers
-    const getAddButtonText = () => {
+    const getAddButtonText = useCallback(() => {
         if (viewMode === 'LESSON') return 'Thêm Bài học mới';
         if (viewMode === 'SECTION') return 'Thêm Chương mới';
         return 'Tạo Khóa học mới';
-    };
+    }, [viewMode]);
+
+    const isFirstLoad = loading && data.length === 0;
+
+    if (isFirstLoad) {
+        return (
+            <div className={styles.unifiedContainer}>
+                <Card className="glass-card" style={{ minHeight: 680 }}>
+                    {/* Header Toolbar Skeleton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+                        <Space size={16}>
+                            <Skeleton.Button active style={{ width: 40, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Input active style={{ width: 180, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Button active style={{ width: 40, height: 32, borderRadius: 5 }} />
+                        </Space>
+                        <Space size={16}>
+                            <Skeleton.Input active style={{ width: 160, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Input active style={{ width: 140, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Button active style={{ width: 140, height: 32, borderRadius: 5 }} />
+                        </Space>
+                    </div>
+                    {/* Table Headers Skeleton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '25%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '20%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                    </div>
+                    {/* Table Rows Skeleton */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '22%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '18%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '10%', height: 16 }} />
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.unifiedContainer}>
-            <div className={styles.managementHeader}>
+            {/* <div className={styles.managementHeader}>
                 <div>
                     <Title level={4} className={styles.headerTitle}>Quản lý Nội dung</Title>
                     <Text type="secondary">Gộp chung quản lý Khóa học, Chương học và Bài giảng</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.tableToolbar}>
@@ -453,12 +540,7 @@ const UnifiedContent: React.FC = () => {
                     </Space>
                 </div>
 
-                {loading ? (
-                    <div style={{ padding: '100px 0', textAlign: 'center' }}>
-                        <ReloadOutlined spin style={{ fontSize: 24, color: '#C72127' }} />
-                        <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
-                    </div>
-                ) : data.length === 0 ? (
+                {(!loading && data.length === 0) ? (
                     <Empty 
                         image={Empty.PRESENTED_IMAGE_SIMPLE} 
                         description={
@@ -478,16 +560,22 @@ const UnifiedContent: React.FC = () => {
                         {viewMode === 'COURSE' && (
                             <CourseTable 
                                 courses={data} 
+                                total={total}
+                                page={page}
+                                pageSize={pageSize}
+                                onPageChange={handlePageChange}
                                 categories={categories}
-                                loading={loading}
+                                loading={loading && data.length === 0}
+                                updatingId={updatingId}
                                 selectedRowKeys={selectedRowKeys}
                                 onSelectionChange={setSelectedRowKeys}
                                 onEdit={handleEdit} 
                                 onDelete={handleDelete}
-                                onNavigateToSections={(id) => handleCourseClick(data.find(c => c.id === id))}
+                                onNavigateToSections={handleNavigateToSections}
                                 onStatusChange={handleCourseStatusChange}
                                 onCategoryChange={handleCourseCategoryChange}
                                 onToggleActive={handleCourseToggleActive}
+                                
                             />
                         )}
                         {viewMode === 'SECTION' && (
@@ -496,7 +584,7 @@ const UnifiedContent: React.FC = () => {
                                 loading={loading}
                                 onEdit={handleEdit} 
                                 onDelete={handleDelete}
-                                onNavigateLessons={(sid) => handleSectionClick(data.find(s => s.id === sid))}
+                                onNavigateLessons={handleSectionClick}
                             />
                         )}
                         {viewMode === 'LESSON' && (
@@ -512,7 +600,7 @@ const UnifiedContent: React.FC = () => {
             </Card>
 
             {/* Modals */}
-            {viewMode === 'COURSE' && (
+            {viewMode === 'COURSE' && isModalOpen && (
                 <CourseFormModal
                     open={isModalOpen}
                     onCancel={() => setIsModalOpen(false)}
@@ -522,11 +610,10 @@ const UnifiedContent: React.FC = () => {
                     categories={categories}
                     departments={departments}
                     positions={positions}
-                    users={users}
                     loading={submitting}
                 />
             )}
-            {viewMode === 'SECTION' && (
+            {viewMode === 'SECTION' && isModalOpen && (
                 <SectionFormModal
                     open={isModalOpen}
                     onCancel={() => setIsModalOpen(false)}
@@ -536,7 +623,7 @@ const UnifiedContent: React.FC = () => {
                     loading={submitting}
                 />
             )}
-            {viewMode === 'LESSON' && (
+            {viewMode === 'LESSON' && isModalOpen && (
                 <LessonFormModal
                     open={isModalOpen}
                     onCancel={() => setIsModalOpen(false)}

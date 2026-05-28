@@ -14,11 +14,11 @@ import {
     PictureOutlined,
     ClusterOutlined,
     WarningOutlined,
-    IdcardOutlined
+    IdcardOutlined,
+    HomeOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { statsService } from '../../../services/stats.service';
-import { departmentService } from '../../../services/department.service';
 import { socketService } from '../../../services/socket';
 import { ROUTES } from '../../../constants/routes';
 import styles from '../AdminLayout.module.scss';
@@ -37,23 +37,13 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
     const [searchParams] = useSearchParams();
 
     const [pendingCount, setPendingCount] = React.useState<number>(0);
-    const [departments, setDepartments] = React.useState<any[]>([]);
 
     const fetchCounts = React.useCallback(async () => {
         try {
-            const data = await statsService.getDashboardStats();
-            setPendingCount(data.overview.pendingRequests || 0);
+            const data = await statsService.getPendingRequestsCount();
+            setPendingCount(data.pendingCount ?? 0);
         } catch (error) {
             console.error('Failed to fetch stats:', error);
-        }
-    }, []);
-
-    const fetchDepartments = React.useCallback(async () => {
-        try {
-            const data = await departmentService.getAll();
-            setDepartments(data);
-        } catch (error) {
-            console.error('Failed to fetch departments:', error);
         }
     }, []);
 
@@ -63,7 +53,6 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
 
     React.useEffect(() => {
         fetchCounts();
-        fetchDepartments();
 
         if (userId) {
             const socket = socketService.connect(userId);
@@ -74,7 +63,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
                 socket.off('updatePendingRequestCount');
             };
         }
-    }, [userId, fetchCounts, fetchDepartments]);
+    }, [userId, fetchCounts]);
 
     const userRoles = user?.roles || [];
     const roleNames = userRoles.map((r: any) => {
@@ -92,7 +81,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_PROGRESS,
             icon: <LineChartOutlined />,
-            label: 'Quản lý tiến độ học tập',
+            label: 'Quản lý tiến độ',
         },
         {
             key: ROUTES.MANAGER_EMPLOYEES,
@@ -118,12 +107,16 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_ONBOARDING_REPORT,
             icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
-            label: 'Báo cáo Onboarding',
+            label: 'Báo cáo',
+        },
+
+        {
+            type: 'divider' as const
         },
         {
-            key: ROUTES.MANAGER_INACTIVE_REPORT,
-            icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
-            label: 'Nhân sự không học tập',
+            key: ROUTES.HOME,
+            icon: <HomeOutlined />,
+            label: 'Quay lại trang Elearning',
         }
     ] : [
         {
@@ -139,7 +132,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_PROGRAMS,
             icon: <ApartmentOutlined />,
-            label: 'Quản lý lộ trình học',
+            label: 'Quản lý lộ trình',
         },
         {
             key: ROUTES.ADMIN_CATEGORIES,
@@ -149,23 +142,23 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_PROGRESS,
             icon: <LineChartOutlined />,
-            label: 'Quản lý tiến độ học tập',
+            label: 'Quản lý tiến độ',
         },
         {
-            key: 'user-management-parent',
+            key: ROUTES.ADMIN_USERS,
             icon: <UserOutlined />,
             label: 'Quản lý nhân sự',
-            children: [
-                // Chỉ Admin thấy "Tất cả nhân sự", Manager bị ẩn
-                ...(!isManagerOnly ? [{ key: ROUTES.ADMIN_USERS, label: 'Tất cả nhân sự' }] : []),
-                // Admin thấy tất cả phòng ban; Manager chỉ thấy đúng phòng ban của mình
-                ...departments
-                    .filter(dept => isManagerOnly ? dept.id === user?.department_id : true)
-                    .map(dept => ({
-                        key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
-                        label: dept.name,
-                    }))
-            ]
+            // children: [
+            //     // Chỉ Admin thấy "Tất cả nhân sự", Manager bị ẩn
+            //     ...(!isManagerOnly ? [{ key: ROUTES.ADMIN_USERS, label: 'Tất cả nhân sự' }] : []),
+            //     // Admin thấy tất cả phòng ban; Manager chỉ thấy đúng phòng ban của mình
+            //     ...departments
+            //         .filter(dept => isManagerOnly ? dept.id === user?.department_id : true)
+            //         .map(dept => ({
+            //             key: `${ROUTES.ADMIN_USERS}?departmentId=${dept.id}`,
+            //             label: dept.name,
+            //         }))
+            // ]
         },
         {
             key: ROUTES.ADMIN_DEPARTMENTS,
@@ -185,7 +178,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_BANNERS,
             icon: <PictureOutlined />,
-            label: 'Quản lý Banner Home',
+            label: 'Quản lý Banner',
         },
         {
             key: ROUTES.ADMIN_REQUESTS,

@@ -9,6 +9,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 
 import styles from './CourseRequests.module.scss';
 import RequestTabContent from './components/RequestTabContent';
+import React from 'react';
 
 const { Title } = Typography;
 
@@ -16,35 +17,58 @@ export default function CourseRequestManagement() {
     const [courseRequests, setCourseRequests] = useState<any[]>([]);
     const [programRequests, setProgramRequests] = useState<any[]>([]);
 
+    const [coursePage, setCoursePage] = useState(1);
+    const [coursePageSize, setCoursePageSize] = useState(10);
+    const [courseTotal, setCourseTotal] = useState(0);
+
+    const [programPage, setProgramPage] = useState(1);
+    const [programPageSize, setProgramPageSize] = useState(10);
+    const [programTotal, setProgramTotal] = useState(0);
+
     const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
     const [selectedProgramIds, setSelectedProgramIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
-    const fetchAllRequests = async () => {
+    const fetchAllRequests = React.useCallback(async () => {
         try {
             setLoading(true);
             const [courseData, programData, catData] = await Promise.all([
-                courseRequestService.getAllPending(),
-                programRequestService.getAllPending(),
+                courseRequestService.getAllPending(coursePage, coursePageSize),
+                programRequestService.getAllPending(programPage, programPageSize),
                 categoryService.getAllCategories()
             ]);
-            setCourseRequests(courseData);
-            setProgramRequests(programData);
+            
+            if (courseData && courseData.data) {
+                setCourseRequests(courseData.data);
+                setCourseTotal(courseData.total);
+            } else {
+                setCourseRequests(courseData as any);
+                setCourseTotal((courseData as any)?.length || 0);
+            }
+
+            if (programData && programData.data) {
+                setProgramRequests(programData.data);
+                setProgramTotal(programData.total);
+            } else {
+                setProgramRequests(programData as any);
+                setProgramTotal((programData as any)?.length || 0);
+            }
+
             setCategories(catData);
         } catch (error) {
             message.error('Lỗi khi tải danh sách yêu cầu');
         } finally {
             setLoading(false);
         }
-    };
+    }, [coursePage, coursePageSize, programPage, programPageSize]);
 
     useEffect(() => {
         fetchAllRequests();
-    }, []);
+    }, [fetchAllRequests]);
 
-    const handleBulkAction = async (type: 'course' | 'program', action: 'approve' | 'reject') => {
+    const handleBulkAction = React.useCallback(async (type: 'course' | 'program', action: 'approve' | 'reject') => {
         const ids = type === 'course' ? selectedCourseIds : selectedProgramIds;
         if (ids.length === 0) return;
 
@@ -61,9 +85,9 @@ export default function CourseRequestManagement() {
         } catch (error) {
             message.error('Lỗi khi thực hiện thao tác hàng loạt');
         }
-    };
+    }, [selectedCourseIds, selectedProgramIds, fetchAllRequests]);
 
-    const handleApprove = async (type: 'course' | 'program', id: number) => {
+    const handleApprove = React.useCallback(async (type: 'course' | 'program', id: number) => {
         try {
             if (type === 'course') {
                 await courseRequestService.approve(id);
@@ -76,9 +100,9 @@ export default function CourseRequestManagement() {
         } catch (error) {
             message.error('Lỗi khi phê duyệt');
         }
-    };
+    }, [fetchAllRequests]);
 
-    const handleReject = async (type: 'course' | 'program', id: number) => {
+    const handleReject = React.useCallback(async (type: 'course' | 'program', id: number) => {
         try {
             if (type === 'course') {
                 await courseRequestService.reject(id);
@@ -91,30 +115,49 @@ export default function CourseRequestManagement() {
         } catch (error) {
             message.error('Lỗi khi từ chối');
         }
-    };
+    }, [fetchAllRequests]);
 
     const filteredCourseRequests = courseRequests.filter(req =>
         selectedCategoryId === null ||
         (selectedCategoryId === -1 ? !req.course?.category_id : req.course?.category_id === selectedCategoryId)
     );
 
-    const items = [
+    const handleApproveCourse = React.useCallback((id: number) => handleApprove('course', id), [handleApprove]);
+    const handleRejectCourse = React.useCallback((id: number) => handleReject('course', id), [handleReject]);
+    const handleApproveProgram = React.useCallback((id: number) => handleApprove('program', id), [handleApprove]);
+    const handleRejectProgram = React.useCallback((id: number) => handleReject('program', id), [handleReject]);
+
+    const handleCoursePageChange = React.useCallback((page: number, pageSize: number) => {
+        setCoursePage(page);
+        setCoursePageSize(pageSize);
+    }, []);
+
+    const handleProgramPageChange = React.useCallback((page: number, pageSize: number) => {
+        setProgramPage(page);
+        setProgramPageSize(pageSize);
+    }, []);
+
+    const items = React.useMemo(() => [
         {
             key: '1',
             label: (
                 <span>
-                    <BookOutlined /> Khóa học ({filteredCourseRequests.length})
+                    <BookOutlined /> Khóa học ({courseTotal})
                 </span>
             ),
             children: (
                 <RequestTabContent
                     type="course"
                     data={filteredCourseRequests}
+                    total={courseTotal}
+                    page={coursePage}
+                    pageSize={coursePageSize}
+                    onPageChange={handleCoursePageChange}
                     loading={loading}
                     selectedIds={selectedCourseIds}
                     onSelectionChange={setSelectedCourseIds}
-                    onApprove={(id) => handleApprove('course', id)}
-                    onReject={(id) => handleReject('course', id)}
+                    onApprove={handleApproveCourse}
+                    onReject={handleRejectCourse}
                     handleBulkAction={handleBulkAction}
                 />
             ),
@@ -123,7 +166,7 @@ export default function CourseRequestManagement() {
             key: '2',
             label: (
                 <span>
-                    <ApartmentOutlined /> Lộ trình ({programRequests.length})
+                    <ApartmentOutlined /> Lộ trình ({programTotal})
                 </span>
             ),
             children: (
@@ -131,26 +174,41 @@ export default function CourseRequestManagement() {
                     <RequestTabContent
                         type="program"
                         data={programRequests}
+                        total={programTotal}
+                        page={programPage}
+                        pageSize={programPageSize}
+                        onPageChange={handleProgramPageChange}
                         loading={loading}
                         selectedIds={selectedProgramIds}
                         onSelectionChange={setSelectedProgramIds}
-                        onApprove={(id) => handleApprove('program', id)}
-                        onReject={(id) => handleReject('program', id)}
+                        onApprove={handleApproveProgram}
+                        onReject={handleRejectProgram}
                         handleBulkAction={handleBulkAction}
                     />
                 </div>
             ),
         }
-    ];
+    ], [
+        filteredCourseRequests,
+        programRequests,
+        loading,
+        selectedCourseIds,
+        selectedProgramIds,
+        handleApproveCourse,
+        handleRejectCourse,
+        handleApproveProgram,
+        handleRejectProgram,
+        handleBulkAction
+    ]);
 
     return (
         <div className={styles.courseRequestsContainer}>
-            <div style={{ marginBottom: 20 }}>
+            {/* <div style={{ marginBottom: 20 }}>
                 <Title level={4} style={{ margin: 0, marginBottom: 0 }}>Duyệt yêu cầu truy cập</Title>
                 <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của nhân sự</Typography.Text>
-            </div>
+            </div> */}
 
-            <Card className="glass-card" style={{ borderRadius: '16px' }}>
+            <Card className="glass-card" style={{ borderRadius: '5px' }}>
                 <div style={{ marginBottom: 16 }}>
                     <Space size={12}>
                         <Typography.Text strong>Lọc theo danh mục:</Typography.Text>

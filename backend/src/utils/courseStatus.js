@@ -41,9 +41,9 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         
         deadlineDate = endDate;
         hasDateRange = true;
-    } else if (user?.join_date) {
-        // 2. Tính toán dựa trên ngày vào làm và thời điểm khóa học bắt buộc
-        const joinDate = new Date(user.join_date);
+    } else if (user?.join_date || user?.created_at) {
+        // 2. Tính toán dựa trên ngày vào làm (hoặc ngày tạo tài khoản nếu thiếu) và thời điểm khóa học bắt buộc
+        const joinDate = new Date(user.join_date || user.created_at);
         joinDate.setHours(0, 0, 0, 0);
         
         const mandatoryAt = course.mandatory_at ? new Date(course.mandatory_at) : (course.created_at ? new Date(course.created_at) : new Date());
@@ -83,16 +83,21 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         };
     }
 
-    remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
-    
-    if (remainingDays < 0) {
+    if (today > deadlineDate) {
         isOverdue = true;
         status = 'OVERDUE';
+        remainingDays = Math.floor((deadlineDate - today) / (1000 * 60 * 60 * 24));
+    } else {
+        remainingDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+        if (Object.is(remainingDays, -0)) {
+            remainingDays = 0;
+        }
     }
 
     if (isCompleted) {
         status = 'COMPLETED';
-    } else if (remainingDays >= 0 && remainingDays <= 7) {
+        isOverdue = false;
+    } else if (!isOverdue && remainingDays >= 0 && remainingDays <= 7) {
         status = 'WARNING'; // Sắp hết hạn
     } else if (remainingDays > 7 && !isOverdue) {
         status = 'NORMAL';

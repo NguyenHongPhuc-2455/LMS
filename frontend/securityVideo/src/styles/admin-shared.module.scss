@@ -1,0 +1,106 @@
+.searchBarWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+
+    .headerLeft {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+
+        .headerTitle {
+            margin: 0;
+            color: #0f172a;
+        }
+    }
+
+    .headerRight {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .searchBar {
+        width: 320px;
+        height: 32px;
+        border-radius: 5px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0 16px;
+
+        &:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+
+        &:focus,
+        &-focused {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            background: #fff;
+        }
+
+        :global(.ant-input-prefix) {
+            margin-right: 10px;
+            color: #94a3b8;
+            font-size: 18px;
+        }
+
+        :global(.ant-input) {
+            font-size: 14px;
+            background: transparent;
+
+            &::placeholder {
+                color: #94a3b8;
+            }
+        }
+    }
+}
+
+.searchIcon {
+    color: #6366f1;
+    font-size: 18px;
+}
+
+.headerTitle {
+    margin-bottom: 0;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+:global(.ant-btn).adminAddButton {
+    background-color: #12B76A;
+    border-color: #12B76A;
+    border-radius: 5px;
+    color: white;
+    height: 32px;
+    padding: 0 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1;
+
+    &:hover {
+        background-color: #0e9657;
+        border-color: #0e9657;
+        color: white;
+    }
+
+    :global(.anticon),
+    :global(.lucide) {
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+        transform: translateY(1px);
+    }
+}

@@ -41,7 +41,7 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    border-radius: 16px;
+    border-radius: 5px;
     background: transparent;
     transition: all 0.3s ease;
     color: #64748b;
@@ -59,7 +59,7 @@
 
     &.active {
         background: rgba(199, 33, 39, 0.05);
-        color: C72127;
+        color: #C72127;
     }
 
     &:hover {

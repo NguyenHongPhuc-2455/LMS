@@ -36,8 +36,13 @@ exports.requestAccess = catchAsync(async (req, res) => {
  * Lấy danh sách yêu cầu đang chờ (Dành cho Admin/Manager)
  */
 exports.getPendingRequests = catchAsync(async (req, res) => {
+    const { page, limit } = req.query;
     const { departmentId } = await getManagerDepartmentId(req);
-    const requests = await programRequestService.getPendingRequests(departmentId);
+    const requests = await programRequestService.getPendingRequests(
+        departmentId,
+        page ? parseInt(page) : null,
+        limit ? parseInt(limit) : null
+    );
     res.json(requests);
 });
 

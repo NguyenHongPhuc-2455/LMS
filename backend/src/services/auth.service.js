@@ -55,6 +55,10 @@ exports.login = async (username, password) => {
         throw new ApiError(401, 'Sai tài khoản hoặc mật khẩu');
     }
 
+    if (user.deleted_at) {
+        throw new ApiError(403, 'Tài khoản của bạn đã bị vô hiệu hoá');
+    }
+
     // ✅ Tự động set join_date = hôm nay nếu chưa có (lần đăng nhập đầu tiên)
     let isFirstLogin = false;
     if (!user.join_date) {
@@ -91,7 +95,14 @@ exports.login = async (username, password) => {
 
     return {
         ...tokens,
-        user: { id: user.id, username: user.username, roles: roleNames },
+        user: { 
+            id: user.id, 
+            username: user.username, 
+            full_name: user.full_name,
+            avatar: user.avatar,
+            department_id: user.department_id,
+            roles: roleNames 
+        },
         isFirstLogin,
         mandatoryCourses
     };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Typography, Card, Space, Avatar, Empty, Select, Skeleton } from 'antd';
+import { Row, Col, Typography, Card, Space, Avatar, Empty, Select, Skeleton, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { ClockCircleOutlined, BookOutlined, FireOutlined, LineChartOutlined, TrophyOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, BookOutlined, FireOutlined, LineChartOutlined, TrophyOutlined, FolderOpenOutlined, ShareAltOutlined, CopyOutlined } from '@ant-design/icons';
 import { statsService } from '../../../services/stats.service';
 import { categoryService, type Category } from '../../../services/category.service';
 import { courseService } from '../../../services/course.service';
@@ -23,17 +23,27 @@ export default function Home() {
     const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [sortType, setSortType] = useState('progress_desc');
+    const [settings, setSettings] = useState<any>(null);
+
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('system_settings');
+        if (savedSettings) {
+            try {
+                setSettings(JSON.parse(savedSettings));
+            } catch (e) {}
+        }
+    }, []);
 
     useEffect(() => {
         const userStr = localStorage.getItem('user');
         if (userStr) {
             const user = JSON.parse(userStr);
             const userRoles = user.roles || [];
-            const isAdminOrManager = userRoles.some((r: any) => {
+            const isAdmin = userRoles.some((r: any) => {
                 const roleName = typeof r === 'string' ? r : r.name;
-                return ['admin', 'manager'].includes(roleName?.toLowerCase());
+                return ['admin'].includes(roleName?.toLowerCase());
             });
-            if (isAdminOrManager) {
+            if (isAdmin) {
                 navigate('/admin', { replace: true });
             }
         }
@@ -154,6 +164,37 @@ export default function Home() {
             {/* Hero Banner Section */}
             <HeroSection />
 
+            {/* {settings?.show_sharing_link && settings?.ngrok_fe_url && (
+                <div style={{ padding: '0 24px', marginTop: '20px' }}>
+                    <div className={styles.sharingBanner}>
+                        <div className={styles.sharingLeft}>
+                            <ShareAltOutlined style={{ color: '#1890ff', fontSize: '20px', marginTop: '4px' }} />
+                            <div>
+                                <Text strong style={{ fontSize: '15px' }}>Liên kết truy cập từ xa (Ngrok)</Text>
+                                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                                    Bạn có thể dùng link này để truy cập hệ thống từ các thiết bị khác hoặc mạng ngoài: 
+                                    <a href={settings.ngrok_fe_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '8px', color: '#1890ff', fontWeight: 600 }}>
+                                        {settings.ngrok_fe_url}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <AntButton 
+                            type="dashed" 
+                            size="small" 
+                            icon={<CopyOutlined />} 
+                            onClick={() => {
+                                navigator.clipboard.writeText(settings.ngrok_fe_url);
+                                message.success('Đã sao chép link chia sẻ thành công!');
+                            }}
+                            style={{ borderRadius: '6px' }}
+                        >
+                            Sao chép
+                        </AntButton>
+                    </div>
+                </div>
+            )} */}
+
             <div style={{ padding: '0 24px' }}>
                 {/* Top Cards */}
                 <Row gutter={[16, 16]} style={{ marginBottom: '20px', marginTop: '40px' }}>
@@ -184,7 +225,7 @@ export default function Home() {
                         {inProgressCourses.length > 0 && (
                             <div className={styles.inProgressWrapper}>
                                 <div className={styles.sectionHeader} style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Title level={4} style={{ margin: 0 }}>Tiếp tục học</Title>
+                                    <Title level={4} style={{ margin: 0 }}>Tiếp tục</Title>
                                     <Select
                                         defaultValue="progress_desc"
                                         style={{ width: 180 }}
@@ -256,7 +297,7 @@ export default function Home() {
 
                         <div className={styles.inProgressWrapper}>
                             <div className={styles.sectionHeader} style={{ marginBottom: '16px' }}>
-                                <Title level={4} style={{ margin: 0 }}>Kho Danh Mục</Title>
+                                <Title level={4} style={{ margin: 0 }}>Danh Mục</Title>
                             </div>
                             <Row gutter={[16, 16]}>
                                 {categories.map(cat => (

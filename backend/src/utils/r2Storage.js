@@ -5,6 +5,7 @@
 const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { r2Client, R2_BUCKET, R2_PUBLIC_URL } = require('../configs/r2.config');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
@@ -84,4 +85,17 @@ const deleteFolder = async (prefix) => {
     }
 };
 
-module.exports = { uploadFile, uploadFolder, getFileStream, deleteFolder, R2_PUBLIC_URL };
+/**
+ * Lấy Presigned URL để trình duyệt tải trực tiếp
+ * @param {string} r2Key - Đường dẫn trên R2
+ * @param {number} expiresIn - Hạn sử dụng của URL (giây)
+ */
+const getPresignedUrl = async (r2Key, expiresIn = 14400) => {
+    const command = new GetObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: r2Key,
+    });
+    return await getSignedUrl(r2Client, command, { expiresIn });
+};
+
+module.exports = { uploadFile, uploadFolder, getFileStream, deleteFolder, getPresignedUrl, R2_PUBLIC_URL };

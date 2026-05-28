@@ -1,6 +1,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import shaka from 'shaka-player';
 import { contentService } from '../../services/content.service';
+import { getBackendUrl } from '../../services/api';
 import styles from './VideoPlayer.module.scss';
 
 interface VideoPlayerProps {
@@ -209,12 +210,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ src, lessonI
 
         player.getNetworkingEngine()?.registerRequestFilter((type, request) => {
             const uri = request.uris[0];
-            const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const backendUrl = getBackendUrl();
             const isInternal = uri.startsWith(backendUrl) || uri.startsWith('http://localhost:5000') || uri.startsWith('/');
 
             if (isInternal) {
                 const token = localStorage.getItem('accessToken');
                 if (token) request.headers['Authorization'] = `Bearer ${token}`;
+                request.headers['ngrok-skip-browser-warning'] = 'true';
                 request.allowCrossSiteCredentials = true;
             }
 

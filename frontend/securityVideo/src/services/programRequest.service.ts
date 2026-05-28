@@ -5,8 +5,12 @@ export const programRequestService = {
         const response = await api.post('/program-requests/request', { programId });
         return response.data;
     },
-    getAllPending: async () => {
-        const response = await api.get('/program-requests/pending');
+    getAllPending: async (page?: number, limit?: number) => {
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        const query = params.toString() ? `?${params.toString()}` : '';
+        const response = await api.get(`/program-requests/pending${query}`);
         return response.data;
     },
     approve: async (id: number) => {

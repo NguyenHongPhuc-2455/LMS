@@ -22,8 +22,33 @@ const getManagerDepartmentId = async (req) => {
 };
 
 exports.getCourses = catchAsync(async (req, res) => {
-    const { search, categoryId, includeInactive } = req.query;
-    const courses = await courseService.getAllCourses(search, categoryId, includeInactive, req.user);
+    const {
+        search,
+        categoryId,
+        includeInactive,
+        page,
+        limit,
+        sortField,
+        sortOrder,
+        privateFilter,
+        activeFilter,
+        levelFilter
+    } = req.query;
+    const courses = await courseService.getAllCourses(
+        search,
+        categoryId,
+        includeInactive,
+        req.user,
+        page ? parseInt(page) : null,
+        limit ? parseInt(limit) : null,
+        {
+            sortField,
+            sortOrder,
+            privateFilter,
+            activeFilter,
+            levelFilter
+        }
+    );
     res.json(courses);
 });
 
@@ -154,9 +179,9 @@ exports.restoreCourse = catchAsync(async (req, res) => {
  * Lấy báo cáo Onboarding (Đúng hạn / Trễ hạn)
  */
 exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
-    const { type = 'overdue' } = req.query; // 'overdue' hoặc 'ontime'
+    const { type = 'overdue', timeframe = 'all' } = req.query; // 'overdue' hoặc 'ontime'
     const { departmentId } = await getManagerDepartmentId(req);
-    const resultList = await courseService.getMandatoryOverdueReport(type, departmentId);
+    const resultList = await courseService.getMandatoryOverdueReport(type, departmentId, timeframe);
     res.json(resultList);
 });
 

@@ -42,7 +42,7 @@
 .emptyCoursesCard {
     text-align: center;
     padding: 60px 0;
-    border-radius: 20px;
+    border-radius: 5px;
 }
 
 .courseCardCover {
@@ -62,14 +62,14 @@
         right: 12px;
 
         .statusTag {
-            border-radius: 6px;
+            border-radius: 5px;
             font-weight: 600;
         }
     }
 }
 
 .progressCourseCard {
-    border-radius: 12px;
+    border-radius: 5px;
     overflow: hidden;
     border: 1px solid #f1f5f9;
 
@@ -126,7 +126,7 @@
 }
 
 .continueBtn {
-    border-radius: 10px;
+    border-radius: 5px;
     height: 40px;
     font-weight: 600;
     background: #6366f1;

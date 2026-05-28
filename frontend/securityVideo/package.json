@@ -27,7 +27,8 @@
     "shaka-player": "^5.0.9",
     "socket.io-client": "^4.8.3",
     "video.js": "^8.23.7",
-    "videojs-youtube": "^3.0.1"
+    "videojs-youtube": "^3.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

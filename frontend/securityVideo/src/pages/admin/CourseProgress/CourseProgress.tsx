@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Select, Typography, Space, Progress, Avatar, Card, Button, Tooltip, Input } from 'antd';
 import { UserOutlined, ReloadOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { courseService } from '@/services/course.service';
@@ -133,7 +133,7 @@ export default function CourseProgress() {
         }
     };
 
-    const getColumnSearchProps = (dataIndex: string): any => ({
+    const getColumnSearchProps = React.useCallback((dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
@@ -173,9 +173,9 @@ export default function CourseProgress() {
         filterIcon: (filtered: boolean) => (
             <SearchOutlined style={{ color: filtered ? '#fff' : '#fff', fontSize: '18px' }} />
         ),
-    });
+    }), []);
 
-    const columns = [
+    const columns = React.useMemo(() => [
         {
             title: 'nhân sự',
             key: 'student',
@@ -227,16 +227,16 @@ export default function CourseProgress() {
                 </div>
             ),
         }
-    ];
+    ], [isGlobalSearch, getColumnSearchProps]);
 
     return (
         <div className={styles.container}>
-            <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                 <div style={{ marginBottom: 20 }}>
                     <Title level={4} style={{ margin: 0 }}>Tiến độ học tập</Title>
                     <Typography.Text type="secondary">Theo dõi quá trình hoàn thành khóa học của nhân sự</Typography.Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.courseSelectorWrapper}>
@@ -306,7 +306,10 @@ export default function CourseProgress() {
                         pageSizeOptions: ['10', '20', '50'],
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
-                                return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                                return React.cloneElement(originalElement, {
+                                    className: 'page-number',
+                                    children: current < 10 ? `0${current}` : current
+                                });
                             }
                             return originalElement;
                         }

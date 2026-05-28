@@ -13,6 +13,7 @@ const getUsers = async (query) => {
     const search = query.search || '';
     const skip = (page - 1) * limit;
 
+    const searchTrimmed = search.trim();
     const where = {
         ...(query.include_inactive !== 'true' && { deleted_at: null }),
         ...(query.department_id && {
@@ -21,13 +22,15 @@ const getUsers = async (query) => {
             }
         }),
         ...(query.position_id && { position_id: parseInt(query.position_id) }),
-        OR: [
-            { username: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { full_name: { contains: search, mode: 'insensitive' } },
-            { employee_id: { contains: search, mode: 'insensitive' } },
-            { department: { name: { contains: search, mode: 'insensitive' } } }
-        ]
+        ...(searchTrimmed && {
+            OR: [
+                { username: { contains: searchTrimmed, mode: 'insensitive' } },
+                { email: { contains: searchTrimmed, mode: 'insensitive' } },
+                { full_name: { contains: searchTrimmed, mode: 'insensitive' } },
+                { employee_id: { contains: searchTrimmed, mode: 'insensitive' } },
+                { department: { name: { contains: searchTrimmed, mode: 'insensitive' } } }
+            ]
+        })
     };
 
     const [users, total] = await Promise.all([
@@ -37,21 +40,18 @@ const getUsers = async (query) => {
                 department: true,
                 position: true,
                 user_roles: { include: { role: true } },
-                enrollments: {
-                    where: {
-                        course: {
-                            deleted_at: null
-                        }
-                    },
-                    include: {
-                        course: { select: { title: true } }
-                    }
-                },
                 _count: {
                     select: {
                         enrollments: {
                             where: {
                                 course: {
+                                    deleted_at: null
+                                }
+                            }
+                        },
+                        program_enrollments: {
+                            where: {
+                                program: {
                                     deleted_at: null
                                 }
                             }
@@ -67,16 +67,17 @@ const getUsers = async (query) => {
     ]);
 
     const safeUsers = users.map(u => {
-        const { password_hash, user_roles, enrollments, department, position, ...data } = u;
+        const { password_hash, user_roles, department, position, _count, dob, bio, deleted_at, created_at, updated_at, ...data } = u;
         return {
             ...data,
+            is_active: deleted_at === null,
             department_id: u.department_id,
             position_id: u.position_id,
             department: department?.name || '',
             position: position?.name || '',
             roles: user_roles.map(ur => ur.role),
             enrollments_count: u._count.enrollments,
-            enrolled_courses: enrollments.map(e => ({ id: e.course_id, title: e.course.title }))
+            programs_count: u._count.program_enrollments || 0
         };
     });
 
@@ -85,6 +86,42 @@ const getUsers = async (query) => {
         total,
         page,
         totalPages: Math.ceil(total / limit)
+    };
+};
+
+/**
+ * Lấy danh sách khóa học và lộ trình học của 1 user
+ */
+const getLearningAccess = async (id) => {
+    const userId = parseInt(id, 10);
+    const [enrollments, programEnrollments] = await Promise.all([
+        prisma.enrollment.findMany({
+            where: {
+                user_id: userId,
+                course: {
+                    deleted_at: null
+                }
+            },
+            include: {
+                course: { select: { id: true, title: true } }
+            }
+        }),
+        prisma.programEnrollment.findMany({
+            where: {
+                user_id: userId,
+                program: {
+                    deleted_at: null
+                }
+            },
+            include: {
+                program: { select: { id: true, title: true } }
+            }
+        })
+    ]);
+
+    return {
+        enrolled_courses: enrollments.map(e => ({ id: e.course_id, title: e.course.title })),
+        enrolled_programs: programEnrollments.map(pe => ({ id: pe.program_id, title: pe.program.title }))
     };
 };
 
@@ -316,6 +353,26 @@ const revokeCourseAccess = async (userId, courseId) => {
     });
 };
 
+const revokeProgramAccess = async (userId, programId) => {
+    return await prisma.$transaction(async (tx) => {
+        await tx.programEnrollment.deleteMany({
+            where: {
+                user_id: parseInt(userId),
+                program_id: parseInt(programId)
+            }
+        });
+
+        await tx.programRequest.updateMany({
+            where: {
+                user_id: parseInt(userId),
+                program_id: parseInt(programId),
+                status: 'APPROVED'
+            },
+            data: { status: 'REJECTED' }
+        });
+    });
+};
+
 const restoreUser = async (id) => {
     return await prisma.user.update({
         where: { id: parseInt(id) },
@@ -350,6 +407,8 @@ module.exports = {
     restoreUser,
     toggleUserStatus,
     revokeCourseAccess,
-    getRoles
+    revokeProgramAccess,
+    getRoles,
+    getLearningAccess
 };
 

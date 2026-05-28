@@ -1,6 +1,7 @@
 const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
 const { calculateCourseStatus } = require('../utils/courseStatus');
+const redisClient = require('../utils/redisClient');
 
 const { NEW_EMPLOYEE_THRESHOLD_DAYS } = require('../constants/system');
 
@@ -143,7 +144,7 @@ const markLessonAsCompleted = async (userId, lessonId, isAdminOrOwner = false) =
         }
     }
 
-    return await prisma.lessonCompleted.upsert({
+    const result = await prisma.lessonCompleted.upsert({
         where: {
             user_id_lesson_id: {
                 user_id: userId,
@@ -156,6 +157,11 @@ const markLessonAsCompleted = async (userId, lessonId, isAdminOrOwner = false) =
             lesson_id: parseInt(lessonId)
         }
     });
+
+    // Invalidate dashboard cache
+    await redisClient.clearDashboardCache();
+
+    return result;
 };
 
 /**
@@ -164,10 +170,25 @@ const markLessonAsCompleted = async (userId, lessonId, isAdminOrOwner = false) =
 const getMandatoryCoursesForUser = async (userId) => {
     const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, join_date: true, department_id: true, position_id: true }
+        select: {
+            id: true,
+            join_date: true,
+            department_id: true,
+            position_id: true,
+            user_roles: {
+                include: { role: true }
+            }
+        }
     });
 
-    if (!user?.join_date) return [];
+    if (!user) return [];
+
+    const roles = (user.user_roles || []).map(ur => ur.role.name.toLowerCase());
+    if (roles.includes('admin')) {
+        return [];
+    }
+
+    if (!user.join_date) return [];
 
     const { isUserInCourseScope } = require('./course.service');
 

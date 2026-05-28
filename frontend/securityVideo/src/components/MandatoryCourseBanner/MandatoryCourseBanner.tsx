@@ -4,12 +4,13 @@ import { Tag, Typography, Space, Button, Modal, List, Drawer, Tabs, Badge } from
 import { WarningOutlined, ClockCircleOutlined, CheckCircleOutlined, ArrowRightOutlined, BookOutlined, BellOutlined, CarryOutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
+import { programService } from '../../services/program.service';
 import { ROUTES } from '../../constants/routes';
 import styles from './MandatoryCourseBanner.module.scss';
 
 const { Text, Title } = Typography;
 
-interface MandatoryCourse {
+interface MandatoryItem {
     id: number;
     title: string;
     thumbnail: string;
@@ -19,6 +20,8 @@ interface MandatoryCourse {
     completedLessons: number;
     status: 'NORMAL' | 'WARNING' | 'OVERDUE' | 'COMPLETED';
     mandatory_deadline_days: number;
+    deadlineDate?: string | Date;
+    type: 'course' | 'program';
 }
 
 interface Props {
@@ -28,31 +31,38 @@ interface Props {
 }
 
 export default function MandatoryCourseBanner({ hideBanner = false, hideFloating = false, hideDrawer = false }: Props) {
-    const [courses, setCourses] = useState<MandatoryCourse[]>([]);
+    const [courses, setCourses] = useState<MandatoryItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [loginNotifyModal, setLoginNotifyModal] = useState<{ open: boolean; courses: any[] }>({
+    const [loginNotifyModal, setLoginNotifyModal] = useState<{ open: boolean; courses: MandatoryItem[] }>({
         open: false, courses: []
     });
     const navigate = useNavigate();
 
-    const fetchMandatoryCourses = (isInitial = false) => {
+    const fetchMandatoryItems = (isInitial = false) => {
         const shouldShowModal = sessionStorage.getItem('show_mandatory_modal') === 'true';
 
-        return courseService.getMandatoryCourses()
-            .then(data => {
-                setCourses(data);
+        return Promise.all([
+            courseService.getMandatoryCourses().catch(() => []),
+            programService.getMandatoryPrograms().catch(() => [])
+        ])
+            .then(([coursesData, programsData]) => {
+                const coursesWithType = (coursesData || []).map((c: any) => ({ ...c, type: 'course' }));
+                const programsWithType = (programsData || []).map((p: any) => ({ ...p, type: 'program' }));
+                const combined = [...coursesWithType, ...programsWithType];
+
+                setCourses(combined);
 
                 setLoginNotifyModal(prev => {
                     if (isInitial) {
-                        const validCoursesForModal = data.filter((c: MandatoryCourse) => c.status !== 'COMPLETED' && c.status !== 'OVERDUE');
+                        const validItemsForModal = combined.filter((c: MandatoryItem) => c.status !== 'COMPLETED' && c.status !== 'OVERDUE');
                         return {
-                            open: shouldShowModal && validCoursesForModal.length > 0,
-                            courses: data
+                            open: shouldShowModal && validItemsForModal.length > 0,
+                            courses: combined
                         };
                     }
                     return {
                         ...prev,
-                        courses: data
+                        courses: combined
                     };
                 });
             })
@@ -60,13 +70,13 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
     };
 
     useEffect(() => {
-        fetchMandatoryCourses(true).finally(() => {
+        fetchMandatoryItems(true).finally(() => {
             setLoading(false);
             sessionStorage.removeItem('show_mandatory_modal');
         });
 
         const handleProgressUpdate = () => {
-            fetchMandatoryCourses(false);
+            fetchMandatoryItems(false);
         };
 
         window.addEventListener('course-progress-updated', handleProgressUpdate);
@@ -74,6 +84,15 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
             window.removeEventListener('course-progress-updated', handleProgressUpdate);
         };
     }, []);
+
+    const handleStart = () => {
+        setLoginNotifyModal(prev => ({ ...prev, open: false }));
+        const activeList = loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED');
+        const target = activeList[0] || loginNotifyModal.courses[0];
+        if (target) {
+            navigate(target.type === 'program' ? `/programs/${target.id}` : `/course/${target.id}`);
+        }
+    };
 
     const getStatusConfig = (status: string) => {
         switch (status) {
@@ -88,12 +107,12 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
         }
     };
 
-    const renderCourseList = (filteredCourses: MandatoryCourse[]) => {
+    const renderCourseList = (filteredCourses: MandatoryItem[]) => {
         if (filteredCourses.length === 0) {
             return (
                 <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
                     <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
-                    <Text>Không có khóa học nào trong mục này</Text>
+                    <Text>Không có khóa học</Text>
                 </div>
             );
         }
@@ -103,7 +122,7 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                     const config = getStatusConfig(course.status);
                     return (
                         <div
-                            key={course.id}
+                            key={`${course.type}-${course.id}`}
                             className={styles.courseCard}
                             style={{ background: config.bg, borderColor: config.border }}
                         >
@@ -115,7 +134,14 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                             </div>
 
                             <div className={styles.courseInfo}>
-                                <Text strong className={styles.courseTitle}>{course.title}</Text>
+                                <Space size={4} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    {course.type === 'program' ? (
+                                        <Tag color="blue" style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>Lộ trình</Tag>
+                                    ) : (
+                                        <Tag color="red" style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>Khóa học</Tag>
+                                    )}
+                                    <Text strong className={styles.courseTitle}>{course.title}</Text>
+                                </Space>
                                 <Space size={8} style={{ marginTop: 4 }}>
                                     <Tag color={config.color} icon={config.icon} style={{ margin: 0 }}>
                                         {config.label}
@@ -123,8 +149,8 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                                     <Text style={{ fontSize: 12, color: config.color }}>
                                         {course.status === 'OVERDUE'
                                             ? `Quá hạn`
-                                            : course.status === 'COMPLETED' 
-                                                ? 'Đã hoàn tất' 
+                                            : course.status === 'COMPLETED'
+                                                ? 'Đã hoàn tất'
                                                 : (course.remainingDays !== null ? `Còn ${course.remainingDays} ngày` : 'Bắt buộc')
                                         }
                                     </Text>
@@ -159,7 +185,7 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                                 }}
                                 onClick={() => {
                                     if (course.status !== 'OVERDUE') {
-                                        navigate(`/course/${course.id}`);
+                                        navigate(course.type === 'program' ? `/programs/${course.id}` : `/course/${course.id}`);
                                     }
                                 }}
                             >
@@ -178,128 +204,148 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
             {!hideDrawer && (
                 <Drawer
                     open={loginNotifyModal.open}
-                onClose={() => setLoginNotifyModal(prev => ({ ...prev, open: false }))}
-                placement="right"
-                width={400}
-                closable={false}
-                className={styles.glassDrawer}
-                zIndex={5000}
-            >
-                <div className={styles.sidebarHeader} style={{ padding: '24px 24px 0' }}>
-                    <Title level={4} style={{ margin: 0, fontWeight: 700, color: '#1a1a1a' }}>
-                        Khóa học bắt buộc
-                    </Title>
-                </div>
+                    onClose={() => setLoginNotifyModal(prev => ({ ...prev, open: false }))}
+                    placement="right"
+                    width={400}
+                    closable={false}
+                    className={styles.glassDrawer}
+                    zIndex={5000}
+                >
+                    <div className={styles.sidebarHeader} style={{ padding: '24px 24px 0' }}>
+                        <Title level={4} style={{ margin: 0, fontWeight: 700, color: '#1a1a1a' }}>
+                            Nội dung bắt buộc
+                        </Title>
+                    </div>
 
-                <div className={styles.sidebarContent}>
-                    <Tabs
-                        defaultActiveKey="1"
-                        className={styles.premiumTabs}
-                        items={[
-                            {
-                                key: '1',
-                                label: (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        Còn hạn
-                                        <Badge
-                                            count={loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED').length}
-                                            style={{ backgroundColor: '#52c41a' }}
-                                        />
-                                    </span>
-                                ),
-                                children: (
-                                    <div style={{ paddingTop: 16 }}>
-                                        {loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED').length > 0 ? (
-                                            loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED').map((course: any) => (
-                                                <div key={course.id} className={styles.notificationCard} onClick={() => navigate(`/course/${course.id}`)}>
-                                                    <div className={styles.cardHeader}>
-                                                        <Text className={styles.cardTitle}>{course.title}</Text>
-                                                        <Tag color={course.remainingDays !== null && course.remainingDays <= 3 ? 'error' : 'warning'} style={{ borderRadius: 6, margin: 0 }}>
-                                                            {course.remainingDays !== null ? `Còn ${course.remainingDays} ngày` : 'Bắt buộc'}
-                                                        </Tag>
-                                                    </div>
-                                                    <div className={styles.cardMeta}>
-                                                        <ClockCircleOutlined />
-                                                        <span>{course.remainingDays !== null ? `Hạn: ${course.mandatory_deadline_days} ngày từ khi nhận việc` : 'Khóa học định kỳ bắt buộc'}</span>
-                                                    </div>
-                                                    <div className={styles.progressWrapper} style={{ marginTop: 12 }}>
-                                                        <div className={styles.progressBar}>
-                                                            <div
-                                                                className={styles.progressFill}
-                                                                style={{ width: `${course.progressPercent}%`, background: '#C72127' }}
-                                                            />
+                    <div className={styles.sidebarContent}>
+                        <Tabs
+                            defaultActiveKey="1"
+                            className={styles.premiumTabs}
+                            items={[
+                                {
+                                    key: '1',
+                                    label: (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            Còn hạn
+                                            <Badge
+                                                count={loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED').length}
+                                                style={{ backgroundColor: '#52c41a' }}
+                                            />
+                                        </span>
+                                    ),
+                                    children: (
+                                        <div style={{ paddingTop: 16 }}>
+                                            {loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED').length > 0 ? (
+                                                loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED').map((course: any) => (
+                                                    <div key={`${course.type}-${course.id}`} className={styles.notificationCard} onClick={() => navigate(course.type === 'program' ? `/programs/${course.id}` : `/course/${course.id}`)}>
+                                                        <div className={styles.cardHeader}>
+                                                            <Space size={4} style={{ maxWidth: '70%' }}>
+                                                                {course.type === 'program' ? (
+                                                                    <Tag color="blue" style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>Lộ trình</Tag>
+                                                                ) : (
+                                                                    <Tag color="red" style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>Khóa học</Tag>
+                                                                )}
+                                                                <Text className={styles.cardTitle} ellipsis={{ tooltip: course.title }}>{course.title}</Text>
+                                                            </Space>
+                                                            <Tag color={course.remainingDays !== null && course.remainingDays <= 3 ? 'error' : 'warning'} style={{ borderRadius: 6, margin: 0 }}>
+                                                                {course.remainingDays !== null ? `Còn ${course.remainingDays} ngày` : 'Bắt buộc'}
+                                                            </Tag>
                                                         </div>
-                                                        <Text style={{ fontSize: 11, fontWeight: 600 }}>{course.progressPercent}%</Text>
+                                                        <div className={styles.cardMeta}>
+                                                            <ClockCircleOutlined />
+                                                            <span>
+                                                                {course.mandatory_deadline_days !== null && course.mandatory_deadline_days !== undefined
+                                                                    ? `Hạn: ${course.mandatory_deadline_days} ngày từ khi nhận việc`
+                                                                    : course.deadlineDate
+                                                                        ? `Hạn chót: ${new Date(course.deadlineDate).toLocaleDateString('vi-VN')}`
+                                                                        : 'Định kỳ bắt buộc'}
+                                                            </span>
+                                                        </div>
+                                                        <div className={styles.progressWrapper} style={{ marginTop: 12 }}>
+                                                            <div className={styles.progressBar}>
+                                                                <div
+                                                                    className={styles.progressFill}
+                                                                    style={{ width: `${course.progressPercent}%`, background: '#C72127' }}
+                                                                />
+                                                            </div>
+                                                            <Text style={{ fontSize: 11, fontWeight: 600 }}>{course.progressPercent}%</Text>
+                                                        </div>
                                                     </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
+                                                    <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
+                                                    <Text>Không có khóa học</Text>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
-                                                <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
-                                                <Text>Không có khóa học nào còn hạn</Text>
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            },
-                            {
-                                key: '2',
-                                label: (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        Quá hạn
-                                        <Badge
-                                            count={loginNotifyModal.courses.filter((c: any) => c.status === 'OVERDUE').length}
-                                            style={{ backgroundColor: '#C72127' }}
-                                        />
-                                    </span>
-                                ),
-                                children: (
-                                    <div style={{ paddingTop: 16 }}>
-                                        {loginNotifyModal.courses.filter((c: any) => c.status === 'OVERDUE').length > 0 ? (
-                                            loginNotifyModal.courses.filter((c: any) => c.status === 'OVERDUE').map((course: any) => (
-                                                <div key={course.id} className={styles.notificationCard} style={{ borderLeft: '4px solid #C72127' }} onClick={() => navigate(`/course/${course.id}`)}>
-                                                    <div className={styles.cardHeader}>
-                                                        <Text className={styles.cardTitle} style={{ color: '#C72127' }}>{course.title}</Text>
-                                                        <Tag color="error" style={{ borderRadius: 6, margin: 0 }}>Quá hạn</Tag>
+                                            )}
+                                        </div>
+                                    )
+                                },
+                                {
+                                    key: '2',
+                                    label: (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            Quá hạn
+                                            <Badge
+                                                count={loginNotifyModal.courses.filter((c: any) => c.status === 'OVERDUE').length}
+                                                style={{ backgroundColor: '#C72127' }}
+                                            />
+                                        </span>
+                                    ),
+                                    children: (
+                                        <div style={{ paddingTop: 16 }}>
+                                            {loginNotifyModal.courses.filter((c: any) => c.status === 'OVERDUE').length > 0 ? (
+                                                loginNotifyModal.courses.filter((c: any) => c.status === 'OVERDUE').map((course: any) => (
+                                                    <div key={`${course.type}-${course.id}`} className={styles.notificationCard} style={{ borderLeft: '4px solid #C72127' }} onClick={() => navigate(course.type === 'program' ? `/programs/${course.id}` : `/course/${course.id}`)}>
+                                                        <div className={styles.cardHeader}>
+                                                            <Space size={4} style={{ maxWidth: '70%' }}>
+                                                                {course.type === 'program' ? (
+                                                                    <Tag color="blue" style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>Lộ trình</Tag>
+                                                                ) : (
+                                                                    <Tag color="red" style={{ margin: 0, fontSize: 10, padding: '0 4px', lineHeight: '16px' }}>Khóa học</Tag>
+                                                                )}
+                                                                <Text className={styles.cardTitle} style={{ color: '#C72127' }}>{course.title}</Text>
+                                                            </Space>
+                                                            <Tag color="error" style={{ borderRadius: 6, margin: 0 }}>Quá hạn</Tag>
+                                                        </div>
+                                                        <div className={styles.cardMeta}>
+                                                            <ClockCircleOutlined />
+                                                            <span>Hạn chót đã trôi qua</span>
+                                                        </div>
                                                     </div>
-                                                    <div className={styles.cardMeta}>
-                                                        <ClockCircleOutlined />
-                                                        <span>Hạn chót đã trôi qua</span>
-                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
+                                                    <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
+                                                    <Text>Không có khóa học</Text>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
-                                                <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
-                                                <Text>Tuyệt vời! Không có khóa học quá hạn</Text>
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            }
-                        ]}
-                    />
-                </div>
+                                            )}
+                                        </div>
+                                    )
+                                }
+                            ]}
+                        />
+                    </div>
 
-                <div className={styles.sidebarFooter}>
-                    <Button
-                        type="primary"
-                        block
-                        icon={<ArrowRightOutlined />}
-                        className={styles.primaryBtn}
-                        onClick={() => setLoginNotifyModal(prev => ({ ...prev, open: false }))}
-                    >
-                        Bắt đầu học ngay
-                    </Button>
-                    <Button
-                        block
-                        className={styles.secondaryBtn}
-                        onClick={() => setLoginNotifyModal(prev => ({ ...prev, open: false }))}
-                    >
-                        Để sau
-                    </Button>
-                </div>
-            </Drawer>
+                    <div className={styles.sidebarFooter}>
+                        <Button
+                            type="primary"
+                            block
+                            icon={<ArrowRightOutlined />}
+                            className={styles.primaryBtn}
+                            onClick={handleStart}
+                        >
+                            Bắt đầu
+                        </Button>
+                        <Button
+                            block
+                            className={styles.secondaryBtn}
+                            onClick={() => setLoginNotifyModal(prev => ({ ...prev, open: false }))}
+                        >
+                            Để sau
+                        </Button>
+                    </div>
+                </Drawer>
             )}
 
             {/* ====== BANNER THƯỜNG TRỰC TRÊN TRANG CHỦ (Ẩn nếu hideBanner = true) ====== */}
@@ -308,11 +354,11 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                     <div className={styles.bannerHeader}>
                         <div className={styles.bannerTitleRow}>
                             <WarningOutlined style={{ color: '#fa8c16', fontSize: 20 }} />
-                            <Title level={5} style={{ margin: 0 }}>Khóa học bắt buộc</Title>
-                            <Tag color="orange">{courses.length} khóa tổng cộng</Tag>
+                            <Title level={5} style={{ margin: 0 }}>Khóa học & Lộ trình bắt buộc</Title>
+                            <Tag color="orange">{courses.length} mục tổng cộng</Tag>
                         </div>
                         <Text type="secondary" style={{ fontSize: 13 }}>
-                            Vui lòng hoàn thành các khóa học theo đúng quy định của công ty
+                            Vui lòng hoàn thành các nội dung học tập theo đúng quy định của công ty
                         </Text>
                     </div>
 

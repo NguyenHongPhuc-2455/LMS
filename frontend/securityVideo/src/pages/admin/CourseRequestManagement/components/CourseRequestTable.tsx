@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table, Space, Button } from 'antd';
 import { UserOutlined, BookOutlined, ApartmentOutlined } from '@ant-design/icons';
 import styles from '../CourseRequests.module.scss';
@@ -5,6 +6,10 @@ import styles from '../CourseRequests.module.scss';
 interface RequestTableProps {
     type: 'course' | 'program';
     data: any[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number, pageSize: number) => void;
     loading: boolean;
     selectedIds: number[];
     onSelectionChange: (ids: number[]) => void;
@@ -15,13 +20,17 @@ interface RequestTableProps {
 export default function RequestTable({
     type,
     data,
+    total,
+    page,
+    pageSize,
+    onPageChange,
     loading,
     selectedIds,
     onSelectionChange,
     onApprove,
     onReject
 }: RequestTableProps) {
-    const columns = [
+    const columns = React.useMemo(() => [
         {
             title: 'nhân sự',
             dataIndex: 'user',
@@ -91,7 +100,7 @@ export default function RequestTable({
                 </Space>
             )
         }
-    ];
+    ], [type, data, onApprove, onReject]);
 
     return (
         <Table
@@ -107,13 +116,19 @@ export default function RequestTable({
             }}
             locale={{ emptyText: type === 'course' ? 'Không có yêu cầu khóa học nào' : 'Không có yêu cầu lộ trình nào' }}
             pagination={{
+                total,
+                current: page,
+                pageSize,
+                onChange: onPageChange,
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
-                defaultPageSize: 10,
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }

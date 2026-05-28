@@ -217,7 +217,7 @@ const courses = await courseService.getAll({ page: 1 });
 
 // ❌ SAI: Không gọi axios trực tiếp trong component
 import axios from 'axios';
-const courses = await axios.get('http://localhost:3000/api/courses');
+const courses = await axios.get('http://localhost:5000/api/courses');
 ```
 
 #### ✅ Cấu trúc một Service File
@@ -270,7 +270,7 @@ export interface MyFeature {
 ### API Base URL
 
 File `frontend/securityVideo/src/services/api.ts` đã cấu hình sẵn:
-- **Development**: `http://localhost:3000/api`
+- **Development**: `http://localhost:5000/api`
 - **Production**: Lấy từ biến môi trường `VITE_API_URL`
 
 File này tự động:

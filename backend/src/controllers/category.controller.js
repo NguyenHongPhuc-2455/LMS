@@ -6,7 +6,9 @@ const ApiError = require('../utils/ApiError');
  * Lấy danh sách tất cả danh mục
  */
 exports.getCategories = catchAsync(async (req, res) => {
-    const categories = await prisma.category.findMany({
+    const { page, limit, search, filter } = req.query;
+    let query = {
+        where: {},
         orderBy: { name: 'asc' },
         include: {
             _count: {
@@ -17,9 +19,31 @@ exports.getCategories = catchAsync(async (req, res) => {
                 }
             }
         }
-    });
+    };
+
+    if (search) {
+        query.where.name = { contains: search, mode: 'insensitive' };
+    }
+
+    if (filter === 'HAS_COURSES') {
+        query.where.courses = { some: { deleted_at: null } };
+    } else if (filter === 'EMPTY') {
+        query.where.courses = { none: { deleted_at: null } };
+    }
+
+    if (page && limit) {
+        const total = await prisma.category.count({ where: query.where });
+        query.skip = (parseInt(page) - 1) * parseInt(limit);
+        query.take = parseInt(limit);
+        const data = await prisma.category.findMany(query);
+        return res.json({ data, total });
+    }
+
+    const categories = await prisma.category.findMany(query);
     res.json(categories);
 });
+
+
 
 /**
  * Tạo danh mục mới

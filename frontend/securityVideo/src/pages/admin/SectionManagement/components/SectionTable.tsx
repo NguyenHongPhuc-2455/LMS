@@ -1,4 +1,5 @@
-import { Table, Space, Button, Popconfirm } from 'antd';
+import React from 'react';
+import { Table, Space, Button, Popconfirm, Skeleton } from 'antd';
 import { Edit, Trash2 } from 'lucide-react';
 import styles from '../SectionManagement.module.scss';
 
@@ -15,10 +16,10 @@ interface SectionTableProps {
     loading: boolean;
     onEdit: (section: Section) => void;
     onDelete: (id: number) => void;
-    onNavigateLessons: (sectionId: number) => void;
+    onNavigateLessons: (section: Section) => void;
 }
 
-export default function SectionTable({
+function SectionTable({
     sections,
     loading,
     onEdit,
@@ -44,7 +45,7 @@ export default function SectionTable({
                 <span
                     className={styles.sectionTitleLink}
                     style={{ whiteSpace: 'nowrap' }}
-                    onClick={() => onNavigateLessons(record.id)}
+                    onClick={() => onNavigateLessons(record)}
                 >
                     {text}
                 </span>
@@ -70,20 +71,45 @@ export default function SectionTable({
         }
     ];
 
+    const isFirstLoad = loading && (!sections || sections.length === 0);
+
+    const displayData = React.useMemo(() => {
+        if (isFirstLoad) {
+            return Array.from({ length: 5 }).map((_, index) => ({ id: `dummy-${index}`, isDummy: true } as any));
+        }
+        return sections;
+    }, [sections, isFirstLoad]);
+
+    const skeletonColumns = React.useMemo(() => {
+        if (!isFirstLoad) return columns;
+        return columns.map(col => ({
+            ...col,
+            render: (value: any, record: any, index: number) => {
+                if (record.isDummy) {
+                    return <Skeleton.Button active size="small" style={{ width: '80%', height: 16 }} />;
+                }
+                return col.render ? (col.render as any)(value, record, index) : value;
+            }
+        }));
+    }, [columns, isFirstLoad]);
+
     return (
         <Table
-            dataSource={sections}
-            loading={loading}
+            dataSource={displayData}
+            loading={isFirstLoad ? false : loading}
             rowKey="id"
-            columns={columns}
-            pagination={{
+            columns={skeletonColumns}
+            pagination={isFirstLoad ? false : {
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showSizeChanger: true,
                 defaultPageSize: 10,
                 selectProps: { showSearch: false },
                 itemRender: (current: number, type: string, originalElement: any) => {
                     if (type === 'page') {
-                        return <a className="page-number">{current < 10 ? `0${current}` : current}</a>;
+                        return React.cloneElement(originalElement, {
+                            className: 'page-number',
+                            children: current < 10 ? `0${current}` : current
+                        });
                     }
                     return originalElement;
                 }
@@ -93,3 +119,5 @@ export default function SectionTable({
         />
     );
 }
+
+export default React.memo(SectionTable);

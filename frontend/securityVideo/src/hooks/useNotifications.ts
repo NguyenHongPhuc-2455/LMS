@@ -29,7 +29,7 @@ export const useNotifications = (userId: number | undefined) => {
                 setLoadingMore(true);
             }
 
-            const limit = 10;
+            const limit = 4;
             const data = await notificationService.getAll(initialPage, limit);
             const { notifications: newNotifs, unreadCount: count } = data;
 
@@ -60,7 +60,7 @@ export const useNotifications = (userId: number | undefined) => {
             socket.on('newNotification', (newNotif: Notification) => {
                 setNotifications(prev => [newNotif, ...prev]);
                 setUnreadCount(prev => prev + 1);
-                
+
                 // Hiển thị Pop-up thông báo bằng Ant Design
                 import('antd').then(({ notification }) => {
                     notification.info({
@@ -79,7 +79,6 @@ export const useNotifications = (userId: number | undefined) => {
 
             return () => {
                 socket.off('newNotification');
-                socketService.disconnect();
             };
         }
     }, [userId]);

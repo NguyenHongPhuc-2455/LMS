@@ -5,6 +5,10 @@ import styles from '../CourseRequests.module.scss';
 interface RequestTabContentProps {
     type: 'course' | 'program';
     data: any[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number, pageSize: number) => void;
     loading: boolean;
     selectedIds: number[];
     onSelectionChange: (ids: number[]) => void;
@@ -16,6 +20,10 @@ interface RequestTabContentProps {
 export default function RequestTabContent({
     type,
     data,
+    total,
+    page,
+    pageSize,
+    onPageChange,
     loading,
     selectedIds,
     onSelectionChange,
@@ -38,6 +46,10 @@ export default function RequestTabContent({
             <CourseRequestTable
                 type={type}
                 data={data}
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={onPageChange}
                 loading={loading}
                 selectedIds={selectedIds}
                 onSelectionChange={onSelectionChange}

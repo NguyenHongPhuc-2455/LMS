@@ -16,7 +16,7 @@
     .summaryCard {
         background: var(--card-bg);
         border: 1px solid rgba(0, 0, 0, 0.05);
-        border-radius: 16px;
+        border-radius: 5px;
         padding: 20px;
         display: flex;
         align-items: center;
@@ -32,7 +32,7 @@
         .cardIconWrap {
             width: 48px;
             height: 48px;
-            border-radius: 12px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -75,7 +75,7 @@
     }
 
     .categoryCard {
-        border-radius: 16px;
+        border-radius: 5px;
         border: 1px solid #e2e8f0;
         transition: all 0.3s ease;
 
@@ -91,7 +91,7 @@
         .catIconBox {
             width: 56px;
             height: 56px;
-            border-radius: 12px;
+            border-radius: 5px;
             background: #f8fafc;
             display: flex;
             align-items: center;
@@ -102,7 +102,7 @@
 
     .leaderboardBox {
         background: #fff;
-        border-radius: 16px;
+        border-radius: 5px;
         border: 1px solid #e2e8f0;
         overflow: hidden;
 
@@ -123,7 +123,7 @@
                 align-items: center;
                 gap: 16px;
                 padding: 12px;
-                border-radius: 12px;
+                border-radius: 5px;
                 background: #f8fafc;
                 transition: all 0.2s ease;
 
@@ -192,7 +192,7 @@
     .inProgressWrapper {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 20px;
+        border-radius: 5px;
         padding: 20px;
         margin-bottom: 24px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
@@ -227,7 +227,7 @@
         align-items: center;
         background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
+        border-radius: 5px;
         padding: 16px;
         gap: 16px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
@@ -241,7 +241,7 @@
         .progThumbnail {
             width: 80px;
             height: 80px;
-            border-radius: 8px;
+            border-radius: 5px;
             overflow: hidden;
             flex-shrink: 0;
             background: #f1f5f9; // Thêm màu nền nhẹ nếu ảnh chưa load
@@ -283,7 +283,7 @@
                 align-items: center;
                 justify-content: center;
                 line-height: 1;
-                border-radius: 8px;
+                border-radius: 5px;
                 height: 36px;
                 min-width: 90px;
                 padding: 0 16px;
@@ -305,7 +305,7 @@
     .streakWidget {
         background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 16px;
+        border-radius: 5px;
         padding: 24px;
         text-align: center;
 
@@ -376,6 +376,34 @@
                     }
                 }
             }
+        }
+    }
+
+    .sharingBanner {
+        background: linear-gradient(135deg, rgba(24, 144, 255, 0.06) 0%, rgba(199, 33, 39, 0.02) 100%);
+        border: 1px dashed rgba(24, 144, 255, 0.4);
+        border-radius: 5px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+        
+        @media (max-width: 576px) {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            
+            button {
+                width: 100%;
+            }
+        }
+
+        .sharingLeft {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
         }
     }
 }
