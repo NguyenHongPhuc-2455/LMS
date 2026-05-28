@@ -1,6 +1,6 @@
 # 🚀 Hướng Dẫn Cài Đặt & Chạy Dự Án
 
-> **Cập nhật lần cuối**: 19/05/2026
+> **Cập nhật lần cuối**: 28/05/2026
 
 ## Yêu Cầu Môi Trường (Prerequisites)
 
@@ -97,21 +97,36 @@ Mở pgAdmin hoặc psql và tạo database:
 CREATE DATABASE security_video_db;
 ```
 
-### 3.2. Áp dụng Migration để tạo cấu trúc bảng
+### 3.2. Áp dụng Migration và cập nhật Database
 
-Vì dự án đã có sẵn lịch sử các bản ghi migration trong thư mục `prisma/migrations`, bạn chỉ cần chạy lệnh sau để áp dụng chúng vào cơ sở dữ liệu trống vừa tạo:
+Vì dự án đã có sẵn lịch sử các bản ghi migration trong thư mục `prisma/migrations`, bạn có các lựa chọn an toàn sau để cập nhật cấu trúc bảng vào database của mình:
 
-```bash
-cd backend
-npx prisma migrate dev
-```
+#### 🛡️ Lệnh AN TOÀN (Không mất dữ liệu):
 
-Lệnh này sẽ:
-- Đọc các tệp tin SQL có sẵn trong thư mục `prisma/migrations/`.
-- Tạo và đồng bộ tất cả cấu trúc bảng tương ứng vào database PostgreSQL của bạn.
-- Đảm bảo dữ liệu cũ không bị reset (nếu DB của bạn đã có dữ liệu trước đó).
+* **Trường hợp 1: Chạy các migration có sẵn (Khuyên dùng khi pull code mới về)**
+  ```bash
+  npx prisma migrate deploy
+  ```
+  *Tác dụng:* Chỉ chạy các file migration mới chưa được áp dụng lên DB — hoàn toàn không đụng hoặc làm mất dữ liệu cũ.
 
-> **⚠️ Cảnh báo**: Không chạy thêm `--name <tên>` (ví dụ: `--name init`) trừ khi bạn là người thay đổi cấu trúc bảng trong `schema.prisma` và muốn tạo một file SQL migration mới.
+* **Trường hợp 2: Đồng bộ trực tiếp Schema lên DB (Dev nhanh)**
+  ```bash
+  npx prisma db push
+  ```
+  *Tác dụng:* Khớp trực tiếp cấu trúc từ file `schema.prisma` lên database mà không tạo file migration. An toàn nếu không có breaking changes (xóa/đổi tên cột).
+
+* **Trường hợp 3: Chỉ cập nhật Prisma Client (Không đụng database)**
+  ```bash
+  npx prisma generate
+  ```
+  *Tác dụng:* Cập nhật code gợi ý của Prisma Client để khớp với file schema hiện tại, hoàn toàn không ảnh hưởng hay thay đổi gì tới DB.
+
+* **Trường hợp 4: Sử dụng trong môi trường phát triển (Chỉ dùng khi dev)**
+  ```bash
+  npx prisma migrate dev
+  ```
+  *Tác dụng:* Vừa áp dụng các file migration có sẵn, vừa sinh lại client mới.
+  *Lưu ý:* Nếu phát hiện sự sai lệch cấu trúc giữa database local và file migration, lệnh này có thể yêu cầu reset database (làm mất dữ liệu cũ). Hãy ưu tiên **Trường hợp 1** nếu muốn bảo toàn dữ liệu.
 
 ### 3.3. Khởi tạo dữ liệu mẫu (Seeding)
 
@@ -226,6 +241,13 @@ Khi cần thay đổi cấu trúc database (thêm bảng, thêm cột...):
    npx prisma migrate dev --name mo_ta_thay_doi
    ```
 3. Commit cả file `schema.prisma` và thư mục `prisma/migrations/` lên Git
-4. Thành viên khác pull về và chạy `npx prisma migrate dev` để đồng bộ database
+4. Thành viên khác khi pull code về chạy lệnh sau để cập nhật database an toàn:
+   ```bash
+   npx prisma migrate deploy
+   ```
+   Sau đó sinh lại Prisma Client để code nhận diện kiểu dữ liệu mới:
+   ```bash
+   npx prisma generate
+   ```
 
 > **⚠️ Quan trọng**: Không bao giờ sửa trực tiếp các file trong thư mục `prisma/migrations/`. Hãy luôn dùng lệnh `prisma migrate dev` để tạo migration mới.
