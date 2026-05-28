@@ -24,5 +24,4 @@ export const ROUTES = {
     ADMIN_ROLES: '/admin/roles',
     ADMIN_ONBOARDING_REPORT: '/admin/onboarding-report',
     MANAGER_EMPLOYEES: '/admin/manager/employees',
-    MANAGER_INACTIVE_REPORT: '/admin/manager/inactive-report',
 };

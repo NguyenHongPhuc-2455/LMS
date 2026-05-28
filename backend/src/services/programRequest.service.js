@@ -2,6 +2,7 @@ const prisma = require('../configs/prisma');
 const ApiError = require('../utils/ApiError');
 const events = require('../utils/events');
 const statsService = require('./stats.service');
+const redisClient = require('../utils/redisClient');
 
 /**
  * Gửi yêu cầu tham gia lộ trình private
@@ -147,6 +148,9 @@ const approveRequest = async (id, managerDeptId = null) => {
         // Cập nhật thống kê Admin và Manager phòng ban
         await statsService.emitPendingRequestsCountToAdmins(request.user?.department_id);
 
+        // Xóa cache dashboard
+        await redisClient.clearDashboardCache();
+
         return updatedRequest;
     });
 };
@@ -185,6 +189,9 @@ const rejectRequest = async (id, managerDeptId = null) => {
 
     // Cập nhật thống kê Admin và Manager phòng ban
     await statsService.emitPendingRequestsCountToAdmins(request.user?.department_id);
+
+    // Xóa cache dashboard
+    await redisClient.clearDashboardCache();
 
     return updatedRequest;
 };

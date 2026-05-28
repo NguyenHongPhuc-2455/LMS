@@ -39,7 +39,7 @@ export default function LearningTimeTrendChart({ data, loading }: LearningTimeTr
                             tickFormatter={(val) => `${val}h`}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+                            contentStyle={{ borderRadius: '5px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
                             cursor={{ fill: '#f1f5f9' }}
                             formatter={(value: any) => [`${value} giờ`, 'Thời gian học']}
                         />

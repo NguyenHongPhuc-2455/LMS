@@ -193,13 +193,13 @@ export default function OnboardingReport() {
                             { label: 'Hoạt động học tập', value: 'activity' }
                         ]}
                         size="large"
-                        style={{ border: '1px solid #e2e8f0', padding: 3, background: '#f8fafc', borderRadius: 8 }}
+                        style={{ border: '1px solid #e2e8f0', padding: 3, background: '#f8fafc', borderRadius: 5 }}
                     />
                 </div>
             </div>
 
             {reportType === 'onboarding' ? (
-                <Card className="glass-card" bordered={false} style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.02)', borderRadius: 12 }}>
+                <Card className="glass-card" bordered={false} style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.02)', borderRadius: 5 }}>
                     <Tabs
                         activeKey={activeTab}
                         onChange={setActiveTab}
@@ -217,7 +217,7 @@ export default function OnboardingReport() {
                                             { label: 'Tháng này', value: 'month' }
                                         ]}
                                         size="middle"
-                                        style={{ border: '1px solid #e2e8f0', padding: 2, background: '#f8fafc', borderRadius: 6 }}
+                                        style={{ border: '1px solid #e2e8f0', padding: 2, background: '#f8fafc', borderRadius: 5 }}
                                     />
                                 </Space>
                                 <Button
@@ -233,7 +233,7 @@ export default function OnboardingReport() {
                                     icon={<DownloadOutlined />}
                                     onClick={handleExportXLSX}
                                     disabled={data.length === 0}
-                                    style={{ background: '#B8121A', borderColor: '#B8121A', borderRadius: 8 }}
+                                    className="btn-brand-primary"
                                 >
                                     Xuất Excel
                                 </Button>

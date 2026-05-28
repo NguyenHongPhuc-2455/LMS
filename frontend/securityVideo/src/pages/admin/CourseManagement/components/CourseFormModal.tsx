@@ -191,10 +191,10 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
             onCancel={onCancel}
             footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                    <Button onClick={onCancel} className="modal-action-btn">
                         Hủy
                     </Button>
-                    <Button type="primary" onClick={() => form.submit()} loading={loading} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                    <Button type="primary" onClick={() => form.submit()} loading={loading} className="btn-brand-primary modal-action-btn">
                         {editingId ? "Cập nhật" : "Thêm mới"}
                     </Button>
                 </div>
@@ -206,7 +206,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                 <Row gutter={24}>
                     {/* Cột 1: Thông tin cơ bản */}
                     <Col span={8}>
-                        <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '12px', height: '100%', border: '1px solid #eee' }}>
+                        <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '5px', height: '100%', border: '1px solid #eee' }}>
                             <Title level={5} style={{ marginBottom: 20, fontSize: '14px', color: '#B8121A', textTransform: 'uppercase', fontWeight: 700 }}>
                                 1. Thông tin cơ bản
                             </Title>
@@ -254,7 +254,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                         <div style={{ 
                             padding: '20px', 
                             background: '#f8f9fa', 
-                            borderRadius: '12px', 
+                            borderRadius: '5px', 
                             height: '100%',
                             border: '1px solid #eee',
                             transition: 'all 0.3s'
@@ -367,7 +367,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                                 </div>
 
                                 {isMandatory ? (
-                                    <div style={{ background: 'rgba(255,255,255,0.8)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.8)', padding: '15px', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.05)' }}>
                                         <Form.Item name="deadline_type" label="Thiết lập thời hạn (Deadline)" initialValue="days" style={{ marginBottom: 15 }}>
                                             <Select onChange={val => setDeadlineType(val)}>
                                                 <Option value="days">Số ngày từ khi vào làm/gửi</Option>
@@ -402,7 +402,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
 
                     {/* Cột 3: Hình ảnh & Nội dung */}
                     <Col span={8}>
-                        <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '12px', height: '100%', border: '1px solid #eee' }}>
+                        <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '5px', height: '100%', border: '1px solid #eee' }}>
                             <Title level={5} style={{ marginBottom: 20, fontSize: '14px', color: '#8c8c8c', textTransform: 'uppercase', fontWeight: 700 }}>
                                 3. Hình ảnh & Nội dung
                             </Title>
@@ -431,7 +431,7 @@ export default function CourseFormModal({ open, onCancel, onSuccess, editingId, 
                                     }
                                 />
                                 {thumbUrl && (
-                                    <div style={{ marginTop: 15, textAlign: 'center', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd', background: '#fff', padding: '4px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ marginTop: 15, textAlign: 'center', borderRadius: '5px', overflow: 'hidden', border: '1px solid #ddd', background: '#fff', padding: '4px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <img src={thumbUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                 )}

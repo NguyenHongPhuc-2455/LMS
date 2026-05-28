@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, startTransition } from 'react';
 import { Table, Button, Space, Card, Typography, Modal, message, Input, Tooltip, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { categoryService, type Category } from '@/services/category.service';
 import CategoryFormModal from './components/CategoryFormModal';
+import styles from '../../../styles/admin-shared.module.scss';
 
 const { Title } = Typography;
 
@@ -84,7 +85,7 @@ const CategoryManagement: React.FC = () => {
     // Remove local filteredCategories since backend handles it
     const filteredCategories = categories;
 
-    const columns = [
+    const columns = useMemo(() => [
         {
             title: 'ID',
             dataIndex: 'id',
@@ -116,7 +117,7 @@ const CategoryManagement: React.FC = () => {
             width: 120,
             align: 'right' as const,
             render: (_: any, record: Category) => (
-                <Space size="small" style={{ whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                     <Button
                         type="text"
                         icon={<EditOutlined />}
@@ -129,10 +130,10 @@ const CategoryManagement: React.FC = () => {
                         danger
                         onClick={() => handleDelete(record)}
                     />
-                </Space>
+                </div>
             ),
         },
-    ];
+    ], []);
 
     return (
         <div>
@@ -141,7 +142,7 @@ const CategoryManagement: React.FC = () => {
                 <Typography.Text type="secondary">Phân loại khóa học trên hệ thống</Typography.Text>
             </div> */}
 
-            <Card bordered={false} style={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <Card bordered={false} style={{ borderRadius: '5px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <Space size={8}>
                         <Input
@@ -149,7 +150,8 @@ const CategoryManagement: React.FC = () => {
                             prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
                             value={searchText}
                             onChange={e => setSearchText(e.target.value)}
-                            style={{ width: 220, borderRadius: '8px' }}
+                            className="admin-search-input"
+                            style={{ width: 220, borderRadius: '5px' }}
                         />
                         <Select
                             value={filterType}
@@ -172,16 +174,9 @@ const CategoryManagement: React.FC = () => {
                         type="primary"
                         icon={<PlusOutlined />}
                         onClick={handleAdd}
-                        style={{
-                            borderRadius: '8px',
-                            background: '#C72127',
-                            borderColor: '#C72127',
-                            height: '40px',
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}
+                        className={styles.adminAddButton}
                     >
-                        Thêm danh mục
+                        Thêm
                     </Button>
                 </div>
 
@@ -189,17 +184,22 @@ const CategoryManagement: React.FC = () => {
                     columns={columns}
                     dataSource={filteredCategories}
                     rowKey="id"
-                    loading={loading}
+                    loading={loading && categories.length === 0}
                     pagination={{
                         current: page,
                         pageSize: pageSize,
                         total: total,
-                        onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+                        onChange: (p, ps) => {
+                            startTransition(() => {
+                                setPage(p);
+                                setPageSize(ps);
+                            });
+                        },
                         showTotal: (total) => `Tổng số ${total} danh mục`,
                         showSizeChanger: true,
                         pageSizeOptions: ['10', '20', '50', '100']
                     }}
-                    style={{ borderRadius: '8px', overflow: 'hidden' }}
+                    style={{ borderRadius: '5px', overflow: 'hidden' }}
                 />
             </Card>
 

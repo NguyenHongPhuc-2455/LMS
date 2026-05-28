@@ -9,9 +9,10 @@ const { Text } = Typography;
 
 interface StatSummaryProps {
     stats: any;
+    loading: boolean;
 }
 
-export default function StatSummary({ stats }: StatSummaryProps) {
+export default function StatSummary({ stats, loading }: StatSummaryProps) {
     const statCards = [
         {
             title: 'Tổng nhân sự',
@@ -59,6 +60,8 @@ export default function StatSummary({ stats }: StatSummaryProps) {
                         bordered={false}
                         className={styles.statCard}
                         bodyStyle={{ padding: '24px' }}
+                        loading={loading}
+                        style={{ minHeight: 152 }}
                     >
                         <div className={styles.statCardHeader}>
                             <div>

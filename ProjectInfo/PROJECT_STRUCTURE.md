@@ -11,9 +11,11 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 
 ## 🛠 Tech Stack
 - **Backend**: Node.js, Express, Prisma (ORM), PostgreSQL, FFmpeg (Xử lý video), Socket.io (Realtime).
+- **Queue/Cache**: BullMQ + Redis (Hàng đợi xử lý video nền & caching thống kê).
 - **Frontend**: React (Vite), TypeScript, Ant Design (UI), React Router (Routing), dayjs (Date formatting).
 - **Security**: JWT (Auth), AES-128 Encryption (HLS Video Key).
 - **Realtime**: Socket.io cho thông báo push (Notification) và tương tác trực tiếp.
+- **Infrastructure**: Docker & Docker Compose (đóng gói và triển khai toàn bộ dự án).
 
 ---
 
@@ -24,73 +26,84 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 ├── backend/                       # Server & API
 │   ├── prisma/                    # Schema & Database Migrations
 │   ├── src/
-│   │   ├── configs/               # Cấu hình hệ thống (Prisma, DB)
+│   │   ├── configs/               # Cấu hình hệ thống (Prisma, DB, Redis)
+│   │   │   └── redis.config.js    # ★ Cấu hình kết nối Redis (BullMQ & Cache)
+│   │   ├── queues/                # ★ Hàng đợi BullMQ
+│   │   │   ├── videoTranscode.queue.js  # Queue xử lý video (có Fallback In-Memory)
+│   │   │   └── notification.queue.js    # Queue thông báo
 │   │   ├── controllers/           # Nhận Request & Trả Response
-│   │   │   ├── auth.controller.js     # Đăng ký, Đăng nhập, Refresh Token
-│   │   │   ├── user.controller.js     # Quản lý thành viên & Hồ sơ
-│   │   │   ├── course.controller.js   # Quản lý khóa học & Nội dung bài học
-│   │   │   ├── program.controller.js  # Quản lý lộ trình học tập
-│   │   │   ├── category.controller.js # Quản lý danh mục
-│   │   │   ├── courseRequest.controller.js # Duyệt yêu cầu khóa học
-│   │   │   ├── programRequest.controller.js # Duyệt yêu cầu lộ trình
-│   │   │   ├── stats.controller.js    # Thống kê & Tiến độ
-│   │   │   ├── comment.controller.js  # CRUD bình luận
-│   │   │   ├── notification.controller.js # Quản lý thông báo
-│   │   │   └── manager.controller.js  # API phân hệ Line Manager (New)
+│   │   │   ├── auth.controller.js
+│   │   │   ├── user.controller.js
+│   │   │   ├── course.controller.js
+│   │   │   ├── program.controller.js
+│   │   │   ├── category.controller.js
+│   │   │   ├── courseRequest.controller.js
+│   │   │   ├── programRequest.controller.js
+│   │   │   ├── stats.controller.js
+│   │   │   ├── comment.controller.js
+│   │   │   ├── notification.controller.js
+│   │   │   ├── video.controller.js    # ★ Upload → đẩy job vào Queue thay vì xử lý thẳng
+│   │   │   └── manager.controller.js
 │   │   ├── services/              # (Core) Logic nghiệp vụ chính
-│   │   │   ├── auth.service.js        # Logic xác thực & JWT
-│   │   │   ├── user.service.js        # Logic người dùng & phân quyền
-│   │   │   ├── course.service.js      # Logic khóa học & Xử lý cascade delete
-│   │   │   ├── program.service.js     # Logic lộ trình & Tiến độ học tập
-│   │   │   ├── video.service.js       # Logic dọn dẹp R2 & Xử lý video
-│   │   │   ├── category.service.js    # Logic danh mục
-│   │   │   ├── courseRequest.service.js # Logic duyệt yêu cầu
-│   │   │   ├── stats.service.js       # Tính toán tiến độ nhân sự
-│   │   │   ├── comment.service.js     # Logic bình luận (Facebook-style 2 cấp)
-│   │   │   └── notification.service.js # Tạo & phát thông báo Realtime
-
+│   │   │   ├── auth.service.js
+│   │   │   ├── user.service.js
+│   │   │   ├── course.service.js
+│   │   │   ├── program.service.js
+│   │   │   ├── video.service.js       # processVideoToHLS() - được gọi bởi Worker hoặc Fallback
+│   │   │   ├── category.service.js
+│   │   │   ├── courseRequest.service.js
+│   │   │   ├── stats.service.js       # ★ getDashboardStats() có Redis Cache (5 phút TTL)
+│   │   │   ├── comment.service.js
+│   │   │   └── notification.service.js
 │   │   ├── routes/                # Luồng API
-│   │   │   ├── category.routes.js     # /api/categories/*
-│   │   │   ├── course-request.routes.js # /api/course-requests/*
-│   │   │   ├── stats.routes.js        # /api/stats/*
-│   │   │   ├── comment.routes.js      # /api/comments/*
-│   │   │   ├── notification.routes.js # /api/notifications/*
-│   │   │   └── manager.routes.js      # /api/manager/* (New)
-│   │   ├── middlewares/           # Auth, Upload, validate, rateLimiter, Error Handler
-│   │   ├── utils/                 # ApiError, catchAsync, socket.js, streamToken.js, scope.js (New)
-│   │   └── app.js                 # Cấu hình Express (Cài đặt Proxy Stream)
+│   │   │   ├── category.routes.js
+│   │   │   ├── course-request.routes.js
+│   │   │   ├── stats.routes.js
+│   │   │   ├── comment.routes.js
+│   │   │   ├── notification.routes.js
+│   │   │   └── manager.routes.js
+│   │   ├── middlewares/           # Auth, Upload, validate, rateLimiter (★ theo userId), Error Handler
+│   │   ├── utils/                 # ApiError, catchAsync, socket.js, streamToken.js, scope.js
+│   │   └── app.js                 # Cấu hình Express
 │   ├── scripts/                   # Các script quản lý database, seed dữ liệu
+│   ├── worker.js                  # ★ Tiến trình Worker độc lập xử lý video qua BullMQ
+│   ├── .dockerignore              # ★ Loại trừ node_modules khi build Docker
+│   ├── Dockerfile                 # ★ Multi-stage build tối ưu dung lượng
 │   └── server.js                  # Entry point (Port 5000, Socket.io)
 │
 ├── frontend/securityVideo/       # React SPA
 │   ├── src/
-│   │   ├── styles/                # Global Style System (RitaVo Red, Glassmorphism)
-│   │   ├── components/            # Modular Components (Standardized Admin Components)
-│   │   ├── constants/             # Hệ thống hằng số (Routes, Configs)
-│   │   │   └── routes.ts          # Quản lý tập trung toàn bộ URL trong app
-│   │   ├── hooks/                 # Custom React Hooks
-│   │   ├── pages/                 # Admin modules + Manager (ManagerEmployees, ManagerInactiveReport) (New)
-│   │   ├── services/              # API Client + manager.service.ts (New)
-│   │   ├── App.tsx                # SPA Routing
-│   │   └── main.tsx               # Entry point
-│   ├── tsconfig.app.json          # Cấu hình Absolute Imports (@/* -> ./src/*)
-│   └── vite.config.ts             # Cấu hình Resolve Alias (@)
+│   │   ├── styles/
+│   │   ├── components/
+│   │   ├── constants/
+│   │   │   └── routes.ts
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   │   └── client/CourseLearning/  # ★ Heartbeat tối ưu: 60s, dừng khi video paused
+│   │   ├── services/
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── .dockerignore              # ★ Loại trừ node_modules & dist khi build Docker
+│   ├── Dockerfile                 # ★ Multi-stage: node:20-alpine build → nginx:alpine serve
+│   └── vite.config.ts
 │
-├── docker-compose.yml             # PostgreSQL Setup
-├── README.md                      # Hướng dẫn cài đặt chính
-└── PROJECT_STRUCTURE.md           # Tài liệu này
+├── docker-compose.yml             # ★ Đầy đủ: PostgreSQL + Redis + Backend + Frontend
+├── README.md
+└── PROJECT_STRUCTURE.md
 ```
 
 ---
 
 ## 🌊 Luồng hoạt động chính (Workflows)
 
-### 1. Luồng xử lý Video Đa nguồn
-`Upload/Import Video` -> `VideoService`:
-- **HLS**: Cắt nhỏ (.ts), mã hóa AES-128, lưu Key vào DB. Bảo mật cao nhất.
-- **Signed URL & Proxy**: Video không phát trực tiếp từ thư mục tĩnh. Mọi request đi qua Proxy `/api/videos/stream` có kiểm tra IP Binding và thời hạn Token (2 giờ).
-- **YouTube/Direct Link**: Lưu URL và thời lượng. Player tự động nhận diện nguồn.
-- **Tracking**: Hệ thống theo dõi chính xác thời gian xem. Khi đạt **95-99%** thời lượng, bài học tự động được đánh dấu hoàn thành.
+### 1. Luồng xử lý Video (BullMQ Async Transcoding)
+`Upload Video` → `video.controller.js` → **Đẩy Job vào BullMQ Queue** → Trả `202 Accepted` ngay:
+- **Khi Redis Online**: Job được đẩy vào `video-transcoding` queue → `worker.js` (tiến trình độc lập) lấy job và chạy FFmpeg. API Server không bị chiếm CPU.
+- **Khi Redis Offline (Fallback)**: Job được xử lý ngay trên luồng nền của Server (In-Memory via `setImmediate`). Hệ thống tự phục hồi, không crash.
+- **HLS**: FFmpeg cắt nhỏ (.ts), mã hóa AES-128, lưu Key vào DB, upload lên Cloudflare R2.
+- **Proxy Stream**: Mọi request đi qua `/api/videos/stream` có kiểm tra IP Binding và Token (2 giờ).
+- **Tracking (Tối ưu)**: Heartbeat từ Client gửi mỗi **60 giây** (tăng từ 30s) và **tự dừng khi video paused**, giảm 50% tải DB.
+- **YouTube/Direct Link**: Lưu URL, Player tự nhận diện nguồn.
 
 ### 2. Luồng Duyệt yêu cầu & Tiến độ
 `Student Registration` -> `Admin Dashboard` -> `Approval`:
@@ -126,6 +139,11 @@ Tài liệu này giúp AI hoặc Developer nắm bắt nhanh cấu trúc và lu�
 - Mọi lỗi được đóng gói qua `ApiError`.
 - `catchAsync` tự động bắt lỗi từ block Async/Await.
 - `error.middleware.js` chuyển đổi mọi lỗi thành JSON chuẩn cho Frontend.
+
+### 8. Hệ thống Cache & Queue (Performance Layer)
+- **Redis Cache**: `getDashboardStats` được cache 5 phút. Giảm tải truy vấn phức tạp xuống còn <5ms.
+- **BullMQ Queue**: Video transcoding chạy hoàn toàn ngoài luồng HTTP. Worker (`worker.js`) chạy song song như một tiến trình độc lập.
+- **Rate Limiter thông minh**: Sử dụng `userId` làm key thay vì IP để tránh block nhầm khi 100+ user dùng chung mạng NAT. Nới lỏng lên 5000 req/15 phút cho user đã đăng nhập.
 
 ---
 

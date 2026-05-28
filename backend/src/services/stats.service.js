@@ -43,20 +43,21 @@ const getOverviewStats = async (departmentId = null) => {
 
     if (departmentId) {
         const deptId = parseInt(departmentId);
+        const deptIds = await require('../utils/departmentHierarchy').getSubDepartmentIds(deptId);
 
-        // 1. Tổng nhân sự thuộc phòng ban
+        // 1. Tổng nhân sự thuộc phòng ban (bao gồm phòng ban con)
         const totalStudents = await prisma.user.count({ 
-            where: { department_id: deptId, deleted_at: null } 
+            where: { department_id: { in: deptIds }, deleted_at: null } 
         });
         const yesterdayStudents = await prisma.user.count({ 
-            where: { department_id: deptId, created_at: { lte: yesterday }, deleted_at: null } 
+            where: { department_id: { in: deptIds }, created_at: { lte: yesterday }, deleted_at: null } 
         });
 
         // 2. Tổng khóa học đang học (các khóa học có ít nhất 1 học viên phòng ban này đăng ký)
         const enrolledCoursesCount = await prisma.enrollment.groupBy({
             by: ['course_id'],
             where: {
-                user: { department_id: deptId },
+                user: { department_id: { in: deptIds } },
                 course: { deleted_at: null }
             }
         });
@@ -65,7 +66,7 @@ const getOverviewStats = async (departmentId = null) => {
         const yesterdayEnrolledCoursesCount = await prisma.enrollment.groupBy({
             by: ['course_id'],
             where: {
-                user: { department_id: deptId },
+                user: { department_id: { in: deptIds } },
                 course: { deleted_at: null },
                 enrolled_at: { lte: yesterday }
             }
@@ -75,14 +76,14 @@ const getOverviewStats = async (departmentId = null) => {
         // 3. Tổng lượt tham gia phòng ban
         const totalEnrollments = await prisma.enrollment.count({
             where: {
-                user: { department_id: deptId },
+                user: { department_id: { in: deptIds } },
                 course: { deleted_at: null }
             }
         });
         const yesterdayEnrollments = await prisma.enrollment.count({
             where: {
                 enrolled_at: { lte: yesterday },
-                user: { department_id: deptId },
+                user: { department_id: { in: deptIds } },
                 course: { deleted_at: null }
             }
         });
@@ -93,12 +94,12 @@ const getOverviewStats = async (departmentId = null) => {
             yesterdayCourseRequests, yesterdayProgramRequests,
             currentCourseRequests, currentProgramRequests
         ] = await Promise.all([
-            prisma.courseRequest.count({ where: { user: { department_id: deptId }, status: 'PENDING' } }),
-            prisma.programRequest.count({ where: { user: { department_id: deptId }, status: 'PENDING' } }),
-            prisma.courseRequest.count({ where: { user: { department_id: deptId }, created_at: { lte: yesterday } } }),
-            prisma.programRequest.count({ where: { user: { department_id: deptId }, created_at: { lte: yesterday } } }),
-            prisma.courseRequest.count({ where: { user: { department_id: deptId } } }),
-            prisma.programRequest.count({ where: { user: { department_id: deptId } } })
+            prisma.courseRequest.count({ where: { user: { department_id: { in: deptIds } }, status: 'PENDING' } }),
+            prisma.programRequest.count({ where: { user: { department_id: { in: deptIds } }, status: 'PENDING' } }),
+            prisma.courseRequest.count({ where: { user: { department_id: { in: deptIds } }, created_at: { lte: yesterday } } }),
+            prisma.programRequest.count({ where: { user: { department_id: { in: deptIds } }, created_at: { lte: yesterday } } }),
+            prisma.courseRequest.count({ where: { user: { department_id: { in: deptIds } } } }),
+            prisma.programRequest.count({ where: { user: { department_id: { in: deptIds } } } })
         ]);
 
         const pendingRequests = coursePending + programPending;
@@ -160,6 +161,11 @@ const getEnrollmentTrends = async (departmentId = null) => {
         return d;
     });
 
+    let deptIds = null;
+    if (departmentId) {
+        deptIds = await require('../utils/departmentHierarchy').getSubDepartmentIds(parseInt(departmentId));
+    }
+
     return await Promise.all(
         last7Days.map(async (date) => {
             const nextDate = new Date(date);
@@ -169,8 +175,8 @@ const getEnrollmentTrends = async (departmentId = null) => {
                 where: { 
                     enrolled_at: { gte: date, lt: nextDate },
                     course: { deleted_at: null },
-                    ...(departmentId && {
-                        user: { department_id: parseInt(departmentId) }
+                    ...(deptIds && {
+                        user: { department_id: { in: deptIds } }
                     })
                 }
             });
@@ -187,11 +193,16 @@ const getEnrollmentTrends = async (departmentId = null) => {
  * Lấy danh sách 5 khóa học có nhiều học viên nhất
  */
 const getTopCoursesByEnrollment = async (departmentId = null) => {
+    let deptIds = null;
+    if (departmentId) {
+        deptIds = await require('../utils/departmentHierarchy').getSubDepartmentIds(parseInt(departmentId));
+    }
+
     const topCoursesData = await prisma.enrollment.groupBy({
         where: { 
             course: { deleted_at: null },
-            ...(departmentId && {
-                user: { department_id: parseInt(departmentId) }
+            ...(deptIds && {
+                user: { department_id: { in: deptIds } }
             })
         },
         by: ['course_id'],
@@ -219,13 +230,26 @@ const getTopCoursesByEnrollment = async (departmentId = null) => {
 
 const getDashboardStats = async (departmentId = null) => {
     try {
+        const redisClient = require('../utils/redisClient');
+        
+        const cacheKey = `stats:dashboard:${departmentId || 'global'}`;
+        
+        const cachedData = await redisClient.get(cacheKey);
+        if (cachedData) {
+            return JSON.parse(cachedData);
+        }
+
         const [overview, enrollmentTrends, topCourses] = await Promise.all([
             getOverviewStats(departmentId),
             getEnrollmentTrends(departmentId),
             getTopCoursesByEnrollment(departmentId)
         ]);
 
-        return { overview, enrollmentTrends, topCourses };
+        const result = { overview, enrollmentTrends, topCourses };
+        
+        await redisClient.setex(cacheKey, 300, JSON.stringify(result));
+
+        return result;
     } catch (error) {
         console.error('Error in stats service:', error);
         throw error;

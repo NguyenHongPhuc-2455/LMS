@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag, Switch } from 'antd';
+import { Table, Space, Typography, Badge, Button, Popconfirm, DatePicker, Select, Input, Tag, Switch, Skeleton } from 'antd';
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
 import { Edit, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -135,10 +135,11 @@ function CourseTable({
         {
             title: 'Danh mục',
             key: 'category',
+            width: 220,
             // Server-side filter — không dùng onFilter
             filters: categoryOptions.map(cat => ({ text: cat.label, value: cat.value })),
             render: (_: any, c: Course) => (
-                <div style={{ minWidth: '110px' }}>
+                <div style={{ minWidth: '190px' }}>
                     <Select
                         value={c.category_id}
                         onChange={(val) => onCategoryChange(c.id, val)}
@@ -159,13 +160,14 @@ function CourseTable({
             title: 'Trạng thái',
             dataIndex: 'is_private',
             sorter: true,
+            width: 160,
             // Server-side filter
             filters: [
                 { text: 'RIÊNG TƯ', value: true },
                 { text: 'CÔNG KHAI', value: false },
             ],
             render: (isPrivate: boolean, record: Course) => (
-                <div style={{ minWidth: '110px' }}>
+                <div style={{ minWidth: '130px' }}>
                     <Select
                         value={isPrivate}
                         onChange={(val) => onStatusChange(record.id, val)}
@@ -187,6 +189,7 @@ function CourseTable({
         {
             title: 'Hiển thị',
             key: 'active',
+            width: 100,
             // Server-side filter
             filters: [
                 { text: 'Đang mở', value: true },
@@ -212,11 +215,13 @@ function CourseTable({
             title: 'Số chương học',
             key: 'sections',
             sorter: true,
+            width: 140,
             render: (_: any, record: Course) => <span style={{ whiteSpace: 'nowrap' }}>{record._count?.sections || 0} chương</span>
         },
         {
             title: 'Loại khóa',
             dataIndex: 'is_mandatory',
+            width: 130,
             // Server-side filter
             filters: [
                 { text: 'BẮT BUỘC', value: true },
@@ -232,6 +237,7 @@ function CourseTable({
             title: 'nhân sự',
             key: 'students',
             sorter: true,
+            width: 110,
             render: (_: any, c: Course) => (
                 <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
                     {c._count?.enrollments || 0}
@@ -368,17 +374,49 @@ function CourseTable({
         });
     }, [onPageChange, onTableChange]);
 
+    const isFirstLoad = loading && (!courses || courses.length === 0);
+
+    const displayData = React.useMemo(() => {
+        if (isFirstLoad) {
+            return Array.from({ length: 5 }).map((_, index) => ({ id: `dummy-${index}`, isDummy: true } as any));
+        }
+        return courses;
+    }, [courses, isFirstLoad]);
+
+    const skeletonColumns = React.useMemo(() => {
+        if (!isFirstLoad) return columns;
+        return columns.map(col => ({
+            ...col,
+            render: (value: any, record: any, index: number) => {
+                if (record.isDummy) {
+                    return <Skeleton.Button active size="small" style={{ width: '80%', height: 16 }} />;
+                }
+                return col.render ? (col.render as any)(value, record, index) : value;
+            }
+        }));
+    }, [columns, isFirstLoad]);
+
+    const resolvedRowSelection = React.useMemo(() => {
+        if (isFirstLoad) return undefined;
+        return rowSelection;
+    }, [rowSelection, isFirstLoad]);
+
     return (
         <Table
-            dataSource={courses}
-            columns={columns}
+            dataSource={displayData}
+            columns={skeletonColumns}
             rowKey="id"
-            loading={loading}
-            rowSelection={rowSelection}
-            pagination={paginationConfig as any}
+            loading={isFirstLoad ? false : loading}
+            rowSelection={resolvedRowSelection}
+            pagination={isFirstLoad ? false : (paginationConfig as any)}
             scroll={{ x: 1600, y: 600 }}
             bordered
-            onChange={handleTableChange}
+            onChange={isFirstLoad ? undefined : handleTableChange}
+            onRow={(record) => ({
+                onClick: (event) => {
+                    if (record.isDummy) return;
+                }
+            })}
         />
     );
 }

@@ -29,8 +29,12 @@ const isRailwayOrigin = (origin) => {
     return origin.endsWith('.railway.app') || origin.endsWith('.up.railway.app');
 };
 
+const isNgrokOrigin = (origin) => {
+    return origin.endsWith('.ngrok-free.dev') || origin.endsWith('.ngrok.io');
+};
+
 const isOriginAllowed = (origin) => {
-    return !origin || uniqueAllowedOrigins.includes(origin) || isRailwayOrigin(origin);
+    return !origin || uniqueAllowedOrigins.includes(origin) || isRailwayOrigin(origin) || isNgrokOrigin(origin);
 };
 
 module.exports = {

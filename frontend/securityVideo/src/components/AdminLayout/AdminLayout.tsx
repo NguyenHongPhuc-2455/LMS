@@ -1,6 +1,6 @@
 import React, { useState, memo, useMemo } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { Layout, ConfigProvider, theme, Drawer, Button, Tooltip } from 'antd';
+import { Layout, ConfigProvider, theme, Drawer, Button } from 'antd';
 import { MenuOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import styles from './AdminLayout.module.scss';
 
@@ -18,14 +18,12 @@ const AdminSidebarWrapper = memo(() => {
         <div className={styles.sidebarWrapper}>
             <AdminSidebar collapsed={collapsed} />
             
-            <Tooltip title={collapsed ? "Mở rộng menu" : "Thu gọn menu"} placement="right">
-                <Button 
-                    type="text"
-                    className={`${styles.collapseToggle} ${collapsed ? styles.collapsed : ''}`}
-                    icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                    onClick={() => setCollapsed(!collapsed)}
-                />
-            </Tooltip>
+            <Button 
+                type="text"
+                className={`${styles.collapseToggle} ${collapsed ? styles.collapsed : ''}`}
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+            />
         </div>
     );
 });
@@ -100,7 +98,7 @@ const AdminLayout: React.FC = () => {
         <ConfigProvider
             theme={{
                 algorithm: theme.defaultAlgorithm,
-                token: { borderRadius: 8 },
+                token: { borderRadius: 5 },
                 components: {
                     Table: { headerBg: '#B8121A', headerColor: '#ffffff' },
                     Menu: {

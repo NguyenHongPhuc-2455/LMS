@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, message, Space, Card, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { positionService } from '../../../services/position.service';
-import styles from '../UserManagement/UserManagement.module.scss'; // Reusing styles for consistency
+import styles from '../../../styles/admin-shared.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -184,7 +184,7 @@ const PositionManagement: React.FC = () => {
                             onClick={handleAdd}
                             className={styles.adminAddButton}
                         >
-                            Thêm vị trí
+                            Thêm
                         </Button>
                     </Space>
                 </div>
@@ -219,7 +219,7 @@ const PositionManagement: React.FC = () => {
                         <Button
                             key="cancel"
                             onClick={() => setIsModalOpen(false)}
-                            style={{ minWidth: 100, height: 40, borderRadius: '8px' }}
+                            className="modal-action-btn"
                         >
                             Hủy bỏ
                         </Button>
@@ -227,7 +227,7 @@ const PositionManagement: React.FC = () => {
                             key="submit"
                             type="primary"
                             onClick={handleModalOk}
-                            style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}
+                            className="btn-brand-primary modal-action-btn"
                         >
                             {editingPos ? 'Cập nhật' : 'Thêm mới'}
                         </Button>

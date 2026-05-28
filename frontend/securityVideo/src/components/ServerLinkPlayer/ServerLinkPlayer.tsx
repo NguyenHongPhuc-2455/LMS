@@ -3,6 +3,7 @@ import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import { contentService } from '../../services/content.service';
 import { videoService } from '../../services/video.service';
+import { getBackendUrl } from '../../services/api';
 import styles from './ServerLinkPlayer.module.scss';
 
 interface ServerLinkPlayerProps {
@@ -66,7 +67,7 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
 
             let isMounted = true;
             setLoadError(false);
-            const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const BASE_URL = getBackendUrl();
             
             const initVideoSrc = async () => {
                 try {
@@ -130,6 +131,14 @@ const ServerLinkPlayer = forwardRef<ServerLinkPlayerRef, ServerLinkPlayerProps>(
                 userActions: {
                     doubleClick: true,
                 },
+                html5: {
+                    vhs: {
+                        withCredentials: true,
+                        customHeaders: {
+                            'ngrok-skip-browser-warning': 'true'
+                        }
+                    }
+                }
             }, () => {
                 playerRef.current = player;
                 

@@ -35,7 +35,7 @@ const getLearningReportData = async ({ groupBy = 'day', period = 'last_7_days', 
         const crseId = courseId ? parseInt(courseId) : null;
 
         // Lấy tất cả ID phòng ban con cháu (bao gồm chính nó) để lọc theo cây
-        const { getSubDepartmentIds } = require('../../../utils/departmentHierarchy');
+        const { getSubDepartmentIds } = require('../../utils/departmentHierarchy');
         const deptIds = deptId ? await getSubDepartmentIds(deptId) : null;
 
         // Lấy danh sách ID của các khóa học chưa bị xóa để lọc

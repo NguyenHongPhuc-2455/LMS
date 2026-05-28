@@ -1,7 +1,46 @@
 import axios from 'axios';
 
+export const getBackendUrl = (): string => {
+    const isNgrok = window.location.hostname.includes('ngrok');
+    if (isNgrok) {
+        const savedSettings = localStorage.getItem('system_settings');
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                if (settings.ngrok_be_url) {
+                    return settings.ngrok_be_url.replace(/\/$/, '');
+                }
+            } catch (e) {}
+        }
+        return window.location.origin.replace(/\/$/, '');
+    }
+    const envUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    if (envUrl.startsWith('http')) {
+        return envUrl.replace('/api', '').replace(/\/$/, '');
+    }
+    return 'http://localhost:5000';
+};
+
+const getInitialBaseURL = () => {
+    const isNgrok = window.location.hostname.includes('ngrok');
+    if (isNgrok) {
+        const savedSettings = localStorage.getItem('system_settings');
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                if (settings.ngrok_be_url) {
+                    return settings.ngrok_be_url.replace(/\/$/, '') + '/api/';
+                }
+            } catch (e) {}
+        }
+        return window.location.origin.replace(/\/$/, '') + '/api/';
+    }
+    const envUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    return envUrl.replace(/\/$/, '') + '/';
+};
+
 const api = axios.create({
-    baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '') + '/',
+    baseURL: getInitialBaseURL(),
 });
 
 // Flag để tránh gọi refresh nhiều lần cùng lúc
@@ -22,6 +61,12 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('accessToken');
     if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+    
+    // Bỏ qua trang cảnh báo của ngrok để tránh lỗi CORS khi truy cập API
+    if (config.headers) {
+        config.headers['ngrok-skip-browser-warning'] = 'true';
+    }
+    
     return config;
 });
 
@@ -54,7 +99,11 @@ api.interceptors.response.use(
             }
 
             try {
-                const response = await axios.post(`${api.defaults.baseURL}auth/refresh`, { refreshToken });
+                const response = await axios.post(
+                    `${api.defaults.baseURL}auth/refresh`, 
+                    { refreshToken },
+                    { headers: { 'ngrok-skip-browser-warning': 'true' } }
+                );
                 const { accessToken } = response.data;
 
                 localStorage.setItem('accessToken', accessToken);

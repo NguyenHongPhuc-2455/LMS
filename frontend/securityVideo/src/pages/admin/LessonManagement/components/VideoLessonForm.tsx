@@ -155,7 +155,7 @@ export default function VideoLessonForm({
                                                 showUploadList={false}
                                                 accept="video/mp4"
                                             >
-                                                <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 8 }}>
+                                                <Button type="dashed" icon={<UploadCloud size={16} />} block style={{ height: 60, borderRadius: 5 }}>
                                                     {selectedFile ? selectedFile.name : "Nhấn để tải lên Video (MP4)"}
                                                 </Button>
                                             </Upload>

@@ -1,10 +1,24 @@
 import { io, Socket } from 'socket.io-client';
 
 // Ứu tiên VITE_SOCKET_URL nếu có, sau đó tự động suy ra từ VITE_API_URL (bằng cách xóa '/api')
-const SOCKET_URL = 
-    import.meta.env.VITE_SOCKET_URL ||
-    import.meta.env.VITE_API_URL?.replace('/api', '') ||
-    'http://localhost:5000';
+const getSocketUrl = () => {
+    const isNgrok = window.location.hostname.includes('ngrok');
+    if (isNgrok) {
+        const savedSettings = localStorage.getItem('system_settings');
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                if (settings.ngrok_be_url) {
+                    return settings.ngrok_be_url.replace(/\/$/, '');
+                }
+            } catch (e) {}
+        }
+        return window.location.origin.replace(/\/$/, '');
+    }
+    return import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+};
+
+const SOCKET_URL = getSocketUrl();
 
 let socket: Socket | null = null;
 
@@ -18,7 +32,6 @@ export const socketService = {
         });
 
         socket.on('connect', () => {
-            console.log('🔌 Đã kết nối tới Socket server');
             // Đăng ký user với server
             if (socket) {
                 socket.emit('register', userId);
@@ -26,7 +39,7 @@ export const socketService = {
         });
 
         socket.on('disconnect', () => {
-            console.log('🔌 Đã ngắt kết nối Socket');
+            // No action needed
         });
 
         return socket;

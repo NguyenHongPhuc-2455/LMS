@@ -7,6 +7,7 @@ import styles from './AdminDashboard.module.scss';
 import StatSummary from './components/StatSummary';
 import EnrollmentChart from './components/EnrollmentChart';
 import PopularCourses from './components/PopularCourses';
+// import NgrokPanel from './components/NgrokPanel';
 
 const { Title } = Typography;
 
@@ -52,7 +53,9 @@ export default function AdminDashboard() {
                 {isManagerOnly ? 'Tổng quan phòng ban' : 'Tổng quan'}
             </Title> */}
 
-            <StatSummary stats={stats} />
+            {/* <NgrokPanel /> */}
+
+            <StatSummary stats={stats} loading={loading} />
 
             <Row gutter={[24, 24]}>
                 <Col xl={16} lg={24}>

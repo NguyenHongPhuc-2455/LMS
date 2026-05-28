@@ -50,7 +50,7 @@ export default function LearningContent({
                     onClick={() => navigate(`/course/${id}`)}
                     className={styles.backBtn}
                 >
-                    Quay lại trang chi tiết
+                    Quay lại
                 </Button>
 
                 {!showSidebar && (

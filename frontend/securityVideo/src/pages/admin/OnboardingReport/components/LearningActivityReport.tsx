@@ -222,7 +222,7 @@ export default function LearningActivityReport() {
     return (
         <Space direction="vertical" size={24} style={{ width: '100%' }}>
             {/* Filters Card */}
-            <Card bordered={false} style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.02)', borderRadius: 12 }}>
+            <Card bordered={false} style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.02)', borderRadius: 5 }}>
                 <Row gutter={[16, 16]} align="middle">
                     <Col xs={24} sm={12} md={6}>
                         <div style={{ fontWeight: 500, marginBottom: 8 }}>Gom nhóm theo</div>
@@ -345,7 +345,7 @@ export default function LearningActivityReport() {
             {/* Overview Summary Widgets */}
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={8}>
-                    <Card bordered={false} loading={loading} style={{ borderLeft: '4px solid #C72127', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                    <Card bordered={false} loading={loading} style={{ borderLeft: '4px solid #C72127', borderRadius: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
                         <Statistic
                             title="Tổng thời lượng học"
                             value={reportData?.summary?.totalHours || 0}
@@ -356,7 +356,7 @@ export default function LearningActivityReport() {
                     </Card>
                 </Col>
                 <Col xs={24} sm={8}>
-                    <Card bordered={false} loading={loading} style={{ borderLeft: '4px solid #1890ff', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                    <Card bordered={false} loading={loading} style={{ borderLeft: '4px solid #1890ff', borderRadius: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
                         <Statistic
                             title="Lượt đăng ký mới"
                             value={reportData?.summary?.totalEnrollments || 0}
@@ -365,7 +365,7 @@ export default function LearningActivityReport() {
                     </Card>
                 </Col>
                 <Col xs={24} sm={8}>
-                    <Card bordered={false} loading={loading} style={{ borderLeft: '4px solid #52c41a', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                    <Card bordered={false} loading={loading} style={{ borderLeft: '4px solid #52c41a', borderRadius: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
                         <Statistic
                             title="Khóa học hoàn thành"
                             value={reportData?.summary?.totalCompletions || 0}
@@ -380,7 +380,7 @@ export default function LearningActivityReport() {
                 bordered={false} 
                 loading={loading} 
                 title="Xu hướng hoạt động học tập" 
-                style={{ borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}
+                style={{ borderRadius: 5, boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}
                 extra={
                     <Segmented
                         value={activeMetric}
@@ -411,7 +411,7 @@ export default function LearningActivityReport() {
                                     tick={{ fill: '#94A3B8', fontSize: 11 }}
                                 />
                                 <RechartsTooltip 
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+                                    contentStyle={{ borderRadius: '5px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
                                     cursor={{ fill: '#f1f5f9' }}
                                 />
                                 <Bar 
@@ -442,7 +442,7 @@ export default function LearningActivityReport() {
                 bordered={false} 
                 loading={loading}
                 title="Bảng thống kê chi tiết theo nhân sự" 
-                style={{ borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}
+                style={{ borderRadius: 5, boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}
                 extra={
                     <Space size={12}>
                         <Input
@@ -450,7 +450,7 @@ export default function LearningActivityReport() {
                             prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
-                            style={{ width: 220, borderRadius: 8 }}
+                            style={{ width: 220, borderRadius: 5, height: 32 }}
                             allowClear
                         />
                         <Button 
@@ -458,7 +458,8 @@ export default function LearningActivityReport() {
                             icon={<DownloadOutlined />} 
                             onClick={handleExportXLSX}
                             disabled={filteredTableData.length === 0}
-                            style={{ background: '#B8121A', borderColor: '#B8121A', borderRadius: 8 }}
+                            className="btn-brand-primary"
+                            style={{ height: 32, borderRadius: 5 }}
                         >
                             Xuất Excel (.xlsx)
                         </Button>
@@ -475,7 +476,7 @@ export default function LearningActivityReport() {
                             showSizeChanger: true,
                             showTotal: (total) => `Tổng số ${total} học viên`
                         }}
-                        style={{ borderRadius: 8 }}
+                        style={{ borderRadius: 5 }}
                     />
                 </div>
             </Card>

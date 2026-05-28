@@ -146,7 +146,7 @@ const AppHeader: React.FC = () => {
                     if (item.type === 'COURSE_APPROVAL' || item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE' || item.type === 'PROGRAM_ENROLLED' || item.type === 'NEW_MANDATORY_PROGRAM') {
                         icon = (item.type === 'COURSE_ENROLLED' || item.type === 'NEW_MANDATORY_COURSE' || item.type === 'PROGRAM_ENROLLED' || item.type === 'NEW_MANDATORY_PROGRAM') ? <BookOutlined /> : <CheckCircleOutlined />;
                         iconClass = styles.iconSuccess;
-                    } else if (item.type === 'COURSE_REJECTION' || item.type === 'COURSE_OVERDUE' || item.type === 'PROGRAM_OVERDUE') {
+                    } else if (item.type === 'COURSE_REJECTION' || item.type === 'COURSE_OVERDUE' || item.type === 'PROGRAM_OVERDUE' || item.type === 'COURSE_OVERDUE_REPORT' || item.type === 'PROGRAM_OVERDUE_REPORT') {
                         icon = <CloseCircleOutlined />;
                         iconClass = styles.iconError;
                     } else if (item.type === 'COURSE_EXPIRING' || item.type === 'PROGRAM_EXPIRING') {

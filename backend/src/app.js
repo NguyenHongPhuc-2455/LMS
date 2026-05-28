@@ -23,6 +23,7 @@ const departmentRoutes = require('./routes/department.routes');
 const positionRoutes = require('./routes/position.routes');
 const roleRoutes = require('./routes/role.routes');
 const managerRoutes = require('./routes/manager.routes');
+const systemRoutes = require('./routes/system.routes');
 
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
@@ -42,7 +43,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'ngrok-skip-browser-warning'],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
@@ -104,6 +105,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/manager', managerRoutes);
+app.use('/api/system', systemRoutes);
 
 
 // Centralized Error Handling

@@ -4,6 +4,7 @@ import { App as AntdApp, ConfigProvider, theme, Skeleton } from 'antd';
 
 import { MainLayout, AdminLayout } from '@/components';
 import { ROUTES } from './constants/routes';
+import api from './services/api';
 
 // Shared Components
 const Profile = lazy(() => import('./pages/client/Profile/Profile'));
@@ -39,7 +40,6 @@ const OnboardingReport = lazy(() => import('./pages/admin/OnboardingReport/Onboa
 const PositionManagement = lazy(() => import('./pages/admin/PositionManagement/PositionManagement'));
 const RoleManagement = lazy(() => import('./pages/admin/RoleManagement/RoleManagement'));
 const ManagerEmployees = lazy(() => import('./pages/admin/ManagerEmployees/ManagerEmployees'));
-const ManagerInactiveReport = lazy(() => import('./pages/admin/ManagerInactiveReport/ManagerInactiveReport'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -50,6 +50,26 @@ const ScrollToTop = () => {
 };
 
 function App() {
+  useEffect(() => {
+    const fetchSystemSettings = async () => {
+      try {
+        const res = await api.get('system/settings');
+        if (res.data && res.data.status === 'success') {
+          const settings = res.data.data;
+          localStorage.setItem('system_settings', JSON.stringify(settings));
+          
+          // Cập nhật lại baseURL nếu đang chạy qua ngrok
+          const isNgrok = window.location.hostname.includes('ngrok');
+          if (isNgrok && settings.ngrok_be_url) {
+            api.defaults.baseURL = settings.ngrok_be_url.replace(/\/$/, '') + '/api/';
+          }
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải cấu hình hệ thống khởi động:', error);
+      }
+    };
+    fetchSystemSettings();
+  }, []);
 
   return (
     <ConfigProvider
@@ -57,7 +77,7 @@ function App() {
         algorithm: theme.defaultAlgorithm,
         token: {
           colorPrimary: '#C72127',
-          borderRadius: 12,
+          borderRadius: 5,
           colorBgContainer: '#ffffff',
           colorBgLayout: '#f8fafc',
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
@@ -114,7 +134,6 @@ function App() {
                 <Route path="roles" element={<RoleManagement />} />
                 <Route path="onboarding-report" element={<OnboardingReport />} />
                 <Route path="manager/employees" element={<ManagerEmployees />} />
-                <Route path="manager/inactive-report" element={<ManagerInactiveReport />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

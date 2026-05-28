@@ -104,7 +104,7 @@
 .sectionPanelItem {
     margin-bottom: 8px;
     background: #f7f8fa;
-    border-radius: 6px;
+    border-radius: 5px;
     border: none;
     overflow: hidden;
 }
@@ -113,7 +113,7 @@
     position: sticky;
     top: 90px;
     background: #fff;
-    border-radius: 16px;
+    border-radius: 5px;
     padding: 2px;
     text-align: center;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
@@ -121,7 +121,7 @@
 
 .thumbnailWrapper {
     position: relative;
-    border-radius: 14px;
+    border-radius: 5px;
     overflow: hidden;
     margin-bottom: 20px;
     cursor: pointer;
@@ -146,7 +146,7 @@
 }
 
 .courseStatusTag {
-    border-radius: 6px;
+    border-radius: 5px;
     font-weight: 700;
     padding: 4px 16px;
     border: none;
@@ -156,7 +156,7 @@
 
 .actionBtnStyled {
     height: 50px;
-    border-radius: 25px;
+    border-radius: 5px;
     font-weight: 700;
     font-size: 16px;
     margin-bottom: 24px;

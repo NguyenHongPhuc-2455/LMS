@@ -3,11 +3,11 @@
     margin: 0 auto;
     background: #F8F9FD;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 5px;
 }
 
 .profileLeftCard {
-    border-radius: 12px;
+    border-radius: 5px;
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
@@ -32,7 +32,7 @@
 
 .profileModal {
     :global(.ant-modal-content) {
-        border-radius: 16px;
+        border-radius: 5px;
     }
 }
 
@@ -133,7 +133,7 @@
 }
 
 .profileSectionCard {
-    border-radius: 12px;
+    border-radius: 5px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 
     :global(.ant-card-head-title) {
@@ -163,14 +163,14 @@
     justify-content: space-between;
     padding: 12px;
     border: 1px solid #F1F5F9;
-    border-radius: 8px;
+    border-radius: 5px;
 }
 
 .paymentCardIcon {
     width: 40px;
     height: 26px;
     background: #F8FAFC;
-    border-radius: 4px;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -190,7 +190,7 @@
     width: 40px;
     height: 40px;
     background: #F8FAFC;
-    border-radius: 4px;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;

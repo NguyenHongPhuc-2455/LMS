@@ -208,7 +208,7 @@ export default function CourseRequestManagement() {
                 <Typography.Text type="secondary">Phê duyệt quyền tham gia khóa học và lộ trình của nhân sự</Typography.Text>
             </div> */}
 
-            <Card className="glass-card" style={{ borderRadius: '16px' }}>
+            <Card className="glass-card" style={{ borderRadius: '5px' }}>
                 <div style={{ marginBottom: 16 }}>
                     <Space size={12}>
                         <Typography.Text strong>Lọc theo danh mục:</Typography.Text>

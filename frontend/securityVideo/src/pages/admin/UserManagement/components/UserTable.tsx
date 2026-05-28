@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Table, Space, Typography, Badge, Avatar, Input, Popconfirm, Button, Modal, Tabs, message, Spin } from 'antd';
+import { Table, Space, Typography, Badge, Avatar, Input, Popconfirm, Button, Modal, Tabs, message, Spin, Skeleton } from 'antd';
 import { UsergroupAddOutlined, DeleteOutlined, BookOutlined } from '@ant-design/icons';
 import styles from '../UserManagement.module.scss';
 import type { User as UserData, Role as RoleData } from '../../../../types/user';
@@ -57,11 +57,36 @@ export const UserTable = React.memo(({
         onRefresh
     });
 
-    const rowSelection = useMemo(() => isDeleteMode ? {
-        selectedRowKeys,
-        onChange: onSelectChange,
-        columnWidth: 50,
-    } : undefined, [isDeleteMode, selectedRowKeys, onSelectChange]);
+    const isFirstLoad = loading && (!users || users.length === 0);
+
+    const displayData = useMemo(() => {
+        if (isFirstLoad) {
+            return Array.from({ length: 5 }).map((_, index) => ({ id: `dummy-${index}`, isDummy: true } as any));
+        }
+        return users;
+    }, [users, isFirstLoad]);
+
+    const skeletonColumns = useMemo(() => {
+        if (!isFirstLoad) return columns;
+        return columns.map(col => ({
+            ...col,
+            render: (value: any, record: any, index: number) => {
+                if (record.isDummy) {
+                    return <Skeleton.Button active size="small" style={{ width: '80%', height: 16 }} />;
+                }
+                return col.render ? (col.render as any)(value, record, index) : value;
+            }
+        }));
+    }, [columns, isFirstLoad]);
+
+    const rowSelection = useMemo(() => {
+        if (isFirstLoad) return undefined;
+        return isDeleteMode ? {
+            selectedRowKeys,
+            onChange: onSelectChange,
+            columnWidth: 50,
+        } : undefined;
+    }, [isDeleteMode, selectedRowKeys, onSelectChange, isFirstLoad]);
 
     const selectedUser = users.find(u => u.id === selectedUserId);
 
@@ -96,16 +121,17 @@ export const UserTable = React.memo(({
     return (
         <>
             <Table
-                columns={columns}
-                dataSource={users}
+                columns={skeletonColumns}
+                dataSource={displayData}
                 rowKey="id"
-                loading={loading}
+                loading={isFirstLoad ? false : loading}
                 rowSelection={rowSelection}
-                pagination={pagination}
+                pagination={isFirstLoad ? false : pagination}
                 rowClassName={() => 'premium-row'}
                 onRow={(record) => ({
                     onClick: (event) => {
-                        // Tránh trigger khi bấm vào nút hoặc checkbox
+                        if (record.isDummy) return;
+                        // Avoid triggering when clicking buttons, switches, or modal content
                         const target = event.target as HTMLElement;
                         if (
                             target.closest('.ant-table-selection-column') ||
@@ -118,9 +144,9 @@ export const UserTable = React.memo(({
                         }
                         onRowClick(record);
                     },
-                    style: { cursor: 'pointer' }
+                    style: { cursor: record.isDummy ? 'default' : 'pointer' }
                 })}
-                scroll={{ x: 1500, y: 600 }}
+                scroll={{ x: 1500 }}
                 bordered
             />
 
@@ -170,7 +196,7 @@ export const UserTable = React.memo(({
                                                         alignItems: 'center',
                                                         padding: '12px',
                                                         background: 'rgba(0,0,0,0.02)',
-                                                        borderRadius: '8px',
+                                                         borderRadius: '5px',
                                                         border: '1px solid rgba(0,0,0,0.05)'
                                                     }}>
                                                         <Text strong>{course.title}</Text>
@@ -209,7 +235,7 @@ export const UserTable = React.memo(({
                                                         alignItems: 'center',
                                                         padding: '12px',
                                                         background: 'rgba(0,0,0,0.02)',
-                                                        borderRadius: '8px',
+                                                         borderRadius: '5px',
                                                         border: '1px solid rgba(0,0,0,0.05)'
                                                     }}>
                                                         <Text strong>{program.title}</Text>

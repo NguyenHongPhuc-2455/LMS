@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, startTransition } from 'react';
 import { Table, Input, Select, Button, Typography, Card, Space, Avatar, Progress, Tooltip, Drawer, Tabs, Tag, Modal, Input as AntdInput, message } from 'antd';
 import { UserOutlined, SearchOutlined, ReloadOutlined, BellOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, InfoCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -102,11 +102,50 @@ export default function ManagerEmployees() {
         }
     };
 
+    const initDeptLevels = React.useCallback(() => {
+        if (!managerDeptId || departments.length === 0) return;
+        const currentDept = departments.find(d => d.id === managerDeptId);
+        if (!currentDept) return;
+
+        if (!currentDept.parent_id) {
+            setSelectedLevel1(currentDept.id);
+            setSelectedLevel2(undefined);
+            setSelectedLevel3(undefined);
+        } else {
+            const parentDept = departments.find(d => d.id === currentDept.parent_id);
+            if (parentDept) {
+                if (!parentDept.parent_id) {
+                    setSelectedLevel1(parentDept.id);
+                    setSelectedLevel2(currentDept.id);
+                    setSelectedLevel3(undefined);
+                } else {
+                    const grandParentDept = departments.find(d => d.id === parentDept.parent_id);
+                    if (grandParentDept) {
+                        setSelectedLevel1(grandParentDept.id);
+                        setSelectedLevel2(parentDept.id);
+                        setSelectedLevel3(currentDept.id);
+                    }
+                }
+            }
+        }
+    }, [managerDeptId, departments]);
+
     const handleReset = () => {
+        const isAlreadyDefault = 
+            search === '' && 
+            selectedPosition === undefined && 
+            filterDeptId === managerDeptId && 
+            page === 1;
+
         setSearch('');
         setSelectedPosition(undefined);
         setFilterDeptId(managerDeptId);
         setPage(1);
+        initDeptLevels();
+
+        if (isAlreadyDefault) {
+            fetchEmployees();
+        }
     };
 
     const handleExportXLSX = async () => {
@@ -169,32 +208,8 @@ export default function ManagerEmployees() {
 
     // Lấy thông tin cây phòng ban của manager
     useEffect(() => {
-        if (!managerDeptId || departments.length === 0) return;
-        const currentDept = departments.find(d => d.id === managerDeptId);
-        if (!currentDept) return;
-
-        if (!currentDept.parent_id) {
-            setSelectedLevel1(currentDept.id);
-            setSelectedLevel2(undefined);
-            setSelectedLevel3(undefined);
-        } else {
-            const parentDept = departments.find(d => d.id === currentDept.parent_id);
-            if (parentDept) {
-                if (!parentDept.parent_id) {
-                    setSelectedLevel1(parentDept.id);
-                    setSelectedLevel2(currentDept.id);
-                    setSelectedLevel3(undefined);
-                } else {
-                    const grandParentDept = departments.find(d => d.id === parentDept.parent_id);
-                    if (grandParentDept) {
-                        setSelectedLevel1(grandParentDept.id);
-                        setSelectedLevel2(parentDept.id);
-                        setSelectedLevel3(currentDept.id);
-                    }
-                }
-            }
-        }
-    }, [managerDeptId, departments]);
+        initDeptLevels();
+    }, [initDeptLevels]);
 
     const handleLevel1Change = (val: number | undefined) => {
         // Manager Cấp 1 có thể đổi con
@@ -226,25 +241,25 @@ export default function ManagerEmployees() {
     const level2Options = departments.filter(d => selectedLevel1 ? d.parent_id === selectedLevel1 : false);
     const level3Options = departments.filter(d => selectedLevel2 ? d.parent_id === selectedLevel2 : false);
 
-    const columns = [
+    const columns = useMemo(() => [
         {
             title: 'Học viên',
             key: 'employee',
             render: (emp: Employee) => (
-                <Space>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Avatar src={emp.avatar} icon={<UserOutlined />} style={{ border: '2px solid rgba(199, 33, 39, 0.1)' }} />
                     <div>
-                        <Text strong style={{ display: 'block', fontSize: '14px' }}>{emp.full_name || emp.username}</Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>ID: {emp.employee_id || 'Chưa cập nhật'}</Text>
+                        <span style={{ display: 'block', fontSize: '14px', fontWeight: 600 }}>{emp.full_name || emp.username}</span>
+                        <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)' }}>ID: {emp.employee_id || 'Chưa cập nhật'}</span>
                     </div>
-                </Space>
+                </div>
             )
         },
         {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            render: (email: string) => <Text copyable style={{ fontSize: '13px' }}>{email}</Text>
+            render: (email: string) => <span style={{ fontSize: '13px' }}>{email}</span>
         },
         {
             title: 'Chức vụ',
@@ -270,7 +285,7 @@ export default function ManagerEmployees() {
             key: 'actions',
             align: 'center' as const,
             render: (emp: Employee) => (
-                <Space>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                     <Button
                         type="primary"
                         size="small"
@@ -293,10 +308,10 @@ export default function ManagerEmployees() {
                     >
                         Nhắc nhở
                     </Button>
-                </Space>
+                </div>
             )
         }
-    ];
+    ], []);
 
     return (
         <div className={styles.container}>
@@ -310,7 +325,7 @@ export default function ManagerEmployees() {
             <Card className="glass-card" style={{ marginBottom: 24 }}>
                 <div className={styles.searchBarWrapper}>
                     <div className={styles.headerLeft}>
-                        <Input
+                        <Input style={{ display: 'flex', alignItems: 'center' }}
                             placeholder="Tìm kiếm tên, mã nhân viên, email..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
@@ -372,12 +387,12 @@ export default function ManagerEmployees() {
                     </div>
 
                     <div className={styles.headerRight}>
-                        <Button icon={<ReloadOutlined />} onClick={handleReset}>Làm mới</Button>
+                        <Button icon={<ReloadOutlined />} onClick={handleReset}></Button>
                         <Button
                             type="primary"
                             icon={<DownloadOutlined />}
                             onClick={handleExportXLSX}
-                            style={{ background: '#B8121A', borderColor: '#B8121A', borderRadius: 8 }}
+                            className="btn-brand-primary"
                         >
                             Xuất File
                         </Button>
@@ -388,12 +403,12 @@ export default function ManagerEmployees() {
                     columns={columns}
                     dataSource={employees}
                     rowKey="id"
-                    loading={loading}
+                    loading={loading && employees.length === 0}
                     pagination={{
                         current: page,
                         pageSize: 10,
                         total,
-                        onChange: setPage,
+                        onChange: (p: number) => startTransition(() => setPage(p)),
                         itemRender: (current: number, type: string, originalElement: any) => {
                             if (type === 'page') {
                                 return React.cloneElement(originalElement, {
@@ -404,6 +419,21 @@ export default function ManagerEmployees() {
                             return originalElement;
                         }
                     } as any}
+                    onRow={(record) => ({
+                        onClick: (event) => {
+                            const target = event.target as HTMLElement;
+                            if (
+                                target.closest('button') ||
+                                target.closest('.ant-btn') ||
+                                target.closest('a') ||
+                                target.closest('.ant-modal')
+                            ) {
+                                return;
+                            }
+                            handleOpenDetail(record.id);
+                        },
+                        style: { cursor: 'pointer' }
+                    })}
                     bordered
                     className={styles.employeeTable}
                     locale={{ emptyText: 'Phòng ban của bạn chưa có nhân sự hoặc không trùng bộ lọc' }}

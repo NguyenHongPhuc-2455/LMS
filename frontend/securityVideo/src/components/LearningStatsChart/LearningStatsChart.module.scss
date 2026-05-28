@@ -28,7 +28,7 @@
     .summaryCard {
         background: #ffffff;
         border: 1px solid #f1f5f9;
-        border-radius: 16px;
+        border-radius: 5px;
         padding: 20px 22px 22px;
         color: #1e293b;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
@@ -47,7 +47,7 @@
             background: var(--card-color, C72127);
             opacity: 0;
             transition: opacity 0.3s ease;
-            border-radius: 0 0 16px 16px;
+            border-radius: 0 0 5px 5px;
         }
 
         &:hover {
@@ -95,7 +95,7 @@
             color: #d97706;
             background: rgba(217, 119, 6, 0.1);
             padding: 2px 8px;
-            border-radius: 20px;
+            border-radius: 5px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -104,7 +104,7 @@
     .cardIconWrap {
         width: 40px;
         height: 40px;
-        border-radius: 10px;
+        border-radius: 5px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -115,7 +115,7 @@
     .chartCard {
         background: #ffffff;
         border: 1px solid #f1f5f9;
-        border-radius: 16px;
+        border-radius: 5px;
         padding: 32px;
         margin-top: 24px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
@@ -140,7 +140,7 @@
     :global(.ant-select-selector) {
         background: transparent !important;
         border: 1px solid #e2e8f0 !important;
-        border-radius: 8px !important;
+        border-radius: 5px !important;
     }
 
     :global(.ant-select-selection-item) {
@@ -159,7 +159,7 @@
 .customTooltip {
     background: #ffffff;
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 5px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     border: 1px solid C72127;
 

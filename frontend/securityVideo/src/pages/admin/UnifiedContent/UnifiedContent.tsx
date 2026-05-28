@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, startTransition } from 'react';
 import { 
     Card, Typography, Button, Space, Breadcrumb, 
     App, Select, Tooltip, Empty, 
-    Popconfirm
+    Popconfirm, Skeleton
 } from 'antd';
 import { 
     ArrowLeftOutlined, 
@@ -105,9 +105,15 @@ const UnifiedContent: React.FC = () => {
         }
     }, [courseId, sectionId]);
 
+    const lastViewParams = React.useRef({ courseId, sectionId });
+
     const fetchData = useCallback(async () => {
         setLoading(true);
-        setData([]);
+        // Chỉ reset dữ liệu khi chuyển đổi giữa các chế độ xem (Ví dụ: từ Khóa học sang Chương học)
+        if (lastViewParams.current.courseId !== courseId || lastViewParams.current.sectionId !== sectionId) {
+            setData([]);
+            lastViewParams.current = { courseId, sectionId };
+        }
         try {
             if (sectionId) {
                 const lessonsData = await contentService.getLessonsBySection(Number(sectionId));
@@ -139,8 +145,10 @@ const UnifiedContent: React.FC = () => {
     }, [fetchData]);
 
     const handlePageChange = useCallback((newPage: number, newPageSize: number) => {
-        setPage(newPage);
-        setPageSize(newPageSize);
+        startTransition(() => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+        });
     }, []);
 
     const handleCourseClick = useCallback((course: any) => {
@@ -153,31 +161,35 @@ const UnifiedContent: React.FC = () => {
         if (course) handleCourseClick(course);
     }, [data, handleCourseClick]);
 
-    const handleSectionClick = (section: any) => {
+    const handleSectionClick = useCallback((section: any) => {
         setCurrentSection(section);
         navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections/${section.id}/lessons`);
-    };
+    }, [navigate, courseId]);
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         if (viewMode === 'LESSON') {
             navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections`);
         } else if (viewMode === 'SECTION') {
+            setPage(1);
             navigate(ROUTES.ADMIN_COURSES);
         }
-    };
+    }, [viewMode, navigate, courseId]);
 
-    const handleBreadcrumbClick = (mode: ViewMode) => {
-        if (mode === 'COURSE') navigate(ROUTES.ADMIN_COURSES);
+    const handleBreadcrumbClick = useCallback((mode: ViewMode) => {
+        if (mode === 'COURSE') {
+            setPage(1);
+            navigate(ROUTES.ADMIN_COURSES);
+        }
         if (mode === 'SECTION') navigate(`${ROUTES.ADMIN_COURSES}/${courseId}/sections`);
-    };
+    }, [navigate, courseId]);
 
     // Modal Handlers
-    const handleAdd = () => {
+    const handleAdd = useCallback(() => {
         setEditingData(null);
         setEditingQuizId(null);
         setLessonType('VIDEO');
         setIsModalOpen(true);
-    };
+    }, []);
 
     const handleEdit = useCallback(async (record: any) => {
         if (viewMode === 'LESSON' && record.type === 'QUIZ') {
@@ -283,7 +295,7 @@ const UnifiedContent: React.FC = () => {
         }
     }, [message]);
 
-    const handleModalSuccess = async (values: any, ...args: any[]) => {
+    const handleModalSuccess = useCallback(async (values: any, ...args: any[]) => {
         setSubmitting(true);
         try {
             if (viewMode === 'COURSE') {
@@ -370,14 +382,58 @@ const UnifiedContent: React.FC = () => {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [viewMode, editingData, editingQuizId, lessonType, courseId, sectionId, message, fetchData]);
 
     // Render Helpers
-    const getAddButtonText = () => {
+    const getAddButtonText = useCallback(() => {
         if (viewMode === 'LESSON') return 'Thêm Bài học mới';
         if (viewMode === 'SECTION') return 'Thêm Chương mới';
         return 'Tạo Khóa học mới';
-    };
+    }, [viewMode]);
+
+    const isFirstLoad = loading && data.length === 0;
+
+    if (isFirstLoad) {
+        return (
+            <div className={styles.unifiedContainer}>
+                <Card className="glass-card" style={{ minHeight: 680 }}>
+                    {/* Header Toolbar Skeleton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+                        <Space size={16}>
+                            <Skeleton.Button active style={{ width: 40, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Input active style={{ width: 180, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Button active style={{ width: 40, height: 32, borderRadius: 5 }} />
+                        </Space>
+                        <Space size={16}>
+                            <Skeleton.Input active style={{ width: 160, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Input active style={{ width: 140, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Button active style={{ width: 140, height: 32, borderRadius: 5 }} />
+                        </Space>
+                    </div>
+                    {/* Table Headers Skeleton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '25%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '20%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                    </div>
+                    {/* Table Rows Skeleton */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '22%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '18%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '10%', height: 16 }} />
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.unifiedContainer}>
@@ -509,7 +565,7 @@ const UnifiedContent: React.FC = () => {
                                 pageSize={pageSize}
                                 onPageChange={handlePageChange}
                                 categories={categories}
-                                loading={loading}
+                                loading={loading && data.length === 0}
                                 updatingId={updatingId}
                                 selectedRowKeys={selectedRowKeys}
                                 onSelectionChange={setSelectedRowKeys}
@@ -528,7 +584,7 @@ const UnifiedContent: React.FC = () => {
                                 loading={loading}
                                 onEdit={handleEdit} 
                                 onDelete={handleDelete}
-                                onNavigateLessons={(sid) => handleSectionClick(data.find(s => s.id === sid))}
+                                onNavigateLessons={handleSectionClick}
                             />
                         )}
                         {viewMode === 'LESSON' && (

@@ -5,7 +5,7 @@
 
 .quizPlayerCard {
     background: #fff;
-    border-radius: 8px;
+    border-radius: 5px;
 }
 
 .quizHeader {
@@ -52,7 +52,7 @@
 .questionItem {
     margin-bottom: 32px;
     padding: 16px;
-    border-radius: 8px;
+    border-radius: 5px;
     background: #fafafa;
     border: 1px solid #f0f0f0;
 
@@ -101,7 +101,7 @@
 
 .optionItem {
     white-space: normal;
-    border-radius: 4px;
+    border-radius: 5px;
 
     &.correctOption {
         background: #e6f4ff;

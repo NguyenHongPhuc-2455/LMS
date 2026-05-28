@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import {
     Card, Button, Input, Typography,
     message
@@ -19,8 +19,8 @@ import ProgramTable from './components/ProgramTable';
 import ProgramFormModal from './components/ProgramFormModal';
 import ProgramCourseDrawer from './components/ProgramCourseDrawer';
 
-const { Title, Text } = Typography;
-
+// const { Title, Text } = Typography;
+// 
 import { type Course } from '../../../types/course';
 import { type Program } from '../../../types/program';
 
@@ -87,8 +87,10 @@ export default function ProgramManagement() {
     }, []);
 
     const handlePageChange = (newPage: number, newPageSize: number) => {
-        setPage(newPage);
-        setPageSize(newPageSize);
+        startTransition(() => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+        });
     };
 
     const handleSave = async (values: any, thumbFile: File | null): Promise<void> => {
@@ -214,12 +216,12 @@ export default function ProgramManagement() {
 
     return (
         <div className={styles.programManagementContainer}>
-            <div className={styles.pageHeader}>
+            {/* <div className={styles.pageHeader}>
                 <div className={styles.headerInfo}>
                     <Title level={4} className={styles.title}>Quản lý Lộ trình học</Title>
                     <Text type="secondary">Gom nhiều khóa học thành lộ trình đào tạo</Text>
                 </div>
-            </div>
+            </div> */}
 
             <Card className="glass-card">
                 <div className={styles.searchBarWrapper}>
@@ -230,7 +232,7 @@ export default function ProgramManagement() {
                         onClick={() => { setEditingProgram(null); setIsModalOpen(true); }}
                         className={styles.adminAddButton}
                     >
-                        Chương trình mới
+                        Thêm
                     </Button>
                 </div>
                 <ProgramTable
@@ -239,7 +241,7 @@ export default function ProgramManagement() {
                     page={page}
                     pageSize={pageSize}
                     onPageChange={handlePageChange}
-                    loading={loading}
+                    loading={loading && programs.length === 0}
                     onEdit={(p) => { setEditingProgram(p); setIsModalOpen(true); }}
                     onDelete={handleDelete}
                     onOpenCourseDrawer={(p) => { setSelectedProgram(p); setIsCourseDrawerOpen(true); }}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, Switch, message, Upload, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import { heroBannerService, type HeroBanner } from '../../../services/heroBanner.service';
-
+import { getBackendUrl } from '../../../services/api';
 import styles from './BannerManagement.module.scss';
 
 export default function BannerManagement() {
@@ -188,10 +188,10 @@ export default function BannerManagement() {
                 width={700}
                 footer={
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                        <Button onClick={() => setIsModalOpen(false)} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                        <Button onClick={() => setIsModalOpen(false)} className="modal-action-btn">
                             Hủy
                         </Button>
-                        <Button type="primary" onClick={handleOk} style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}>
+                        <Button type="primary" onClick={handleOk} className="btn-brand-primary modal-action-btn">
                             {editingBanner ? 'Lưu' : 'Thêm mới'}
                         </Button>
                     </div>
@@ -209,7 +209,7 @@ export default function BannerManagement() {
                                 listType="picture-card"
                                 className="avatar-uploader"
                                 showUploadList={false}
-                                action={`${import.meta.env.VITE_API_URL}/upload/image`}
+                                action={`${getBackendUrl()}/api/upload/image`}
                                 headers={{ Authorization: `Bearer ${localStorage.getItem('accessToken')}` }}
                                 onChange={handleUpload}
                             >

@@ -39,16 +39,20 @@ const getMandatoryOverdueReport = async (type = 'overdue', departmentId = null, 
 
     if (mandatoryCourses.length === 0) return [];
 
-    // 2. Lấy tất cả user có join_date (lọc theo phòng ban nếu là Manager)
+    let deptIds = null;
+    if (departmentId) {
+        deptIds = await require('../../utils/departmentHierarchy').getSubDepartmentIds(parseInt(departmentId));
+    }
+
+    // 2. Lấy tất cả user (lọc theo phòng ban nếu là Manager)
     const users = await prisma.user.findMany({
         where: {
-            join_date: { not: null },
             deleted_at: null,
-            ...(departmentId && { department_id: parseInt(departmentId) })
+            ...(deptIds && { department_id: { in: deptIds } })
         },
         select: {
             id: true, full_name: true, email: true, phone: true,
-            employee_id: true, join_date: true, department_id: true,
+            employee_id: true, join_date: true, created_at: true, department_id: true,
             position_id: true, department: { select: { name: true } },
             user_roles: {
                 include: { role: true }

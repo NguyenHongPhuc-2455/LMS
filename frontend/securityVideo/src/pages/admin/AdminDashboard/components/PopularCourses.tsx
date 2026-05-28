@@ -14,7 +14,7 @@ export default function PopularCourses({ courses, loading }: PopularCoursesProps
             title={<Title level={4} className={styles.chartCardTitle}>Khóa học phổ biến</Title>}
             bordered={false}
             className={styles.statCard}
-            style={{ height: '100%' }}
+            style={{ height: '100%', minHeight: 440 }}
             bodyStyle={{ padding: '24px' }}
             loading={loading}
         >

@@ -41,9 +41,9 @@ exports.calculateCourseStatus = (course, user, progressPercent, enrolledAt = nul
         
         deadlineDate = endDate;
         hasDateRange = true;
-    } else if (user?.join_date) {
-        // 2. Tính toán dựa trên ngày vào làm và thời điểm khóa học bắt buộc
-        const joinDate = new Date(user.join_date);
+    } else if (user?.join_date || user?.created_at) {
+        // 2. Tính toán dựa trên ngày vào làm (hoặc ngày tạo tài khoản nếu thiếu) và thời điểm khóa học bắt buộc
+        const joinDate = new Date(user.join_date || user.created_at);
         joinDate.setHours(0, 0, 0, 0);
         
         const mandatoryAt = course.mandatory_at ? new Date(course.mandatory_at) : (course.created_at ? new Date(course.created_at) : new Date());

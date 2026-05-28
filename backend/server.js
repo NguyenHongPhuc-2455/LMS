@@ -4,6 +4,7 @@ const http = require('http');
 const app = require('./src/app');
 const socketUtils = require('./src/utils/socket');
 const { bootstrap } = require('./src/bootstrap/startup');
+const { initCronJobs } = require('./src/scripts/cronJobs');
 
 const server = http.createServer(app);
 const PORT = config.app.port;
@@ -11,6 +12,7 @@ const PORT = config.app.port;
 bootstrap(config)
     .then(() => {
         socketUtils.init(server);
+        initCronJobs();
 
         server.listen(PORT, () => {
             console.log(`\n========================================`);

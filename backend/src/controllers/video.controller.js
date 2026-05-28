@@ -35,10 +35,20 @@ exports.uploadVideo = catchAsync(async (req, res) => {
 
     if (req.file || hls_video_url) {
         const sourcePath = req.file ? req.file.path : hls_video_url;
-        videoService.processVideoToHLS(lesson.id, sourcePath);
+        
+        // Đẩy job vào BullMQ thay vì chạy trực tiếp trên API Server
+        const videoTranscodeQueue = require('../queues/videoTranscode.queue');
+        videoTranscodeQueue.add('transcode', {
+            lessonId: lesson.id,
+            sourcePath: sourcePath
+        }, {
+            attempts: 3,
+            backoff: 5000
+        }).catch(err => console.error('Lỗi khi thêm job vào queue:', err));
+
         return res.status(202).json({
             status: 'success',
-            message: 'Video is being processed...',
+            message: 'Video is being processed in background...',
             data: { lessonId: lesson.id }
         });
     }
@@ -172,15 +182,28 @@ exports.uploadAttachment = catchAsync(async (req, res) => {
 /**
  * Ghi đè URL chìa khóa trong file Manifest (.m3u8) để chèn Token bảo mật
  */
-const rewriteManifestWithSignedKey = (content, lessonId, ip) => {
+const rewriteManifestWithSignedKeyAndSegments = async (content, lessonId, ip) => {
     const normalizedIp = ip.replace('::ffff:', '');
     const token = createVideoToken(`key-${lessonId}`, normalizedIp);
     const signedKeyUrl = `/api/videos/key/${lessonId}?token=${encodeURIComponent(token)}`;
 
-    return content.replace(
+    let newContent = content.replace(
         new RegExp(`URI="/api/videos/key/${lessonId}"`, 'g'),
         `URI="${signedKeyUrl}"`
     );
+
+    const { getPresignedUrl } = require('../utils/r2Storage');
+    const lines = newContent.split('\n');
+    const processedLines = await Promise.all(lines.map(async line => {
+        const trimmed = line.trim();
+        if (trimmed && trimmed.endsWith('.ts') && !trimmed.startsWith('http')) {
+            const segmentKey = `hls/${lessonId}/${trimmed}`;
+            return await getPresignedUrl(segmentKey, 14400); // 4 hours
+        }
+        return line;
+    }));
+
+    return processedLines.join('\n');
 };
 
 /**
@@ -204,14 +227,21 @@ exports.streamProxy = catchAsync(async (req, res) => {
         }
 
         const r2Key = `hls/${lessonId}/${safeFilePath}`;
+        
+        if (safeFilePath.endsWith('.ts')) {
+            const { getPresignedUrl } = require('../utils/r2Storage');
+            const presignedUrl = await getPresignedUrl(r2Key, 3600); // 1 hour for segment
+            return res.redirect(302, presignedUrl);
+        }
+
         const response = await getFileStream(r2Key);
 
         if (safeFilePath.endsWith('.m3u8')) {
             let content = '';
             return new Promise((resolve, reject) => {
                 response.Body.on('data', chunk => content += chunk.toString());
-                response.Body.on('end', () => {
-                    const newContent = rewriteManifestWithSignedKey(content, lessonId, req.ip);
+                response.Body.on('end', async () => {
+                    const newContent = await rewriteManifestWithSignedKeyAndSegments(content, lessonId, req.ip);
                     res.set('Content-Type', 'application/x-mpegURL');
                     res.send(newContent);
                     resolve();
@@ -311,10 +341,23 @@ exports.getVideoKey = catchAsync(async (req, res) => {
     const isSpecialUser = roles.includes('admin') || roles.includes('instructor');
     if (!lesson.is_free && !isSpecialUser) {
         const courseId = lesson.section.course_id;
-        const enrollment = await prisma.enrollment.findUnique({
-            where: { user_id_course_id: { user_id: userId, course_id: courseId } }
-        });
-        if (!enrollment) throw new ApiError(403, 'Bạn không có quyền truy cập video này');
+        
+        // Cache enrollment trong 10 phút để tránh query DB liên tục khi lấy key
+        if (!global.enrollmentCache) global.enrollmentCache = new Map();
+        const cacheKey = `${userId}-${courseId}`;
+        
+        let isEnrolled = false;
+        if (global.enrollmentCache.has(cacheKey) && global.enrollmentCache.get(cacheKey).expires > Date.now()) {
+            isEnrolled = global.enrollmentCache.get(cacheKey).enrolled;
+        } else {
+            const enrollment = await prisma.enrollment.findUnique({
+                where: { user_id_course_id: { user_id: userId, course_id: courseId } }
+            });
+            isEnrolled = !!enrollment;
+            global.enrollmentCache.set(cacheKey, { enrolled: isEnrolled, expires: Date.now() + 10 * 60 * 1000 });
+        }
+        
+        if (!isEnrolled) throw new ApiError(403, 'Bạn không có quyền truy cập video này');
     }
 
     res.set({

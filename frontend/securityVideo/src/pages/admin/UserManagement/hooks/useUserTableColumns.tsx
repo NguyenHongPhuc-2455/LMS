@@ -29,7 +29,7 @@ export function useUserTableColumns({
             width: 130,
             fixed: 'left',
             sorter: (a, b) => (a.employee_id || '').localeCompare(b.employee_id || ''),
-            render: (text) => <Text strong style={{ color: '#000' }}>{text || '-'}</Text>
+            render: (text) => <span style={{ fontWeight: 600, color: '#000' }}>{text || '-'}</span>
         },
         {
             title: 'Họ tên & Tài khoản',
@@ -38,8 +38,8 @@ export function useUserTableColumns({
             fixed: 'left',
             render: (_, record) => (
                 <div className={styles.userTextStack}>
-                    <Text strong className={styles.fullName}>{record.full_name || record.username}</Text>
-                    <Text type="secondary" className={styles.username}>@{record.username}</Text>
+                    <span style={{ fontWeight: 600 }} className={styles.fullName}>{record.full_name || record.username}</span>
+                    <span style={{ color: 'rgba(0, 0, 0, 0.45)', fontSize: '12px' }} className={styles.username}>@{record.username}</span>
                 </div>
             )
         },
@@ -62,7 +62,7 @@ export function useUserTableColumns({
             title: 'Vai trò',
             key: 'roles',
             render: (_, record) => (
-                <Space wrap={false}>
+                <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px' }}>
                     {record.roles?.map((role: any) => (
                         <span
                             key={typeof role === 'object' ? role.id : role}
@@ -71,16 +71,16 @@ export function useUserTableColumns({
                             {(typeof role === 'object' ? role.name : role).toUpperCase()}
                         </span>
                     ))}
-                </Space>
+                </div>
             )
         },
         {
-            title: 'Thông tin liên hệ',
+            title: 'Email',
             key: 'contact',
             render: (_, record) => (
                 <div style={{ display: 'flex', flexDirection: 'column', whiteSpace: 'nowrap' }}>
-                    <Text style={{ fontSize: '12px' }}>{record.email}</Text>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>{record.phone || '-'}</Text>
+                    <span style={{ fontSize: '12px' }}>{record.email}</span>
+                    <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)' }}>{record.phone || '-'}</span>
                 </div>
             )
         },
@@ -97,7 +97,7 @@ export function useUserTableColumns({
                 <div onClick={(e) => e.stopPropagation()}>
                     <Switch
                         size="small"
-                        checked={!record.deleted_at}
+                        checked={record.is_active}
                         onChange={async (checked) => {
                             try {
                                 const { userService } = await import('../../../../services/user.service');
@@ -133,12 +133,6 @@ export function useUserTableColumns({
                     </Button>
                 );
             }
-        },
-        {
-            title: 'Ngày tạo',
-            dataIndex: 'created_at',
-            key: 'created_at',
-            render: (text) => <span style={{ whiteSpace: 'nowrap' }}>{dayjs(text).format('DD/MM/YYYY')}</span>
         }
     ], [positions, setCourseModalVisible, setSelectedUserId]);
 

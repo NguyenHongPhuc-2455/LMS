@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, startTransition } fro
 import {
     Button, Space, Tag,
     Typography, Card, Input, Select,
-    App, Switch
+    App, Switch, Skeleton
 } from 'antd';
 import {
     DeleteOutlined, CloseOutlined,
@@ -80,13 +80,18 @@ export default function UserManagement() {
 
     const [actionLoading, setActionLoading] = useState(false);
 
+    const handleSearchChange = useCallback((val: string) => {
+        setDebouncedSearch(val);
+        setPage(1);
+    }, []);
+
     // Cascading states cho lọc bộ phận 3 cấp
     const [selectedLevel1, setSelectedLevel1] = useState<number | null | undefined>();
     const [selectedLevel2, setSelectedLevel2] = useState<number | null | undefined>();
     const [selectedLevel3, setSelectedLevel3] = useState<number | null | undefined>();
 
     // React Query
-    const { data: usersData, isLoading: usersLoading } = useQuery({
+    const { data: usersData, isLoading: usersLoading, isFetching: usersFetching } = useQuery({
         queryKey: ['users', page, pageSize, debouncedSearch, departmentId, positionId, includeInactive],
         queryFn: () => userService.getAll({
             page,
@@ -119,20 +124,20 @@ export default function UserManagement() {
 
     // Khi URL thay đổi (ví dụ bấm từ sidebar), cập nhật lại state local
     useEffect(() => {
-        const id = searchParams.get('departmentId');
         // Nếu là Manager, ép buộc về phòng ban của mình, bỏ qua URL khác
         if (isManagerOnly && currentUser?.department_id) {
             const managerDeptId = currentUser.department_id;
-            if (!id || parseInt(id) !== managerDeptId) {
-                searchParams.set('departmentId', managerDeptId.toString());
-                setSearchParams(searchParams, { replace: true });
+            if (!urlDeptId || parseInt(urlDeptId) !== managerDeptId) {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.set('departmentId', managerDeptId.toString());
+                setSearchParams(newParams, { replace: true });
             }
             setDepartmentId(managerDeptId);
         } else {
-            setDepartmentId(id ? parseInt(id) : undefined);
+            setDepartmentId(urlDeptId ? parseInt(urlDeptId) : undefined);
         }
         setPage(1);
-    }, [searchParams]);
+    }, [urlDeptId, isManagerOnly, currentUser?.department_id]);
 
     // Đồng bộ ngược từ departmentId (ví dụ URL đổi hoặc reset) sang 3 cấp dropdown
     useEffect(() => {
@@ -174,7 +179,8 @@ export default function UserManagement() {
     const roles = rolesData || EMPTY_ARRAY;
     const departments = departmentsData || EMPTY_ARRAY;
     const positions = positionsData || EMPTY_ARRAY;
-    const loading = usersLoading || actionLoading;
+    const loading = usersLoading || usersFetching || actionLoading;
+    const tableLoading = usersLoading || actionLoading;
 
     const queryClient = useQueryClient();
 
@@ -220,7 +226,7 @@ export default function UserManagement() {
                 'Ngày nhận việc': u.join_date ? new Date(u.join_date).toLocaleDateString('vi-VN') : '',
                 'Vai trò': u.roles?.map((r: any) => r.title || r.name).join(', ') || '',
                 'Khóa học đăng ký': u.enrollments_count || 0,
-                'Trạng thái': u.deleted_at ? 'Tạm khóa' : 'Đang hoạt động'
+                'Trạng thái': !u.is_active ? 'Tạm khóa' : 'Đang hoạt động'
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -265,6 +271,10 @@ export default function UserManagement() {
     const handleOpenEdit = useCallback((user: UserData) => {
         setEditingUser(user);
         setIsModalOpen(true);
+    }, []);
+
+    const handleCloseModal = useCallback(() => {
+        setIsModalOpen(false);
     }, []);
 
     const handleModalFinish = async (values: any) => {
@@ -317,8 +327,10 @@ export default function UserManagement() {
         pageSize: pageSize,
         total: total,
         onChange: (p: number, s: number) => {
-            setPage(p);
-            setPageSize(s);
+            startTransition(() => {
+                setPage(p);
+                setPageSize(s);
+            });
         },
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
@@ -366,6 +378,50 @@ export default function UserManagement() {
         handleDepartmentChange(actualVal || selectedLevel2 || undefined);
     };
 
+    const isFirstLoad = loading && (!users || users.length === 0);
+
+    if (isFirstLoad) {
+        return (
+            <div className={styles.userManagementContainer}>
+                <Card className="glass-card" style={{ minHeight: 680 }}>
+                    {/* Header Toolbar Skeleton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+                        <Space size={16}>
+                            <Skeleton.Input active style={{ width: 200, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Input active style={{ width: 140, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Input active style={{ width: 140, height: 32, borderRadius: 5 }} />
+                        </Space>
+                        <Space size={16}>
+                            <Skeleton.Button active style={{ width: 80, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Button active style={{ width: 80, height: 32, borderRadius: 5 }} />
+                            <Skeleton.Button active style={{ width: 100, height: 32, borderRadius: 5 }} />
+                        </Space>
+                    </div>
+                    {/* Table Headers Skeleton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '25%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '20%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
+                    </div>
+                    {/* Table Rows Skeleton */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '22%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '18%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
+                                <Skeleton.Input active size="small" style={{ width: '10%', height: 16 }} />
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.userManagementContainer} >
             {/* <div className={styles.userManagementHeader}>
@@ -380,10 +436,7 @@ export default function UserManagement() {
                     <div className={styles.headerLeft}>
                         <SearchInput
                             value={debouncedSearch}
-                            onChange={(val) => {
-                                setDebouncedSearch(val);
-                                setPage(1);
-                            }}
+                            onChange={handleSearchChange}
                         />
                         {/* Manager không được đổi phòng ban - ẩn dropdown, chỉ hiển thị label tên phòng ban */}
                         {isManagerOnly ? (
@@ -493,7 +546,7 @@ export default function UserManagement() {
                                         icon={<DownloadOutlined />}
                                         onClick={exportAllUsers}
                                         loading={loading}
-                                        style={{ background: '#B8121A', borderColor: '#B8121A', borderRadius: 8 }}
+                                        className="btn-brand-primary"
                                     >
                                         Xuất File
                                     </Button>
@@ -508,7 +561,7 @@ export default function UserManagement() {
                     roles={roles}
                     departments={departments}
                     positions={positions}
-                    loading={loading}
+                    loading={tableLoading}
                     isDeleteMode={isDeleteMode}
                     selectedRowKeys={selectedRowKeys}
                     onSelectChange={setSelectedRowKeys}
@@ -523,7 +576,7 @@ export default function UserManagement() {
             {isModalOpen && (
                 <UserFormModal
                     open={isModalOpen}
-                    onCancel={useCallback(() => setIsModalOpen(false), [])}
+                    onCancel={handleCloseModal}
                     onSuccess={handleModalFinish}
                     roles={roles}
                     departments={departments}

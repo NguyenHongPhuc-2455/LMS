@@ -67,18 +67,17 @@ const getUsers = async (query) => {
     ]);
 
     const safeUsers = users.map(u => {
-        const { password_hash, user_roles, department, position, ...data } = u;
+        const { password_hash, user_roles, department, position, _count, dob, bio, deleted_at, created_at, updated_at, ...data } = u;
         return {
             ...data,
+            is_active: deleted_at === null,
             department_id: u.department_id,
             position_id: u.position_id,
             department: department?.name || '',
             position: position?.name || '',
             roles: user_roles.map(ur => ur.role),
             enrollments_count: u._count.enrollments,
-            programs_count: u._count.program_enrollments || 0,
-            enrolled_courses: [],
-            enrolled_programs: []
+            programs_count: u._count.program_enrollments || 0
         };
     });
 

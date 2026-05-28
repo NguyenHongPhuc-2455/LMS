@@ -85,6 +85,15 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
         };
     }, []);
 
+    const handleStart = () => {
+        setLoginNotifyModal(prev => ({ ...prev, open: false }));
+        const activeList = loginNotifyModal.courses.filter((c: any) => c.status !== 'OVERDUE' && c.status !== 'COMPLETED');
+        const target = activeList[0] || loginNotifyModal.courses[0];
+        if (target) {
+            navigate(target.type === 'program' ? `/programs/${target.id}` : `/course/${target.id}`);
+        }
+    };
+
     const getStatusConfig = (status: string) => {
         switch (status) {
             case 'OVERDUE':
@@ -103,7 +112,7 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
             return (
                 <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
                     <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
-                    <Text>Không có mục nào trong phần này</Text>
+                    <Text>Không có khóa học</Text>
                 </div>
             );
         }
@@ -140,8 +149,8 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                                     <Text style={{ fontSize: 12, color: config.color }}>
                                         {course.status === 'OVERDUE'
                                             ? `Quá hạn`
-                                            : course.status === 'COMPLETED' 
-                                                ? 'Đã hoàn tất' 
+                                            : course.status === 'COMPLETED'
+                                                ? 'Đã hoàn tất'
                                                 : (course.remainingDays !== null ? `Còn ${course.remainingDays} ngày` : 'Bắt buộc')
                                         }
                                     </Text>
@@ -204,7 +213,7 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                 >
                     <div className={styles.sidebarHeader} style={{ padding: '24px 24px 0' }}>
                         <Title level={4} style={{ margin: 0, fontWeight: 700, color: '#1a1a1a' }}>
-                            Nội dung học bắt buộc
+                            Nội dung bắt buộc
                         </Title>
                     </div>
 
@@ -266,7 +275,7 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                                             ) : (
                                                 <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
                                                     <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
-                                                    <Text>Không có nội dung nào còn hạn</Text>
+                                                    <Text>Không có khóa học</Text>
                                                 </div>
                                             )}
                                         </div>
@@ -308,7 +317,7 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                                             ) : (
                                                 <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
                                                     <CheckCircleOutlined style={{ fontSize: 40, display: 'block', marginBottom: 12 }} />
-                                                    <Text>Tuyệt vời! Không có nội dung quá hạn</Text>
+                                                    <Text>Không có khóa học</Text>
                                                 </div>
                                             )}
                                         </div>
@@ -324,9 +333,9 @@ export default function MandatoryCourseBanner({ hideBanner = false, hideFloating
                             block
                             icon={<ArrowRightOutlined />}
                             className={styles.primaryBtn}
-                            onClick={() => setLoginNotifyModal(prev => ({ ...prev, open: false }))}
+                            onClick={handleStart}
                         >
-                            Bắt đầu học ngay
+                            Bắt đầu
                         </Button>
                         <Button
                             block

@@ -2,11 +2,20 @@ const rateLimit = require('express-rate-limit');
 
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Tăng lên 1000 trong môi trường dev để tránh bị block khi reload
+    max: (req) => {
+        // Tăng giới hạn nếu đã đăng nhập (Authorization header) để tránh block nhầm khi xem video/load tài nguyên
+        if (req.headers.authorization) return 5000;
+        return 1000;
+    },
+    keyGenerator: (req) => {
+        // Phân biệt theo UserId nếu có, nếu không thì dùng IP
+        return req.user?.id ? req.user.id.toString() : req.ip;
+    },
     message: {
         status: 429,
-        message: 'Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút'
+        message: 'Quá nhiều yêu cầu, vui lòng thử lại sau 15 phút'
     },
+    validate: { ip: false },
     standardHeaders: true,
     legacyHeaders: false,
 });

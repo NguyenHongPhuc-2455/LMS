@@ -23,6 +23,7 @@ export interface User {
     roles: string[] | Role[];
     created_at: string;
     updated_at: string;
+    is_active?: boolean;
     enrolled_courses?: { id: number; title: string }[];
     enrolled_programs?: { id: number; title: string }[];
     enrollments_count?: number;

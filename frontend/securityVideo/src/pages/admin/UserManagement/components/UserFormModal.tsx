@@ -91,7 +91,7 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, p
             destroyOnClose
             footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '10px 0' }}>
-                    <Button onClick={onCancel} style={{ borderRadius: 8, height: 40, minWidth: 100 }}>
+                    <Button onClick={onCancel} style={{ borderRadius: 5, height: 32, minWidth: 100 }}>
                         {isEditing ? "Hủy bỏ" : "Đóng"}
                     </Button>
                     
@@ -100,7 +100,7 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, p
                             type="primary" 
                             icon={<EditOutlined />} 
                             onClick={() => setIsEditing(true)}
-                            style={{ borderRadius: 8, height: 40, minWidth: 120, background: '#B8121A', borderColor: '#B8121A' }}
+                            className="btn-brand-primary" style={{ minWidth: 120, height: 32, borderRadius: 5 }}
                         >
                             Chỉnh sửa
                         </Button>
@@ -110,7 +110,7 @@ export const UserFormModal = ({ open, onCancel, onSuccess, roles, departments, p
                             loading={loading}
                             icon={<SaveOutlined />}
                             onClick={() => form.submit()}
-                            style={{ borderRadius: 8, height: 40, minWidth: 120, background: '#B8121A', borderColor: '#B8121A' }}
+                            className="btn-brand-primary" style={{ minWidth: 120, height: 32, borderRadius: 5 }}
                         >
                             {initialValues ? "Lưu thay đổi" : "Tạo ngay"}
                         </Button>

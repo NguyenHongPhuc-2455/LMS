@@ -24,6 +24,9 @@ export default function AdminHeader({ user }: { user: any }) {
         notifications,
         unreadCount,
         loading,
+        loadingMore,
+        hasMore,
+        loadMore,
         markAsRead,
         markAllAsRead,
         deleteNotification,
@@ -97,6 +100,20 @@ export default function AdminHeader({ user }: { user: any }) {
                     </List.Item>
                 )}
                 className={styles.notificationList}
+                loadMore={
+                    hasMore && notifications.length > 0 && (
+                        <div style={{ textAlign: 'center', marginTop: 12, marginBottom: 12 }}>
+                            <Button
+                                type="link"
+                                size="small"
+                                onClick={loadMore}
+                                loading={loadingMore}
+                            >
+                                Tải thêm
+                            </Button>
+                        </div>
+                    )
+                }
             />
         </div>
     );

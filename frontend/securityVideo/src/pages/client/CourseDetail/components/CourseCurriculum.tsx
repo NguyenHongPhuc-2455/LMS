@@ -18,7 +18,7 @@ export default function CourseCurriculum({ sections, totalLessons }: CourseCurri
     return (
         <div className={styles.infoSection}>
             <div className={styles.sectionContentHeader}>
-                <Title level={4} style={{ margin: 0 }}>Nội dung khóa học</Title>
+                <Title level={4} style={{ margin: 0 }}>Nội dung</Title>
             </div>
             <Text type="secondary" className={styles.sectionStats}>
                 {/* {sections.length} chương • {totalLessons} bài học • Thời lượng {durationStr} */}

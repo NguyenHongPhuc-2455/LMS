@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../../services/course.service';
 import { uploadService } from '../../../services/upload.service';
@@ -254,8 +254,10 @@ export default function CourseManagement() {
     }, []);
 
     const handlePageChange = useCallback((p: number, ps: number) => {
-        setPage((prev) => (prev === p ? prev : p));
-        setPageSize((prev) => (prev === ps ? prev : ps));
+        startTransition(() => {
+            setPage((prev) => (prev === p ? prev : p));
+            setPageSize((prev) => (prev === ps ? prev : ps));
+        });
     }, []);
 
     const handleTableChange = useCallback((nextPage: number, nextPageSize: number, payload: {
@@ -265,8 +267,10 @@ export default function CourseManagement() {
         activeFilter?: boolean | null;
         levelFilter?: string[] | null;
     }) => {
-        setPage((prev) => (prev === nextPage ? prev : nextPage));
-        setPageSize((prev) => (prev === nextPageSize ? prev : nextPageSize));
+        startTransition(() => {
+            setPage((prev) => (prev === nextPage ? prev : nextPage));
+            setPageSize((prev) => (prev === nextPageSize ? prev : nextPageSize));
+        });
         setSortField(payload.sortField);
         setSortOrder(payload.sortOrder ?? null);
         setPrivateFilter(payload.privateFilter ?? null);
@@ -379,7 +383,7 @@ export default function CourseManagement() {
                     onPageChange={handlePageChange}
                     onTableChange={handleTableChange}
                     categories={categories}
-                    loading={loading}
+                    loading={loading && courses.length === 0}
                     updatingId={updatingId}
                     selectedRowKeys={selectedRowKeys}
                     onSelectionChange={setSelectedRowKeys}

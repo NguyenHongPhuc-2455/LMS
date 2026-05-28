@@ -69,7 +69,7 @@ export default function LessonFormModal({
             onCancel={onCancel}
             footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <Button onClick={onCancel} style={{ minWidth: 100, height: 40, borderRadius: '8px' }}>
+                    <Button onClick={onCancel} className="modal-action-btn">
                         Hủy bỏ
                     </Button>
                     <Button 
@@ -77,7 +77,7 @@ export default function LessonFormModal({
                         onClick={() => form.submit()} 
                         loading={loading}
                         icon={lessonType === 'VIDEO' ? <ShieldCheck size={18} /> : undefined}
-                        style={{ minWidth: 100, height: 40, borderRadius: '8px', background: '#B8121A', borderColor: '#B8121A' }}
+                        className="btn-brand-primary modal-action-btn"
                     >
                         {editingId ? "Cập nhật" : (lessonType === 'VIDEO' ? "Lưu bài học" : "Lưu bài trắc nghiệm")}
                     </Button>

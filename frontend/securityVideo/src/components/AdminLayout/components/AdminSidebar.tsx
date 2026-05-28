@@ -81,7 +81,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_PROGRESS,
             icon: <LineChartOutlined />,
-            label: 'Quản lý tiến độ học tập',
+            label: 'Quản lý tiến độ',
         },
         {
             key: ROUTES.MANAGER_EMPLOYEES,
@@ -107,20 +107,16 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_ONBOARDING_REPORT,
             icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
-            label: 'Báo cáo Onboarding',
+            label: 'Báo cáo',
         },
-        {
-            key: ROUTES.MANAGER_INACTIVE_REPORT,
-            icon: <WarningOutlined style={{ color: '#fa8c16' }} />,
-            label: 'Nhân sự không học tập',
-        },
+
         {
             type: 'divider' as const
         },
         {
             key: ROUTES.HOME,
             icon: <HomeOutlined />,
-            label: 'Quay lại trang học viên',
+            label: 'Quay lại trang Elearning',
         }
     ] : [
         {
@@ -136,7 +132,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_PROGRAMS,
             icon: <ApartmentOutlined />,
-            label: 'Quản lý lộ trình học',
+            label: 'Quản lý lộ trình',
         },
         {
             key: ROUTES.ADMIN_CATEGORIES,
@@ -146,7 +142,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_PROGRESS,
             icon: <LineChartOutlined />,
-            label: 'Quản lý tiến độ học tập',
+            label: 'Quản lý tiến độ',
         },
         {
             key: ROUTES.ADMIN_USERS,
@@ -182,7 +178,7 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
         {
             key: ROUTES.ADMIN_BANNERS,
             icon: <PictureOutlined />,
-            label: 'Quản lý Banner Home',
+            label: 'Quản lý Banner',
         },
         {
             key: ROUTES.ADMIN_REQUESTS,
