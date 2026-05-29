@@ -191,6 +191,8 @@ model CourseRequest {
 
   @@index([status])
   @@index([created_at])
+  @@index([user_id])
+  @@index([course_id])
   @@map("course_requests")
 }
 
@@ -285,6 +287,9 @@ model Review {
   user   User   @relation(fields: [user_id], references: [id])
   course Course @relation(fields: [course_id], references: [id])
 
+  @@index([user_id])
+  @@index([course_id])
+  @@index([created_at])
   @@map("reviews")
 }
 
@@ -413,6 +418,10 @@ model ProgramRequest {
   user        User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   program     LearningProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id])
+  @@index([program_id])
+  @@index([status])
+  @@index([created_at])
   @@map("program_requests")
 }
 
@@ -459,12 +468,18 @@ model Option {
   @@map("options")
 }
 
+enum QuizAttemptStatus {
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
 model QuizAttempt {
   id           Int       @id @default(autoincrement())
   user_id      Int
   quiz_id      Int
   score        Int       @default(0)
-  status       String    @default("IN_PROGRESS") @db.VarChar(20)
+  status       QuizAttemptStatus @default(IN_PROGRESS)
   started_at   DateTime  @default(now())
   completed_at DateTime?
 

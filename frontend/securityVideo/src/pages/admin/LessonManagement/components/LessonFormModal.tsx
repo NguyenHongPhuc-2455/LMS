@@ -37,6 +37,7 @@ export default function LessonFormModal({
 
     // 1. Chỉ Reset Form và nạp dữ liệu khi Modal MỞ LÊN
     useEffect(() => {
+        let timerId: any;
         if (open) {
             form.resetFields();
             if (initialValues) {
@@ -47,7 +48,7 @@ export default function LessonFormModal({
                 }
 
                 // Trì hoãn setFieldsValue để đảm bảo các trường con như duration_min/sec đã mount và register xong
-                setTimeout(() => {
+                timerId = setTimeout(() => {
                     const values = {
                         ...initialValues,
                         anti_seek: initialValues.anti_seek !== undefined ? initialValues.anti_seek : true
@@ -60,6 +61,11 @@ export default function LessonFormModal({
             setSelectedFile(null);
             setAttachmentFile(null);
         }
+        return () => {
+            if (timerId) {
+                clearTimeout(timerId);
+            }
+        };
     }, [open, initialValues, form]); 
 
     const handleFinish = async (values: any) => {

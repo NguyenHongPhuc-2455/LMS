@@ -1,10 +1,10 @@
 const prisma = require('../configs/prisma');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const ApiError = require('../utils/ApiError');
 const config = require('../configs/env.config');
 
-const hashPassword = (password) => crypto.createHash('sha256').update(password).digest('hex');
+const hashPassword = async (password) => await bcrypt.hash(password, 10);
 
 const generateTokens = (payload) => {
     if (!config.jwt.secret) throw new ApiError(500, 'Hệ thống chưa được cấu hình JWT_SECRET');
@@ -33,7 +33,7 @@ exports.register = async (data) => {
             username,
             email,
             full_name,
-            password_hash: hashPassword(password),
+            password_hash: await hashPassword(password),
             user_roles: {
                 create: { role_id: studentRole.id }
             }
@@ -51,7 +51,7 @@ exports.login = async (username, password) => {
         }
     });
 
-    if (!user || user.password_hash !== hashPassword(password)) {
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
         throw new ApiError(401, 'Sai tài khoản hoặc mật khẩu');
     }
 

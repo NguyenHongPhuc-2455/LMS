@@ -1,8 +1,8 @@
 const prisma = require('../configs/prisma');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const ApiError = require('../utils/ApiError');
 
-const hashPassword = (password) => crypto.createHash('sha256').update(password).digest('hex');
+const hashPassword = async (password) => await bcrypt.hash(password, 10);
 
 /**
  * Lấy danh sách người dùng với phân trang và tìm kiếm
@@ -290,7 +290,7 @@ const createUser = async (userData) => {
         if (existingUser) throw new ApiError(400, 'Mã nhân sự đã tồn tại');
     }
 
-    const hashed = hashPassword(password);
+    const hashed = await hashPassword(password);
     return await prisma.user.create({
         data: {
             ...rest,
