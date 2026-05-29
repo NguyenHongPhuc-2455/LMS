@@ -1,4 +1,4 @@
-const prisma = require('./src/configs/prisma');
+const prisma = require('../src/configs/prisma');
 const crypto = require('crypto');
 
 const hashPassword = (password) => crypto.createHash('sha256').update(password).digest('hex');
@@ -44,11 +44,22 @@ async function main() {
 
     const seededDepts = {};
     for (const dept of departmentsData) {
-        seededDepts[dept.name] = await prisma.department.upsert({
-            where: { name: dept.name },
-            update: { description: dept.description },
-            create: dept
+        const existingDept = await prisma.department.findFirst({
+            where: {
+                name: dept.name,
+                parent_id: null
+            }
         });
+        if (existingDept) {
+            seededDepts[dept.name] = await prisma.department.update({
+                where: { id: existingDept.id },
+                data: { description: dept.description }
+            });
+        } else {
+            seededDepts[dept.name] = await prisma.department.create({
+                data: dept
+            });
+        }
     }
     console.log('✅ Khởi tạo Departments xong.');
 

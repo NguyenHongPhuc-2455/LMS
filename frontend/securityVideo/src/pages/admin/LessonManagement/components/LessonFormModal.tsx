@@ -40,16 +40,20 @@ export default function LessonFormModal({
         if (open) {
             form.resetFields();
             if (initialValues) {
-                const values = {
-                    ...initialValues,
-                    anti_seek: initialValues.anti_seek !== undefined ? initialValues.anti_seek : true
-                };
-                form.setFieldsValue(values);
                 // Tự động nhận diện loại nguồn video khi mở modal lần đầu
                 if (initialValues.video_url || initialValues.type === 'VIDEO') {
                     const isExternal = !!initialValues.video_url && !initialValues.video_url.startsWith('hls/');
                     setVideoSourceType(isExternal ? 'LINK' : 'UPLOAD');
                 }
+
+                // Trì hoãn setFieldsValue để đảm bảo các trường con như duration_min/sec đã mount và register xong
+                setTimeout(() => {
+                    const values = {
+                        ...initialValues,
+                        anti_seek: initialValues.anti_seek !== undefined ? initialValues.anti_seek : true
+                    };
+                    form.setFieldsValue(values);
+                }, 100);
             } else {
                 form.setFieldsValue({ anti_seek: true });
             }
@@ -105,7 +109,10 @@ export default function LessonFormModal({
                     form={form} 
                     layout="vertical" 
                     onFinish={handleFinish}
-                    initialValues={{ anti_seek: true }}
+                    initialValues={initialValues ? {
+                        ...initialValues,
+                        anti_seek: initialValues.anti_seek !== undefined ? initialValues.anti_seek : true
+                    } : { anti_seek: true }}
                 >
                     {lessonType === 'VIDEO' ? (
                         <VideoLessonForm

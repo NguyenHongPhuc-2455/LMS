@@ -215,9 +215,17 @@ const UnifiedContent: React.FC = () => {
                 setLessonType('QUIZ');
             }
         } else {
-            setEditingData(record);
+            if (viewMode === 'LESSON') {
+                setEditingData({
+                    ...record,
+                    duration_min: record.duration ? Math.floor(record.duration / 60) : 0,
+                    duration_sec: record.duration ? (record.duration % 60) : 0,
+                });
+                setLessonType(record.type);
+            } else {
+                setEditingData(record);
+            }
             setEditingQuizId(null);
-            if (viewMode === 'LESSON') setLessonType(record.type);
         }
         setIsModalOpen(true);
     }, [viewMode, message]);
