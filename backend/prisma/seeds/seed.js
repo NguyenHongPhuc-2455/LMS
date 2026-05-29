@@ -1,7 +1,7 @@
-const prisma = require('../src/configs/prisma');
-const crypto = require('crypto');
+const prisma = require('../../src/configs/prisma');
+const bcrypt = require('bcryptjs');
 
-const hashPassword = (password) => crypto.createHash('sha256').update(password).digest('hex');
+const hashPassword = async (password) => await bcrypt.hash(password, 10);
 
 async function main() {
     console.log('--- BẮT ĐẦU SEED DỮ LIỆU MỚI ---');
@@ -86,11 +86,11 @@ async function main() {
     // 5.1. Tài khoản Admin tối cao
     const adminUser = await prisma.user.upsert({
         where: { username: 'admin' },
-        update: {},
+        update: { password_hash: await hashPassword('Admin@123') },
         create: {
             username: 'admin',
             email: 'admin@system.com',
-            password_hash: hashPassword('Admin@123'),
+            password_hash: await hashPassword('Admin@123'),
             full_name: 'Hệ thống Quản trị',
             join_date: new Date()
         }
@@ -105,13 +105,14 @@ async function main() {
     const managerUser = await prisma.user.upsert({
         where: { username: 'manager1' },
         update: {
+            password_hash: await hashPassword('Man@123'),
             department_id: seededDepts['Công nghệ thông tin'].id,
             position_id: seededPositions['Trưởng phòng'].id
         },
         create: {
             username: 'manager1',
             email: 'manager1@system.com',
-            password_hash: hashPassword('Man@123'),
+            password_hash: await hashPassword('Man@123'),
             full_name: 'Quản lý IT',
             employee_id: 'MGR001',
             department_id: seededDepts['Công nghệ thông tin'].id,
@@ -129,13 +130,14 @@ async function main() {
     const triHuynhUser = await prisma.user.upsert({
         where: { username: 'trihuynh' },
         update: {
+            password_hash: await hashPassword('Tri@12345'),
             department_id: seededDepts['Công nghệ thông tin'].id,
             position_id: seededPositions['Thực tập sinh'].id
         },
         create: {
             username: 'trihuynh',
             email: 'trihuynh@system.com',
-            password_hash: hashPassword('Tri@12345'),
+            password_hash: await hashPassword('Tri@12345'),
             full_name: 'Huỳnh Minh Trí',
             employee_id: 'RN016',
             department_id: seededDepts['Công nghệ thông tin'].id,
@@ -153,13 +155,14 @@ async function main() {
     const student1User = await prisma.user.upsert({
         where: { username: 'student1' },
         update: {
+            password_hash: await hashPassword('Stud@123'),
             department_id: seededDepts['Công nghệ thông tin'].id,
             position_id: seededPositions['Nhân viên'].id
         },
         create: {
             username: 'student1',
             email: 'student1@system.com',
-            password_hash: hashPassword('Stud@123'),
+            password_hash: await hashPassword('Stud@123'),
             full_name: 'Nguyễn Văn A',
             employee_id: 'RN017',
             department_id: seededDepts['Công nghệ thông tin'].id,
@@ -174,10 +177,10 @@ async function main() {
     });
 
     console.log('✅ Khởi tạo danh sách tài khoản mặc định thành công:');
-    console.log('   - Admin: admin / Admin@123');
-    console.log('   - Manager IT: manager1 / Man@123');
-    console.log('   - Student 1: trihuynh / Tri@12345');
-    console.log('   - Student 2: student1 / Stud@123');
+    console.log('   - Admin: admin');
+    console.log('   - Manager IT: manager1');
+    console.log('   - Student 1: trihuynh');
+    console.log('   - Student 2: student1');
     console.log('--- SEED HOÀN TẤT ---');
 }
 

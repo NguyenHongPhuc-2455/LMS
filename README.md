@@ -1,6 +1,6 @@
 # 🚀 Hướng Dẫn Cài Đặt & Chạy Dự Án
 
-> **Cập nhật lần cuối**: 28/05/2026
+> **Cập nhật lần cuối**: 29/05/2026
 
 ## Yêu Cầu Môi Trường (Prerequisites)
 
@@ -119,7 +119,7 @@ npx prisma migrate dev
 ### 3.4. Khởi tạo dữ liệu mẫu (Seeding)
 Sau khi database đã được tạo cấu trúc bảng đầy đủ, chạy file script seed để tạo các tài khoản mẫu, phòng ban và chức vụ kiểm thử:
 ```bash
-node scripts/seed.js
+node prisma/seeds/seed.js
 ```
 
 > **💡 Mẹo nhỏ**: Để kiểm tra và quản lý dữ liệu trong database trực quan bằng giao diện web của Prisma, hãy chạy:
@@ -128,7 +128,7 @@ node scripts/seed.js
 > ```
 > Trang quản lý sẽ hiển thị tại `http://localhost:5555`
 
-### 3.4. Danh sách tài khoản mẫu sau khi Seed
+### 3.5. Danh sách tài khoản mẫu sau khi Seed
 
 Sau khi chạy thành công file seed, hệ thống sẽ tự động tạo sẵn các tài khoản sau để bạn đăng nhập trực tiếp trên giao diện:
 
