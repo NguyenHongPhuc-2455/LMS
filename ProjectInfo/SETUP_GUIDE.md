@@ -88,62 +88,45 @@ CORS_ORIGINS=http://localhost:5174,http://localhost:5175
 
 ---
 
-## Bước 3: Khởi Tạo & Migrate Database (Prisma)
+## Bước 3: Khởi Tạo & Đồng Bộ Database (Prisma)
 
-### 3.1. Tạo Database trong PostgreSQL
+Đối với máy mới pull dự án về lần đầu, hãy thực hiện tuần tự các bước sau tại thư mục `backend`:
 
-Mở pgAdmin hoặc psql và tạo database:
+### 3.1. Tạo Database trống trong PostgreSQL
+Mở pgAdmin, DBeaver hoặc psql và tạo một database mới:
 ```sql
 CREATE DATABASE security_video_db;
 ```
 
-### 3.2. Áp dụng Migration và cập nhật Database
-
-Vì dự án đã có sẵn lịch sử các bản ghi migration trong thư mục `prisma/migrations`, bạn có các lựa chọn an toàn sau để cập nhật cấu trúc bảng vào database của mình:
-
-#### 🛡️ Lệnh AN TOÀN (Không mất dữ liệu):
-
-* **Trường hợp 1: Chạy các migration có sẵn (Khuyên dùng khi pull code mới về)**
-  ```bash
-  npx prisma migrate deploy
-  ```
-  *Tác dụng:* Chỉ chạy các file migration mới chưa được áp dụng lên DB — hoàn toàn không đụng hoặc làm mất dữ liệu cũ.
-
-* **Trường hợp 2: Đồng bộ trực tiếp Schema lên DB (Dev nhanh)**
-  ```bash
-  npx prisma db push
-  ```
-  *Tác dụng:* Khớp trực tiếp cấu trúc từ file `schema.prisma` lên database mà không tạo file migration. An toàn nếu không có breaking changes (xóa/đổi tên cột).
-
-* **Trường hợp 3: Chỉ cập nhật Prisma Client (Không đụng database)**
-  ```bash
-  npx prisma generate
-  ```
-  *Tác dụng:* Cập nhật code gợi ý của Prisma Client để khớp với file schema hiện tại, hoàn toàn không ảnh hưởng hay thay đổi gì tới DB.
-
-* **Trường hợp 4: Sử dụng trong môi trường phát triển (Chỉ dùng khi dev)**
-  ```bash
-  npx prisma migrate dev
-  ```
-  *Tác dụng:* Vừa áp dụng các file migration có sẵn, vừa sinh lại client mới.
-  *Lưu ý:* Nếu phát hiện sự sai lệch cấu trúc giữa database local và file migration, lệnh này có thể yêu cầu reset database (làm mất dữ liệu cũ). Hãy ưu tiên **Trường hợp 1** nếu muốn bảo toàn dữ liệu.
-
-### 3.3. Khởi tạo dữ liệu mẫu (Seeding)
-
-Vì dự án dùng Prisma 6 và cấu trúc dự án chạy trực tiếp file seed, bạn chạy lệnh sau tại thư mục `backend` để khởi tạo dữ liệu mẫu (vai trò, phòng ban, chức vụ, tài khoản kiểm thử):
-
+### 3.2. Cài đặt thư viện và Khởi tạo Prisma Client
+Chạy lệnh cài đặt các package Node.js và tạo code gợi ý cho Prisma Client:
 ```bash
 cd backend
+npm install
+npx prisma generate
+```
+*Tác dụng:* Lệnh `npx prisma generate` sẽ tự động tạo bộ thư viện `@prisma/client` trong `node_modules` khớp với cấu trúc trong file `schema.prisma`.
+
+### 3.3. Đồng bộ cấu trúc bảng vào Database
+Áp dụng lịch sử các bản ghi migration có sẵn trong dự án vào database cục bộ của bạn:
+```bash
+npx prisma migrate dev
+```
+*Lưu ý:* 
+* Nếu bạn chỉ muốn đồng bộ nhanh cấu trúc schema mà không muốn lưu vết lịch sử migration, bạn có thể chạy: `npx prisma db push`.
+* Nếu chạy trên môi trường Production (hoặc muốn áp dụng migration an toàn không mất dữ liệu cũ), hãy chạy: `npx prisma migrate deploy`.
+
+### 3.4. Khởi tạo dữ liệu mẫu (Seeding)
+Sau khi database đã được tạo cấu trúc bảng đầy đủ, chạy file script seed để tạo các tài khoản mẫu, phòng ban và chức vụ kiểm thử:
+```bash
 node scripts/seed.js
 ```
 
-*(Hoặc nếu đã cấu hình `"prisma": { "seed": "node scripts/seed.js" }` trong `package.json`, bạn có thể dùng lệnh `npx prisma db seed`).*
-
-> **💡 Lưu ý**: Nếu muốn xem cấu trúc database bằng giao diện trực quan, chạy:
+> **💡 Mẹo nhỏ**: Để kiểm tra và quản lý dữ liệu trong database trực quan bằng giao diện web của Prisma, hãy chạy:
 > ```bash
 > npx prisma studio
 > ```
-> Prisma Studio sẽ mở tại `http://localhost:5555`
+> Trang quản lý sẽ hiển thị tại `http://localhost:5555`
 
 ### 3.4. Danh sách tài khoản mẫu sau khi Seed
 
