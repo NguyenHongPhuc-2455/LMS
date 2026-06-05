@@ -131,11 +131,11 @@ const RoleManagement: React.FC = () => {
             render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text || <Text type="secondary" italic>Chưa có mô tả</Text>}</span>
         },
         {
-            title: 'Số người dùng',
+            title: 'Số nhân sự',
             key: 'userCount',
             render: (record: Role) => (
                 <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                    {record._count?.users || 0} thành viên
+                    {record._count?.users || 0} 
                 </span>
             ),
         },

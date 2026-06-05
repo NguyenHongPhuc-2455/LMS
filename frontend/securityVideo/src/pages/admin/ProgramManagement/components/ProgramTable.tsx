@@ -69,7 +69,7 @@ export default function ProgramTable({ programs, total, page, pageSize, onPageCh
 
     const columns = [
         {
-            title: 'Lộ trình học',
+            title: 'Lộ trình',
             key: 'info',
             width: 350,
             minWidth: 300,
@@ -206,7 +206,7 @@ export default function ProgramTable({ programs, total, page, pageSize, onPageCh
             )
         },
         {
-            title: 'nhân sự',
+            title: 'Nhân sự',
             key: 'enroll',
             width: 100,
             render: (p: Program) => (

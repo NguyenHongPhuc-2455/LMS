@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Typography, Button, Space, Skeleton, Empty, Card, Tabs, Tag, Progress, Segmented } from 'antd';
+import { Table, Typography, Button, Space, Skeleton, Empty, Card, Tabs, Tag, Progress, Segmented, Select } from 'antd';
 import { CheckCircleOutlined, ReloadOutlined, WarningOutlined, ClockCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { courseService } from '../../../services/course.service';
+import { departmentService } from '../../../services/department.service';
 import LearningActivityReport from './components/LearningActivityReport';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
@@ -77,10 +78,65 @@ export default function OnboardingReport() {
     const [timeframe, setTimeframe] = useState<string>('all');
     const [reportType, setReportType] = useState<'onboarding' | 'activity'>('onboarding');
 
-    const fetchReport = async (tab: string, tf: string = 'all') => {
+    // Current User checks
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const userRoles = user?.roles || [];
+    const roleNames = userRoles.map((r: any) => (typeof r === 'string' ? r : r.name).toLowerCase());
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+    const managerDeptId = user?.department_id;
+
+    // Filters State
+    const [departmentId, setDepartmentId] = useState<number | undefined>(
+        isManagerOnly ? Number(managerDeptId) : undefined
+    );
+    const [departments, setDepartments] = useState<any[]>([]);
+
+    // 3-level cascading dept state
+    const [selectedLevel1, setSelectedLevel1] = useState<number | null | undefined>(undefined);
+    const [selectedLevel2, setSelectedLevel2] = useState<number | null | undefined>(undefined);
+    const [selectedLevel3, setSelectedLevel3] = useState<number | null | undefined>(undefined);
+
+    // Fetch departments
+    useEffect(() => {
+        const loadDepartments = async () => {
+            try {
+                const depts = await departmentService.getAll();
+                setDepartments(depts || []);
+            } catch (error) {
+                console.error('Error loading departments:', error);
+            }
+        };
+        loadDepartments();
+    }, []);
+
+    // 3-level handlers
+    const handleDeptChange = (val: number | undefined) => setDepartmentId(val);
+
+    const handleLevel1Change = (val: number | null | undefined) => {
+        setSelectedLevel1(val);
+        setSelectedLevel2(null);
+        setSelectedLevel3(null);
+        handleDeptChange(val === null ? undefined : val);
+    };
+
+    const handleLevel2Change = (val: number | null | undefined) => {
+        setSelectedLevel2(val);
+        setSelectedLevel3(null);
+        const actual = val === null ? undefined : val;
+        handleDeptChange(actual ?? (selectedLevel1 === null ? undefined : selectedLevel1));
+    };
+
+    const handleLevel3Change = (val: number | null | undefined) => {
+        setSelectedLevel3(val);
+        const actual = val === null ? undefined : val;
+        handleDeptChange(actual ?? (selectedLevel2 === null ? undefined : selectedLevel2));
+    };
+
+    const fetchReport = async (tab: string, tf: string = 'all', deptId?: number) => {
         setLoading(true);
         try {
-            const result = await courseService.getMandatoryOverdueReport(tab, tf);
+            const result = await courseService.getMandatoryOverdueReport(tab, tf, deptId);
             setData(result);
         } catch (e) {
             console.error('Lỗi tải báo cáo:', e);
@@ -131,9 +187,9 @@ export default function OnboardingReport() {
 
     useEffect(() => {
         if (reportType === 'onboarding') {
-            fetchReport(activeTab, timeframe);
+            fetchReport(activeTab, timeframe, departmentId);
         }
-    }, [activeTab, timeframe, reportType]);
+    }, [activeTab, timeframe, reportType, departmentId]);
 
     const columns = [
         {
@@ -200,6 +256,56 @@ export default function OnboardingReport() {
 
             {reportType === 'onboarding' ? (
                 <Card className="glass-card" bordered={false} style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.02)', borderRadius: 5 }}>
+                    {/* Department 3-level cascading dropdowns */}
+                    <div style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {isManagerOnly ? (
+                            <span style={{ color: '#666', fontStyle: 'italic', fontSize: 13 }}>
+                                Phòng ban: <strong style={{ color: '#C72127' }}>
+                                    {departments.find((d: any) => d.id === departmentId)?.name || '...'}
+                                </strong>
+                            </span>
+                        ) : (
+                            <Space size={8} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 500, fontSize: 13, marginRight: 4 }}>Lọc theo:</span>
+                                <Select
+                                    placeholder="Tất cả khối"
+                                    style={{ width: 180 }}
+                                    allowClear
+                                    value={selectedLevel1}
+                                    onChange={handleLevel1Change}
+                                    options={[
+                                        { value: null as any, label: 'Tất cả khối' },
+                                        ...departments.filter((d: any) => !d.parent_id).map((d: any) => ({ value: d.id, label: d.name }))
+                                    ]}
+                                />
+                                <Select
+                                    placeholder="Chọn phòng ban"
+                                    style={{ width: 200 }}
+                                    allowClear
+                                    disabled={!selectedLevel1}
+                                    value={selectedLevel2}
+                                    onChange={handleLevel2Change}
+                                    options={[
+                                        { value: null as any, label: 'Tất cả phòng ban' },
+                                        ...departments.filter((d: any) => d.parent_id === selectedLevel1).map((d: any) => ({ value: d.id, label: d.name }))
+                                    ]}
+                                />
+                                <Select
+                                    placeholder="Chọn tổ/nhóm"
+                                    style={{ width: 180 }}
+                                    allowClear
+                                    disabled={!selectedLevel2}
+                                    value={selectedLevel3}
+                                    onChange={handleLevel3Change}
+                                    options={[
+                                        { value: null as any, label: 'Tất cả tổ/nhóm' },
+                                        ...departments.filter((d: any) => d.parent_id === selectedLevel2).map((d: any) => ({ value: d.id, label: d.name }))
+                                    ]}
+                                />
+                            </Space>
+                        )}
+                    </div>
+
                     <Tabs
                         activeKey={activeTab}
                         onChange={setActiveTab}
@@ -222,7 +328,7 @@ export default function OnboardingReport() {
                                 </Space>
                                 <Button
                                     icon={<ReloadOutlined />}
-                                    onClick={() => fetchReport(activeTab, timeframe)}
+                                    onClick={() => fetchReport(activeTab, timeframe, departmentId)}
                                     loading={loading}
                                     type="text"
                                 >

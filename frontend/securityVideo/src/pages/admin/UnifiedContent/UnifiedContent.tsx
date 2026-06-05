@@ -399,49 +399,7 @@ const UnifiedContent: React.FC = () => {
         return 'Tạo Khóa học mới';
     }, [viewMode]);
 
-    const isFirstLoad = loading && data.length === 0;
-
-    if (isFirstLoad) {
-        return (
-            <div className={styles.unifiedContainer}>
-                <Card className="glass-card" style={{ minHeight: 680 }}>
-                    {/* Header Toolbar Skeleton */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-                        <Space size={16}>
-                            <Skeleton.Button active style={{ width: 40, height: 32, borderRadius: 5 }} />
-                            <Skeleton.Input active style={{ width: 180, height: 32, borderRadius: 5 }} />
-                            <Skeleton.Button active style={{ width: 40, height: 32, borderRadius: 5 }} />
-                        </Space>
-                        <Space size={16}>
-                            <Skeleton.Input active style={{ width: 160, height: 32, borderRadius: 5 }} />
-                            <Skeleton.Input active style={{ width: 140, height: 32, borderRadius: 5 }} />
-                            <Skeleton.Button active style={{ width: 140, height: 32, borderRadius: 5 }} />
-                        </Space>
-                    </div>
-                    {/* Table Headers Skeleton */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
-                        <Skeleton.Input active size="small" style={{ width: '25%', height: 20 }} />
-                        <Skeleton.Input active size="small" style={{ width: '20%', height: 20 }} />
-                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
-                        <Skeleton.Input active size="small" style={{ width: '15%', height: 20 }} />
-                    </div>
-                    {/* Table Rows Skeleton */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
-                        {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
-                                <Skeleton.Input active size="small" style={{ width: '22%', height: 16 }} />
-                                <Skeleton.Input active size="small" style={{ width: '18%', height: 16 }} />
-                                <Skeleton.Input active size="small" style={{ width: '12%', height: 16 }} />
-                                <Skeleton.Input active size="small" style={{ width: '10%', height: 16 }} />
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            </div>
-        );
-    }
+    // Removed full-page skeleton interceptor to keep layout static
 
     return (
         <div className={styles.unifiedContainer}>
@@ -548,62 +506,42 @@ const UnifiedContent: React.FC = () => {
                     </Space>
                 </div>
 
-                {(!loading && data.length === 0) ? (
-                    <Empty 
-                        image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                        description={
-                            <span>
-                                {viewMode === 'LESSON' ? 'Chưa có bài giảng nào trong chương này' : 
-                                 viewMode === 'SECTION' ? 'Khóa học này chưa có chương nào' : 
-                                 'Không tìm thấy dữ liệu'}
-                            </span>
-                        }
-                    >
-                        <Button type="primary" onClick={handleAdd}>
-                            {getAddButtonText()} ngay
-                        </Button>
-                    </Empty>
-                ) : (
-                    <>
-                        {viewMode === 'COURSE' && (
-                            <CourseTable 
-                                courses={data} 
-                                total={total}
-                                page={page}
-                                pageSize={pageSize}
-                                onPageChange={handlePageChange}
-                                categories={categories}
-                                loading={loading && data.length === 0}
-                                updatingId={updatingId}
-                                selectedRowKeys={selectedRowKeys}
-                                onSelectionChange={setSelectedRowKeys}
-                                onEdit={handleEdit} 
-                                onDelete={handleDelete}
-                                onNavigateToSections={handleNavigateToSections}
-                                onStatusChange={handleCourseStatusChange}
-                                onCategoryChange={handleCourseCategoryChange}
-                                onToggleActive={handleCourseToggleActive}
-                                
-                            />
-                        )}
-                        {viewMode === 'SECTION' && (
-                            <SectionTable 
-                                sections={data} 
-                                loading={loading}
-                                onEdit={handleEdit} 
-                                onDelete={handleDelete}
-                                onNavigateLessons={handleSectionClick}
-                            />
-                        )}
-                        {viewMode === 'LESSON' && (
-                            <LessonTable 
-                                lessons={data} 
-                                loading={loading}
-                                onEdit={handleEdit} 
-                                onDelete={handleDelete} 
-                            />
-                        )}
-                    </>
+                {viewMode === 'COURSE' && (
+                    <CourseTable 
+                        courses={data} 
+                        total={total}
+                        page={page}
+                        pageSize={pageSize}
+                        onPageChange={handlePageChange}
+                        categories={categories}
+                        loading={loading}
+                        updatingId={updatingId}
+                        selectedRowKeys={selectedRowKeys}
+                        onSelectionChange={setSelectedRowKeys}
+                        onEdit={handleEdit} 
+                        onDelete={handleDelete}
+                        onNavigateToSections={handleNavigateToSections}
+                        onStatusChange={handleCourseStatusChange}
+                        onCategoryChange={handleCourseCategoryChange}
+                        onToggleActive={handleCourseToggleActive}
+                    />
+                )}
+                {viewMode === 'SECTION' && (
+                    <SectionTable 
+                        sections={data} 
+                        loading={loading}
+                        onEdit={handleEdit} 
+                        onDelete={handleDelete}
+                        onNavigateLessons={handleSectionClick}
+                    />
+                )}
+                {viewMode === 'LESSON' && (
+                    <LessonTable 
+                        lessons={data} 
+                        loading={loading}
+                        onEdit={handleEdit} 
+                        onDelete={handleDelete} 
+                    />
                 )}
             </Card>
 

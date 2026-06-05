@@ -179,9 +179,10 @@ exports.restoreCourse = catchAsync(async (req, res) => {
  * Lấy báo cáo Onboarding (Đúng hạn / Trễ hạn)
  */
 exports.getMandatoryOverdueReport = catchAsync(async (req, res) => {
-    const { type = 'overdue', timeframe = 'all' } = req.query; // 'overdue' hoặc 'ontime'
-    const { departmentId } = await getManagerDepartmentId(req);
-    const resultList = await courseService.getMandatoryOverdueReport(type, departmentId, timeframe);
+    const { type = 'overdue', timeframe = 'all', departmentId: queryDeptId } = req.query; // 'overdue' hoặc 'ontime'
+    const { isManagerOnly, departmentId: managerDeptId } = await getManagerDepartmentId(req);
+    const finalDepartmentId = isManagerOnly ? managerDeptId : (queryDeptId ? parseInt(queryDeptId) : null);
+    const resultList = await courseService.getMandatoryOverdueReport(type, finalDepartmentId, timeframe);
     res.json(resultList);
 });
 

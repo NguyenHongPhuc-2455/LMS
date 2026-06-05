@@ -4,6 +4,7 @@ import { UserOutlined, ReloadOutlined, SearchOutlined, FilterOutlined } from '@a
 import { courseService } from '@/services/course.service';
 import { statsService } from '@/services/stats.service';
 import { categoryService, type Category } from '@/services/category.service';
+import { departmentService } from '@/services/department.service';
 import styles from './CourseProgress.module.scss';
 
 const { Title, Text } = Typography;
@@ -53,8 +54,20 @@ export default function CourseProgress() {
     const [isGlobalSearch, setIsGlobalSearch] = useState(false);
     const [columnSearchText, setColumnSearchText] = useState('');
 
+    // Filters State
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [departmentId, setDepartmentId] = useState<number | undefined>(
+        isManagerOnly ? Number(managerDepartmentId) : undefined
+    );
+
+    // 3-level cascading dept state
+    const [selectedLevel1, setSelectedLevel1] = useState<number | null | undefined>(undefined);
+    const [selectedLevel2, setSelectedLevel2] = useState<number | null | undefined>(undefined);
+    const [selectedLevel3, setSelectedLevel3] = useState<number | null | undefined>(undefined);
+
     useEffect(() => {
         fetchCategories();
+        loadDepartments();
     }, []);
 
     const fetchCategories = async () => {
@@ -66,6 +79,15 @@ export default function CourseProgress() {
             console.error('Failed to fetch categories:', error);
         } finally {
             setLoadingCategories(false);
+        }
+    };
+
+    const loadDepartments = async () => {
+        try {
+            const depts = await departmentService.getAll();
+            setDepartments(depts || []);
+        } catch (error) {
+            console.error('Failed to fetch departments:', error);
         }
     };
 
@@ -81,6 +103,29 @@ export default function CourseProgress() {
         }
     };
 
+    // 3-level handlers
+    const handleDeptChange = (val: number | undefined) => setDepartmentId(val);
+
+    const handleLevel1Change = (val: number | null | undefined) => {
+        setSelectedLevel1(val);
+        setSelectedLevel2(null);
+        setSelectedLevel3(null);
+        handleDeptChange(val === null ? undefined : val);
+    };
+
+    const handleLevel2Change = (val: number | null | undefined) => {
+        setSelectedLevel2(val);
+        setSelectedLevel3(null);
+        const actual = val === null ? undefined : val;
+        handleDeptChange(actual ?? (selectedLevel1 === null ? undefined : selectedLevel1));
+    };
+
+    const handleLevel3Change = (val: number | null | undefined) => {
+        setSelectedLevel3(val);
+        const actual = val === null ? undefined : val;
+        handleDeptChange(actual ?? (selectedLevel2 === null ? undefined : selectedLevel2));
+    };
+
     const handleCategoryChange = (categoryId: number) => {
         setSelectedCategory(categoryId);
         setSelectedCourse(null);
@@ -88,19 +133,9 @@ export default function CourseProgress() {
         fetchCourses(categoryId);
     };
 
-    const handleCourseChange = async (courseId: number) => {
+    const handleCourseChange = (courseId: number) => {
         setSelectedCourse(courseId);
         setIsGlobalSearch(false);
-        setLoadingStudents(true);
-        try {
-            // Truyền departmentId nếu là Manager để lọc chỉ nhân sự phòng ban mình
-            const data = await statsService.getCourseProgress(courseId, managerDepartmentId);
-            setStudents(data);
-        } catch (error) {
-            console.error('Failed to fetch student progress:', error);
-        } finally {
-            setLoadingStudents(false);
-        }
     };
 
     const handleStudentSearch = async (value: string) => {
@@ -113,7 +148,7 @@ export default function CourseProgress() {
 
         setLoadingStudents(true);
         try {
-            const data = await statsService.searchProgress(value, selectedCourse || undefined);
+            const data = await statsService.searchProgress(value, selectedCourse || undefined, departmentId);
             setStudents(data);
             setIsGlobalSearch(!selectedCourse);
 
@@ -132,6 +167,33 @@ export default function CourseProgress() {
             setLoadingStudents(false);
         }
     };
+
+    // Auto load / filter student progress when course or department changes
+    useEffect(() => {
+        const loadStudents = async () => {
+            if (!selectedCourse) {
+                if (!searchText) {
+                    setStudents([]);
+                }
+                return;
+            }
+            setLoadingStudents(true);
+            try {
+                let data;
+                if (searchText) {
+                    data = await statsService.searchProgress(searchText, selectedCourse, departmentId);
+                } else {
+                    data = await statsService.getCourseProgress(selectedCourse, departmentId);
+                }
+                setStudents(data);
+            } catch (error) {
+                console.error('Failed to fetch student progress:', error);
+            } finally {
+                setLoadingStudents(false);
+            }
+        };
+        loadStudents();
+    }, [selectedCourse, departmentId]);
 
     const getColumnSearchProps = React.useCallback((dataIndex: string): any => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
@@ -177,7 +239,7 @@ export default function CourseProgress() {
 
     const columns = React.useMemo(() => [
         {
-            title: 'nhân sự',
+            title: 'Nhân sự',
             key: 'student',
             ...getColumnSearchProps('fullName'),
             render: (record: StudentProgress) => (
@@ -281,12 +343,84 @@ export default function CourseProgress() {
                             </Select>
                         </Space>
 
+                        {/* Bộ lọc phòng ban 3 cấp */}
+                        {isManagerOnly ? (
+                            <span style={{ color: '#666', fontStyle: 'italic', fontSize: 13, alignSelf: 'center' }}>
+                                Phòng ban: <strong style={{ color: '#C72127' }}>
+                                    {departments.find((d: any) => d.id === departmentId)?.name || '...'}
+                                </strong>
+                            </span>
+                        ) : (
+                            <Space size={16} wrap>
+                                <Space size={8}>
+                                    <Text strong>Khối:</Text>
+                                    <Select
+                                        placeholder="Tất cả khối"
+                                        style={{ width: 160 }}
+                                        allowClear
+                                        value={selectedLevel1}
+                                        onChange={handleLevel1Change}
+                                    >
+                                        <Option value={null as any}>Tất cả khối</Option>
+                                        {departments.filter((d: any) => !d.parent_id).map((d: any) => (
+                                            <Option key={d.id} value={d.id}>{d.name}</Option>
+                                        ))}
+                                    </Select>
+                                </Space>
+
+                                <Space size={8}>
+                                    <Text strong>Phòng ban:</Text>
+                                    <Select
+                                        placeholder="Chọn phòng ban"
+                                        style={{ width: 180 }}
+                                        allowClear
+                                        disabled={!selectedLevel1}
+                                        value={selectedLevel2}
+                                        onChange={handleLevel2Change}
+                                    >
+                                        <Option value={null as any}>Tất cả phòng ban</Option>
+                                        {departments.filter((d: any) => d.parent_id === selectedLevel1).map((d: any) => (
+                                            <Option key={d.id} value={d.id}>{d.name}</Option>
+                                        ))}
+                                    </Select>
+                                </Space>
+
+                                <Space size={8}>
+                                    <Text strong>Tổ/Nhóm:</Text>
+                                    <Select
+                                        placeholder="Chọn tổ/nhóm"
+                                        style={{ width: 160 }}
+                                        allowClear
+                                        disabled={!selectedLevel2}
+                                        value={selectedLevel3}
+                                        onChange={handleLevel3Change}
+                                    >
+                                        <Option value={null as any}>Tất cả tổ/nhóm</Option>
+                                        {departments.filter((d: any) => d.parent_id === selectedLevel2).map((d: any) => (
+                                            <Option key={d.id} value={d.id}>{d.name}</Option>
+                                        ))}
+                                    </Select>
+                                </Space>
+                            </Space>
+                        )}
+
                         <Tooltip title="Làm mới dữ liệu">
                             <Button
                                 icon={<ReloadOutlined />}
-                                onClick={() => {
-                                    if (searchText) handleStudentSearch(searchText);
-                                    else if (selectedCourse) handleCourseChange(selectedCourse);
+                                onClick={async () => {
+                                    if (searchText) {
+                                        handleStudentSearch(searchText);
+                                    } else if (selectedCourse) {
+                                        setLoadingStudents(true);
+                                        try {
+                                            const data = await statsService.getCourseProgress(selectedCourse, departmentId);
+                                            setStudents(data);
+                                        } catch (error) {
+                                            console.error('Failed to fetch student progress:', error);
+                                        } finally {
+                                            setLoadingStudents(false);
+                                        }
+                                    }
                                 }}
                                 loading={loadingStudents}
                                 disabled={!selectedCourse && !searchText}

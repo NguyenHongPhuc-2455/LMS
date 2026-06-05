@@ -42,7 +42,7 @@ const getCourseProgress = async (req, res) => {
     try {
         const { courseId } = req.params;
         const { isManagerOnly, departmentId: managerDeptId } = await getManagerDepartmentId(req);
-        const departmentId = isManagerOnly ? managerDeptId : (req.query.departmentId || null);
+        const departmentId = isManagerOnly ? managerDeptId : (req.query.departmentId ? parseInt(req.query.departmentId) : null);
         const progress = await statsService.getStudentsProgressByCourse(courseId, departmentId);
         res.json(progress);
     } catch (error) {
@@ -114,9 +114,9 @@ const getTopLearners = async (req, res) => {
 
 const searchProgress = async (req, res) => {
     try {
-        const { q, courseId } = req.query;
+        const { q, courseId, departmentId: queryDeptId } = req.query;
         const { isManagerOnly, departmentId: managerDeptId } = await getManagerDepartmentId(req);
-        const departmentId = isManagerOnly ? managerDeptId : null;
+        const departmentId = isManagerOnly ? managerDeptId : (queryDeptId ? parseInt(queryDeptId) : null);
         const progress = await statsService.searchStudentsProgress(q, courseId, departmentId);
         res.json(progress);
     } catch (error) {

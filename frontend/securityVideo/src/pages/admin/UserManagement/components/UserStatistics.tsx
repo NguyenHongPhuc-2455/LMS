@@ -15,7 +15,7 @@ interface UserStatisticsProps {
 function UserStatistics({ users, loading }: UserStatisticsProps) {
     const statsData = [
         {
-            title: 'nhân sự',
+            title: 'Nhân sự',
             value: users.length,
             icon: <TeamOutlined className={`${styles.statsIcon} ${styles.student}`} />,
             type: 'student'

@@ -189,7 +189,7 @@ function CourseTable({
         {
             title: 'Hiển thị',
             key: 'active',
-            width: 100,
+            width: 120,
             // Server-side filter
             filters: [
                 { text: 'Đang mở', value: true },
@@ -212,7 +212,7 @@ function CourseTable({
             }
         },
         {
-            title: 'Số chương học',
+            title: 'Số chương',
             key: 'sections',
             sorter: true,
             width: 140,
@@ -221,7 +221,7 @@ function CourseTable({
         {
             title: 'Loại khóa',
             dataIndex: 'is_mandatory',
-            width: 130,
+            width: 140,
             // Server-side filter
             filters: [
                 { text: 'BẮT BUỘC', value: true },
@@ -234,10 +234,10 @@ function CourseTable({
             )
         },
         {
-            title: 'nhân sự',
+            title: 'Nhân sự',
             key: 'students',
             sorter: true,
-            width: 110,
+            width: 120,
             render: (_: any, c: Course) => (
                 <span style={{ color: '#000', fontWeight: 500, whiteSpace: 'nowrap' }}>
                     {c._count?.enrollments || 0}
@@ -248,6 +248,7 @@ function CourseTable({
             title: 'Ngày tạo',
             dataIndex: 'created_at',
             key: 'created_at',
+            width: 150,
             sorter: true,
             filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
                 <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
@@ -295,6 +296,7 @@ function CourseTable({
         {
             title: 'Cập nhật',
             dataIndex: 'updated_at',
+            width: 150,
             render: (date: string) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(date).toLocaleDateString()}</span>
         },
         {
@@ -409,7 +411,7 @@ function CourseTable({
             loading={isFirstLoad ? false : loading}
             rowSelection={resolvedRowSelection}
             pagination={isFirstLoad ? false : (paginationConfig as any)}
-            scroll={{ x: 1600, y: 600 }}
+            scroll={{ x: 1670, y: 600 }}
             bordered
             onChange={isFirstLoad ? undefined : handleTableChange}
             onRow={(record) => ({

@@ -146,10 +146,10 @@ body {
   color: var(--text-main);
 }
 
-/* Global Auto-width for all tables - Optimized */
-.ant-table-cell span:not(.ant-select-selection-item),
-.ant-table-cell .ant-space,
-.ant-table-cell .ant-typography:not(.ant-typography-secondary) {
+th.ant-table-cell,
+td.ant-table-cell span:not(.ant-select-selection-item),
+td.ant-table-cell .ant-space,
+td.ant-table-cell .ant-typography:not(.ant-typography-secondary) {
   white-space: nowrap;
 }
 
