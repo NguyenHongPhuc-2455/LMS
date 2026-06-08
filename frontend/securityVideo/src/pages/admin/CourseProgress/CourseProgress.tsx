@@ -10,17 +10,6 @@ import styles from './CourseProgress.module.scss';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Lấy thông tin user từ localStorage
-const userStr = localStorage.getItem('user');
-const currentUser = userStr ? JSON.parse(userStr) : null;
-const userRoles = currentUser?.roles || [];
-const roleNames = userRoles.map((r: any) => {
-    const name = typeof r === 'string' ? r : r.name;
-    return name?.toLowerCase();
-});
-const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
-const managerDepartmentId: number | undefined = isManagerOnly ? currentUser?.department_id : undefined;
-
 interface Course {
     id: number;
     title: string;
@@ -42,6 +31,17 @@ interface StudentProgress {
 }
 
 export default function CourseProgress() {
+    // Lấy thông tin user từ localStorage
+    const userStr = localStorage.getItem('user');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const userRoles = currentUser?.roles || [];
+    const roleNames = userRoles.map((r: any) => {
+        const name = typeof r === 'string' ? r : r.name;
+        return name?.toLowerCase();
+    });
+    const isManagerOnly = roleNames.includes('manager') && !roleNames.includes('admin');
+    const managerDepartmentId: number | undefined = isManagerOnly ? currentUser?.department_id : undefined;
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [courses, setCourses] = useState<Course[]>([]);
