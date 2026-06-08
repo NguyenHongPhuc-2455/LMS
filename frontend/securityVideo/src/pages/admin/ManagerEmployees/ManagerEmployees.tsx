@@ -131,10 +131,10 @@ export default function ManagerEmployees() {
     }, [managerDeptId, departments]);
 
     const handleReset = () => {
-        const isAlreadyDefault = 
-            search === '' && 
-            selectedPosition === undefined && 
-            filterDeptId === managerDeptId && 
+        const isAlreadyDefault =
+            search === '' &&
+            selectedPosition === undefined &&
+            filterDeptId === managerDeptId &&
             page === 1;
 
         setSearch('');
@@ -541,7 +541,7 @@ export default function ManagerEmployees() {
                                 <div className={styles.quickRemindBox} style={{ marginTop: 24 }}>
                                     <Title level={5}>Hành động nhanh</Title>
                                     <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                                        Gửi thông báo nhắc nhở và đôn đốc học tập trực tiếp tới tài khoản Ritavo LMS của học viên này.
+                                        Gửi thông báo nhắc nhở học tập trực tiếp tới tài khoản Ritavo LMS của học viên này.
                                     </Text>
                                     <Button
                                         type="primary"
@@ -552,7 +552,7 @@ export default function ManagerEmployees() {
                                             setReminderModalOpen(true);
                                         }}
                                     >
-                                        Gửi thông báo đôn đốc học tập
+                                        Gửi thông báo
                                     </Button>
                                 </div>
                             </div>
@@ -563,16 +563,16 @@ export default function ManagerEmployees() {
 
             {/* Modal Nhắc nhở */}
             <Modal
-                title="Gửi Nhắc Nhở Học Tập Cho Nhân Viên"
+                title="Gửi thông báo nhắc nhở"
                 open={reminderModalOpen}
                 onCancel={() => setReminderModalOpen(false)}
                 onOk={handleSendReminder}
                 confirmLoading={reminderLoading}
-                okText="Gửi nhắc nhở"
-                cancelText="Hủy bỏ"
+                okText="Gửi"
+                cancelText="Hủy"
             >
                 <div style={{ padding: '8px 0' }}>
-                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Nội dung thông báo (Hiển thị real-time trên tài khoản học viên):</Text>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Nội dung thông báo:</Text>
                     <AntdInput.TextArea
                         rows={4}
                         value={reminderText}
