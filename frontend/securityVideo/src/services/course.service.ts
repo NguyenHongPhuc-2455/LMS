@@ -54,8 +54,12 @@ export const courseService = {
         const response = await api.get('/courses/mandatory');
         return response.data;
     },
-    getMandatoryOverdueReport: async (type: string = 'overdue', timeframe: string = 'all') => {
-        const response = await api.get(`/courses/mandatory-overdue-report?type=${type}&timeframe=${timeframe}`);
+    getMandatoryOverdueReport: async (type: string = 'overdue', timeframe: string = 'all', departmentId?: number) => {
+        let url = `/courses/mandatory-overdue-report?type=${type}&timeframe=${timeframe}`;
+        if (departmentId !== undefined && departmentId !== null) {
+            url += `&departmentId=${departmentId}`;
+        }
+        const response = await api.get(url);
         return response.data;
     },
     enroll: async (courseId: number) => {

@@ -32,7 +32,7 @@ export default function RequestTable({
 }: RequestTableProps) {
     const columns = React.useMemo(() => [
         {
-            title: 'nhân sự',
+            title: 'Nhân sự',
             dataIndex: 'user',
             key: 'user',
             width: 250,

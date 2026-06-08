@@ -77,16 +77,17 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             key: ROUTES.ADMIN_DASHBOARD,
             icon: <PieChartOutlined />,
             label: 'Tổng quan phòng ban',
+        }
+        ,
+        {
+            key: ROUTES.MANAGER_EMPLOYEES,
+            icon: <UserOutlined />,
+            label: 'Quản lý nhân sự',
         },
         {
             key: ROUTES.ADMIN_PROGRESS,
             icon: <LineChartOutlined />,
             label: 'Quản lý tiến độ',
-        },
-        {
-            key: ROUTES.MANAGER_EMPLOYEES,
-            icon: <UserOutlined />,
-            label: 'Quản lý nhân sự',
         },
         {
             key: ROUTES.ADMIN_REQUESTS,
@@ -140,11 +141,6 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             label: 'Quản lý danh mục',
         },
         {
-            key: ROUTES.ADMIN_PROGRESS,
-            icon: <LineChartOutlined />,
-            label: 'Quản lý tiến độ',
-        },
-        {
             key: ROUTES.ADMIN_USERS,
             icon: <UserOutlined />,
             label: 'Quản lý nhân sự',
@@ -160,6 +156,12 @@ const AdminSidebar = memo(({ isMobile, collapsed, onClose }: AdminSidebarProps) 
             //         }))
             // ]
         },
+        {
+            key: ROUTES.ADMIN_PROGRESS,
+            icon: <LineChartOutlined />,
+            label: 'Quản lý tiến độ',
+        },
+        
         {
             key: ROUTES.ADMIN_DEPARTMENTS,
             icon: <ClusterOutlined />,

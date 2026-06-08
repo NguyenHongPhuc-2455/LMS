@@ -12,6 +12,11 @@ const isUserInScope = (userData, entity, isEnrolled = false, departmentMap = nul
     if (isEnrolled) return true;
     if (!entity) return true;
 
+    // Nếu thực thể KHÔNG phải riêng tư VÀ KHÔNG phải bắt buộc, nó được hiển thị/truy cập công khai
+    if (entity.is_private !== true && entity.is_mandatory !== true) {
+        return true;
+    }
+
     const scope = entity.apply_scope || 'ALL_EMPLOYEE';
     
     let targets = [];

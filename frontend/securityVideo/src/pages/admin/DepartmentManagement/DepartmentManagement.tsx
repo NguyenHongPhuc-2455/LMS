@@ -191,7 +191,7 @@ const DepartmentManagement: React.FC = () => {
             render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text || <Text type="secondary">Chưa có mô tả</Text>}</span>
         },
         {
-            title: 'Nhân sự trực thuộc',
+            title: 'Nhân sự',
             key: 'userCount',
             width: 180,
             render: (record: Department) => (
