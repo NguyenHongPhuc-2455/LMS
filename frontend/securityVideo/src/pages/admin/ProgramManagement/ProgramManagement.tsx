@@ -98,7 +98,7 @@ export default function ProgramManagement() {
             if (thumbFile) {
                 const fd = new FormData();
                 fd.append('image', thumbFile);
-                const up = await uploadService.image(fd);
+                const up = await uploadService.image(fd, 'thumbnails');
                 finalThumbnail = up.url;
             }
 

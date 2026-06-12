@@ -9,8 +9,13 @@ exports.uploadImage = async (req, res) => {
             return res.status(400).json({ error: 'Vui lòng chọn ảnh' });
         }
 
+        // Xác định folder dựa trên query parameter (type)
+        const allowedTypes = ['thumbnails', 'banners', 'avatars'];
+        const type = req.query.type;
+        const folder = allowedTypes.includes(type) ? type : 'others';
+
         // Tạo key lưu trữ trên MinIO
-        const minioKey = `images/${req.file.filename}`;
+        const minioKey = `images/${folder}/${req.file.filename}`;
 
         // Upload lên MinIO
         const publicUrl = await uploadFile(req.file.path, minioKey);

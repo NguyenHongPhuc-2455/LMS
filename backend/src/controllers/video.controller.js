@@ -7,7 +7,6 @@ const ApiError = require('../utils/ApiError');
 const { verifyStreamToken } = require('../utils/streamToken');
 const { decodeVideoToken, createVideoToken } = require('../utils/crypto');
 const axios = require('axios');
-const cloudinary = require('../configs/cloudinary.config');
 const { getFileStream, uploadFile, MINIO_PUBLIC_URL } = require('../utils/r2Storage');
 
 /**
@@ -146,20 +145,16 @@ exports.uploadAttachment = catchAsync(async (req, res) => {
             .replace(/\s+/g, '_')
             .replace(/[^a-zA-Z0-9._-]/g, '');
 
-        const publicId = `attachment-${Date.now()}-${cleanName}`;
+        const minioKey = `documents/attachment-${Date.now()}-${cleanName}`;
 
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: 'security_video_attachments',
-            resource_type: 'raw',
-            public_id: publicId
-        });
+        const publicUrl = await uploadFile(req.file.path, minioKey);
 
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
         const lesson = await prisma.lesson.update({
             where: { id: parseInt(lessonId) },
             data: {
-                attachment_url: result.secure_url,
+                attachment_url: publicUrl,
                 attachment_name: req.file.originalname
             },
             select: videoService.lessonSelect

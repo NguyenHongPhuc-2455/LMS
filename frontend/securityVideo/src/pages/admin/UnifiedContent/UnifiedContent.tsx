@@ -313,7 +313,7 @@ const UnifiedContent: React.FC = () => {
                 if (thumbFile) {
                     const formData = new FormData();
                     formData.append('image', thumbFile);
-                    const uploadRes = await uploadService.image(formData);
+                    const uploadRes = await uploadService.image(formData, 'thumbnails');
                     finalThumbnail = uploadRes.url;
                 }
                 
@@ -342,6 +342,13 @@ const UnifiedContent: React.FC = () => {
                             ...values,
                             duration: totalDuration,
                         });
+
+                        // Tải lên tài liệu đính kèm nếu được chọn trong lúc chỉnh sửa
+                        if (args[1]) { // attachmentFile
+                            const attachData = new FormData();
+                            attachData.append('attachment', args[1]);
+                            await contentService.uploadAttachment(editingData.id, attachData);
+                        }
                     } else {
                         const totalDuration = (Number(values.duration_min || 0) * 60) + Number(values.duration_sec || 0);
                         const formData = new FormData();

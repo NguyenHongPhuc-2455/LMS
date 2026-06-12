@@ -13,11 +13,7 @@ const config = {
         expiresIn: process.env.JWT_EXPIRES_IN || '2h',
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     },
-    cloudinary: {
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-        apiKey: process.env.CLOUDINARY_API_KEY,
-        apiSecret: process.env.CLOUDINARY_API_SECRET,
-    },
+
     minio: {
         endpoint: process.env.MINIO_ENDPOINT,
         accessKey: process.env.MINIO_ACCESS_KEY,

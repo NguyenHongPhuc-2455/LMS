@@ -161,7 +161,7 @@ export default function CourseManagement() {
             if (thumbFile) {
                 const formData = new FormData();
                 formData.append('image', thumbFile);
-                const uploadRes = await uploadService.image(formData);
+                const uploadRes = await uploadService.image(formData, 'thumbnails');
                 finalThumbnail = uploadRes.url;
             }
 

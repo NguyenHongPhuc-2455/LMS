@@ -7,25 +7,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate');
 const lessonValidation = require('../validations/lesson.validation');
 
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../configs/cloudinary.config');
-
 const upload = multer({ dest: 'uploads/' });
-
-// Cấu hình Cloudinary cho tài liệu đính kèm (PDF, DOCX...)
-const attachmentStorage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'security_video_attachments',
-        resource_type: 'raw',
-        public_id: (req, file) => {
-            // Loại bỏ khoảng trắng và ký tự đặc biệt để tránh lỗi URL (401/404)
-            const cleanName = file.originalname.replace(/\s+/g, '_');
-            return `attachment-${Date.now()}-${cleanName}`;
-        },
-    },
-});
-const attachmentUpload = multer({ storage: attachmentStorage });
 router.get('/', authMiddleware.verifyToken, authMiddleware.isInstructor, videoController.getVideos);
 router.get('/manifest/:id', authMiddleware.verifyToken, videoController.getManifest);
 router.get(/^\/stream\/([^/]+)\/(.+)$/, (req, res, next) => {

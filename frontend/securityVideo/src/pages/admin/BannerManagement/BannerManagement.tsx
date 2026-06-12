@@ -209,7 +209,7 @@ export default function BannerManagement() {
                                 listType="picture-card"
                                 className="avatar-uploader"
                                 showUploadList={false}
-                                action={`${getBackendUrl()}/api/upload/image`}
+                                action={`${getBackendUrl()}/api/upload/image?type=banners`}
                                 headers={{ Authorization: `Bearer ${localStorage.getItem('accessToken')}` }}
                                 onChange={handleUpload}
                             >
