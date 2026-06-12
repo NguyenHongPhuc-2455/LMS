@@ -18,13 +18,12 @@ const config = {
         apiKey: process.env.CLOUDINARY_API_KEY,
         apiSecret: process.env.CLOUDINARY_API_SECRET,
     },
-    cloudflareR2: {
-        accountId: process.env.R2_ACCOUNT_ID,
-        accessKeyId: process.env.R2_ACCESS_KEY_ID,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-        bucketName: process.env.R2_BUCKET_NAME,
-        publicUrl: process.env.R2_PUBLIC_URL,
-        endpoint: process.env.R2_ENDPOINT,
+    minio: {
+        endpoint: process.env.MINIO_ENDPOINT,
+        accessKey: process.env.MINIO_ACCESS_KEY,
+        secretKey: process.env.MINIO_SECRET_KEY,
+        bucketName: process.env.MINIO_BUCKET_NAME,
+        publicUrl: process.env.MINIO_PUBLIC_URL,
     }
 };
 

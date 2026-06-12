@@ -8,7 +8,7 @@ const { verifyStreamToken } = require('../utils/streamToken');
 const { decodeVideoToken, createVideoToken } = require('../utils/crypto');
 const axios = require('axios');
 const cloudinary = require('../configs/cloudinary.config');
-const { getFileStream, uploadFile, R2_PUBLIC_URL } = require('../utils/r2Storage');
+const { getFileStream, uploadFile, MINIO_PUBLIC_URL } = require('../utils/r2Storage');
 
 /**
  * Upload và bắt đầu xử lý Video

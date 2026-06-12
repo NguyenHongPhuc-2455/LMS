@@ -6,16 +6,19 @@ const fs = require('fs');
 const uploadController = require('../controllers/upload.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../configs/cloudinary.config');
-
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'security_video_thumbnails',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-        public_id: (req, file) => 'thumb-' + Date.now(),
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = 'uploads/';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
     },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const cleanName = file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+        cb(null, 'img-' + uniqueSuffix + '-' + cleanName);
+    }
 });
 
 const upload = multer({ 

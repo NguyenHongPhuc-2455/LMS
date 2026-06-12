@@ -1,16 +1,16 @@
 const { S3Client } = require('@aws-sdk/client-s3');
 
-const r2Client = new S3Client({
-    region: 'auto',
-    endpoint: process.env.R2_ENDPOINT,
+const minioClient = new S3Client({
+    region: 'us-east-1', // MinIO yêu cầu region nhưng giá trị không quan trọng
+    endpoint: (process.env.MINIO_ENDPOINT || '').trim(),
     credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID.trim(),
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY.trim(),
+        accessKeyId: (process.env.MINIO_ACCESS_KEY || '').trim(),
+        secretAccessKey: (process.env.MINIO_SECRET_KEY || '').trim(),
     },
-    forcePathStyle: true, // Bắt buộc cho Cloudflare R2
+    forcePathStyle: true, // Bắt buộc cho MinIO (path-style URL)
 });
 
-const R2_BUCKET = (process.env.R2_BUCKET_NAME || '').trim();
-const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || '').trim();
+const MINIO_BUCKET = (process.env.MINIO_BUCKET_NAME || '').trim();
+const MINIO_PUBLIC_URL = (process.env.MINIO_PUBLIC_URL || '').trim();
 
-module.exports = { r2Client, R2_BUCKET, R2_PUBLIC_URL };
+module.exports = { minioClient, MINIO_BUCKET, MINIO_PUBLIC_URL };

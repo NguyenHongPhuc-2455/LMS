@@ -5,7 +5,7 @@ const os = require('os');
 const { exec } = require('child_process');
 const crypto = require('crypto');
 const axios = require('axios');
-const { uploadFolder, uploadFile, deleteFolder, R2_PUBLIC_URL } = require('../utils/r2Storage');
+const { uploadFolder, uploadFile, deleteFolder, MINIO_PUBLIC_URL } = require('../utils/r2Storage');
 
 // Thư mục HLS local (fallback nếu không có R2, hoặc để hỗ trợ dev)
 const HLS_OUTPUT_DIR = path.join(__dirname, '../../public/hls');
